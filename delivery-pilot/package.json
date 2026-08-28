@@ -1,0 +1,36 @@
+{
+  "name": "delivery-pilot",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --configLoader native",
+    "build": "tsc -b && vite build --configLoader native",
+    "lint": "oxlint",
+    "test": "vitest run --configLoader native",
+    "test:watch": "vitest --configLoader native",
+    "build:sidecar": "./scripts/build-sidecar.sh",
+    "tauri": "tauri",
+    "build:app": "tauri build && mkdir -p release && rsync -a --delete src-tauri/target/release/bundle/macos/DeliveryPilot.app release/ && codesign --force --sign - --identifier com.deliverypilot.computer-use --requirements '=designated => identifier \"com.deliverypilot.computer-use\"' 'release/DeliveryPilot.app/Contents/Resources/DeliveryPilot Computer Use.app' && codesign --force --sign - --identifier com.deliverypilot.desktop --requirements '=designated => identifier \"com.deliverypilot.desktop\"' release/DeliveryPilot.app",
+    "open:app": "open release/DeliveryPilot.app",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.4",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "oxlint": "^1.75.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.0.17"
+  }
+}

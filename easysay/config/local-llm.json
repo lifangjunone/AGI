@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "modelId": "mlx-community/Qwen3.5-9B-MLX-8bit",
+  "modelPath": ".models/Qwen3.5-9B-MLX-8bit",
+  "engine": "mlx-vlm",
+  "host": "127.0.0.1",
+  "port": 8800,
+  "apiKey": "local-easysay",
+  "maxContextTokens": 98304,
+  "maxOutputTokens": 2048,
+  "kvCacheBits": 8,
+  "maxConcurrentRequests": 1
+}

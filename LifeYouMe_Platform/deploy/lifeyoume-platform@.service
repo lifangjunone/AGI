@@ -1,0 +1,28 @@
+[Unit]
+Description=LifeYouMe platform service (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lifeyoume
+Group=lifeyoume
+WorkingDirectory=/data/app/lifeyoume-platform
+EnvironmentFile=/data/app/lifeyoume-platform/.env
+Environment=SERVICE_ROLE=%i
+ExecStart=/usr/bin/python3 /data/app/lifeyoume-platform/platform/app.py
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/data/app/lifeyoume-platform
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

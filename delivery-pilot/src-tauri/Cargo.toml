@@ -1,0 +1,28 @@
+[package]
+name = "delivery-pilot"
+version = "0.1.0"
+description = "AI研发交付桌面应用"
+edition = "2021"
+
+[lib]
+name = "delivery_pilot_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+axum = "0.8"
+rfd = "0.15"
+rusqlite = { version = "0.32", features = ["bundled"] }
+quick-xml = "0.37"
+pdf-extract = "0.7"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tauri = { version = "2", features = [] }
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "time"] }
+tower-http = { version = "0.6", features = ["cors"] }
+uuid = { version = "1", features = ["v4"] }
+walkdir = "2"

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'"
+    />
+    <title>设备检修工单管理</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">维</div>
+          <div><b>设备运维中心</b><span>生产运维部</span></div>
+        </div>
+        <nav>
+          <button class="nav-item active"><span>工</span>检修工单</button>
+          <button class="nav-item" disabled><span>设</span>设备台账</button>
+          <button class="nav-item" disabled><span>报</span>统计报告</button>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="health-dot"></span>
+          本地服务正常
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">MAINTENANCE OPERATIONS</div>
+            <h1>设备检修工单</h1>
+            <p>统一登记、分派和跟踪设备故障处理进度</p>
+          </div>
+          <button class="primary-button" id="newOrderButton">＋ 新建工单</button>
+        </header>
+
+        <section class="stats-grid" aria-label="工单统计">
+          <button class="stat-card active" data-stat-status="全部">
+            <span>全部工单</span><strong id="statAll">0</strong><small>当前台账</small>
+          </button>
+          <button class="stat-card" data-stat-status="待接单">
+            <span>待接单</span><strong id="statPending">0</strong><small>等待负责人</small>
+          </button>
+          <button class="stat-card" data-stat-status="处理中">
+            <span>处理中</span><strong id="statActive">0</strong><small>现场检修中</small>
+          </button>
+          <button class="stat-card" data-stat-status="已完成">
+            <span>已完成</span><strong id="statCompleted">0</strong><small>不含已关闭</small>
+          </button>
+        </section>
+
+        <section class="content-panel">
+          <div class="filters">
+            <label class="search-box">
+              <span>搜索</span>
+              <input
+                id="queryInput"
+                type="search"
+                placeholder="工单编号、标题或设备"
+              />
+            </label>
+            <label>
+              <span>状态</span>
+              <select id="statusFilter">
+                <option>全部</option>
+                <option>待接单</option>
+                <option>处理中</option>
+                <option>已完成</option>
+                <option>已关闭</option>
+              </select>
+            </label>
+            <label>
+              <span>优先级</span>
+              <select id="priorityFilter">
+                <option>全部</option>
+                <option>紧急</option>
+                <option>高</option>
+                <option>中</option>
+                <option>低</option>
+              </select>
+            </label>
+            <button class="text-button" id="resetFiltersButton">重置筛选</button>
+          </div>
+
+          <div class="table-meta">
+            <span id="resultCount">0 条工单</span>
+            <span>点击行查看详情与处理</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>工单编号 / 标题</th>
+                  <th>设备</th>
+                  <th>站点</th>
+                  <th>优先级</th>
+                  <th>状态</th>
+                  <th>负责人</th>
+                  <th>截止时间</th>
+                </tr>
+              </thead>
+              <tbody id="orderTableBody"></tbody>
+            </table>
+            <div class="empty-results" id="emptyResults" hidden>
+              没有符合当前条件的工单
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="overlay" id="formOverlay" hidden>
+      <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+        <div class="dialog-header">
+          <div><div class="eyebrow">NEW WORK ORDER</div><h2 id="formTitle">新建检修工单</h2></div>
+          <button class="icon-button" data-close="form" aria-label="关闭">×</button>
+        </div>
+        <form id="orderForm" novalidate>
+          <div class="form-grid">
+            <label class="wide"><span>工单标题 *</span><input name="title" required /></label>
+            <label><span>设备名称 *</span><input name="deviceName" required /></label>
+            <label><span>设备编码 *</span><input name="deviceCode" required /></label>
+            <label><span>站点 *</span><input name="site" required /></label>
+            <label>
+              <span>优先级 *</span>
+              <select name="priority" required>
+                <option value="">请选择</option><option>低</option><option>中</option><option>高</option><option>紧急</option>
+              </select>
+            </label>
+            <label class="wide"><span>截止时间</span><input name="dueAt" type="datetime-local" /></label>
+            <label class="wide"><span>故障描述 *</span><textarea name="description" rows="5" required></textarea></label>
+          </div>
+          <div class="urgent-note" id="urgentNote" hidden>紧急故障原则上要求两小时内响应。</div>
+          <div class="form-error" id="formError" role="alert"></div>
+          <div class="dialog-actions">
+            <button type="button" class="secondary-button" data-close="form">取消</button>
+            <button type="submit" class="primary-button">提交工单</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div class="overlay" id="detailOverlay" hidden>
+      <aside class="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+        <div class="dialog-header">
+          <div><div class="eyebrow">WORK ORDER DETAIL</div><h2 id="detailTitle"></h2></div>
+          <button class="icon-button" data-close="detail" aria-label="关闭">×</button>
+        </div>
+        <div id="detailContent"></div>
+      </aside>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "service": {
+    "baseUrl": "http://127.0.0.1:8790",
+    "host": "127.0.0.1",
+    "port": 8790,
+    "requestTimeoutMs": 180000
+  },
+  "runtime": {
+    "engine": "mlx",
+    "lazyLoad": true,
+    "maxConcurrentRequests": 1
+  },
+  "asr": {
+    "enabled": true,
+    "modelId": "mlx-community/Qwen3-ASR-1.7B-8bit",
+    "modelPath": ".models/Qwen3-ASR-1.7B-8bit",
+    "language": "English",
+    "maxTokens": 1024
+  },
+  "tts": {
+    "enabled": true,
+    "modelId": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-8bit",
+    "modelPath": ".models/Qwen3-TTS-12Hz-1.7B-CustomVoice-8bit",
+    "language": "english",
+    "americanVoice": "Aiden",
+    "britishVoice": "Ryan",
+    "speed": 1.0,
+    "temperature": 0.8,
+    "styleInstruction": "Speak clearly and naturally for an adult English learner. Keep a calm teaching pace."
+  }
+}

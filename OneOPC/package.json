@@ -1,0 +1,44 @@
+{
+  "name": "oneopc",
+  "version": "0.1.0",
+  "private": true,
+  "author": "OneOPC",
+  "description": "OneOPC desktop delivery control center",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/requirement-input.js && node --check src/task-supervisor.js && node --check src/digital-employees.js && node --check src/delivery-coordinator.js && node --check src/tech-intelligence.js && node --check src/technology-advisory.js && node --check src/codegraph-adapter.js && node --check src/stress-fixtures.js && node --check src/window-state.js",
+    "test": "node --test tests/*.test.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.oneopc.desktop",
+    "productName": "OneOPC",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/delivery-computer-use",
+        "to": "delivery-computer-use"
+      }
+    ],
+    "mac": {
+      "icon": "build/OneOPC.icns",
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
+  },
+  "dependencies": {
+    "cytoscape": "^3.33.1"
+  }
+}

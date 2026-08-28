@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; frame-src 'none'; media-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>OneOPC</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <section class="boot-screen" id="bootScreen" role="status" aria-live="polite" aria-atomic="true">
+      <div class="boot-shell">
+        <div class="boot-brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3 5.5 6v5.2c0 4.2 2.7 7.8 6.5 9.1 3.8-1.3 6.5-4.9 6.5-9.1V6L12 3Z" />
+            <path d="m9.1 11.8 1.8 1.8 4-4" />
+          </svg>
+        </div>
+        <span>ONEOPC DELIVERY CONTROL</span>
+        <h1 id="bootTitle">正在恢复交付现场</h1>
+        <p id="bootSummary">检查本机能力并恢复上次运行状态</p>
+        <div
+          class="boot-progress"
+          id="bootProgressTrack"
+          role="progressbar"
+          aria-label="启动恢复进度"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow="0"
+        ><i id="bootProgress"></i></div>
+        <div class="boot-module-list" id="bootModuleList"></div>
+      </div>
+    </section>
+
+    <div class="app">
+      <header class="topbar">
+        <div class="brand-zone">
+          <button class="brand" id="brandHomeButton">
+            <div class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 3 5.5 6v5.2c0 4.2 2.7 7.8 6.5 9.1 3.8-1.3 6.5-4.9 6.5-9.1V6L12 3Z" />
+                <path d="m9.1 11.8 1.8 1.8 4-4" />
+              </svg>
+            </div>
+            <div>
+              <div class="brand-name">OneOPC</div>
+              <div class="brand-subtitle">需求文档到本地可用系统</div>
+            </div>
+          </button>
+          <nav class="app-navigation" aria-label="主导航">
+            <div class="nav-cluster delivery-nav" aria-label="交付管理">
+              <button class="app-nav-button active" data-page="home">首页</button>
+              <button class="app-nav-button" data-page="history">
+                项目交付
+                <span id="historyCount">0</span>
+              </button>
+              <button class="app-nav-button" data-page="tasks">
+                任务监管
+                <span id="taskAlertCount">0</span>
+              </button>
+            </div>
+            <i class="nav-separator" aria-hidden="true"></i>
+            <div class="nav-cluster capability-nav" aria-label="能力中心">
+              <button class="app-nav-button" data-page="employees">数字员工</button>
+              <button class="app-nav-button" data-page="radar">技术雷达</button>
+            </div>
+          </nav>
+        </div>
+
+        <div class="run-identity" id="runIdentity" hidden>
+          <span class="live-dot"></span>
+          <span id="headerStatus">等待执行器</span>
+          <code id="headerRunId"></code>
+        </div>
+
+        <div class="header-actions">
+          <button class="header-output-button" id="headerOutputButton" hidden>
+            <svg viewBox="0 0 24 24">
+              <path d="M14 5h5v5" />
+              <path d="m10 14 9-9" />
+              <path d="M19 14v5H5V5h5" />
+            </svg>
+            打开已交付系统
+          </button>
+          <div class="view-toggle" id="viewToggle" hidden>
+            <button class="view-button active" data-view="overview">
+              <span>领导视角</span>
+              <small>进度 · 风险 · 结果</small>
+            </button>
+            <button class="view-button" data-view="detail">
+              <span>开发者视角</span>
+              <small>运行 · 证据 · 恢复</small>
+            </button>
+          </div>
+          <button class="icon-button" id="refreshButton" title="刷新运行记录" aria-label="刷新运行记录">
+            <svg viewBox="0 0 24 24">
+              <path d="M20 7v5h-5" />
+              <path d="M19 12a7 7 0 1 1-2.1-5" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="toolchain-bar" id="toolchainBar">
+          <header class="toolchain-header">
+            <div class="toolchain-status">
+              <span class="scanner-orbit"><i></i></span>
+              <div>
+                <span class="toolchain-eyebrow">LOCAL EXECUTION FABRIC</span>
+                <b>本机执行环境已就绪</b>
+                <small id="toolScanSummary">正在扫描已安装应用与命令行工具</small>
+              </div>
+            </div>
+            <div class="toolchain-header-actions">
+              <span class="capability-count" id="toolCapabilityCount">0 项能力在线</span>
+              <button
+                class="toolchain-expand-button"
+                id="toolchainExpandButton"
+                title="展开本机执行环境"
+                aria-label="展开本机执行环境"
+                aria-expanded="false"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m7 10 5 5 5-5" />
+                </svg>
+              </button>
+              <button class="scan-button" id="rescanToolsButton" title="重新扫描本机研发工具" aria-label="重新扫描">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20 7v5h-5" />
+                  <path d="M19 12a7 7 0 1 1-2.1-5" />
+                </svg>
+              </button>
+            </div>
+          </header>
+          <div class="toolchain-flow">
+            <section class="tool-stage work-stage">
+              <header><span>01</span><div><b>需求编排</b><small>Work Agent</small></div></header>
+              <div class="tool-options" id="workToolOptions"></div>
+            </section>
+            <div class="tool-flow-connector" aria-hidden="true">
+              <span>自动交接</span>
+              <i><em></em></i>
+            </div>
+            <section class="tool-stage code-stage">
+              <header><span>02</span><div><b>代码执行</b><small>Code Agent</small></div></header>
+              <div class="tool-options" id="codeToolOptions"></div>
+            </section>
+            <aside class="intelligence-mode-group">
+              <header><span>OPTIONAL</span><b>技术增强策略</b></header>
+              <div>
+                <select id="intelligenceMode" title="可选技术参考模式">
+                  <option value="smart">智能启用</option>
+                  <option value="always">始终启用</option>
+                  <option value="off">关闭</option>
+                </select>
+                <select id="intelligenceTransport" title="Technology Exploration 使用方式">
+                  <option value="computer_use">可视化操作</option>
+                  <option value="provider_api">Provider API</option>
+                </select>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="system-health-banner" id="systemHealthBanner" role="alert" hidden>
+          <span class="system-health-icon" aria-hidden="true">!</span>
+          <div>
+            <b>部分能力暂未就绪</b>
+            <small id="systemHealthSummary"></small>
+          </div>
+          <button id="retryFailedModulesButton" type="button">重试失败项</button>
+        </section>
+
+        <section class="home-page app-page" id="homePage">
+          <div class="home-heading">
+            <div>
+              <div class="eyebrow">DELIVERY CONTROL CENTER</div>
+              <h1>交付控制中心</h1>
+              <p>输入一段需求或导入文档，查看所有自动交付任务和最终系统。</p>
+            </div>
+            <button class="primary-button" id="homeImportButton">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 16V4" />
+                <path d="m7 9 5-5 5 5" />
+                <path d="M5 14v5h14v-5" />
+              </svg>
+              导入新需求
+            </button>
+          </div>
+
+          <div class="home-metrics">
+            <div><span>交付项目</span><strong id="homeProjectCount">0</strong></div>
+            <div><span>历史版本</span><strong id="homeVersionCount">0</strong></div>
+            <div><span>正在执行</span><strong id="homeRunningCount">0</strong></div>
+            <div><span>已交付系统</span><strong id="homeCompletedCount">0</strong></div>
+          </div>
+
+          <div class="home-content">
+            <section class="home-section">
+              <div class="section-heading">
+                <div>
+                  <div class="eyebrow">RECENT DELIVERIES</div>
+                  <h2>最近交付</h2>
+                </div>
+                <button class="text-command" data-page="history">查看全部历史</button>
+              </div>
+              <div class="recent-runs" id="recentRuns"></div>
+            </section>
+
+            <aside class="home-section current-system">
+              <div class="section-heading">
+                <div>
+                  <div class="eyebrow">LATEST OUTPUT</div>
+                  <h2>最新可用系统</h2>
+                </div>
+              </div>
+              <div id="latestOutput"></div>
+            </aside>
+          </div>
+
+          <section
+            class="home-pulse"
+            id="homePulse"
+            aria-labelledby="homePulseTitle"
+            hidden
+          >
+            <div class="home-pulse-heading">
+              <div>
+                <div class="eyebrow">DELIVERY PULSE</div>
+                <h2 id="homePulseTitle">交付脉搏</h2>
+                <p>最需要关注的任务、当前执行与最近交付。</p>
+              </div>
+              <button class="text-command" data-page="tasks">查看监管中心</button>
+            </div>
+            <div class="home-pulse-grid" id="homePulseGrid"></div>
+          </section>
+        </section>
+
+        <section class="history-page app-page" id="historyPage" hidden>
+          <div class="history-heading">
+            <div>
+              <div class="eyebrow">DELIVERY HISTORY</div>
+              <h1>交付历史与版本</h1>
+              <p>每次需求执行都是一个独立版本，可查看完整过程、证据和对应输出。</p>
+            </div>
+            <button class="primary-button" id="historyImportButton">导入新需求</button>
+          </div>
+          <div class="history-toolbar">
+            <label>
+              <span>搜索项目或运行 ID</span>
+              <input id="historySearch" type="search" placeholder="输入名称、文件名或 OP 编号" />
+            </label>
+            <div class="history-filter">
+              <button class="history-filter-button active" data-history-status="all">全部</button>
+              <button class="history-filter-button" data-history-status="running">执行中</button>
+              <button class="history-filter-button" data-history-status="completed">已交付</button>
+            </div>
+          </div>
+          <div class="history-groups" id="historyGroups"></div>
+        </section>
+
+        <section class="task-page app-page" id="taskPage" hidden>
+          <div class="task-heading">
+            <div>
+              <div class="eyebrow">TASK SUPERVISOR</div>
+              <h1>任务监管中心</h1>
+              <p>持续检查工具进程、任务心跳和恢复检查点，异常时自动重启并续跑。</p>
+            </div>
+            <button class="secondary-button" id="scanTasksButton">立即健康检查</button>
+          </div>
+          <div class="task-metrics">
+            <div><span>受管任务</span><strong id="managedTaskCount">0</strong></div>
+            <div><span>正常运行</span><strong id="healthyTaskCount">0</strong></div>
+            <div><span>恢复处理中</span><strong id="recoveringTaskCount">0</strong></div>
+            <div class="attention"><span>需要关注</span><strong id="attentionTaskCount">0</strong></div>
+          </div>
+          <section class="task-monitor-strip">
+            <span class="scanner-dot"></span>
+            <div>
+              <b>后台监管器持续运行</b>
+              <small id="supervisorHeartbeat">等待首次健康检查</small>
+            </div>
+            <code>10 秒扫描 · 45 秒心跳 · 检查点续跑</code>
+          </section>
+          <div class="task-list" id="taskList"></div>
+        </section>
+
+        <section class="employee-page app-page" id="employeePage" hidden>
+          <div class="employee-page-heading">
+            <div>
+              <div class="eyebrow">DIGITAL WORKFORCE</div>
+              <h1>数字员工中心</h1>
+              <p>统一创建、培养和管理企业数字员工，项目按需求自动选聘上岗。</p>
+            </div>
+            <button class="primary-button" id="createEmployeeButton">+ 新建数字员工</button>
+          </div>
+          <div class="employee-metrics" id="employeeMetrics"></div>
+          <div class="employee-roster" id="employeeRoster"></div>
+        </section>
+
+        <section class="radar-page app-page" id="radarPage" hidden>
+          <div class="employee-page-heading">
+            <div>
+              <div class="eyebrow">TECHNOLOGY RADAR</div>
+              <h1>技术雷达</h1>
+              <p>汇总所有项目的开源匹配、代码验证和技术风险。</p>
+            </div>
+            <button class="secondary-button" id="openRadarSourceButton">打开 Technology Exploration</button>
+          </div>
+          <div class="employee-metrics" id="radarMetrics"></div>
+          <div class="radar-feed" id="radarFeed"></div>
+        </section>
+
+        <dialog
+          class="employee-dialog"
+          id="employeeDialog"
+          aria-labelledby="employeeDialogTitle"
+          aria-describedby="employeeDialogHint"
+        >
+          <form method="dialog" id="employeeForm">
+            <header>
+              <div>
+                <div class="eyebrow">CREATE DIGITAL EMPLOYEE</div>
+                <h2 id="employeeDialogTitle">新建数字员工</h2>
+              </div>
+              <button class="icon-button" id="closeEmployeeDialogButton" type="button" title="关闭" aria-label="关闭数字员工窗口">×</button>
+            </header>
+            <input type="hidden" id="employeeId" />
+            <div class="employee-form-grid">
+              <label><span>员工姓名</span><input id="employeeName" required maxlength="12" placeholder="例如：筑梦" autofocus /></label>
+              <label><span>岗位</span><select id="employeeRole">
+                <option value="conductor">交付指挥官</option>
+                <option value="researcher">技术调研员</option>
+                <option value="builder">系统开发员</option>
+                <option value="verifier">质量验证员</option>
+              </select></label>
+              <label><span>部门</span><input id="employeeDepartment" maxlength="20" placeholder="研发交付" /></label>
+              <label><span>数字工位</span><input id="employeeToolBinding" maxlength="40" placeholder="Trae Code" /></label>
+              <label class="wide"><span>岗位职责</span><textarea id="employeeResponsibility" required maxlength="80"></textarea></label>
+              <label class="wide"><span>核心技能</span><input id="employeeSkills" maxlength="100" placeholder="系统开发，自动化部署，故障恢复" /></label>
+            </div>
+            <footer>
+              <div class="dialog-footer-copy">
+                <small id="employeeDialogHint">创建后进入员工库，上岗后才能被项目自动选聘。</small>
+                <small class="input-draft-status" id="employeeDraftStatus" aria-live="polite">未提交内容将自动保存在本机</small>
+              </div>
+              <div class="dialog-footer-actions">
+                <button class="draft-discard-button" id="discardEmployeeDraftButton" type="button" title="丢弃未提交的员工草稿" aria-label="丢弃未提交的员工草稿" hidden>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></svg>
+                </button>
+                <button class="secondary-button" id="cancelEmployeeDialogButton" type="button">稍后继续</button>
+                <button class="primary-button" id="saveEmployeeButton" type="submit">创建并上岗</button>
+              </div>
+            </footer>
+          </form>
+        </dialog>
+
+        <dialog
+          class="requirement-dialog"
+          id="requirementDialog"
+          aria-labelledby="requirementDialogTitle"
+          aria-describedby="requirementDialogDescription"
+        >
+          <header>
+            <div>
+              <div class="eyebrow">NEW DELIVERY REQUEST</div>
+              <h2 id="requirementDialogTitle">输入产品需求</h2>
+              <p id="requirementDialogDescription">一句想法或一份完整文档，都将进入同一套自动交付流程。</p>
+            </div>
+            <button class="icon-button" id="closeRequirementDialogButton" type="button" title="关闭" aria-label="关闭">×</button>
+          </header>
+          <div class="requirement-input-tabs" role="tablist" aria-label="需求输入方式">
+            <button class="active" id="requirementTextTab" type="button" role="tab" aria-selected="true" aria-controls="requirementTextPanel" data-requirement-mode="text">
+              <span>文字描述</span>
+              <small>直接说清要做什么</small>
+            </button>
+            <button id="requirementFileTab" type="button" role="tab" aria-selected="false" aria-controls="requirementFilePanel" data-requirement-mode="file">
+              <span>需求文档</span>
+              <small>导入已有需求文件</small>
+            </button>
+          </div>
+          <form id="requirementTextForm">
+            <div class="requirement-input-panel" id="requirementTextPanel" role="tabpanel" aria-labelledby="requirementTextTab">
+              <label>
+                <span>项目名称 <i>选填，不填将从需求中自动生成</i></span>
+                <input id="requirementTitle" maxlength="60" placeholder="例如：设备检修工单管理" autocomplete="off" autofocus />
+              </label>
+              <label>
+                <span>需求描述</span>
+                <textarea id="requirementDescription" required minlength="10" maxlength="20000" placeholder="描述目标用户、核心场景、需要解决的问题和期望结果。例如：为维修班组做一个工单系统，支持报修、派单、处理、验收和超时提醒…"></textarea>
+              </label>
+              <div class="requirement-writing-assist">
+                <span>建议包含：谁使用 · 解决什么问题 · 核心流程 · 期望结果</span>
+                <b><i id="requirementCharacterCount">0</i> / 20,000</b>
+              </div>
+            </div>
+            <footer>
+              <div class="dialog-footer-copy">
+                <small>提交后锁定原文并自动组建数字员工小队 · ⌘Enter 快速开始</small>
+                <small class="input-draft-status" id="requirementDraftStatus" aria-live="polite">未提交内容将自动保存在本机</small>
+              </div>
+              <div class="dialog-footer-actions">
+                <button class="draft-discard-button" id="discardRequirementDraftButton" type="button" title="丢弃未提交的需求草稿" aria-label="丢弃未提交的需求草稿" hidden>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></svg>
+                </button>
+                <button class="primary-button" id="submitTextRequirementButton" type="submit">开始自动交付</button>
+              </div>
+            </footer>
+          </form>
+          <section class="requirement-input-panel requirement-file-panel" id="requirementFilePanel" role="tabpanel" aria-labelledby="requirementFileTab" hidden>
+            <div class="requirement-file-visual" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h4" /></svg>
+            </div>
+            <div>
+              <h3>选择现有需求文档</h3>
+              <p>支持 PDF、Word、Markdown、TXT 与 JSON。原文件会本地归档并生成 SHA-256 证据。</p>
+              <button class="primary-button" id="chooseRequirementFileButton" type="button">选择需求文档</button>
+            </div>
+          </section>
+        </dialog>
+
+        <dialog
+          class="action-dialog"
+          id="actionDialog"
+          aria-labelledby="actionDialogTitle"
+          aria-describedby="actionDialogSummary actionDialogDetail"
+        >
+          <form method="dialog">
+            <div class="action-dialog-symbol" id="actionDialogSymbol" aria-hidden="true">!</div>
+            <div class="action-dialog-copy">
+              <span id="actionDialogEyebrow">操作确认</span>
+              <h2 id="actionDialogTitle">确认执行此操作？</h2>
+              <p id="actionDialogSummary"></p>
+              <div id="actionDialogDetail"></div>
+            </div>
+            <footer>
+              <button class="secondary-button" id="actionDialogCancelButton" value="cancel" autofocus>取消</button>
+              <button class="danger-button" id="actionDialogConfirmButton" value="confirm">确认</button>
+            </footer>
+          </form>
+        </dialog>
+
+        <template id="projectCoordinationTemplate">
+          <section class="coordination-panel project-coordination-panel">
+            <header class="coordination-heading">
+              <div>
+                <div class="eyebrow">PROJECT DELIVERY SQUAD</div>
+                <h2>项目自主交付小队</h2>
+                <p id="coordinationSummary">等待受管任务进入交付队列</p>
+              </div>
+              <div class="coordination-policy">
+                <strong id="digitalEmployeeSummary">4 名数字员工</strong>
+                <span>自动排班</span>
+                <span>阶段交接</span>
+                <span>异常才找人</span>
+              </div>
+            </header>
+            <nav class="stage-track" id="stageTrack"></nav>
+            <div class="coordination-layout">
+              <div class="delivery-team" id="deliveryTeam"></div>
+              <aside class="decision-inbox">
+                <header>
+                  <div>
+                    <span>DECISION INBOX</span>
+                    <b>决策收件箱</b>
+                  </div>
+                  <em id="decisionInboxCount">0</em>
+                </header>
+                <div id="decisionInbox"></div>
+              </aside>
+            </div>
+            <div class="execution-ledger">
+              <header>
+                <span>IMMUTABLE RUN LEDGER</span>
+                <b>执行尝试与交接</b>
+              </header>
+              <div id="executionLedger"></div>
+            </div>
+          </section>
+        </template>
+
+        <section class="empty-state" id="emptyState" hidden>
+          <div class="empty-orbit"><div class="empty-core">1O</div></div>
+          <div class="eyebrow">NO DELIVERY RUNS</div>
+          <h1>还没有交付记录</h1>
+          <p>输入第一条需求后，OneOPC 会在这里保留每次运行和所有历史版本。</p>
+          <button class="primary-button" id="importButton">输入新需求</button>
+        </section>
+
+        <section class="workspace app-page" id="workspace" hidden>
+          <div class="workspace-context">
+            <button class="back-button" id="backToHistoryButton">← 返回历史</button>
+            <div>
+              <strong id="workspaceProjectTitle"></strong>
+              <span id="workspaceVersionLabel"></span>
+            </div>
+          </div>
+          <section class="overview-view active" id="overviewView">
+            <section class="executive-hero">
+              <div class="executive-progress" id="executiveProgress">
+                <div>
+                  <strong id="progressLabel">0%</strong>
+                  <span>交付进度</span>
+                </div>
+              </div>
+              <div class="executive-headline">
+                <div class="eyebrow">EXECUTIVE DELIVERY BRIEF</div>
+                <div class="executive-title-row">
+                  <h1 id="currentStageTitle">需求输入已就绪</h1>
+                  <span class="status-pill waiting" id="runStatusPill"><span></span>等待执行</span>
+                </div>
+                <h2 id="focusSummary">需求已进入自动交付队列</h2>
+                <p id="focusDetail">数字员工小队将持续推进，出现风险时才需要您介入。</p>
+                <div class="executive-progress-track"><span id="globalProgressBar"></span></div>
+              </div>
+              <div class="executive-primary-action">
+                <span>可体验状态</span>
+                <b id="executiveExperienceState">正在准备</b>
+                <small id="executiveExperienceHint">完成部署与验收后即可直接打开</small>
+                <button id="openOutputButton" disabled>尚未就绪</button>
+              </div>
+            </section>
+
+            <div class="executive-decision-grid">
+              <section class="executive-brief">
+                <header>
+                  <div>
+                    <span>当前负责人</span>
+                    <h2 id="executiveOwnerName">数字员工小队</h2>
+                  </div>
+                  <em id="executiveOwnerRole">交付指挥官</em>
+                </header>
+                <div class="executive-owner">
+                  <div class="executive-owner-avatar" id="executiveOwnerAvatar">领</div>
+                  <div>
+                    <b id="executiveOwnerTask">正在接收项目任务</b>
+                    <p id="executiveOwnerNext">下一步：完成需求理解并交接方案设计</p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="executive-brief risk-brief" id="executiveRiskCard">
+                <header>
+                  <div>
+                    <span>风险与决策</span>
+                    <h2 id="executiveRiskTitle">当前无阻断风险</h2>
+                  </div>
+                  <em id="executiveRiskLevel">正常</em>
+                </header>
+                <p id="executiveRiskDetail">系统持续监管执行状态，异常会自动恢复并从上次进度继续。</p>
+              </section>
+
+              <section class="executive-brief">
+                <header>
+                  <div>
+                    <span>技术参考结论</span>
+                    <h2 id="executiveTechTitle">不影响主交付</h2>
+                  </div>
+                  <em id="executiveTechScore">可选</em>
+                </header>
+                <p id="executiveTechSummary">技术雷达仅提供可复用方案建议，最终交付不会依赖未经验证的外部项目。</p>
+              </section>
+            </div>
+
+            <div class="coordination-slot executive-coordination-slot" id="overviewCoordinationSlot"></div>
+
+            <section class="executive-activity">
+              <header>
+                <div>
+                  <span>最近进展</span>
+                  <h2>关键交付动态</h2>
+                </div>
+                <button class="secondary-button" id="showDetailButton">进入开发者控制台</button>
+              </header>
+              <div class="event-summary" id="eventSummary"></div>
+            </section>
+          </section>
+
+          <section class="detail-view" id="detailView">
+            <section class="developer-command-bar">
+              <div class="developer-command-title">
+                <span>ENGINEERING CONTROL PLANE</span>
+                <b>开发执行控制台</b>
+                <code id="developerRunId">--</code>
+              </div>
+              <div class="developer-command-stat">
+                <span>检查点</span>
+                <b id="developerCheckpoint">--</b>
+              </div>
+              <div class="developer-command-stat">
+                <span>恢复 / 重试</span>
+                <b id="developerRecoveryCount">0 / 0</b>
+              </div>
+              <div class="developer-command-stat">
+                <span>监管心跳</span>
+                <b id="developerMonitorTime">--</b>
+              </div>
+            </section>
+
+            <section class="developer-health-grid">
+              <article class="developer-health-card">
+                <header><span>WORK AGENT</span><em id="developerWorkState">未知</em></header>
+                <b id="developerWorkName">等待工具检测</b>
+                <small id="developerWorkDetail">进程与当前任务状态尚未确认</small>
+              </article>
+              <article class="developer-health-card">
+                <header><span>CODE AGENT</span><em id="developerCodeState">未知</em></header>
+                <b id="developerCodeName">等待工具检测</b>
+                <small id="developerCodeDetail">进程与当前任务状态尚未确认</small>
+              </article>
+              <article class="developer-health-card wide">
+                <header><span>RECOVERY STATE</span><em id="developerSupervisorState">排队中</em></header>
+                <b id="developerRecoveryTitle">未触发恢复</b>
+                <small id="developerRecoveryDetail">任务异常时将从最近检查点继续执行</small>
+              </article>
+            </section>
+
+            <div class="detail-grid">
+              <aside class="panel detail-navigation">
+                <div class="eyebrow">STAGE TIMELINE</div>
+                <h2>阶段执行</h2>
+                <div id="detailStageList"></div>
+              </aside>
+
+              <article class="panel log-panel">
+                <div class="log-heading">
+                  <div>
+                    <div class="eyebrow">RUNTIME EVENTS</div>
+                    <h2 id="detailStageTitle"></h2>
+                  </div>
+                  <div class="log-tabs">
+                    <button class="log-tab active" data-tab="events">关键事件</button>
+                    <button class="log-tab" data-tab="raw">原始数据</button>
+                  </div>
+                </div>
+                <div class="event-stream" id="eventStream"></div>
+                <pre class="raw-log" id="rawLog"></pre>
+              </article>
+
+              <aside class="panel inspector-panel">
+                <div class="eyebrow">EVIDENCE INSPECTOR</div>
+                <h2>步骤证据</h2>
+                <div id="stageInspector"></div>
+                <div class="developer-artifacts">
+                  <button id="revealInputButton">
+                    <span>原始需求</span>
+                    <b id="inputFileName"></b>
+                  </button>
+                  <div>
+                    <span>事件证据</span>
+                    <b><i id="eventCount">0</i> 条已落盘</b>
+                  </div>
+                </div>
+              </aside>
+            </div>
+
+            <div class="coordination-slot developer-coordination-slot" id="detailCoordinationSlot"></div>
+
+            <section class="panel developer-tool-selection">
+              <div>
+                <span>当前工具链</span>
+                <b id="selectedToolchainTitle">自动化工具链</b>
+                <small id="selectedToolchainDescription">正在读取本机已安装的 Work 与 Code 工具。</small>
+              </div>
+              <em id="selectedToolchainState">自动识别</em>
+              <code id="workToolTag">work:auto</code>
+              <code id="codeToolTag">code:auto</code>
+            </section>
+
+            <section class="panel intelligence-panel" id="intelligencePanel">
+              <div class="intelligence-heading">
+                <div class="intelligence-title">
+                  <div class="eyebrow">TECHNICAL EVIDENCE WORKBENCH</div>
+                  <div>
+                    <h2>技术参考与代码证据</h2>
+                    <span class="optional-label">可选增强</span>
+                  </div>
+                  <p id="intelligenceSummary">
+                    从 Technology Exploration 的本地情报中寻找可复用实现，不影响主交付流程。
+                  </p>
+                </div>
+                <div class="intelligence-actions">
+                  <span class="intelligence-status idle" id="intelligenceStatus">未运行</span>
+                  <button id="focusExplorationButton" hidden>查看执行现场</button>
+                  <button id="intelligenceSettingsButton">设置</button>
+                  <button id="runIntelligenceButton">检索技术参考</button>
+                </div>
+              </div>
+              <div class="intelligence-overview" id="intelligenceOverview"></div>
+              <div class="intelligence-config" id="intelligenceConfig" hidden>
+                <div>
+                  <span>使用方式</span>
+                  <div class="transport-options">
+                    <button data-intelligence-transport="computer_use">
+                      <b>可视化操作</b>
+                      <small>默认 · 真实打开应用</small>
+                    </button>
+                    <button data-intelligence-transport="provider_api">
+                      <b>Provider API</b>
+                      <small>后台 · 稳定无人值守</small>
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <span>分析深度</span>
+                  <div class="depth-options">
+                    <button data-intelligence-depth="recommend">快速建议</button>
+                    <button data-intelligence-depth="verify">工程验证</button>
+                    <button data-intelligence-depth="code_graph">代码图谱</button>
+                  </div>
+                </div>
+                <div class="transport-trace" id="transportTrace">
+                  <span>尚未执行</span>
+                </div>
+              </div>
+              <div class="intelligence-funnel" id="intelligenceFunnel" hidden></div>
+              <div class="candidate-heading" id="candidateHeading" hidden>
+                <div>
+                  <span>推荐候选</span>
+                  <small id="candidateHeadingHint"></small>
+                </div>
+                <button id="toggleCandidatesButton">查看全部</button>
+              </div>
+              <div class="candidate-list" id="candidateList"></div>
+              <section class="graph-panel" id="graphPanel" hidden>
+                <header class="graph-heading">
+                  <div>
+                    <div class="eyebrow">VERIFIED REQUIREMENT GRAPH</div>
+                    <h3>需求到代码证据图谱</h3>
+                    <p id="graphConclusion"></p>
+                  </div>
+                  <div class="graph-scores">
+                    <span>发现匹配 <b id="discoveryFitScore">--</b></span>
+                    <i>→</i>
+                    <span>代码验证 <b id="verifiedFitScore">--</b></span>
+                  </div>
+                  <div class="graph-controls">
+                    <button class="selected" data-graph-mode="executive">领导图</button>
+                    <button data-graph-mode="developer">技术图</button>
+                    <button id="closeGraphButton" title="收起图谱" aria-label="收起代码证据图谱">×</button>
+                  </div>
+                </header>
+                <div class="graph-metrics" id="graphMetrics"></div>
+                <div class="graph-legend">
+                  <span><i class="capability"></i>需求能力</span>
+                  <span><i class="repository"></i>候选项目</span>
+                  <span><i class="symbol"></i>代码证据</span>
+                  <em>点击节点聚焦一条证据路径</em>
+                </div>
+                <div class="graph-workspace">
+                  <div class="graph-canvas" id="graphCanvas"></div>
+                  <aside class="graph-inspector" id="graphInspector">
+                    <span>选择节点或关系</span>
+                    <p>点击需求能力、仓库或代码符号查看可追溯证据。</p>
+                  </aside>
+                </div>
+              </section>
+            </section>
+          </section>
+        </section>
+      </main>
+
+      <footer class="statusbar">
+        <div>
+          <span class="real-status"><i></i> 真实执行</span>
+          <span>阶段 <b id="footerStage">待选择</b></span>
+          <span>运行 <b id="footerRun">未选择</b></span>
+          <span>事件 <b id="footerEvents">0</b></span>
+        </div>
+        <div>
+          <span>本地优先</span>
+          <span>输入与过程资产隔离</span>
+        </div>
+      </footer>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+      <i aria-hidden="true"></i>
+      <span id="toastMessage"></span>
+      <button class="toast-action" id="toastActionButton" type="button" hidden></button>
+      <button id="dismissToastButton" type="button" title="关闭通知" aria-label="关闭通知">×</button>
+    </div>
+    <script src="./vendor/cytoscape.min.js"></script>
+    <script src="./renderer.js"></script>
+  </body>
+</html>

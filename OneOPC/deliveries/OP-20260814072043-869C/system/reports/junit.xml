@@ -1,0 +1,20 @@
+<testsuites id="" name="" tests="8" failures="0" skipped="0" errors="0" time="2.459489">
+<testsuite name="work-orders.spec.js" timestamp="2026-08-14T08:37:14.831Z" hostname="" tests="8" failures="0" skipped="0" time="1.93" errors="0">
+<testcase name="设备检修工单核心流程 › REQ-WO-001 BR-WO-001 TC-WO-001 E2E-WO-001 列表完整展示核心字段" classname="work-orders.spec.js" time="0.326">
+</testcase>
+<testcase name="设备检修工单核心流程 › REQ-WO-002 BR-WO-002 TC-WO-002 E2E-WO-002 按设备关键词查询" classname="work-orders.spec.js" time="0.423">
+</testcase>
+<testcase name="设备检修工单核心流程 › REQ-WO-003 BR-WO-003 TC-WO-003 E2E-WO-003 状态和优先级组合筛选" classname="work-orders.spec.js" time="0.131">
+</testcase>
+<testcase name="设备检修工单核心流程 › REQ-WO-004 BR-WO-004 TC-WO-004 E2E-WO-004 已关闭不计入已完成统计" classname="work-orders.spec.js" time="0.134">
+</testcase>
+<testcase name="设备检修工单核心流程 › REQ-WO-005 BR-WO-005 TC-WO-005 E2E-WO-005 必填为空阻止提交" classname="work-orders.spec.js" time="0.212">
+</testcase>
+<testcase name="设备检修工单核心流程 › REQ-WO-006 BR-WO-006 TC-WO-006 E2E-WO-006 创建后默认值正确" classname="work-orders.spec.js" time="0.203">
+</testcase>
+<testcase name="设备检修工单核心流程 › REQ-WO-007 BR-WO-007 TC-WO-007 E2E-WO-007 查看摘要描述和负责人" classname="work-orders.spec.js" time="0.197">
+</testcase>
+<testcase name="设备检修工单核心流程 › REQ-WO-008 BR-WO-008 TC-WO-008 E2E-WO-008 接单到关闭状态流转" classname="work-orders.spec.js" time="0.304">
+</testcase>
+</testsuite>
+</testsuites>

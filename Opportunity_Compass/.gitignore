@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.DS_Store
+dist/
+test-results/
+assets/AppIcon.iconset/
+runtime/
+.env

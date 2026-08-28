@@ -1,0 +1,26 @@
+:root {
+  font-family: Inter, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #e8edf7;
+  background: #07101e;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --bg: #07101e;
+  --panel: #0d1728;
+  --panel-2: #111d31;
+  --line: rgba(153, 179, 219, .16);
+  --muted: #8b9bb6;
+  --blue: #5c83ff;
+  --cyan: #28d7d0;
+  --violet: #966bff;
+  --green: #35d49a;
+  --amber: #f2b84b;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { width: 100%; min-width: 720px; min-height: 100%; margin: 0; }
+body { min-height: 100vh; }
+button, input { font: inherit; }
+button { color: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.mark { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }

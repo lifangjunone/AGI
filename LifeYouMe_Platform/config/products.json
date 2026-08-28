@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "products": [
+    {
+      "id": "audit",
+      "name": "开源项目采用审计",
+      "summary": "基于 GitHub 与 OpenSSF 真实证据，判断开源项目是否适合生产采用。",
+      "public_url": "https://audit.lifeyoume.icu",
+      "health_url": "http://127.0.0.1:8787/healthz",
+      "lifecycle": "live",
+      "category": "开发者工具",
+      "owner": "Opportunity Compass"
+    },
+    {
+      "id": "easysay",
+      "name": "EasySay",
+      "summary": "面向移动端的英语口语训练，提供句法、词汇与发音细节分析。",
+      "public_url": "https://easysay.lifeyoume.icu",
+      "health_url": "http://127.0.0.1:8788/api/health",
+      "lifecycle": "reserved",
+      "category": "语言学习",
+      "owner": "EasySay"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+[
+  {
+    "id": "WO-20260814-0001",
+    "title": "冷却泵异常振动",
+    "deviceName": "循环水冷却泵 A",
+    "deviceCode": "PUMP-CW-001",
+    "site": "一号站",
+    "priority": "紧急",
+    "status": "待接单",
+    "assignee": "",
+    "description": "巡检发现冷却泵运行振动显著增大，并伴有间歇性异响。",
+    "dueAt": "2026-08-14T18:00",
+    "createdAt": "2026-08-14T08:20:00.000Z",
+    "updatedAt": "2026-08-14T08:20:00.000Z"
+  },
+  {
+    "id": "WO-20260814-0002",
+    "title": "输送带跑偏检查",
+    "deviceName": "原料输送带 B2",
+    "deviceCode": "BELT-B2-014",
+    "site": "原料区",
+    "priority": "高",
+    "status": "处理中",
+    "assignee": "陈工",
+    "description": "输送带向左侧持续跑偏，已降低运行速度等待检修。",
+    "dueAt": "2026-08-15T12:00",
+    "createdAt": "2026-08-14T07:10:00.000Z",
+    "updatedAt": "2026-08-14T09:05:00.000Z"
+  },
+  {
+    "id": "WO-20260813-0001",
+    "title": "压力表读数漂移",
+    "deviceName": "蒸汽主管压力表",
+    "deviceCode": "GAUGE-ST-009",
+    "site": "动力站",
+    "priority": "中",
+    "status": "已完成",
+    "assignee": "周工",
+    "description": "现场表计与远传信号偏差超过允许范围，已完成更换和校准。",
+    "dueAt": "2026-08-14T10:00",
+    "createdAt": "2026-08-13T03:00:00.000Z",
+    "updatedAt": "2026-08-14T01:30:00.000Z"
+  },
+  {
+    "id": "WO-20260812-0001",
+    "title": "照明回路故障",
+    "deviceName": "二号库房照明箱",
+    "deviceCode": "LIGHT-WH2-003",
+    "site": "二号库房",
+    "priority": "低",
+    "status": "已关闭",
+    "assignee": "吴工",
+    "description": "库房东侧照明回路跳闸，已更换损坏空气开关并关闭工单。",
+    "dueAt": "2026-08-13T17:00",
+    "createdAt": "2026-08-12T06:15:00.000Z",
+    "updatedAt": "2026-08-13T09:00:00.000Z"
+  }
+]

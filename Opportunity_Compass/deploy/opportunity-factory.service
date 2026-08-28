@@ -1,0 +1,27 @@
+[Unit]
+Description=Opportunity Factory autonomous demand-to-product service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=opportunity
+Group=opportunity
+WorkingDirectory=/data/app/opportunity-factory
+EnvironmentFile=/data/app/opportunity-factory/.env
+ExecStart=/usr/bin/python3 /data/app/opportunity-factory/service/autonomous_factory.py serve
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/app/opportunity-factory/runtime
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
