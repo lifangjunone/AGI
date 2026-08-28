@@ -1,6 +1,11 @@
-# 商机罗盘
+# Opportunity Factory
 
-每天从 Technology Exploration Agent 的本机报告中筛选 1-3 个可收费、可触达、可在 7 天内验证的商机。
+产品类型：商机发现、审计与验证工作台
+原产品名：商机罗盘 / Opportunity Compass
+运行形态：macOS 桌面应用 + 本地/服务器无人值守服务
+上游项目：[`technology-intelligence/`](../technology-intelligence/)
+
+每天从 Technology Intelligence 的本机报告中筛选 1-3 个可收费、可触达、可在 7 天内验证的商机。
 
 默认以 **1 人团队** 评估，并可切换到 2-5 人或 6-20 人团队。不同规模会分别显示适配度、现金投入、个人/团队工时、上线时间、交付范围和收入目标。
 

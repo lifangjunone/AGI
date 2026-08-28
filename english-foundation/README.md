@@ -1,4 +1,8 @@
-# Foundation
+# English Foundation
+
+产品类型：英语基础训练桌面应用
+运行形态：Tauri 2、React、TypeScript、Rust
+兼容性说明：macOS 构建产物当前仍使用 `Foundation.app`，后续可在签名和发布迁移时一并升级。
 
 面向中国英语初学者的本地优先桌面学习软件，通过“词汇理解、句子拆解、语法辨析、错项复习”建立英语基础。
 

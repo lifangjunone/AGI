@@ -15,7 +15,7 @@
       "id": "easysay",
       "name": "EasySay",
       "summary": "面向移动端的英语口语训练，提供句法、词汇与发音细节分析。",
-      "public_url": "https://easysay.lifeyoume.icu",
+      "public_url": "https://english-speaking-coach.lifeyoume.icu",
       "health_url": "http://127.0.0.1:8788/api/health",
       "lifecycle": "reserved",
       "category": "语言学习",

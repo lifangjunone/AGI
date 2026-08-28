@@ -3728,9 +3728,9 @@ def delivery_tool_info(tool: str) -> dict:
             "appPath": next((str(path) for path in candidates if path.is_dir()), None),
         }
     candidates = [
-        Path("/Applications/OneOPC.app"),
-        home / "Applications/OneOPC.app",
-        Path(__file__).resolve().parents[2] / "OneOPC/dist/mac-arm64/OneOPC.app",
+        Path("/Applications/delivery-control-center.app"),
+        home / "Applications/delivery-control-center.app",
+        Path(__file__).resolve().parents[2] / "delivery-control-center/dist/mac-arm64/delivery-control-center.app",
     ]
     return {
         "id": "oneopc",

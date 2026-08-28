@@ -1,4 +1,8 @@
-# FDE 前线工程手册
+# FDE Playbook
+
+产品类型：FDE 岗位学习与交互式实战手册
+原产品名：FDE 前线工程手册 / FDE Fieldbook
+运行形态：React、TypeScript、Vite、静态 Web 应用
 
 面向中文读者的 Forward Deployed Engineer（前线部署工程师）交互式岗位手册。项目同时提供快速岗位认知、完整工作方法、能力地图、90 天入行路径和可评分的制造业部署实战。
 

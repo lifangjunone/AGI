@@ -1,5 +1,9 @@
 # DeliveryPilot
 
+产品类型：研发交付驾驶舱
+运行形态：Tauri 2 macOS 桌面应用、Rust、Swift sidecar
+协作项目：[`technology-intelligence/`](../technology-intelligence/)、[`delivery-control-center/`](../delivery-control-center/)
+
 基于《AI研发交付桌面端开发方案》实现的 macOS AI 研发交付桌面应用。
 
 当前版本完成第一阶段可运行原型：

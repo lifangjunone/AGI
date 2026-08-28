@@ -1,6 +1,11 @@
-# Nexora
+# Agent Workforce Console
 
-Nexora 是一个本地优先、证据驱动的多 Agent 自主协作控制台。它把高层目标转换为可执行任务图，让不同角色的 Agent 并行认领、交接、评审和沉淀经验，并在高风险动作前保留明确的人类控制权。
+产品类型：多 Agent 自主协作控制台
+原产品名：Nexora
+运行形态：React、TypeScript、Vite、本地确定性任务引擎
+兼容性说明：`nexora` 仍保留在现有 localStorage key 和研究文档中，避免清空当前演示数据。
+
+Agent Workforce Console 是一个本地优先、证据驱动的多 Agent 自主协作控制台。它把高层目标转换为可执行任务图，让不同角色的 Agent 并行认领、交接、评审和沉淀经验，并在高风险动作前保留明确的人类控制权。
 
 ## 当前能力
 
@@ -57,7 +62,7 @@ Nexora 不复制这些项目的源码或视觉资产，只吸收公开机制并�
 ## 目录
 
 ```text
-nexora/
+agent-workforce-console/
 ├── docs/research.md       # 竞品研究与产品架构
 ├── src/App.tsx            # 控制台与交互
 ├── src/data.ts            # 演示任务、Agent 与记忆

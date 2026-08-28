@@ -148,7 +148,7 @@ CI 不直接对生产集群执行 `kubectl apply`。
 项目落地后建议采用：
 
 ```text
-OneOPC/
+delivery-control-center/
 ├── docs/                         # 调研和架构文档
 ├── inputs/                       # 原始输入，只读逻辑边界
 │   └── requirements/

@@ -1,12 +1,19 @@
-# OneOPC
+# Delivery Control Center
 
-OneOPC 是一个本地优先的桌面交付控制中心，目标是：
+产品类型：本地 AI 研发交付控制中心
+原产品名：OneOPC
+运行形态：Electron macOS 桌面应用
+上游项目：[`technology-intelligence/`](../technology-intelligence/)
+
+Delivery Control Center 是一个本地优先的桌面交付控制中心，目标是：
 
 ```text
 输入文字描述或需求文档 -> 全自动研发与验证 -> 输出本地可用系统
 ```
 
 ## 当前 MVP
+
+应用内部的 `OneOPC` App ID、本机数据目录和历史交付记录暂时保留，确保现有用户数据和交付协议可以平滑迁移。
 
 - Electron macOS 桌面应用
 - 统一需求入口：支持直接文字描述或原生需求文档选择

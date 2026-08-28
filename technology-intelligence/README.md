@@ -1,6 +1,11 @@
-# Technology Exploration Agent
+# Technology Intelligence
 
-一个每天整理 AI 前沿技术与产品 Top 10 的轻量 macOS 桌面应用，无第三方运行依赖。
+产品类型：技术情报、主题学习与需求匹配工作台
+原产品名：Technology Exploration Agent
+运行形态：macOS 桌面应用 + 本地报告与 handoff 服务
+下游项目：[`opportunity-factory/`](../opportunity-factory/)、[`delivery-control-center/`](../delivery-control-center/)、[`delivery-pilot/`](../delivery-pilot/)
+
+一个每天整理 AI 前沿技术与产品 Top 10，并把技术信号转化为可验证需求和 Demo 任务的 macOS 桌面应用。
 
 ## 已接入
 
@@ -61,7 +66,7 @@
 - 保存当前结果和每次扫描历史，页面关闭后后台监控仍会继续
 - 创建需求时选择 Demo 执行工具，默认使用 OneOPC，也可选择 DeliveryPilot
 - 可在项目顶部、完整闭环图或任一候选方案中直接启动真实 Demo 交付
-- OneOPC/DeliveryPilot 会回写真实阶段、进度、工作区、恢复状态和本机体验地址
+- delivery-control-center/DeliveryPilot 会回写真实阶段、进度、工作区、恢复状态和本机体验地址
 - 可开启“匹配完成后自动生成 Demo”，从技术发现自动接续开发、测试、部署与验收
 
 项目资产和交付事件分别独立保存在：

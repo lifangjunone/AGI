@@ -237,7 +237,7 @@ fn build_tools(tasks: &[SupervisorTaskView]) -> Vec<ExecutionTool> {
     let (work_status, work_detail) = task_tool_status(tasks, "trae-work", work_installed);
     let (code_status, code_detail) = task_tool_status(tasks, "trae-code", code_installed);
     let exploration_app = Path::new(
-        "/Users/bytedance/Desktop/desk_apps/Technology_Exploration/dist/Technology Exploration.app",
+        "/Users/bytedance/Desktop/desk_apps/technology-intelligence/dist/Technology Exploration.app",
     );
     let exploration_online = provider_online();
     let graph_available = command_available(

@@ -303,7 +303,7 @@ fn default_sources() -> Vec<DataSourceConfig> {
                 "domain_trends".into(),
                 "global_trends".into(),
             ],
-            location: "/Users/bytedance/Desktop/desk_apps/Technology_Exploration".into(),
+            location: "/Users/bytedance/Desktop/desk_apps/technology-intelligence".into(),
             api_key: String::new(),
         },
     ]

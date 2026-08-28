@@ -1,6 +1,11 @@
-# EasySay
+# English Speaking Coach
 
-面向中国成年人的移动端英语口语训练 PWA。核心流程是：
+产品类型：英语口语训练产品
+原产品名：EasySay
+运行形态：React PWA、Capacitor iOS/Android、Node API、本地 MLX 语音服务
+兼容性说明：`EasySay` 仍保留在 Capacitor App ID、数据键、证书名和本机服务协议中，避免升级破坏已安装应用和学习记录。
+
+面向中国成年人的移动端英语口语训练产品。核心流程是：
 
 `输入 → 模仿 → 脱稿输出 → 反馈 → 重说 → 间隔复习`
 

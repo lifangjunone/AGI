@@ -1,5 +1,9 @@
 # LifeYouMe Platform
 
+产品类型：共享平台服务
+运行形态：macOS/Linux 本地服务、systemd、Nginx
+维护边界：只负责产品注册、门户、运营和共享服务边界，不直接导入产品业务代码。
+
 Shared control plane for independently deployed products under `lifeyoume.icu`.
 
 ## Service boundaries

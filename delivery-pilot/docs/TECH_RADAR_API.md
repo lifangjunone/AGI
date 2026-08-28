@@ -71,7 +71,7 @@ curl -X POST http://127.0.0.1:43127/api/v1/solutions \
 默认启用内置 GitHub Search 与 Hacker News。应用预置但默认不启用：
 
 ```text
-/Users/bytedance/Desktop/desk_apps/Technology_Exploration
+/Users/bytedance/Desktop/desk_apps/technology-intelligence
 ```
 
 启用后，DeliveryPilot 读取其最新 JSON 报告并参与技术匹配、领域热榜和热点聚合，不修改它自己的配置或密钥。
