@@ -1,0 +1,6 @@
+weights/
+vendor/hunyuan3d-swift/.build/
+output/
+uploads/
+cache/
+*.log

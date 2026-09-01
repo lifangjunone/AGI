@@ -1,0 +1,79 @@
+{
+  "name": "english-immersion-studio",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Immersive desktop English roleplay with digital employees.",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "bootstrap": "node scripts/bootstrap.mjs",
+    "metahuman": "node scripts/start-metahuman.mjs",
+    "metahuman:build": "node scripts/build-metahuman-renderer.mjs",
+    "metahuman:package": "node scripts/build-metahuman-renderer.mjs --package",
+    "dev": "concurrently -k \"npm:dev:web\" \"npm:dev:electron\"",
+    "dev:web": "vite --host 127.0.0.1",
+    "dev:electron": "wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "start": "electron .",
+    "test": "vitest run && node --test electron/*.test.cjs",
+    "ui:check": "node scripts/verify-avatar-ui.mjs",
+    "faces:check": "node scripts/verify-face-library.mjs",
+    "voice:check": "node scripts/check-neural-voice.cjs",
+    "typecheck": "tsc -b --pretty false",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "@epicgames-ps/lib-pixelstreamingfrontend-ue5.7": "^0.3.0",
+    "@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
+    "@pixiv/three-vrm": "^3.5.5",
+    "lucide-react": "^0.539.0",
+    "node-edge-tts": "^1.2.10",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "three": "^0.180.0",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^24.2.1",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "@types/three": "^0.180.0",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.2.0",
+    "cross-env": "^7.0.3",
+    "electron": "^44.0.0",
+    "electron-builder": "^26.0.12",
+    "jsdom": "^26.1.0",
+    "playwright-core": "^1.62.1",
+    "typescript": "~5.8.3",
+    "vite": "^7.1.2",
+    "vitest": "^3.2.4",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.lifeyoume.englishimmersionstudio",
+    "productName": "English Immersion Studio",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
+  },
+  "allowScripts": {
+    "electron@44.0.0": true,
+    "electron-winstaller@5.4.0": true,
+    "esbuild@0.28.2": true
+  }
+}

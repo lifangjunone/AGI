@@ -12,6 +12,8 @@
 | [`delivery-control-center/`](delivery-control-center/README.md) | Delivery Control Center | 从需求输入到研发、测试、部署和交付收据的桌面控制中心 | Electron、Node.js |
 | [`delivery-pilot/`](delivery-pilot/README.md) | DeliveryPilot | Tauri 研发交付驾驶舱，负责执行、恢复、验收和质量门禁 | Tauri 2、React、Rust、Swift、SQLite |
 | [`english-speaking-coach/`](english-speaking-coach/README.md) | English Speaking Coach | 面向成年人的英语口语训练和本地语音学习产品 | React、TypeScript、Capacitor、Python MLX |
+| [`english-immersion-studio/`](english-immersion-studio/README.md) | English Immersion Studio | 通过成年 3D 数字员工、30 个本地纹理身份预设、离线照片烘焙、薄弱项推荐及语言分析构建沉浸式英语环境；生产级角色已选型 MetaHuman 5.7 | Electron、React、Three.js、MediaPipe、Neural TTS |
+| [`avatar-generator-service/`](avatar-generator-service/README.md) | Local Avatar Generator | 在 Apple Silicon 上重绘可动画 GLB 材质，并保留骨骼、权重和面部 Morph Targets | Swift、MLX、Node.js |
 | [`english-foundation/`](english-foundation/README.md) | English Foundation | 面向初学者的词汇、句子、语法和错项复习桌面产品 | Tauri 2、React、TypeScript、Rust |
 | [`fde-playbook/`](fde-playbook/README.md) | FDE Playbook | FDE 岗位认知、交付方法、能力地图和制造业实战 | React、TypeScript、Vite |
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
@@ -27,7 +29,7 @@ Technology Intelligence
 LifeYouMe Platform
   └─ 产品注册、域名路由、运营状态和共享服务边界
 
-English Speaking Coach / English Foundation / FDE Playbook / Agent Workforce Console
+English Speaking Coach / English Immersion Studio / English Foundation / FDE Playbook / Agent Workforce Console
   └─ 独立运行的学习、培训和 Agent 协作产品
 ```
 
@@ -41,6 +43,8 @@ cd ../opportunity-factory && ./scripts/build.sh
 cd ../delivery-control-center && npm install && npm start
 cd ../delivery-pilot && npm install && npm run dev
 cd ../english-speaking-coach && npm install && npm run dev
+cd ../english-immersion-studio && npm install && npm run dev
+cd ../avatar-generator-service && npm run download:weights && npm start
 cd ../english-foundation && npm install && npm run tauri dev
 cd ../fde-playbook && npm install && npm run dev
 cd ../agent-workforce-console && npm install && npm run dev
@@ -67,13 +71,20 @@ SERVICE_ROLE=portal python3 platform/app.py
 - 不提交 `node_modules/`、`dist/`、`build/`、`target/`、本地模型、`.env`、私钥和证书。
 - 生成的交付物、运行数据和测试证据必须与源码边界分离。
 - 新增子项目时，必须同时补充本 README 和子项目 README。
+- 版本级变更记录维护在 [`CHANGELOG.md`](CHANGELOG.md)，新增功能使用 `feat`，问题修复使用 `fix`，文档或工程说明使用 `docs`。
 
 ## 代码索引
 
 仓库级代码地图位于 [`.planning/codebase/`](.planning/codebase/)，包含结构、架构、技术栈、集成、测试约定和风险记录。
 
+## 新增功能说明
+
+- `english-immersion-studio`：新增沉浸式英语桌面训练产品，覆盖固定/推荐场景、CEFR 难度、语言分析、字幕模式、VRM/GLB 角色、MediaPipe 本地头像烘焙、Microsoft 神经语音和 MetaHuman 5.7 生产级数字人接入。
+- `avatar-generator-service`：新增 Apple Silicon 本地头像材质生成服务，基于 Hunyuan3D-Swift/MLX Paint 生成 GLB PBR 材质，并保留骨骼、权重和面部 Morph Targets。
+- `metahuman-renderer`：新增 Unreal Engine 5.7 MetaHuman 渲染工程，用于承载 Pixel Streaming、角色状态桥接、摄像机、发型、服装和面部动画运行契约。
+
 ## 远端仓库
 
 ```text
-https://github.com/lifangjunone/desk_apps.git
+https://github.com/lifangjunone/AGI.git
 ```

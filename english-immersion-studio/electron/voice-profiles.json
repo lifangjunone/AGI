@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ava-sweet",
+    "name": "Ava",
+    "style": "甜美",
+    "voice": "en-US-AvaMultilingualNeural",
+    "language": "American English",
+    "hint": "柔和、亲近、有呼吸感",
+    "rateAdjust": -4,
+    "pitch": "+10Hz"
+  },
+  {
+    "id": "emma-bright",
+    "name": "Emma",
+    "style": "元气甜妹",
+    "voice": "en-US-EmmaMultilingualNeural",
+    "language": "American English",
+    "hint": "明亮、活泼、自然对话",
+    "rateAdjust": 0,
+    "pitch": "+14Hz"
+  },
+  {
+    "id": "aria-mature",
+    "name": "Aria",
+    "style": "沉稳御姐",
+    "voice": "en-US-AriaNeural",
+    "language": "American English",
+    "hint": "自信、成熟、富有感染力",
+    "rateAdjust": -7,
+    "pitch": "-10Hz"
+  },
+  {
+    "id": "sonia-british",
+    "name": "Sonia",
+    "style": "英伦御姐",
+    "voice": "en-GB-SoniaNeural",
+    "language": "British English",
+    "hint": "优雅、克制、权威感",
+    "rateAdjust": -8,
+    "pitch": "-14Hz"
+  }
+]

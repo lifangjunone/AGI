@@ -1,0 +1,12 @@
+{
+  "name": "local-avatar-generator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "swift build -c release --package-path vendor/hunyuan3d-swift",
+    "download:weights": "node scripts/download-weights.mjs",
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check scripts/download-weights.mjs && node --check scripts/merge-rigged-texture.mjs && node --check scripts/verify-rigged-glb.mjs"
+  }
+}
