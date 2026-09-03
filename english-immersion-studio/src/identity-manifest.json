@@ -1,0 +1,290 @@
+{
+  "version": 1,
+  "identities": [
+    {
+      "id": "amara-aera",
+      "label": "Amara Reed",
+      "group": "korean-stage",
+      "adultAgeBand": "25-34",
+      "status": "runtime-ready",
+      "unrealCharacter": "Sophia",
+      "blueprint": "/Game/MetaHumans/Sophia/BP_Sophia",
+      "portrait": "identities/amara-aera.png",
+      "hairId": "long-straight-bangs",
+      "groom": "/Game/MetaHumans/Sophia/Grooms/Hair_L_StraightBangs",
+      "groomBinding": "/Game/MetaHumans/Sophia/Grooms/Hair_L_StraightBangs_Binding",
+      "outfitId": "studio-basic"
+    },
+    {
+      "id": "k-stage-02",
+      "label": "Hana Seo",
+      "group": "korean-stage",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "high-ponytail",
+      "desiredOutfitId": "stage-tailored"
+    },
+    {
+      "id": "k-stage-03",
+      "label": "Yuna Park",
+      "group": "korean-stage",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "long-wave",
+      "desiredOutfitId": "stage-evening"
+    },
+    {
+      "id": "k-stage-04",
+      "label": "Mina Kwon",
+      "group": "korean-stage",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "sleek-long",
+      "desiredOutfitId": "model-editorial"
+    },
+    {
+      "id": "k-stage-05",
+      "label": "Sora Lim",
+      "group": "korean-stage",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "soft-curls",
+      "desiredOutfitId": "stage-modern"
+    },
+    {
+      "id": "k-stage-06",
+      "label": "Nari Choi",
+      "group": "korean-stage",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "low-ponytail",
+      "desiredOutfitId": "teacher-tailored"
+    },
+    {
+      "id": "k-stage-07",
+      "label": "Jiwon Han",
+      "group": "korean-stage",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "long-layered",
+      "desiredOutfitId": "stage-black"
+    },
+    {
+      "id": "k-stage-08",
+      "label": "Eunbi Moon",
+      "group": "korean-stage",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "shoulder-wave",
+      "desiredOutfitId": "model-minimal"
+    },
+    {
+      "id": "k-stage-09",
+      "label": "Dami Shin",
+      "group": "korean-stage",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "long-bangs",
+      "desiredOutfitId": "stage-color"
+    },
+    {
+      "id": "k-stage-10",
+      "label": "Rina Baek",
+      "group": "korean-stage",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "updo-buns",
+      "desiredOutfitId": "stage-formal"
+    },
+    {
+      "id": "vivian-voss",
+      "label": "Vivian Voss",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "25-34",
+      "status": "runtime-ready",
+      "unrealCharacter": "Vivian",
+      "blueprint": "/Game/MetaHumans/Vivian/BP_Vivian",
+      "portrait": "identities/vivian-voss.png",
+      "hairId": "bob-straight",
+      "groom": "/Game/MetaHumans/Vivian/Grooms/Hair_M_BobStraight",
+      "groomBinding": "/Game/MetaHumans/Vivian/Grooms/Hair_M_BobStraight_Binding",
+      "outfitId": "studio-basic"
+    },
+    {
+      "id": "j-fashion-02",
+      "label": "Rei Takano",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "long-straight",
+      "desiredOutfitId": "adult-academy"
+    },
+    {
+      "id": "j-fashion-03",
+      "label": "Mika Arai",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "long-wave",
+      "desiredOutfitId": "evening-hosiery"
+    },
+    {
+      "id": "j-fashion-04",
+      "label": "Aya Mori",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "twin-low",
+      "desiredOutfitId": "adult-j-fashion"
+    },
+    {
+      "id": "j-fashion-05",
+      "label": "Noa Kato",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "sleek-long",
+      "desiredOutfitId": "model-editorial"
+    },
+    {
+      "id": "j-fashion-06",
+      "label": "Emi Sato",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "shoulder-wave",
+      "desiredOutfitId": "adult-academy"
+    },
+    {
+      "id": "j-fashion-07",
+      "label": "Riko Ueda",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "long-bangs",
+      "desiredOutfitId": "evening-hosiery"
+    },
+    {
+      "id": "j-fashion-08",
+      "label": "Kaori Ito",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "low-ponytail",
+      "desiredOutfitId": "hanfu-modern"
+    },
+    {
+      "id": "j-fashion-09",
+      "label": "Nana Fuji",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "21-29",
+      "status": "planned",
+      "desiredHairId": "soft-curls",
+      "desiredOutfitId": "anime-adult"
+    },
+    {
+      "id": "j-fashion-10",
+      "label": "Akari Endo",
+      "group": "japanese-adult-fashion",
+      "adultAgeBand": "25-34",
+      "status": "planned",
+      "desiredHairId": "updo-buns",
+      "desiredOutfitId": "model-minimal"
+    },
+    {
+      "id": "sophia-tuya",
+      "label": "Sophia Laurent",
+      "group": "mature-professional",
+      "adultAgeBand": "35-44",
+      "status": "runtime-ready",
+      "unrealCharacter": "SophiaTuya",
+      "blueprint": "/Game/MetaHumans/SophiaTuya/BP_SophiaTuya",
+      "portrait": "identities/sophia-tuya.png",
+      "hairId": "long-straight",
+      "groom": "/Game/MetaHumans/SophiaTuya/Grooms/Hair_L_Straight",
+      "groomBinding": "/Game/MetaHumans/SophiaTuya/Grooms/Hair_L_Straight_Binding",
+      "outfitId": "studio-basic"
+    },
+    {
+      "id": "professional-02",
+      "label": "Elena Ward",
+      "group": "mature-professional",
+      "adultAgeBand": "35-44",
+      "status": "planned",
+      "desiredHairId": "shoulder-wave",
+      "desiredOutfitId": "doctor"
+    },
+    {
+      "id": "professional-03",
+      "label": "Naomi Brooks",
+      "group": "mature-professional",
+      "adultAgeBand": "30-39",
+      "status": "planned",
+      "desiredHairId": "low-ponytail",
+      "desiredOutfitId": "nurse"
+    },
+    {
+      "id": "professional-04",
+      "label": "Claire Bennett",
+      "group": "mature-professional",
+      "adultAgeBand": "30-39",
+      "status": "planned",
+      "desiredHairId": "sleek-long",
+      "desiredOutfitId": "cabin-crew"
+    },
+    {
+      "id": "professional-05",
+      "label": "Imani Cole",
+      "group": "mature-professional",
+      "adultAgeBand": "35-44",
+      "status": "planned",
+      "desiredHairId": "soft-curls",
+      "desiredOutfitId": "executive"
+    },
+    {
+      "id": "professional-06",
+      "label": "Camille Ross",
+      "group": "mature-professional",
+      "adultAgeBand": "30-39",
+      "status": "planned",
+      "desiredHairId": "bob-straight",
+      "desiredOutfitId": "hotel-concierge"
+    },
+    {
+      "id": "professional-07",
+      "label": "Leila Grant",
+      "group": "mature-professional",
+      "adultAgeBand": "35-44",
+      "status": "planned",
+      "desiredHairId": "long-layered",
+      "desiredOutfitId": "teacher-tailored"
+    },
+    {
+      "id": "professional-08",
+      "label": "Sabine Moreau",
+      "group": "mature-professional",
+      "adultAgeBand": "40-49",
+      "status": "planned",
+      "desiredHairId": "updo-buns",
+      "desiredOutfitId": "executive"
+    },
+    {
+      "id": "professional-09",
+      "label": "Priya Shah",
+      "group": "mature-professional",
+      "adultAgeBand": "30-39",
+      "status": "planned",
+      "desiredHairId": "long-wave",
+      "desiredOutfitId": "medical-specialist"
+    },
+    {
+      "id": "professional-10",
+      "label": "Lucia Hart",
+      "group": "mature-professional",
+      "adultAgeBand": "35-44",
+      "status": "planned",
+      "desiredHairId": "sleek-long",
+      "desiredOutfitId": "airline-purser"
+    }
+  ]
+}

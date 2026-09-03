@@ -65,14 +65,15 @@ export default function MetaHumanStage({
     const config = new Config({
       initialSettings: {
         ss: signalUrl,
-        AutoConnect: true,
+        StreamerId: "DefaultStreamer",
+        AutoConnect: false,
         AutoPlayVideo: true,
         StartVideoMuted: true,
         WaitForStreamer: true,
         HoveringMouse: true,
         KeyboardInput: false,
-        MatchViewportRes: true,
-        MaxReconnectAttempts: 20
+        MatchViewportRes: false,
+        MaxReconnectAttempts: 120
       }
     });
     const stream = new PixelStreaming(config, {
@@ -80,30 +81,57 @@ export default function MetaHumanStage({
     });
     streamRef.current = stream;
 
+    let connectionTimeout = 0;
+    const publishState = (state: AvatarRenderState) => {
+      setRenderState(state);
+      onRenderStateRef.current?.(state);
+    };
+    const armConnectionTimeout = (timeoutMs = 90000) => {
+      window.clearTimeout(connectionTimeout);
+      connectionTimeout = window.setTimeout(() => {
+        publishState("error");
+      }, timeoutMs);
+    };
     const sendCurrentState = () => {
       stream.emitUIInteraction(createMetaHumanCommand(stateRef.current));
+      const video = mount.querySelector("video");
+      if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        window.clearTimeout(connectionTimeout);
+        publishState("ready");
+      }
     };
     const onReady = () => {
-      setRenderState("ready");
-      onRenderStateRef.current?.("ready");
+      window.clearTimeout(connectionTimeout);
+      publishState("ready");
       sendCurrentState();
     };
     const onFailed = () => {
-      setRenderState("error");
-      onRenderStateRef.current?.("error");
+      publishState("loading");
+      armConnectionTimeout(15000);
+    };
+    const onConnecting = () => {
+      publishState("loading");
+      armConnectionTimeout();
     };
     const onPlayRejected = () => setPlayBlocked(true);
+    const connectTimer = window.setTimeout(() => {
+      armConnectionTimeout();
+      stream.connect();
+    }, 0);
 
     stream.addEventListener("videoInitialized", onReady);
     stream.addEventListener("dataChannelOpen", sendCurrentState);
+    stream.addEventListener("webRtcConnecting", onConnecting);
     stream.addEventListener("webRtcFailed", onFailed);
     stream.addEventListener("webRtcDisconnected", onFailed);
     stream.addEventListener("playStreamError", onFailed);
     stream.addEventListener("playStreamRejected", onPlayRejected);
-
     return () => {
+      window.clearTimeout(connectTimer);
+      window.clearTimeout(connectionTimeout);
       stream.removeEventListener("videoInitialized", onReady);
       stream.removeEventListener("dataChannelOpen", sendCurrentState);
+      stream.removeEventListener("webRtcConnecting", onConnecting);
       stream.removeEventListener("webRtcFailed", onFailed);
       stream.removeEventListener("webRtcDisconnected", onFailed);
       stream.removeEventListener("playStreamError", onFailed);
@@ -132,6 +160,7 @@ export default function MetaHumanStage({
     <div
       className={`immersive-stage metahuman-stage ${renderState}`}
       data-renderer="metahuman-5.7"
+      data-render-state={renderState}
       data-avatar-id={avatarId}
       data-hair-id={createMetaHumanCommand(stateRef.current).payload.hairId}
     >

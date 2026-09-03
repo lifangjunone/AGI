@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>LipSync Tester</title>
+<style>
+  :root {
+    --bg: #0d0f12;
+    --panel: #161a22;
+    --panel-2: #1f2530;
+    --fg: #e6edf3;
+    --muted: #8b949e;
+    --accent: #3fb950;
+    --accent-2: #58a6ff;
+    --danger: #f85149;
+    --warn: #d29922;
+    --border: #30363d;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+            Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    --mono: "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font); font-size: 14px; line-height: 1.5; }
+  .wrap { max-width: 960px; margin: 40px auto; padding: 0 20px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 8px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+  .sub code { font-family: var(--mono); background: var(--panel); padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; margin-bottom: 18px; }
+  .panel h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); margin: 0 0 14px; font-weight: 600; }
+
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .row > * { flex: 0 0 auto; }
+  .row.spread { justify-content: space-between; }
+
+  button, label.btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--panel-2); color: var(--fg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px 16px; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: 0.15s; font-family: var(--font);
+  }
+  button:hover:not(:disabled), label.btn:hover { background: #262d38;
+    border-color: #484f5a; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: #0d0f12; border-color: var(--accent); }
+  button.primary:hover:not(:disabled) { background: #54d36a; }
+  button.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+  button.danger:hover:not(:disabled) { background: #ff6961; }
+  button.ghost { background: transparent; }
+
+  input[type="file"] { display: none; }
+
+  .divider { border-top: 1px dashed var(--border); margin: 18px 0;
+    color: var(--muted); text-align: center; font-size: 11px;
+    letter-spacing: 0.15em; padding-top: 8px; position: relative; }
+  .divider::before { content: attr(data-label); background: var(--panel);
+    padding: 0 12px; position: relative; top: -16px; }
+
+  .rec-info { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+  .rec-dot { width: 10px; height: 10px; border-radius: 50%;
+    background: var(--danger); display: inline-block; margin-right: 6px;
+    vertical-align: middle; }
+  .rec-dot.blinking { animation: blink 1s infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  audio { width: 100%; margin-top: 12px; filter: invert(0.85) hue-rotate(180deg); }
+
+  .status { font-family: var(--mono); font-size: 12px; padding: 10px 14px;
+    border-radius: 6px; background: var(--panel-2); border-left: 3px solid var(--muted); }
+  .status.ok    { border-color: var(--accent); }
+  .status.err   { border-color: var(--danger); color: #ff8e8a; }
+  .status.wait  { border-color: var(--warn); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+  .stat { background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 12px; }
+  .stat .k { color: var(--muted); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; }
+  .stat .v { font-family: var(--mono); font-size: 16px; color: var(--fg); margin-top: 2px; }
+
+  .job-id-row { margin-top: 14px; padding: 12px 14px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 6px; }
+  .job-id-row .k { color: var(--muted); font-size: 11px; text-transform: uppercase;
+    letter-spacing: .06em; }
+  .job-id-row .k .hint { text-transform: none; letter-spacing: 0;
+    color: var(--muted); font-size: 11px; margin-left: 6px; opacity: .7; }
+  .job-id-row .v { font-family: var(--mono); font-size: 14px; color: var(--fg);
+    margin-top: 4px; word-break: break-all; cursor: pointer;
+    padding: 6px 8px; background: rgba(255,255,255,.02); border-radius: 4px;
+    border: 1px solid transparent; transition: all .15s; }
+  .job-id-row .v:hover { border-color: var(--accent); }
+  .job-id-row .v.copied { border-color: var(--accent); color: var(--accent); }
+
+  .sliders { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 14px; }
+  .slider-row label { display: flex; justify-content: space-between;
+    font-size: 12px; color: var(--muted); margin-bottom: 4px; font-family: var(--mono); }
+  .slider-row label .val { color: var(--accent); font-weight: 600; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+
+  canvas { display: block; width: 100%; height: auto; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 6px; }
+  .plot-label { font-size: 12px; color: var(--muted); margin: 12px 0 4px;
+    font-family: var(--mono); }
+
+  .hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+  .hint strong { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>LipSync Tester</h1>
+  <p class="sub">
+    Upload or record audio, hit <strong>Generate</strong>, then press play in Unreal.
+    The server caches the most recent result and serves it on <code>POST /generate</code>
+    so the existing <code>TextToFaceClient</code> keeps working unchanged.
+  </p>
+
+  <!-- Input panel -->
+  <div class="panel">
+    <h2>Audio Input</h2>
+    <div class="row">
+      <label class="btn" for="file-input">Choose file…</label>
+      <input id="file-input" type="file" accept="audio/*" />
+      <span id="file-name" class="rec-info">no file selected</span>
+    </div>
+
+    <div class="divider" data-label="OR"></div>
+
+    <div class="row">
+      <button id="record-btn">Start recording</button>
+      <button id="stop-btn" class="danger" disabled>Stop</button>
+      <span id="rec-status" class="rec-info">ready</span>
+    </div>
+
+    <audio id="audio-preview" controls style="display:none"></audio>
+  </div>
+
+  <!-- Generate panel -->
+  <div class="panel">
+    <h2>Generate</h2>
+
+    <div class="sliders">
+      <div class="slider-row">
+        <label for="gain-slider">
+          <span>Amplification (centered around rest)</span>
+          <span class="val" id="gain-val">1.5</span>
+        </label>
+        <input id="gain-slider" type="range" min="0.5" max="4.0" step="0.1" value="1.5" />
+      </div>
+      <div class="slider-row">
+        <label for="smooth-slider">
+          <span>Smoothing window (frames)</span>
+          <span class="val" id="smooth-val">3</span>
+        </label>
+        <input id="smooth-slider" type="range" min="1" max="15" step="1" value="3" />
+      </div>
+      <div class="slider-row">
+        <label for="cfg-slider">
+          <span>CFG scale (audio signal boost)</span>
+          <span class="val" id="cfg-val">1.0</span>
+        </label>
+        <input id="cfg-slider" type="range" min="1.0" max="3.0" step="0.1" value="1.0" />
+      </div>
+    </div>
+
+    <div class="row spread">
+      <button id="generate-btn" class="primary" disabled>Generate lip-sync</button>
+      <span id="status" class="status">waiting for audio</span>
+    </div>
+    <p class="hint">
+      After clicking generate, the server runs inference and caches the result.
+      Then press your existing <strong>Play</strong> button in Unreal — the UE
+      client will fetch the cached data from <code>/generate</code>.
+      Tweak the sliders and click Generate again to re-bake with new settings
+      (no re-upload needed).
+    </p>
+  </div>
+
+  <!-- Results panel -->
+  <div class="panel" id="results-panel" style="display:none">
+    <h2>Results</h2>
+    <div class="stats">
+      <div class="stat"><div class="k">Duration</div><div class="v" id="r-duration">—</div></div>
+      <div class="stat"><div class="k">Frames</div><div class="v" id="r-frames">—</div></div>
+      <div class="stat"><div class="k">Inference</div><div class="v" id="r-gen">—</div></div>
+      <div class="stat"><div class="k">Peak Mouth</div><div class="v" id="r-peak">—</div></div>
+    </div>
+
+    <div class="job-id-row" id="job-id-row" style="display:none">
+      <div class="k">Job ID <span class="hint">(click to copy — paste into Unreal test)</span></div>
+      <div class="v mono" id="r-job-id" title="Click to copy">—</div>
+    </div>
+
+    <div class="plot-label">Audio waveform</div>
+    <canvas id="wave-canvas" width="920" height="90"></canvas>
+
+    <div class="plot-label">Predicted mouth curves (top 4 channels)</div>
+    <canvas id="curve-canvas" width="920" height="220"></canvas>
+  </div>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+let currentBlob = null;           // audio to submit
+let currentBlobName = "";
+let mediaRecorder = null;
+let recordChunks = [];
+let recordStart = 0;
+let recordTimer = null;
+
+const $ = id => document.getElementById(id);
+
+// Live-update slider value labels
+$("gain-slider").addEventListener("input", e => {
+  $("gain-val").textContent = parseFloat(e.target.value).toFixed(1);
+});
+$("smooth-slider").addEventListener("input", e => {
+  $("smooth-val").textContent = e.target.value;
+});
+$("cfg-slider").addEventListener("input", e => {
+  $("cfg-val").textContent = parseFloat(e.target.value).toFixed(1);
+});
+
+// ---------------------------------------------------------------------------
+// Job ID click-to-copy
+// ---------------------------------------------------------------------------
+$("r-job-id").addEventListener("click", async () => {
+  const el = $("r-job-id");
+  const id = el.textContent.trim();
+  if (!id || id === "—") return;
+  try {
+    await navigator.clipboard.writeText(id);
+    const prev = el.textContent;
+    el.classList.add("copied");
+    el.textContent = "copied!";
+    setTimeout(() => {
+      el.classList.remove("copied");
+      el.textContent = prev;
+    }, 900);
+  } catch (err) {
+    console.error("clipboard write failed:", err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// File upload
+// ---------------------------------------------------------------------------
+$("file-input").addEventListener("change", async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  currentBlob = f;
+  currentBlobName = f.name;
+  $("file-name").textContent = `${f.name} (${formatBytes(f.size)})`;
+  setAudioPreview(f);
+  $("generate-btn").disabled = false;
+  setStatus("audio ready — click generate", "ok");
+});
+
+// ---------------------------------------------------------------------------
+// Mic recording
+// ---------------------------------------------------------------------------
+$("record-btn").addEventListener("click", async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    recordChunks = [];
+    mediaRecorder.ondataavailable = e => {
+      if (e.data && e.data.size > 0) recordChunks.push(e.data);
+    };
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      const mime = mediaRecorder.mimeType || "audio/webm";
+      const ext = mime.includes("webm") ? "webm"
+                 : mime.includes("mp4")  ? "m4a"
+                 : mime.includes("ogg")  ? "ogg"
+                 : "bin";
+      const blob = new Blob(recordChunks, { type: mime });
+      currentBlob = blob;
+      currentBlobName = `recording.${ext}`;
+      $("file-name").textContent = `${currentBlobName} (${formatBytes(blob.size)})`;
+      setAudioPreview(blob);
+      $("generate-btn").disabled = false;
+      setStatus("recording ready — click generate", "ok");
+    };
+    mediaRecorder.start();
+    recordStart = Date.now();
+    $("record-btn").disabled = true;
+    $("stop-btn").disabled = false;
+    tickRecordTimer();
+    recordTimer = setInterval(tickRecordTimer, 200);
+  } catch (err) {
+    setStatus(`mic error: ${err.message}`, "err");
+  }
+});
+
+$("stop-btn").addEventListener("click", () => {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  $("record-btn").disabled = false;
+  $("stop-btn").disabled = true;
+  clearInterval(recordTimer);
+  $("rec-status").innerHTML = "ready";
+});
+
+function tickRecordTimer() {
+  const t = (Date.now() - recordStart) / 1000;
+  $("rec-status").innerHTML = `<span class="rec-dot blinking"></span>recording ${t.toFixed(1)}s`;
+}
+
+// ---------------------------------------------------------------------------
+// Audio preview (HTML5 <audio>)
+// ---------------------------------------------------------------------------
+function setAudioPreview(blob) {
+  const url = URL.createObjectURL(blob);
+  const el = $("audio-preview");
+  el.src = url;
+  el.style.display = "block";
+}
+
+// ---------------------------------------------------------------------------
+// Generate — POST /upload multipart, plot response
+// ---------------------------------------------------------------------------
+$("generate-btn").addEventListener("click", async () => {
+  if (!currentBlob) return;
+
+  setStatus("generating…", "wait");
+  $("generate-btn").disabled = true;
+
+  const fd = new FormData();
+  fd.append("audio", currentBlob, currentBlobName);
+  fd.append("gain", $("gain-slider").value);
+  fd.append("smooth_window", $("smooth-slider").value);
+  fd.append("cfg_scale", $("cfg-slider").value);
+
+  const t0 = performance.now();
+  try {
+    const resp = await fetch("/upload", { method: "POST", body: fd });
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`${resp.status}: ${text}`);
+    }
+    const result = await resp.json();
+    const tRound = (performance.now() - t0).toFixed(0);
+    setStatus(`cached ${result.n_frames} frames — now press Play in Unreal (round-trip ${tRound}ms)`, "ok");
+    renderResults(result);
+  } catch (err) {
+    setStatus(`error: ${err.message}`, "err");
+  } finally {
+    $("generate-btn").disabled = false;
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Render results
+// ---------------------------------------------------------------------------
+function renderResults(r) {
+  $("results-panel").style.display = "block";
+  $("r-duration").textContent = r.duration.toFixed(2) + "s";
+  $("r-frames").textContent = r.n_frames;
+  $("r-gen").textContent = r.generation_ms.toFixed(1) + "ms";
+
+  // Job ID — for Unreal testing: paste this into the JobId hardcode
+  if (r.id) {
+    $("r-job-id").textContent = r.id;
+    $("job-id-row").style.display = "block";
+  }
+
+  // Find the 4 mouth channels with highest peak values
+  const mouthChannels = [
+    "JawOpen", "JawForward", "JawRight", "JawLeft",
+    "MouthClose", "MouthFunnel", "MouthPucker",
+    "MouthRight", "MouthLeft",
+    "MouthSmileLeft", "MouthSmileRight",
+    "MouthFrownLeft", "MouthFrownRight",
+    "MouthStretchLeft", "MouthStretchRight",
+    "MouthRollLower", "MouthRollUpper",
+    "MouthShrugLower", "MouthShrugUpper",
+    "MouthPressLeft", "MouthPressRight",
+    "MouthLowerDownLeft", "MouthLowerDownRight",
+    "MouthUpperUpLeft", "MouthUpperUpRight",
+  ];
+  const peaks = mouthChannels.map(name => {
+    const arr = r.arkit_raw[name] || [];
+    const peak = arr.reduce((m, v) => Math.max(m, v), 0);
+    return { name, peak, arr };
+  }).sort((a, b) => b.peak - a.peak);
+
+  const top4 = peaks.slice(0, 4);
+  $("r-peak").textContent = top4.length
+    ? `${top4[0].name} ${top4[0].peak.toFixed(2)}`
+    : "—";
+
+  drawWaveform();
+  drawCurves(top4);
+}
+
+// ---------------------------------------------------------------------------
+// Canvas — waveform + curves
+// ---------------------------------------------------------------------------
+async function drawWaveform() {
+  const canvas = $("wave-canvas");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.fillStyle = "#1f2530";
+  ctx.fillRect(0, 0, w, h);
+
+  if (!currentBlob) return;
+
+  try {
+    const ab = await currentBlob.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const decoded = await audioCtx.decodeAudioData(ab.slice(0));
+    const data = decoded.getChannelData(0);
+    const step = Math.ceil(data.length / w);
+    ctx.strokeStyle = "#58a6ff";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x < w; x++) {
+      let mn = 1, mx = -1;
+      const start = x * step;
+      const end = Math.min(start + step, data.length);
+      for (let i = start; i < end; i++) {
+        if (data[i] < mn) mn = data[i];
+        if (data[i] > mx) mx = data[i];
+      }
+      const y1 = (1 - (mx * 0.95 + 1) / 2) * h;
+      const y2 = (1 - (mn * 0.95 + 1) / 2) * h;
+      ctx.moveTo(x + 0.5, y1);
+      ctx.lineTo(x + 0.5, y2);
+    }
+    ctx.stroke();
+    audioCtx.close();
+  } catch (err) {
+    ctx.fillStyle = "#8b949e";
+    ctx.font = "12px monospace";
+    ctx.fillText("waveform decode failed: " + err.message, 10, 20);
+  }
+}
+
+function drawCurves(channels) {
+  const canvas = $("curve-canvas");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.fillStyle = "#1f2530";
+  ctx.fillRect(0, 0, w, h);
+
+  // Horizontal baseline grid
+  ctx.strokeStyle = "#30363d";
+  ctx.lineWidth = 1;
+  for (let y = 0; y <= 4; y++) {
+    const yy = Math.floor((h - 20) * y / 4) + 10;
+    ctx.beginPath();
+    ctx.moveTo(0, yy);
+    ctx.lineTo(w, yy);
+    ctx.stroke();
+  }
+
+  const palette = ["#3fb950", "#58a6ff", "#d29922", "#f85149"];
+  channels.forEach((ch, idx) => {
+    const arr = ch.arr;
+    if (!arr || arr.length < 2) return;
+    ctx.strokeStyle = palette[idx];
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i < arr.length; i++) {
+      const x = (i / (arr.length - 1)) * w;
+      const y = (1 - arr[i]) * (h - 20) + 10;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Legend
+    ctx.fillStyle = palette[idx];
+    ctx.fillRect(12 + idx * 160, 8, 10, 3);
+    ctx.fillStyle = "#e6edf3";
+    ctx.font = "11px monospace";
+    ctx.fillText(`${ch.name} (${ch.peak.toFixed(2)})`, 26 + idx * 160, 13);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Utilities
+// ---------------------------------------------------------------------------
+function setStatus(msg, kind) {
+  const el = $("status");
+  el.textContent = msg;
+  el.className = "status " + (kind || "");
+}
+
+function formatBytes(n) {
+  if (n < 1024) return `${n}B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)}KB`;
+  return `${(n / 1024 / 1024).toFixed(1)}MB`;
+}
+</script>
+</body>
+</html>

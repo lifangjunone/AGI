@@ -62,14 +62,14 @@ export const performances: Record<
   inviting: {
     expression: "warm half-smile with welcoming eyes",
     gesture: "relaxed shoulders, one open hand inviting the viewer to speak",
-    label: "Warm eye contact",
-    cue: "She is waiting for your answer"
+    label: "Ready to begin",
+    cue: "Your turn to answer"
   },
   listening: {
     expression: "focused eye contact, subtly raised eyebrows, attentive expression",
     gesture: "leaning slightly closer toward the viewer, hands relaxed",
-    label: "Listening closely",
-    cue: "Keep eye contact and finish your thought"
+    label: "Listening",
+    cue: "Finish your thought"
   },
   thinking: {
     expression: "thoughtful eyes and a subtle curious smile",
@@ -204,13 +204,31 @@ export const scenarios: Scenario[] = [
 
 export const personas: Persona[] = [
   {
-    id: "sophia",
+    id: "sophia-tuya",
     name: "Sophia Laurent",
     role: "Executive Partner",
     accent: "British",
     trait: "Poised & perceptive",
     color: "#d7b476",
     appearance: "long dark brunette hair, sculpted cheekbones, hazel eyes, elegant hourglass figure"
+  },
+  {
+    id: "amara-aera",
+    name: "Amara Reed",
+    role: "Interview Strategist",
+    accent: "American",
+    trait: "Direct & encouraging",
+    color: "#77a99a",
+    appearance: "straight dark hair, warm brown eyes, balanced features, poised professional presence"
+  },
+  {
+    id: "vivian-voss",
+    name: "Vivian Voss",
+    role: "Communications Director",
+    accent: "Canadian",
+    trait: "Calm & exacting",
+    color: "#e48672",
+    appearance: "sleek dark bob, dark eyes, defined features, confident professional presence"
   },
   {
     id: "ava",
@@ -242,7 +260,7 @@ export const personas: Persona[] = [
 ];
 
 export const outfits: Outfit[] = [
-  { id: "executive", name: "Executive", note: "Sculpted tailoring", prompt: "a fitted charcoal skirt suit, ivory silk blouse with an elegant open neckline, sheer black tights and stiletto heels" },
+  { id: "studio-basic", name: "Studio Basic", note: "Default MetaHuman garment", prompt: "the verified default MetaHuman garment" },
   { id: "doctor", name: "Doctor", note: "Clinical allure", prompt: "a fitted white physician coat over a refined sage dress, sheer tights, stethoscope and elegant heels" },
   { id: "nurse", name: "Nurse", note: "Polished & feminine", prompt: "a tasteful fitted contemporary navy nurse dress, sheer tights and polished professional heels" },
   { id: "cabin", name: "Cabin Crew", note: "Aviation couture", prompt: "a tailored premium cabin crew skirt uniform, sculptural neck scarf, sheer tights and elegant heels" },

@@ -89,5 +89,8 @@ env/
 tmp/
 temp/
 
+# Reproducible third-party source assets (downloaded by setup scripts)
+english-immersion-studio/services/metahuman-renderer/ExternalAssets/
+
 /.ppt_build/
 /docs/

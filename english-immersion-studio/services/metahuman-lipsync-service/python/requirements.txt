@@ -1,0 +1,10 @@
+torch>=2.6
+torchaudio>=2.6
+numpy
+pandas
+scipy
+soundfile
+fastapi
+uvicorn
+pydantic>=2
+python-multipart

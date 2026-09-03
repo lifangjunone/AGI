@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Model artifacts (too big for git — use HuggingFace / Releases)
+*.pt
+*.pth
+*.onnx
+*.safetensors
+checkpoints/
+runs/
+wandb/
+
+# Training artifacts
+*.log
+outputs/
+samples/
+plots/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Unreal build artifacts (when dropped into a UE project)
+Binaries/
+Build/
+Intermediate/
+DerivedDataCache/
+Saved/
+*.sln
+*.suo
+*.VC.db
+*.user

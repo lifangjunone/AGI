@@ -2,21 +2,15 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
-const appRoot = path.resolve(import.meta.dirname, "..");
-const projectRoot = path.resolve(appRoot, "..", "metahuman-renderer");
-const projectFile = path.join(projectRoot, "EnglishImmersionRenderer.uproject");
-const packageBuild = process.argv.includes("--package");
+import {
+  findUnrealEngineRoot,
+  rendererProject,
+  rendererRoot
+} from "./runtime-paths.mjs";
 
-function findEngineRoot() {
-  const configured = process.env.EIS_UNREAL_ENGINE_ROOT;
-  const candidates = [
-    configured,
-    process.platform === "darwin"
-      ? "/Users/Shared/Epic Games/UE_5.7"
-      : "C:\\Program Files\\Epic Games\\UE_5.7"
-  ].filter(Boolean);
-  return candidates.find((candidate) => existsSync(candidate));
-}
+const projectRoot = rendererRoot;
+const projectFile = rendererProject;
+const packageBuild = process.argv.includes("--package");
 
 function fail(message) {
   console.error(`[metahuman-build] ${message}`);
@@ -33,7 +27,11 @@ function run(command, args) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-const engineRoot = findEngineRoot();
+if (!["darwin", "win32"].includes(process.platform)) {
+  fail("The Unreal renderer build supports macOS and Windows only.");
+}
+
+const engineRoot = findUnrealEngineRoot();
 if (!engineRoot) {
   fail(
     "Unreal Engine 5.7 was not found. Install it with MetaHuman Creator Core Data, " +

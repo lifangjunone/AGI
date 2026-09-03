@@ -3,6 +3,12 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
+import {
+  findPackagedRenderer,
+  isUnrealEditorExecutable,
+  rendererProject
+} from "./runtime-paths.mjs";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = new Set(process.argv.slice(2));
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -26,7 +32,8 @@ Usage:
   npm run bootstrap -- --no-install Skip automatic dependency installation
 
 Optional environment:
-  EIS_UNREAL_EXECUTABLE  Packaged Unreal renderer executable
+  EIS_UNREAL_EXECUTABLE  Packaged Unreal renderer executable; auto-detected
+                         under services/metahuman-renderer/Build when omitted
   EIS_UNREAL_PROJECT     .uproject passed to Unreal Editor builds`);
   process.exit(0);
 }
@@ -66,20 +73,36 @@ function installDependencies() {
   run(npm, ["ci"]);
 }
 
+let stopping = false;
+let renderer = null;
+let rendererRestartTimer = null;
+
 function startUnrealRenderer() {
-  const executable = process.env.EIS_UNREAL_EXECUTABLE;
+  const executable = findPackagedRenderer();
   if (!executable) return null;
   if (!existsSync(executable)) {
     fail(`EIS_UNREAL_EXECUTABLE does not exist: ${executable}`);
   }
 
   const unrealArgs = [];
-  const project = process.env.EIS_UNREAL_PROJECT;
+  const project =
+    process.env.EIS_UNREAL_PROJECT ??
+    (isUnrealEditorExecutable(executable) ? rendererProject : undefined);
   if (project) {
     if (!existsSync(project)) {
       fail(`EIS_UNREAL_PROJECT does not exist: ${project}`);
     }
     unrealArgs.push(project);
+    if (isUnrealEditorExecutable(executable)) {
+      unrealArgs.push(
+        "-game",
+        "-windowed",
+        "-ResX=1280",
+        "-ResY=720",
+        "-stdout",
+        "-FullStdOutLogOutput"
+      );
+    }
   }
   const pixelStreamingUrl = process.env.EIS_PIXEL_STREAMING_URL;
   if (pixelStreamingUrl) {
@@ -87,11 +110,25 @@ function startUnrealRenderer() {
   }
 
   console.log(`[bootstrap] Starting Unreal renderer: ${executable}`);
-  return spawn(executable, unrealArgs, {
-    cwd: path.dirname(executable),
+  const child = spawn(executable, unrealArgs, {
+    cwd: project ? path.dirname(project) : path.dirname(executable),
     env: process.env,
     stdio: "inherit"
   });
+  child.on("error", (error) => {
+    console.error(`[bootstrap] Unreal renderer failed: ${error.message}`);
+  });
+  child.on("exit", (code, signal) => {
+    if (stopping) return;
+    console.error(
+      `[bootstrap] Unreal renderer exited (${signal ?? code ?? "unknown"}); ` +
+        "restarting in 3 seconds."
+    );
+    rendererRestartTimer = setTimeout(() => {
+      renderer = startUnrealRenderer();
+    }, 3000);
+  });
+  return child;
 }
 
 async function inspectExistingDevServer() {
@@ -123,7 +160,7 @@ if (mode === "check") {
   process.exit(0);
 }
 
-const renderer = startUnrealRenderer();
+renderer = startUnrealRenderer();
 const existingServer = await inspectExistingDevServer();
 if (existingServer.running && !existingServer.isStudio) {
   renderer?.kill("SIGTERM");
@@ -145,10 +182,10 @@ const application = spawn(npm, ["run", script], {
   stdio: "inherit"
 });
 
-let stopping = false;
 function stop(signal) {
   if (stopping) return;
   stopping = true;
+  if (rendererRestartTimer) clearTimeout(rendererRestartTimer);
   application.kill(signal);
   renderer?.kill(signal);
 }
@@ -158,6 +195,8 @@ process.on("SIGTERM", () => stop("SIGTERM"));
 
 application.on("error", (error) => fail(error.message));
 application.on("exit", (code, signal) => {
+  stopping = true;
+  if (rendererRestartTimer) clearTimeout(rendererRestartTimer);
   renderer?.kill("SIGTERM");
   if (signal) {
     process.kill(process.pid, signal);

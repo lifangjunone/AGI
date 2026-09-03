@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "provider": "Poly Haven",
+  "apiBase": "https://api.polyhaven.com",
+  "license": "CC0-1.0",
+  "format": "gltf",
+  "resolution": "1k",
+  "assets": [
+    {
+      "id": "metal_office_desk",
+      "scenes": ["interview"],
+      "purpose": "interview desk"
+    },
+    {
+      "id": "modern_arm_chair_01",
+      "scenes": ["interview", "hotel", "airport"],
+      "purpose": "guest and cabin seating"
+    },
+    {
+      "id": "office_notepads",
+      "scenes": ["interview", "hotel"],
+      "purpose": "desktop dressing"
+    },
+    {
+      "id": "desk_lamp_arm_01",
+      "scenes": ["interview", "small-talk"],
+      "purpose": "practical task lighting"
+    },
+    {
+      "id": "dining_chair_02",
+      "scenes": ["restaurant"],
+      "purpose": "restaurant seating"
+    },
+    {
+      "id": "dining_table",
+      "scenes": ["restaurant"],
+      "purpose": "restaurant dining table"
+    },
+    {
+      "id": "modern_ceiling_lamp_01",
+      "scenes": ["restaurant", "hotel"],
+      "purpose": "pendant lighting fixture"
+    },
+    {
+      "id": "tea_set_01",
+      "scenes": ["restaurant", "hotel"],
+      "purpose": "table service dressing"
+    },
+    {
+      "id": "modern_wooden_cabinet",
+      "scenes": ["hotel"],
+      "purpose": "reception storage"
+    },
+    {
+      "id": "vintage_suitcase",
+      "scenes": ["hotel", "airport"],
+      "purpose": "travel luggage"
+    },
+    {
+      "id": "potted_plant_01",
+      "scenes": ["hotel"],
+      "purpose": "hotel lobby greenery"
+    },
+    {
+      "id": "sofa_02",
+      "scenes": ["small-talk"],
+      "purpose": "lounge seating"
+    },
+    {
+      "id": "modern_coffee_table_01",
+      "scenes": ["small-talk"],
+      "purpose": "lounge table"
+    },
+    {
+      "id": "potted_plant_02",
+      "scenes": ["small-talk"],
+      "purpose": "cafe greenery"
+    },
+    {
+      "id": "wheelchair_01",
+      "scenes": ["clinic"],
+      "purpose": "medical mobility prop"
+    },
+    {
+      "id": "medical_box",
+      "scenes": ["clinic"],
+      "purpose": "medical equipment"
+    },
+    {
+      "id": "chemistry_set",
+      "scenes": ["clinic"],
+      "purpose": "clinical glassware"
+    },
+    {
+      "id": "metal_stool_01",
+      "scenes": ["clinic"],
+      "purpose": "exam-room stool"
+    },
+    {
+      "id": "vintage_day_bed",
+      "scenes": ["clinic"],
+      "purpose": "exam bed base"
+    },
+    {
+      "id": "life_jacket",
+      "scenes": ["airport"],
+      "purpose": "aircraft safety prop"
+    },
+    {
+      "id": "CoffeeCart_01",
+      "scenes": ["airport"],
+      "purpose": "aircraft service trolley"
+    }
+  ]
+}

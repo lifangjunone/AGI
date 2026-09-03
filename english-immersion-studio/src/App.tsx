@@ -13,20 +13,19 @@ import {
   Gauge,
   GraduationCap,
   History,
-  ImagePlus,
   Languages,
   Maximize2,
   MessageSquareText,
   Mic,
   MicOff,
   Minimize2,
-  MoreHorizontal,
   Pause,
   PersonStanding,
   Play,
   Send,
   ScanFace,
   Settings2,
+  Shirt,
   Captions,
   Sparkles,
   Star,
@@ -37,19 +36,11 @@ import {
   X
 } from "lucide-react";
 import {
-  createAvatarFromPhoto,
   createImportedAvatar,
-  DEFAULT_AVATAR_URL,
   getBuiltInAvatarUrl,
   type AvatarAsset,
   type AvatarGenerationStatus
 } from "./avatar";
-import {
-  faceStyles,
-  facesForStyle,
-  type FaceStyleId,
-  type SyntheticFace
-} from "./avatar-faces";
 import {
   outfits,
   performances,
@@ -62,7 +53,7 @@ import {
   type Scenario
 } from "./data";
 import voiceProfiles from "../electron/voice-profiles.json";
-import AvatarRenderer from "./AvatarRenderer";
+import AvatarRenderer, { type RenderMode } from "./AvatarRenderer";
 import {
   type AvatarRenderState,
   type ViewMode
@@ -87,6 +78,30 @@ import {
   type AdaptiveRecommendation,
   type LearningProfile
 } from "./recommendations";
+import {
+  createRendererPerformanceCommand,
+  createSpeechFaceCommand,
+  createSpeechStopCommand
+} from "./metahuman-protocol";
+import {
+  createVisemeFaceAnimation,
+  decodeAudioEnvelope,
+  lipSyncModes,
+  type LipSyncHealth,
+  type LipSyncMode
+} from "./lipsync";
+import {
+  formatIdentityHair,
+  getRuntimeIdentity,
+  identityManifest,
+  runtimeAvatarAssets,
+  runtimeIdentities
+} from "./identity-manifest";
+import {
+  getPortraitIdentity,
+  portraitAvatarAssets,
+  portraitPersonas
+} from "./portrait-catalog";
 
 type PanelTab = "avatar" | "persona" | "wardrobe" | "voice" | "language";
 type ChatMessage = {
@@ -108,12 +123,9 @@ type VoiceProfile = {
 
 type VoiceStatus = "idle" | "generating" | "playing" | "fallback";
 
-const studioAvatar: AvatarAsset = {
-  id: "studio-vrm",
-  label: "Studio Avatar",
-  modelUrl: DEFAULT_AVATAR_URL,
-  source: "bundled"
-};
+const studioAvatar = runtimeAvatarAssets[0];
+const portraitStudioAvatar = portraitAvatarAssets[0];
+const allPersonas = [...portraitPersonas, ...personas];
 
 type BrowserRecognitionEvent = {
   results: ArrayLike<{ 0: { transcript: string } }>;
@@ -133,6 +145,10 @@ type BrowserRecognition = {
 type BrowserRecognitionConstructor = new () => BrowserRecognition;
 
 const neuralVoices = voiceProfiles as VoiceProfile[];
+const verifiedPersonaIds = new Set(
+  runtimeIdentities.map((identity) => identity.id)
+);
+const verifiedOutfitIds = new Set(["studio-basic"]);
 
 function TitleBar({ onSettings }: { onSettings: () => void }) {
   const isMac = window.desktopWindow?.platform === "darwin";
@@ -215,10 +231,12 @@ function SideRail({
             </button>
           );
         })}
-        <div className="recommendation-heading">
-          <span className="rail-label">FOR YOU</span>
-          <span><Bot size={12} /> AI ADAPTIVE</span>
-        </div>
+        {recommendations.length > 0 && (
+          <div className="recommendation-heading">
+            <span className="rail-label">FOR YOU</span>
+            <span><Bot size={12} /> AI ADAPTIVE</span>
+          </div>
+        )}
         {recommendations.map((recommendation) => {
           const Icon = recommendation.scenario.icon;
           const active = recommendation.id === activeRecommendationId;
@@ -262,11 +280,12 @@ function CharacterStage({
   speaking,
   currentLine,
   subtitleMode,
+  renderMode,
   viewMode,
+  onRenderMode,
   onViewMode,
   onAvatarRenderState,
-  onReplay,
-  onSceneOptions
+  onReplay
 }: {
   scenario: Scenario;
   persona: Persona;
@@ -276,16 +295,17 @@ function CharacterStage({
   speaking: boolean;
   currentLine: LocalizedLine;
   subtitleMode: SubtitleMode;
+  renderMode: RenderMode;
   viewMode: ViewMode;
+  onRenderMode: (mode: RenderMode) => void;
   onViewMode: (mode: ViewMode) => void;
   onAvatarRenderState: (state: AvatarRenderState) => void;
   onReplay: () => void;
-  onSceneOptions: () => void;
 }) {
   const direction = performances[performance];
   return (
     <section
-      className={`character-stage view-${viewMode}`}
+      className={`character-stage render-${renderMode} view-${viewMode}`}
       style={{ "--scene-image": `url("${scenario.image}")` } as React.CSSProperties}
       aria-label={`${scenario.title} immersive scene`}
     >
@@ -293,6 +313,7 @@ function CharacterStage({
         sceneImage={scenario.image}
         sceneId={scenario.id}
         actorName={persona.name}
+        renderMode={renderMode}
         performance={performance}
         speaking={speaking}
         viewMode={viewMode}
@@ -309,32 +330,44 @@ function CharacterStage({
           <span>{scenario.location}</span>
         </div>
         <div className="scene-actions">
-          <div className="view-switch" role="group" aria-label="Camera perspective">
+          <div className="render-switch" role="group" aria-label="Character display mode">
             <button
-              className={viewMode === "first" ? "active" : ""}
-              onClick={() => onViewMode("first")}
-              title="First-person view"
-              aria-pressed={viewMode === "first"}
+              className={renderMode === "2d" ? "active" : ""}
+              onClick={() => onRenderMode("2d")}
+              title="2D portrait mode"
+              aria-pressed={renderMode === "2d"}
             >
-              <Eye size={13} /><span>1ST</span>
+              <ScanFace size={13} /><span>2D</span>
             </button>
             <button
-              className={viewMode === "third" ? "active" : ""}
-              onClick={() => onViewMode("third")}
-              title="Third-person view"
-              aria-pressed={viewMode === "third"}
+              className={renderMode === "3d" ? "active" : ""}
+              onClick={() => onRenderMode("3d")}
+              title="Live 3D mode"
+              aria-pressed={renderMode === "3d"}
             >
-              <PersonStanding size={13} /><span>3RD</span>
+              <Box size={13} /><span>3D</span>
             </button>
           </div>
-          <button
-            className="glass-button"
-            title="Scene options"
-            aria-label="Scene options"
-            onClick={onSceneOptions}
-          >
-            <MoreHorizontal size={18} />
-          </button>
+          {renderMode === "3d" && (
+            <div className="view-switch" role="group" aria-label="Camera perspective">
+              <button
+                className={viewMode === "first" ? "active" : ""}
+                onClick={() => onViewMode("first")}
+                title="First-person view"
+                aria-pressed={viewMode === "first"}
+              >
+                <Eye size={13} /><span>1ST</span>
+              </button>
+              <button
+                className={viewMode === "third" ? "active" : ""}
+                onClick={() => onViewMode("third")}
+                title="Third-person view"
+                aria-pressed={viewMode === "third"}
+              >
+                <PersonStanding size={13} /><span>3RD</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -365,17 +398,14 @@ function CharacterStage({
         <span className="mood">{scenario.mood}</span>
         <h1>{persona.name}</h1>
         <p>{persona.role} · {persona.accent} English</p>
-        <button onClick={onReplay} className={speaking ? "playing" : ""}>
+        <button
+          onClick={onReplay}
+          className={speaking ? "playing" : ""}
+          aria-label={speaking ? "Speech playing" : "Replay speech"}
+          title={speaking ? "Speech playing" : "Replay speech"}
+        >
           {speaking ? <AudioLines size={15} /> : <Volume2 size={15} />}
-          {speaking ? "Speaking" : "Replay"}
         </button>
-      </div>
-
-      <div className="pov-focus-ring" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
       </div>
 
       {subtitleMode !== "none" && (
@@ -388,10 +418,6 @@ function CharacterStage({
           ))}
         </div>
       )}
-
-      <div className="viewer-presence" aria-hidden="true">
-        <span>YOU</span>
-      </div>
     </section>
   );
 }
@@ -558,73 +584,41 @@ function ConversationDock({
   );
 }
 
-function GeneratedFaceButton({
-  face,
-  selected,
-  onSelect
-}: {
-  face: SyntheticFace;
-  selected: boolean;
-  onSelect: (face: SyntheticFace) => void;
-}) {
-  const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
-
-  return (
-    <button
-      className={`${selected ? "selected" : ""} ${loaded ? "ready" : failed ? "failed" : "loading"}`}
-      onClick={() => onSelect(face)}
-      title={failed ? `${face.name} asset unavailable` : face.name}
-      aria-label={`Select ${face.name} fictional adult face reference`}
-      disabled={!loaded}
-    >
-      <img
-        src={face.imageUrl}
-        alt=""
-        onLoad={() => setLoaded(true)}
-        onError={() => setFailed(true)}
-      />
-      {!loaded && !failed && <span className="face-loader" />}
-      {failed && <X className="face-load-error" size={14} />}
-      <span>{face.name.split(" ")[1]}</span>
-      {selected && <Check size={11} />}
-    </button>
-  );
-}
-
 function AvatarPanel({
   asset,
   status,
   error,
-  onFacePreset,
-  onPhoto,
+  renderMode,
+  onAvatar,
   onModel,
   onReset
 }: {
   asset: AvatarAsset;
   status: AvatarGenerationStatus;
   error: string;
-  onFacePreset: (face: SyntheticFace) => void;
-  onPhoto: (event: ChangeEvent<HTMLInputElement>) => void;
+  renderMode: RenderMode;
+  onAvatar: (asset: AvatarAsset) => void;
   onModel: (event: ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
 }) {
-  const sourceLabel = {
+  const availableAvatars =
+    renderMode === "2d" ? portraitAvatarAssets : runtimeAvatarAssets;
+  const sourceLabel = renderMode === "2d" ? "2D PORTRAIT" : {
     bundled: "REALISTIC 3D",
-    synthetic: "AI 3D IDENTITY",
+    synthetic: "PORTRAIT REFERENCE",
     imported: "CUSTOM MODEL",
     generated: "PHOTO 3D IDENTITY"
   }[asset.source];
-  const [faceStyle, setFaceStyle] = useState<FaceStyleId>("k-stage");
-  const [selectedFaceId, setSelectedFaceId] = useState("");
-  const visibleFaces = facesForStyle(faceStyle);
-
   return (
     <div className="panel-content avatar-panel">
       <div className="panel-intro">
         <span>AVATAR STUDIO</span>
-        <h2>Create a real presence</h2>
-        <p>真人比例骨骼、表情、视线和口型在设备端实时驱动。</p>
+        <h2>{renderMode === "2d" ? "Choose your partner" : "Create a real presence"}</h2>
+        <p>
+          {renderMode === "2d"
+            ? "选择对话角色，立即开始沉浸式英语练习。"
+            : "真人比例骨骼、表情、视线和口型在设备端实时驱动。"}
+        </p>
       </div>
 
       <div className="avatar-identity-card">
@@ -642,7 +636,11 @@ function AvatarPanel({
           <span>
             {status === "preparing"
               ? "正在检查照片"
-              : status === "generating"
+              : renderMode === "2d"
+                ? "肖像、语音与课程已就绪"
+                : asset.source === "synthetic"
+                ? "肖像已选；3D 资产待接入"
+                : status === "generating"
                 ? "正在生成 3D 身份"
                 : status === "error"
                   ? "生成失败"
@@ -652,88 +650,113 @@ function AvatarPanel({
       </div>
 
       <div className="avatar-capabilities" aria-label="Avatar capabilities">
-        <span><i />SKELETON</span>
-        <span><i />FACE</span>
-        <span><i />LIP SYNC</span>
-        <span><i />LOOK AT</span>
+        {renderMode === "2d" ? (
+          <>
+            <span><i />PORTRAIT</span>
+            <span><i />NEURAL VOICE</span>
+            <span><i />SUBTITLES</span>
+            <span><i />STUDY TOOLS</span>
+          </>
+        ) : asset.source === "synthetic" ? (
+          <>
+            <span><i className="pending" />PORTRAIT</span>
+            <span><i className="pending" />3D PENDING</span>
+            <span><i className="pending" />RIG PENDING</span>
+            <span><i className="pending" />LIP SYNC PENDING</span>
+          </>
+        ) : (
+          <>
+            <span><i />SKELETON</span>
+            <span><i />FACIAL RIG</span>
+            <span><i />TTS CUES</span>
+            <span><i />BODY IDLE</span>
+          </>
+        )}
       </div>
 
-      <div className="face-library">
+      <div className={`face-library ${renderMode === "2d" ? "portrait-catalog" : ""}`}>
         <div className="face-library-heading">
-          <span>AI FACE COLLECTION</span>
-          <strong>30 fictional adults</strong>
+          <span>{renderMode === "2d" ? "AVAILABLE IDENTITIES" : "LIVE 3D IDENTITIES"}</span>
+          <strong>
+            {renderMode === "2d"
+              ? `${portraitAvatarAssets.length} PORTRAITS`
+              : `${runtimeIdentities.length} / ${identityManifest.identities.length} RUNTIME READY`}
+          </strong>
         </div>
-        <div className="face-style-tabs" role="tablist" aria-label="AI face styles">
-          {faceStyles.map((style) => (
+        {availableAvatars.map((avatar) => {
+          const identity = getRuntimeIdentity(avatar.id);
+          const portraitIdentity = getPortraitIdentity(avatar.id);
+          return (
             <button
-              key={style.id}
-              className={faceStyle === style.id ? "active" : ""}
-              onClick={() => setFaceStyle(style.id)}
-              role="tab"
-              aria-selected={faceStyle === style.id}
+              type="button"
+              className={`verified-identity ${asset.id === avatar.id ? "active" : ""}`}
+              aria-label={`Switch to ${avatar.label}`}
+              aria-pressed={asset.id === avatar.id}
+              data-identity-id={avatar.id}
+              key={avatar.id}
+              onClick={() => onAvatar(avatar)}
             >
-              {style.shortLabel}
+              <span className="verified-identity-portrait">
+                {avatar.photoUrl ? (
+                  <img src={avatar.photoUrl} alt="" />
+                ) : (
+                  <Check size={13} />
+                )}
+              </span>
+              <div>
+                <strong>{avatar.label}</strong>
+                <small>
+                  {identity && renderMode === "3d"
+                    ? `${identity.unrealCharacter} · ${formatIdentityHair(identity.hairId)} Groom`
+                    : `${portraitIdentity?.role ?? "Portrait"} · ${portraitIdentity?.adultAge ?? "21"}+`}
+                </small>
+              </div>
             </button>
-          ))}
-        </div>
-        <div className="face-grid">
-          {visibleFaces.map((face) => (
-            <GeneratedFaceButton
-              key={face.id}
-              face={face}
-              selected={selectedFaceId === face.id}
-              onSelect={(selectedFace) => {
-                setSelectedFaceId(selectedFace.id);
-                onFacePreset(selectedFace);
-              }}
-            />
-          ))}
-        </div>
-        <p>AI 生成的虚构成年人物，不对应任何真实艺人。</p>
+          );
+        })}
+        <p>
+          {renderMode === "2d"
+            ? "全部角色均为 21 岁以上虚构成年人。"
+            : "仅显示已经生成完整 MetaHuman 运行时资产的身份。"}
+        </p>
       </div>
 
-      <div className="avatar-upload-actions">
-        <label className="avatar-primary-action">
-          <ImagePlus size={17} />
-          <span><strong>从照片生成</strong><small>JPG / PNG / WebP · 20 MB</small></span>
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto} />
-        </label>
+      {renderMode === "3d" && <div className="avatar-upload-actions">
         <label className="avatar-secondary-action">
           <Upload size={15} />
-          <span><strong>导入 3D 模型</strong><small>VRM / GLB</small></span>
+          <span><strong>导入本地 3D 模型</strong><small>VRM / GLB · 本地预览</small></span>
           <input type="file" accept=".vrm,.glb,model/gltf-binary" onChange={onModel} />
         </label>
-      </div>
+      </div>}
 
       {error && <p className="avatar-error" role="alert">{error}</p>}
 
-      <div className="avatar-pipeline">
-        <span>IDENTITY PIPELINE</span>
-        <ol>
-          <li className={asset.photoUrl ? "done" : ""}><span>01</span><p><strong>Portrait</strong><small>身份特征与色彩</small></p></li>
-          <li className={status === "generating" ? "active" : status === "ready" ? "done" : ""}><span>02</span><p><strong>Reconstruct</strong><small>MediaPipe UV 3D 烘焙</small></p></li>
-          <li className={status === "ready" ? "done" : ""}><span>03</span><p><strong>Rig</strong><small>113 个面部形变与骨骼</small></p></li>
-        </ol>
-      </div>
-
-      {asset.source !== "bundled" && (
+      {renderMode === "3d" && asset.source !== "bundled" && (
         <button className="avatar-reset" onClick={onReset}>
           <Box size={15} />
           Restore studio avatar
         </button>
       )}
-      <p className="avatar-privacy">照片仅由本机 MediaPipe 与 WebGL 处理；不会上传到第三方。</p>
+      {renderMode === "3d" && (
+        <p className="avatar-privacy">照片身份入口将在 MetaHuman Identity 流水线通过验收后开放。</p>
+      )}
     </div>
   );
 }
 
 function PersonaPanel({
   selected,
+  renderMode,
   onSelect
 }: {
   selected: Persona;
+  renderMode: RenderMode;
   onSelect: (persona: Persona) => void;
 }) {
+  const availablePersonas =
+    renderMode === "2d"
+      ? portraitPersonas
+      : personas.filter((persona) => verifiedPersonaIds.has(persona.id));
   return (
     <div className="panel-content persona-list">
       <div className="panel-intro">
@@ -741,7 +764,7 @@ function PersonaPanel({
         <h2>Choose your partner</h2>
         <p>Each personality responds with a distinct rhythm, warmth and conversational style.</p>
       </div>
-      {personas.map((persona) => (
+      {availablePersonas.map((persona) => (
         <button
           className={`persona-option ${persona.id === selected.id ? "selected" : ""}`}
           key={persona.id}
@@ -776,7 +799,7 @@ function WardrobePanel({
         <p>Match the character styling to the roleplay, or create a more imaginative atmosphere.</p>
       </div>
       <div className="outfit-grid">
-        {outfits.map((outfit) => (
+        {outfits.filter((outfit) => verifiedOutfitIds.has(outfit.id)).map((outfit) => (
           <button
             key={outfit.id}
             className={`outfit-option ${outfit.id === selected.id ? "selected" : ""}`}
@@ -800,18 +823,26 @@ function VoicePanel({
   speed,
   autoSpeak,
   status,
+  renderMode,
+  lipSyncMode,
+  lipSyncHealth,
   onSelect,
   onSpeed,
   onAutoSpeak,
+  onLipSyncMode,
   onPreview
 }: {
   selected: number;
   speed: number;
   autoSpeak: boolean;
   status: VoiceStatus;
+  renderMode: RenderMode;
+  lipSyncMode: LipSyncMode;
+  lipSyncHealth: LipSyncHealth;
   onSelect: (index: number) => void;
   onSpeed: (speed: number) => void;
   onAutoSpeak: () => void;
+  onLipSyncMode: (mode: LipSyncMode) => void;
   onPreview: () => void;
 }) {
   return (
@@ -849,6 +880,40 @@ function VoicePanel({
           </button>
         ))}
       </div>
+      {renderMode === "3d" && <div className="lipsync-comparison">
+        <div className="lipsync-heading">
+          <span>LIP-SYNC BENCH</span>
+          <strong>Same audio · same rig</strong>
+        </div>
+        <div className="lipsync-modes" role="radiogroup" aria-label="Lip-sync method">
+          {lipSyncModes.map((mode) => {
+            const unavailable =
+              mode.id === "neural" && lipSyncHealth === "unavailable";
+            return (
+              <button
+                type="button"
+                role="radio"
+                aria-checked={lipSyncMode === mode.id}
+                className={lipSyncMode === mode.id ? "selected" : ""}
+                data-lipsync-mode={mode.id}
+                disabled={unavailable}
+                key={mode.id}
+                onClick={() => onLipSyncMode(mode.id)}
+                title={unavailable ? "Local model service is offline" : mode.detail}
+              >
+                <span>{mode.label}</span>
+                <small>
+                  {mode.id === "neural" && lipSyncHealth === "checking"
+                    ? "Checking local model"
+                    : unavailable
+                      ? "Model offline"
+                      : mode.detail}
+                </small>
+              </button>
+            );
+          })}
+        </div>
+      </div>}
       <div className="voice-control">
         <div><span>Speaking pace</span><strong>{speed.toFixed(1)}×</strong></div>
         <input
@@ -1104,6 +1169,9 @@ function ControlPanel({
   speed,
   autoSpeak,
   voiceStatus,
+  renderMode,
+  lipSyncMode,
+  lipSyncHealth,
   currentLine,
   subtitleMode,
   showStructure,
@@ -1113,12 +1181,12 @@ function ControlPanel({
   onVoice,
   onSpeed,
   onAutoSpeak,
+  onLipSyncMode,
   onPreview,
   onSubtitleMode,
   onShowStructure,
   onShowPhonetics,
-  onAvatarFacePreset,
-  onAvatarPhoto,
+  onAvatar,
   onAvatarModel,
   onAvatarReset
 }: {
@@ -1133,6 +1201,9 @@ function ControlPanel({
   speed: number;
   autoSpeak: boolean;
   voiceStatus: VoiceStatus;
+  renderMode: RenderMode;
+  lipSyncMode: LipSyncMode;
+  lipSyncHealth: LipSyncHealth;
   currentLine: LocalizedLine;
   subtitleMode: SubtitleMode;
   showStructure: boolean;
@@ -1142,27 +1213,29 @@ function ControlPanel({
   onVoice: (index: number) => void;
   onSpeed: (speed: number) => void;
   onAutoSpeak: () => void;
+  onLipSyncMode: (mode: LipSyncMode) => void;
   onPreview: () => void;
   onSubtitleMode: (mode: SubtitleMode) => void;
   onShowStructure: () => void;
   onShowPhonetics: () => void;
-  onAvatarFacePreset: (face: SyntheticFace) => void;
-  onAvatarPhoto: (event: ChangeEvent<HTMLInputElement>) => void;
+  onAvatar: (asset: AvatarAsset) => void;
   onAvatarModel: (event: ChangeEvent<HTMLInputElement>) => void;
   onAvatarReset: () => void;
 }) {
   return (
     <aside className="control-panel">
-      <div className="panel-tabs" role="tablist" aria-label="Character controls">
+      <div className={`panel-tabs ${renderMode === "2d" ? "compact" : ""}`} role="tablist" aria-label="Character controls">
         <button className={tab === "avatar" ? "active" : ""} onClick={() => onTab("avatar")} title="Avatar studio">
           <ScanFace size={17} /><span>Avatar</span>
         </button>
         <button className={tab === "persona" ? "active" : ""} onClick={() => onTab("persona")} title="Persona">
           <CircleUserRound size={17} /><span>Persona</span>
         </button>
-        <button className={tab === "wardrobe" ? "active" : ""} onClick={() => onTab("wardrobe")} title="Wardrobe">
-          <Sparkles size={17} /><span>Looks</span>
-        </button>
+        {renderMode === "3d" && (
+          <button className={tab === "wardrobe" ? "active" : ""} onClick={() => onTab("wardrobe")} title="Wardrobe">
+            <Shirt size={17} /><span>Outfit</span>
+          </button>
+        )}
         <button className={tab === "voice" ? "active" : ""} onClick={() => onTab("voice")} title="Voice">
           <AudioLines size={17} /><span>Voice</span>
         </button>
@@ -1175,23 +1248,35 @@ function ControlPanel({
           asset={avatarAsset}
           status={avatarStatus}
           error={avatarError}
-          onFacePreset={onAvatarFacePreset}
-          onPhoto={onAvatarPhoto}
+          renderMode={renderMode}
+          onAvatar={onAvatar}
           onModel={onAvatarModel}
           onReset={onAvatarReset}
         />
       )}
-      {tab === "persona" && <PersonaPanel selected={persona} onSelect={onPersona} />}
-      {tab === "wardrobe" && <WardrobePanel selected={outfit} onSelect={onOutfit} />}
+      {tab === "persona" && (
+        <PersonaPanel
+          selected={persona}
+          renderMode={renderMode}
+          onSelect={onPersona}
+        />
+      )}
+      {renderMode === "3d" && tab === "wardrobe" && (
+        <WardrobePanel selected={outfit} onSelect={onOutfit} />
+      )}
       {tab === "voice" && (
         <VoicePanel
           selected={voiceIndex}
           speed={speed}
           autoSpeak={autoSpeak}
           status={voiceStatus}
+          renderMode={renderMode}
+          lipSyncMode={lipSyncMode}
+          lipSyncHealth={lipSyncHealth}
           onSelect={onVoice}
           onSpeed={onSpeed}
           onAutoSpeak={onAutoSpeak}
+          onLipSyncMode={onLipSyncMode}
           onPreview={onPreview}
         />
       )}
@@ -1221,8 +1306,10 @@ export default function App() {
   const [subtitleMode, setSubtitleMode] = useState<SubtitleMode>("en-zh");
   const [showStructure, setShowStructure] = useState(true);
   const [showPhonetics, setShowPhonetics] = useState(true);
+  const [renderMode, setRenderMode] = useState<RenderMode>("2d");
   const [viewMode, setViewMode] = useState<ViewMode>("first");
-  const [avatarAsset, setAvatarAsset] = useState<AvatarAsset>(studioAvatar);
+  const [avatarAsset, setAvatarAsset] =
+    useState<AvatarAsset>(portraitStudioAvatar);
   const [avatarStatus, setAvatarStatus] = useState<AvatarGenerationStatus>("generating");
   const [avatarError, setAvatarError] = useState("");
   const [learningProfile, setLearningProfile] =
@@ -1230,7 +1317,7 @@ export default function App() {
   const [activeRecommendationId, setActiveRecommendationId] = useState<string | null>(null);
   const [utilityView, setUtilityView] = useState<"phrases" | "history" | null>(null);
   const [scenarioMenuOpen, setScenarioMenuOpen] = useState(false);
-  const [persona, setPersona] = useState(personas[0]);
+  const [persona, setPersona] = useState(portraitPersonas[0]);
   const [outfit, setOutfit] = useState(outfits[0]);
   const [panelTab, setPanelTab] = useState<PanelTab>("avatar");
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -1244,6 +1331,9 @@ export default function App() {
   const [voiceIndex, setVoiceIndex] = useState(0);
   const [speed, setSpeed] = useState(0.9);
   const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>("idle");
+  const [lipSyncMode, setLipSyncMode] = useState<LipSyncMode>("neural");
+  const [lipSyncHealth, setLipSyncHealth] =
+    useState<LipSyncHealth>("checking");
   const [reaction, setReaction] = useState<PerformanceState>("inviting");
   const [elapsed, setElapsed] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -1251,6 +1341,7 @@ export default function App() {
   const recognitionRef = useRef<BrowserRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const speechRequestRef = useRef(0);
+  const activeUtteranceRef = useRef("");
   const suggestions = useMemo(
     () => createSuggestions(scenario, difficulty),
     [difficulty, scenario]
@@ -1286,15 +1377,53 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [paused]);
 
+  useEffect(() => {
+    if (renderMode !== "3d") return;
+    let active = true;
+    const check = async () => {
+      const health = await window.desktopWindow?.getLipSyncHealth?.();
+      if (!active) return;
+      const nextHealth: LipSyncHealth = health?.ready
+        ? "ready"
+        : "unavailable";
+      setLipSyncHealth(nextHealth);
+      if (nextHealth === "unavailable") {
+        setLipSyncMode((current) =>
+          current === "neural" ? "viseme" : current
+        );
+      }
+    };
+    void check();
+    const timer = window.setInterval(check, 10_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [renderMode]);
+
   useEffect(
     () => () => {
       window.speechSynthesis?.cancel();
       audioRef.current?.pause();
+      if (activeUtteranceRef.current) {
+        void window.desktopWindow?.updateRendererState(
+          createSpeechStopCommand(activeUtteranceRef.current)
+        );
+      }
     },
     []
   );
 
+  const stopLipSync = () => {
+    if (!activeUtteranceRef.current) return;
+    void window.desktopWindow?.updateRendererState(
+      createSpeechStopCommand(activeUtteranceRef.current)
+    );
+    activeUtteranceRef.current = "";
+  };
+
   const speakWithSystemVoice = (text: string, selectedVoice = voiceIndex) => {
+    stopLipSync();
     if (!("speechSynthesis" in window)) {
       setSpeaking(false);
       setVoiceStatus("idle");
@@ -1323,9 +1452,11 @@ export default function App() {
 
   const speak = async (text: string, selectedVoice = voiceIndex) => {
     const requestId = ++speechRequestRef.current;
+    const selectedLipSyncMode = lipSyncMode;
     window.speechSynthesis?.cancel();
     audioRef.current?.pause();
     audioRef.current = null;
+    stopLipSync();
 
     if (!window.desktopWindow?.synthesizeSpeech) {
       speakWithSystemVoice(text, selectedVoice);
@@ -1335,27 +1466,71 @@ export default function App() {
     setSpeaking(true);
     setVoiceStatus("generating");
     try {
+      if (renderMode === "3d") {
+        await window.desktopWindow.updateRendererState(
+          createRendererPerformanceCommand("inference")
+        );
+      }
       const result = await window.desktopWindow.synthesizeSpeech({
         text,
         voiceId: neuralVoices[selectedVoice].id,
-        speed
+        speed,
+        includeFaceAnimation:
+          renderMode === "3d" && selectedLipSyncMode === "neural"
       });
+      if (renderMode === "3d") {
+        await window.desktopWindow.updateRendererState(
+          createRendererPerformanceCommand("interactive")
+        );
+      }
       if (requestId !== speechRequestRef.current) return;
 
+      const faceAnimation =
+        renderMode !== "3d"
+          ? null
+          : selectedLipSyncMode === "neural"
+          ? result.faceAnimation
+          : selectedLipSyncMode === "viseme"
+            ? createVisemeFaceAnimation(result.timeline)
+            : await decodeAudioEnvelope(
+                result.audioBase64,
+                result.mimeType
+              );
+      if (requestId !== speechRequestRef.current) return;
+      if (renderMode === "3d" && selectedLipSyncMode === "neural") {
+        setLipSyncHealth(faceAnimation ? "ready" : "unavailable");
+      }
+
       const audio = new Audio(`data:${result.mimeType};base64,${result.audioBase64}`);
+      const utteranceId = `speech-${Date.now()}-${requestId}`;
       audioRef.current = audio;
-      audio.onplay = () => setVoiceStatus("playing");
+      audio.onplay = () => {
+        activeUtteranceRef.current = utteranceId;
+        setVoiceStatus("playing");
+        if (faceAnimation) {
+          void window.desktopWindow?.updateRendererState(
+            createSpeechFaceCommand(faceAnimation)
+          );
+        }
+      };
       audio.onended = () => {
         if (requestId !== speechRequestRef.current) return;
+        stopLipSync();
         setSpeaking(false);
         setVoiceStatus("idle");
       };
       audio.onerror = () => {
         if (requestId !== speechRequestRef.current) return;
+        stopLipSync();
         speakWithSystemVoice(text, selectedVoice);
       };
       await audio.play();
     } catch {
+      if (renderMode === "3d") {
+        void window.desktopWindow.updateRendererState(
+          createRendererPerformanceCommand("interactive")
+        );
+      }
       if (requestId === speechRequestRef.current) speakWithSystemVoice(text, selectedVoice);
     }
   };
@@ -1369,6 +1544,7 @@ export default function App() {
     window.speechSynthesis?.cancel();
     audioRef.current?.pause();
     audioRef.current = null;
+    stopLipSync();
     setSpeaking(false);
     setVoiceStatus("idle");
     setReaction("inviting");
@@ -1396,6 +1572,7 @@ export default function App() {
     window.speechSynthesis?.cancel();
     audioRef.current?.pause();
     audioRef.current = null;
+    stopLipSync();
     setSpeaking(false);
     setVoiceStatus("idle");
   };
@@ -1471,45 +1648,17 @@ export default function App() {
     });
   };
 
-  const handleAvatarPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
-    const inputElement = event.currentTarget;
-    const file = inputElement.files?.[0];
-    if (!file) return;
-
-    setAvatarError("");
-    setAvatarStatus("preparing");
-    try {
-      setAvatarStatus("generating");
-      replaceAvatar(await createAvatarFromPhoto(file, outfit.id));
-    } catch (error) {
-      setAvatarStatus("error");
-      setAvatarError(error instanceof Error ? error.message : "无法生成数字人。");
-    } finally {
-      inputElement.value = "";
+  const selectAvatar = (nextAvatar: AvatarAsset) => {
+    replaceAvatar(nextAvatar);
+    const matchingPersona = allPersonas.find(
+      (candidate) => candidate.id === nextAvatar.id
+    );
+    if (matchingPersona) {
+      setPersona(matchingPersona);
     }
-  };
-
-  const handleAvatarFacePreset = async (face: SyntheticFace) => {
+    setReaction("inviting");
     setAvatarError("");
-    setAvatarStatus("generating");
-    try {
-      const response = await fetch(face.imageUrl);
-      if (!response.ok) throw new Error("无法读取本地人脸参考图。");
-      await response.blob();
-      replaceAvatar({
-        id: face.id,
-        label: face.name,
-        modelUrl: getBuiltInAvatarUrl(outfit.id),
-        photoUrl: face.imageUrl,
-        identityImageUrl: face.imageUrl,
-        source: "synthetic"
-      });
-    } catch (error) {
-      setAvatarStatus("error");
-      setAvatarError(
-        error instanceof Error ? error.message : "本地 3D 身份生成失败。"
-      );
-    }
+    setAvatarStatus("ready");
   };
 
   const handleAvatarModel = (event: ChangeEvent<HTMLInputElement>) => {
@@ -1521,6 +1670,7 @@ export default function App() {
     setAvatarStatus("generating");
     try {
       replaceAvatar(createImportedAvatar(file));
+      setAvatarStatus("ready");
     } catch (error) {
       setAvatarStatus("error");
       setAvatarError(error instanceof Error ? error.message : "无法读取模型。");
@@ -1530,19 +1680,40 @@ export default function App() {
   };
 
   const resetAvatar = () => {
-    replaceAvatar(studioAvatar);
-    setAvatarError("");
+    selectAvatar(renderMode === "2d" ? portraitStudioAvatar : studioAvatar);
+  };
+
+  const changeRenderMode = (mode: RenderMode) => {
+    if (mode === renderMode) return;
+    stopLipSync();
+    setRenderMode(mode);
     setAvatarStatus("generating");
+    setAvatarError("");
+    if (mode === "2d") {
+      selectAvatar(portraitStudioAvatar);
+    } else {
+      selectAvatar(studioAvatar);
+    }
+    if (mode === "2d" && panelTab === "wardrobe") {
+      setPanelTab("avatar");
+    }
   };
 
   const handleAvatarRenderState = (state: AvatarRenderState) => {
     if (state === "ready") {
       setAvatarStatus("ready");
+      setAvatarError("");
       return;
     }
     if (state === "error") {
       setAvatarStatus("error");
-      setAvatarError("模型无法加载，请换用标准 VRM/GLB 文件。");
+      setAvatarError(
+        renderMode === "2d"
+          ? "角色肖像无法加载，请重新选择角色。"
+          : activeAvatarAsset.source === "imported"
+          ? "模型无法加载，请换用标准 VRM/GLB 文件。"
+          : "实时渲染器暂时离线，场景控制仍可使用并正在自动重连。"
+      );
       return;
     }
     setAvatarStatus("generating");
@@ -1593,7 +1764,8 @@ export default function App() {
                 </button>
               ))}
             </div>
-            <div>
+            {recommendations.length > 0 && (
+              <div>
               <span>AI FOR YOU</span>
               {recommendations.map((recommendation) => (
                 <button
@@ -1614,7 +1786,8 @@ export default function App() {
                   </span>
                 </button>
               ))}
-            </div>
+              </div>
+            )}
           </div>
         )}
         <div className="session-stats">
@@ -1678,14 +1851,12 @@ export default function App() {
             speaking={speaking}
             currentLine={latestPersonaLine}
             subtitleMode={subtitleMode}
+            renderMode={renderMode}
             viewMode={viewMode}
+            onRenderMode={changeRenderMode}
             onViewMode={setViewMode}
             onAvatarRenderState={handleAvatarRenderState}
             onReplay={() => speak(latestPersonaLine.english)}
-            onSceneOptions={() => {
-              setUtilityView(null);
-              setPanelTab("wardrobe");
-            }}
           />
           <ConversationDock
             persona={persona}
@@ -1731,12 +1902,27 @@ export default function App() {
           speed={speed}
           autoSpeak={autoSpeak}
           voiceStatus={voiceStatus}
+          renderMode={renderMode}
+          lipSyncMode={lipSyncMode}
+          lipSyncHealth={lipSyncHealth}
           currentLine={latestPersonaLine}
           subtitleMode={subtitleMode}
           showStructure={showStructure}
           showPhonetics={showPhonetics}
           onPersona={(nextPersona) => {
             setPersona(nextPersona);
+            const matchingAvatar = (
+              renderMode === "2d"
+                ? portraitAvatarAssets
+                : runtimeAvatarAssets
+            ).find(
+              (candidate) => candidate.id === nextPersona.id
+            );
+            if (matchingAvatar) {
+              replaceAvatar(matchingAvatar);
+              setAvatarError("");
+              setAvatarStatus("ready");
+            }
             setReaction("inviting");
           }}
           onOutfit={(nextOutfit) => {
@@ -1749,12 +1935,12 @@ export default function App() {
           }}
           onSpeed={setSpeed}
           onAutoSpeak={() => setAutoSpeak((value) => !value)}
+          onLipSyncMode={setLipSyncMode}
           onPreview={() => speak("Welcome. Take a breath, and speak as naturally as you can.")}
           onSubtitleMode={setSubtitleMode}
           onShowStructure={() => setShowStructure((value) => !value)}
           onShowPhonetics={() => setShowPhonetics((value) => !value)}
-          onAvatarFacePreset={handleAvatarFacePreset}
-          onAvatarPhoto={handleAvatarPhoto}
+          onAvatar={selectAvatar}
           onAvatarModel={handleAvatarModel}
           onAvatarReset={resetAvatar}
         />

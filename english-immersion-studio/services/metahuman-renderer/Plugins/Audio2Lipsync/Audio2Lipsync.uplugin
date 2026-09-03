@@ -1,0 +1,25 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "0.1.0",
+  "FriendlyName": "Audio2Lipsync",
+  "Description": "MIT-licensed audio-driven ARKit curves and LiveLink playback for MetaHumans.",
+  "Category": "Animation",
+  "CreatedBy": "fotonLabs; integrated by English Immersion Studio",
+  "CreatedByURL": "https://github.com/aaryansachdeva/unreal-audio2lipsync",
+  "CanContainContent": false,
+  "Installed": false,
+  "Modules": [
+    {
+      "Name": "Audio2Lipsync",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "LiveLink",
+      "Enabled": true
+    }
+  ]
+}

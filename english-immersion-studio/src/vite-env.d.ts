@@ -9,29 +9,32 @@ interface Window {
       text: string;
       voiceId: string;
       speed: number;
+      includeFaceAnimation?: boolean;
     }) => Promise<{
       audioBase64: string;
       mimeType: string;
       provider: string;
+      timeline: Array<{
+        text: string;
+        startMs: number;
+        endMs: number;
+      }>;
+      faceAnimation:
+        | import("./metahuman-protocol").FaceAnimationPayload
+        | null;
       cached: boolean;
+    }>;
+    getLipSyncHealth: () => Promise<{
+      ready: boolean;
+      device?: string;
+      modelParams?: number;
     }>;
     getRendererConfig: () => Promise<{
       signalUrl: string;
     }>;
-    updateRendererState: (state: {
-      version: 1;
-      type: "avatar.state";
-      payload: {
-        actorName: string;
-        avatarId: string;
-        hairId: string;
-        outfitId: string;
-        performance: string;
-        sceneId: string;
-        speaking: boolean;
-        viewMode: "first" | "third";
-      };
-    }) => Promise<boolean>;
+    updateRendererState: (
+      state: import("./metahuman-protocol").MetaHumanCommand
+    ) => Promise<boolean>;
     platform: string;
   };
   SpeechRecognition?: typeof SpeechRecognition;

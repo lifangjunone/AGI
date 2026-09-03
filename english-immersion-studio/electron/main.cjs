@@ -4,6 +4,12 @@ const { createRendererBridge } = require("./renderer-bridge.cjs");
 const { registerTtsHandlers } = require("./tts.cjs");
 
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
+if (process.env.EIS_REMOTE_DEBUGGING_PORT) {
+  app.commandLine.appendSwitch(
+    "remote-debugging-port",
+    process.env.EIS_REMOTE_DEBUGGING_PORT
+  );
+}
 let rendererBridge;
 
 function createWindow() {
