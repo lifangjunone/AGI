@@ -4,8 +4,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const catalogPath = path.join(root, "src", "portrait-catalog.json");
-const outputRoot = path.join(root, "public", "portraits");
+const catalogPath = path.join(
+  root,
+  "src",
+  process.env.PORTRAIT_CATALOG_FILE || "portrait-catalog.json"
+);
+const outputRoot = path.join(
+  root,
+  "public",
+  process.env.PORTRAIT_OUTPUT_DIR || "portraits"
+);
 const endpoint = "https://ark.cn-beijing.volces.com/api/v3/images/generations";
 const envPath = path.join(root, ".env.local");
 const sharedDirection = [

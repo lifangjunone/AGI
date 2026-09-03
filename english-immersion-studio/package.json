@@ -9,6 +9,7 @@
     "bootstrap": "node scripts/bootstrap.mjs",
     "environment:setup": "node scripts/setup-environment-assets.mjs",
     "portraits:generate": "node scripts/generate-portrait-catalog.mjs && npm run portraits:cutout",
+    "portraits:generate:asia": "PORTRAIT_CATALOG_FILE=portrait-catalog-asia.json PORTRAIT_OUTPUT_DIR=portraits-asia node scripts/generate-portrait-catalog.mjs && PORTRAIT_INPUT_DIR=portraits-asia PORTRAIT_CUTOUT_DIR=portrait-cutouts-asia node scripts/remove-portrait-backgrounds.mjs",
     "portraits:cutout": "node scripts/remove-portrait-backgrounds.mjs",
     "lipsync:setup": "node scripts/setup-lipsync.mjs",
     "metahuman": "node scripts/start-metahuman.mjs",

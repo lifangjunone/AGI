@@ -1982,6 +1982,33 @@ button:disabled {
   background: linear-gradient(135deg, rgba(215, 180, 118, 0.1), rgba(119, 169, 154, 0.045));
 }
 
+.portrait-set-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 14px 0 18px;
+  padding: 4px;
+  border: 1px solid rgba(215, 180, 118, 0.18);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.portrait-set-switch button {
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.portrait-set-switch button.active {
+  background: rgba(215, 180, 118, 0.16);
+  color: var(--gold);
+}
+
 .avatar-preview {
   width: 58px;
   height: 58px;

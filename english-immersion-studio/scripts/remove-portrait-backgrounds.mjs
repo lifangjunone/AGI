@@ -4,8 +4,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const input = path.join(root, "public", "portraits");
-const output = path.join(root, "public", "portrait-cutouts");
+const input = path.join(
+  root,
+  "public",
+  process.env.PORTRAIT_INPUT_DIR || "portraits"
+);
+const output = path.join(
+  root,
+  "public",
+  process.env.PORTRAIT_CUTOUT_DIR || "portrait-cutouts"
+);
 
 await mkdir(output, { recursive: true });
 

@@ -102,8 +102,14 @@ import {
   portraitAvatarAssets,
   portraitPersonas
 } from "./portrait-catalog";
+import {
+  asiaPortraitAvatarAssets,
+  asiaPortraitPersonas,
+  getAsiaPortraitIdentity
+} from "./portrait-catalog-asia";
 
 type PanelTab = "avatar" | "persona" | "wardrobe" | "voice" | "language";
+type PortraitSet = "original" | "asia";
 type ChatMessage = {
   id: number;
   speaker: "learner" | "persona";
@@ -589,6 +595,8 @@ function AvatarPanel({
   status,
   error,
   renderMode,
+  portraitSet,
+  onPortraitSet,
   onAvatar,
   onModel,
   onReset
@@ -597,12 +605,16 @@ function AvatarPanel({
   status: AvatarGenerationStatus;
   error: string;
   renderMode: RenderMode;
+  portraitSet: PortraitSet;
+  onPortraitSet: (set: PortraitSet) => void;
   onAvatar: (asset: AvatarAsset) => void;
   onModel: (event: ChangeEvent<HTMLInputElement>) => void;
   onReset: () => void;
 }) {
+  const portraitAssets =
+    portraitSet === "asia" ? asiaPortraitAvatarAssets : portraitAvatarAssets;
   const availableAvatars =
-    renderMode === "2d" ? portraitAvatarAssets : runtimeAvatarAssets;
+    renderMode === "2d" ? portraitAssets : runtimeAvatarAssets;
   const sourceLabel = renderMode === "2d" ? "2D PORTRAIT" : {
     bundled: "REALISTIC 3D",
     synthetic: "PORTRAIT REFERENCE",
@@ -648,6 +660,26 @@ function AvatarPanel({
           </span>
         </div>
       </div>
+      {renderMode === "2d" && (
+        <div className="portrait-set-switch" role="tablist" aria-label="Portrait collection">
+          <button
+            type="button"
+            className={portraitSet === "original" ? "active" : ""}
+            aria-selected={portraitSet === "original"}
+            onClick={() => onPortraitSet("original")}
+          >
+            Original set
+          </button>
+          <button
+            type="button"
+            className={portraitSet === "asia" ? "active" : ""}
+            aria-selected={portraitSet === "asia"}
+            onClick={() => onPortraitSet("asia")}
+          >
+            Asian beauty set
+          </button>
+        </div>
+      )}
 
       <div className="avatar-capabilities" aria-label="Avatar capabilities">
         {renderMode === "2d" ? (
@@ -679,13 +711,16 @@ function AvatarPanel({
           <span>{renderMode === "2d" ? "AVAILABLE IDENTITIES" : "LIVE 3D IDENTITIES"}</span>
           <strong>
             {renderMode === "2d"
-              ? `${portraitAvatarAssets.length} PORTRAITS`
+              ? `${portraitAssets.length} PORTRAITS`
               : `${runtimeIdentities.length} / ${identityManifest.identities.length} RUNTIME READY`}
           </strong>
         </div>
         {availableAvatars.map((avatar) => {
           const identity = getRuntimeIdentity(avatar.id);
-          const portraitIdentity = getPortraitIdentity(avatar.id);
+          const portraitIdentity =
+            portraitSet === "asia"
+              ? getAsiaPortraitIdentity(avatar.id)
+              : getPortraitIdentity(avatar.id);
           return (
             <button
               type="button"
@@ -747,15 +782,19 @@ function AvatarPanel({
 function PersonaPanel({
   selected,
   renderMode,
+  portraitSet,
   onSelect
 }: {
   selected: Persona;
   renderMode: RenderMode;
+  portraitSet: PortraitSet;
   onSelect: (persona: Persona) => void;
 }) {
   const availablePersonas =
     renderMode === "2d"
-      ? portraitPersonas
+      ? portraitSet === "asia"
+        ? asiaPortraitPersonas
+        : portraitPersonas
       : personas.filter((persona) => verifiedPersonaIds.has(persona.id));
   return (
     <div className="panel-content persona-list">
@@ -1170,6 +1209,7 @@ function ControlPanel({
   autoSpeak,
   voiceStatus,
   renderMode,
+  portraitSet,
   lipSyncMode,
   lipSyncHealth,
   currentLine,
@@ -1188,7 +1228,8 @@ function ControlPanel({
   onShowPhonetics,
   onAvatar,
   onAvatarModel,
-  onAvatarReset
+  onAvatarReset,
+  onPortraitSet
 }: {
   tab: PanelTab;
   onTab: (tab: PanelTab) => void;
@@ -1202,6 +1243,7 @@ function ControlPanel({
   autoSpeak: boolean;
   voiceStatus: VoiceStatus;
   renderMode: RenderMode;
+  portraitSet: PortraitSet;
   lipSyncMode: LipSyncMode;
   lipSyncHealth: LipSyncHealth;
   currentLine: LocalizedLine;
@@ -1221,6 +1263,7 @@ function ControlPanel({
   onAvatar: (asset: AvatarAsset) => void;
   onAvatarModel: (event: ChangeEvent<HTMLInputElement>) => void;
   onAvatarReset: () => void;
+  onPortraitSet: (set: PortraitSet) => void;
 }) {
   return (
     <aside className="control-panel">
@@ -1249,6 +1292,8 @@ function ControlPanel({
           status={avatarStatus}
           error={avatarError}
           renderMode={renderMode}
+          portraitSet={portraitSet}
+          onPortraitSet={onPortraitSet}
           onAvatar={onAvatar}
           onModel={onAvatarModel}
           onReset={onAvatarReset}
@@ -1258,6 +1303,7 @@ function ControlPanel({
         <PersonaPanel
           selected={persona}
           renderMode={renderMode}
+          portraitSet={portraitSet}
           onSelect={onPersona}
         />
       )}
@@ -1307,6 +1353,7 @@ export default function App() {
   const [showStructure, setShowStructure] = useState(true);
   const [showPhonetics, setShowPhonetics] = useState(true);
   const [renderMode, setRenderMode] = useState<RenderMode>("2d");
+  const [portraitSet, setPortraitSet] = useState<PortraitSet>("original");
   const [viewMode, setViewMode] = useState<ViewMode>("first");
   const [avatarAsset, setAvatarAsset] =
     useState<AvatarAsset>(portraitStudioAvatar);
@@ -1903,6 +1950,7 @@ export default function App() {
           autoSpeak={autoSpeak}
           voiceStatus={voiceStatus}
           renderMode={renderMode}
+          portraitSet={portraitSet}
           lipSyncMode={lipSyncMode}
           lipSyncHealth={lipSyncHealth}
           currentLine={latestPersonaLine}
@@ -1913,7 +1961,9 @@ export default function App() {
             setPersona(nextPersona);
             const matchingAvatar = (
               renderMode === "2d"
-                ? portraitAvatarAssets
+                ? portraitSet === "asia"
+                  ? asiaPortraitAvatarAssets
+                  : portraitAvatarAssets
                 : runtimeAvatarAssets
             ).find(
               (candidate) => candidate.id === nextPersona.id
@@ -1943,6 +1993,22 @@ export default function App() {
           onAvatar={selectAvatar}
           onAvatarModel={handleAvatarModel}
           onAvatarReset={resetAvatar}
+          onPortraitSet={(nextSet) => {
+            setPortraitSet(nextSet);
+            if (renderMode !== "2d") return;
+            const nextAssets =
+              nextSet === "asia"
+                ? asiaPortraitAvatarAssets
+                : portraitAvatarAssets;
+            const nextPersonas =
+              nextSet === "asia" ? asiaPortraitPersonas : portraitPersonas;
+            const nextAsset = nextAssets[0];
+            replaceAvatar(nextAsset);
+            setPersona(nextPersonas[0]);
+            setAvatarError("");
+            setAvatarStatus("ready");
+            setReaction("inviting");
+          }}
         />
       </main>
     </div>

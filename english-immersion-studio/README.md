@@ -13,6 +13,7 @@ English Immersion Studio 是一个 Electron + Unreal Engine 5.7 的英语沉浸�
 - 舞台内可随时切换 2D 肖像和 3D MetaHuman 模式。
 - 26 个 21 岁以上虚构成年女性 2D 行业角色，包含医疗、航空、教育、
   时尚、文娱、服务和创意行业。
+- 第二套 26 个亚洲审美成年女性角色，可在 Avatar 面板中切换。
 - A1-C2 难度、五种字幕模式、句法、IPA、词性和上下文词义。
 - Microsoft Neural TTS 的四种成年女性声线。
 - Unreal Engine 5.7.4、MetaHuman、Pixel Streaming 2。
@@ -77,6 +78,15 @@ npm run portraits:generate
 生成脚本使用 `.env.local` 中的 `ARK_API_KEY` 和 `ARK_IMAGE_MODEL`。
 `.env.local` 已被 Git 忽略，禁止把真实密钥写入源码或提交到版本库。
 图片生成完成后会运行本地人物分割，避免把摄影棚背景带入课程场景。
+
+生成第二套亚洲审美角色：
+
+```bash
+npm run portraits:generate:asia
+```
+
+第二套图片分别保存在 `public/portraits-asia/` 和
+`public/portrait-cutouts-asia/`，运行时无需再次调用图片 API。
 
 需要测试 3D MetaHuman 时：
 
