@@ -1296,44 +1296,51 @@ button:disabled {
 }
 
 .pov-subtitle {
-  width: min(78%, 720px);
+  width: min(42%, 460px);
   position: absolute;
-  bottom: 22px;
-  left: 50%;
+  bottom: 20px;
+  left: 17px;
   z-index: 8;
-  padding: 13px 22px 14px;
-  border: 1px solid rgba(215, 180, 118, 0.38);
-  border-top: 2px solid rgba(215, 180, 118, 0.9);
+  max-height: 92px;
+  overflow: hidden;
+  padding: 9px 13px 10px;
+  border: 1px solid rgba(215, 180, 118, 0.34);
+  border-left: 2px solid rgba(215, 180, 118, 0.88);
   color: #f6f3eb;
-  background:
-    linear-gradient(90deg, rgba(10, 11, 9, 0.94), rgba(18, 19, 16, 0.9)),
-    linear-gradient(90deg, rgba(215, 180, 118, 0.12), transparent);
+  background: linear-gradient(90deg, rgba(10, 11, 9, 0.82), rgba(10, 11, 9, 0.66) 78%, transparent);
   text-align: left;
   text-shadow: 0 2px 12px #000;
   backdrop-filter: blur(8px);
-  transform: translateX(-50%);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
   transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .pov-subtitle > span {
   color: var(--gold);
-  font-size: 8px;
+  font-size: 7px;
   font-weight: 800;
   letter-spacing: 0.1em;
 }
 
 .pov-subtitle p {
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
-  font-size: clamp(15px, 1.35vw, 21px);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: clamp(12px, 0.88vw, 15px);
   line-height: 1.2;
 }
 
 .pov-subtitle .subtitle-zh {
   color: rgba(255, 255, 255, 0.73);
   font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-size: clamp(11px, 0.82vw, 14px);
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  font-size: clamp(9px, 0.62vw, 11px);
 }
 
 .character-stage.is-speaking .pov-subtitle {
@@ -2004,6 +2011,34 @@ button:disabled {
   padding: 4px;
   border: 1px solid rgba(215, 180, 118, 0.18);
   background: rgba(255, 255, 255, 0.025);
+}
+
+.portrait-frame-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 14px 0 4px;
+}
+
+.portrait-frame-switch button {
+  min-height: 32px;
+  border: 1px solid rgba(215, 180, 118, 0.2);
+  background: rgba(255, 255, 255, 0.025);
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.portrait-frame-switch button.active {
+  border-color: rgba(215, 180, 118, 0.62);
+  color: var(--gold);
+  background: rgba(215, 180, 118, 0.12);
+}
+
+.portrait-frame-switch button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
 }
 
 .portrait-set-switch button {
@@ -3207,8 +3242,8 @@ button:disabled {
   }
 
   .pov-subtitle {
-    width: min(80%, 600px);
-    bottom: 18px;
+    width: min(calc(100% - 34px), 460px);
+    bottom: 14px;
   }
 
   .live-scores {

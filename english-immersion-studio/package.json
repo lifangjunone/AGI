@@ -10,6 +10,7 @@
     "environment:setup": "node scripts/setup-environment-assets.mjs",
     "portraits:generate": "node scripts/generate-portrait-catalog.mjs && npm run portraits:cutout",
     "portraits:generate:asia": "PORTRAIT_CATALOG_FILE=portrait-catalog-asia.json PORTRAIT_OUTPUT_DIR=portraits-asia node scripts/generate-portrait-catalog.mjs && PORTRAIT_INPUT_DIR=portraits-asia PORTRAIT_CUTOUT_DIR=portrait-cutouts-asia node scripts/remove-portrait-backgrounds.mjs",
+    "portraits:generate:all": "npm run portraits:generate && npm run portraits:generate:asia && PORTRAIT_CATALOG_FILE=portrait-catalog-asia3.json PORTRAIT_OUTPUT_DIR=portraits-asia3 node scripts/generate-portrait-catalog.mjs && rm -f public/portrait-cutouts-asia3/*.png && PORTRAIT_INPUT_DIR=portraits-asia3 PORTRAIT_CUTOUT_DIR=portrait-cutouts-asia3 node scripts/remove-portrait-backgrounds.mjs",
     "portraits:fix:asia3-seoyeon": "PORTRAIT_CATALOG_FILE=portrait-catalog-asia3.json PORTRAIT_OUTPUT_DIR=portraits-asia3 PORTRAIT_IDS=asia-seoul-nurse node scripts/generate-portrait-catalog.mjs && rm -f public/portrait-cutouts-asia3/seoul-nurse.png && PORTRAIT_INPUT_DIR=portraits-asia3 PORTRAIT_CUTOUT_DIR=portrait-cutouts-asia3 node scripts/remove-portrait-backgrounds.mjs",
     "portraits:cutout": "node scripts/remove-portrait-backgrounds.mjs",
     "lipsync:setup": "node scripts/setup-lipsync.mjs",

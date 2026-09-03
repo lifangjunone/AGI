@@ -6,6 +6,7 @@ export type AvatarAsset = {
   modelUrl: string;
   photoUrl?: string;
   stageImageUrl?: string;
+  fullPhotoUrl?: string;
   identityImageUrl?: string;
   source: AvatarSource;
 };

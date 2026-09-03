@@ -18,7 +18,8 @@ const endpoint = "https://ark.cn-beijing.volces.com/api/v3/images/generations";
 const envPath = path.join(root, ".env.local");
 const sharedDirection = [
   "photorealistic editorial portrait",
-  "waist-up composition",
+  "full-body head-to-toe composition with complete silhouette and both feet visible",
+  "dynamic natural standing pose that clearly shows the full outfit, proportions, posture, hands and expression",
   "confident direct eye contact",
   "realistic skin texture and natural facial detail",
   "tasteful sensual high-fashion styling",

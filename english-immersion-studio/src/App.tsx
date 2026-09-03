@@ -115,6 +115,7 @@ import {
 
 type PanelTab = "avatar" | "persona" | "wardrobe" | "voice" | "language";
 type PortraitSet = "original" | "asia" | "asia3";
+type PortraitFrame = "half" | "full";
 type ChatMessage = {
   id: number;
   speaker: "learner" | "persona";
@@ -600,6 +601,8 @@ function AvatarPanel({
   status,
   error,
   renderMode,
+  portraitFrame,
+  onPortraitFrame,
   portraitSet,
   onPortraitSet,
   onAvatar,
@@ -610,6 +613,8 @@ function AvatarPanel({
   status: AvatarGenerationStatus;
   error: string;
   renderMode: RenderMode;
+  portraitFrame: PortraitFrame;
+  onPortraitFrame: (frame: PortraitFrame) => void;
   portraitSet: PortraitSet;
   onPortraitSet: (set: PortraitSet) => void;
   onAvatar: (asset: AvatarAsset) => void;
@@ -669,6 +674,28 @@ function AvatarPanel({
           </span>
         </div>
       </div>
+      {renderMode === "2d" && (
+        <div className="portrait-frame-switch" role="group" aria-label="Portrait framing">
+          <button
+            type="button"
+            className={portraitFrame === "half" ? "active" : ""}
+            aria-pressed={portraitFrame === "half"}
+            onClick={() => onPortraitFrame("half")}
+          >
+            Half body
+          </button>
+          <button
+            type="button"
+            className={`${portraitFrame === "full" ? "active" : ""} ${!asset.fullPhotoUrl ? "unavailable" : ""}`}
+            aria-pressed={portraitFrame === "full"}
+            disabled={!asset.fullPhotoUrl}
+            onClick={() => onPortraitFrame("full")}
+            title={asset.fullPhotoUrl ? "Show full-body portrait" : "Full-body asset not generated yet"}
+          >
+            Full body {!asset.fullPhotoUrl && "· pending"}
+          </button>
+        </div>
+      )}
       {renderMode === "2d" && (
         <div className="portrait-set-switch" role="tablist" aria-label="Portrait collection">
           <button
@@ -1230,6 +1257,7 @@ function ControlPanel({
   autoSpeak,
   voiceStatus,
   renderMode,
+  portraitFrame,
   portraitSet,
   lipSyncMode,
   lipSyncHealth,
@@ -1250,7 +1278,8 @@ function ControlPanel({
   onAvatar,
   onAvatarModel,
   onAvatarReset,
-  onPortraitSet
+  onPortraitSet,
+  onPortraitFrame
 }: {
   tab: PanelTab;
   onTab: (tab: PanelTab) => void;
@@ -1264,6 +1293,7 @@ function ControlPanel({
   autoSpeak: boolean;
   voiceStatus: VoiceStatus;
   renderMode: RenderMode;
+  portraitFrame: PortraitFrame;
   portraitSet: PortraitSet;
   lipSyncMode: LipSyncMode;
   lipSyncHealth: LipSyncHealth;
@@ -1285,6 +1315,7 @@ function ControlPanel({
   onAvatarModel: (event: ChangeEvent<HTMLInputElement>) => void;
   onAvatarReset: () => void;
   onPortraitSet: (set: PortraitSet) => void;
+  onPortraitFrame: (frame: PortraitFrame) => void;
 }) {
   return (
     <aside className="control-panel">
@@ -1313,6 +1344,8 @@ function ControlPanel({
           status={avatarStatus}
           error={avatarError}
           renderMode={renderMode}
+          portraitFrame={portraitFrame}
+          onPortraitFrame={onPortraitFrame}
           portraitSet={portraitSet}
           onPortraitSet={onPortraitSet}
           onAvatar={onAvatar}
@@ -1375,6 +1408,7 @@ export default function App() {
   const [showPhonetics, setShowPhonetics] = useState(true);
   const [renderMode, setRenderMode] = useState<RenderMode>("2d");
   const [portraitSet, setPortraitSet] = useState<PortraitSet>("original");
+  const [portraitFrame, setPortraitFrame] = useState<PortraitFrame>("half");
   const [viewMode, setViewMode] = useState<ViewMode>("first");
   const [avatarAsset, setAvatarAsset] =
     useState<AvatarAsset>(portraitStudioAvatar);
@@ -1424,13 +1458,18 @@ export default function App() {
     [difficulty, learningProfile]
   );
   const activeAvatarAsset = useMemo(
-    () =>
-      avatarAsset.source === "bundled" ||
+    () => {
+      const framedAsset =
+        portraitFrame === "full" && avatarAsset.fullPhotoUrl
+          ? { ...avatarAsset, photoUrl: avatarAsset.fullPhotoUrl, stageImageUrl: avatarAsset.fullPhotoUrl }
+          : avatarAsset;
+      return framedAsset.source === "bundled" ||
       avatarAsset.source === "synthetic" ||
       avatarAsset.source === "generated"
-        ? { ...avatarAsset, modelUrl: getBuiltInAvatarUrl(outfit.id) }
-        : avatarAsset,
-    [avatarAsset, outfit.id]
+        ? { ...framedAsset, modelUrl: getBuiltInAvatarUrl(outfit.id) }
+        : framedAsset;
+    },
+    [avatarAsset, outfit.id, portraitFrame]
   );
 
   const formattedTime = useMemo(() => {
@@ -1971,6 +2010,8 @@ export default function App() {
           autoSpeak={autoSpeak}
           voiceStatus={voiceStatus}
           renderMode={renderMode}
+          portraitFrame={portraitFrame}
+          onPortraitFrame={setPortraitFrame}
           portraitSet={portraitSet}
           lipSyncMode={lipSyncMode}
           lipSyncHealth={lipSyncHealth}
