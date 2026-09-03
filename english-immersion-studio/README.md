@@ -14,6 +14,7 @@ English Immersion Studio 是一个 Electron + Unreal Engine 5.7 的英语沉浸�
 - 26 个 21 岁以上虚构成年女性 2D 行业角色，包含医疗、航空、教育、
   时尚、文娱、服务和创意行业。
 - 第二套 26 个亚洲审美成年女性角色，可在 Avatar 面板中切换。
+- 第三套为本轮重新生成的亚洲审美角色，独立于第二套保存。
 - A1-C2 难度、五种字幕模式、句法、IPA、词性和上下文词义。
 - Microsoft Neural TTS 的四种成年女性声线。
 - Unreal Engine 5.7.4、MetaHuman、Pixel Streaming 2。
@@ -87,6 +88,8 @@ npm run portraits:generate:asia
 
 第二套图片分别保存在 `public/portraits-asia/` 和
 `public/portrait-cutouts-asia/`，运行时无需再次调用图片 API。
+第三套图片分别保存在 `public/portraits-asia3/` 和
+`public/portrait-cutouts-asia3/`。
 
 需要测试 3D MetaHuman 时：
 

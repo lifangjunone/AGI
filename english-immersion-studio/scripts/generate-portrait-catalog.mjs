@@ -37,6 +37,15 @@ const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
 if (!Array.isArray(catalog) || catalog.length !== 26) {
   throw new Error(`Expected 26 portrait entries, found ${catalog.length}.`);
 }
+const requestedIds = process.env.PORTRAIT_IDS
+  ? new Set(process.env.PORTRAIT_IDS.split(",").map((id) => id.trim()))
+  : null;
+const generationCatalog = requestedIds
+  ? catalog.filter((entry) => requestedIds.has(entry.id))
+  : catalog;
+if (requestedIds && generationCatalog.length !== requestedIds.size) {
+  throw new Error("PORTRAIT_IDS contains an unknown catalog entry.");
+}
 
 await mkdir(outputRoot, { recursive: true });
 
@@ -119,11 +128,13 @@ async function generate(entry) {
 
 const concurrency = 2;
 const hashes = [];
-for (let index = 0; index < catalog.length; index += concurrency) {
+for (let index = 0; index < generationCatalog.length; index += concurrency) {
   hashes.push(
-    ...(await Promise.all(catalog.slice(index, index + concurrency).map(generate)))
+    ...(await Promise.all(
+      generationCatalog.slice(index, index + concurrency).map(generate)
+    ))
   );
 }
-if (new Set(hashes).size !== catalog.length) {
+if (new Set(hashes).size !== generationCatalog.length) {
   throw new Error("Portrait generation returned duplicate images.");
 }

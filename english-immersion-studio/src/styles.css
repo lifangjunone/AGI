@@ -1998,7 +1998,7 @@ button:disabled {
 
 .portrait-set-switch {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   margin: 14px 0 18px;
   padding: 4px;

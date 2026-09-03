@@ -107,9 +107,14 @@ import {
   asiaPortraitPersonas,
   getAsiaPortraitIdentity
 } from "./portrait-catalog-asia";
+import {
+  asia3PortraitAvatarAssets,
+  asia3PortraitPersonas,
+  getAsia3PortraitIdentity
+} from "./portrait-catalog-asia3";
 
 type PanelTab = "avatar" | "persona" | "wardrobe" | "voice" | "language";
-type PortraitSet = "original" | "asia";
+type PortraitSet = "original" | "asia" | "asia3";
 type ChatMessage = {
   id: number;
   speaker: "learner" | "persona";
@@ -612,7 +617,11 @@ function AvatarPanel({
   onReset: () => void;
 }) {
   const portraitAssets =
-    portraitSet === "asia" ? asiaPortraitAvatarAssets : portraitAvatarAssets;
+    portraitSet === "asia"
+      ? asiaPortraitAvatarAssets
+      : portraitSet === "asia3"
+        ? asia3PortraitAvatarAssets
+        : portraitAvatarAssets;
   const availableAvatars =
     renderMode === "2d" ? portraitAssets : runtimeAvatarAssets;
   const sourceLabel = renderMode === "2d" ? "2D PORTRAIT" : {
@@ -678,6 +687,14 @@ function AvatarPanel({
           >
             Asian beauty set
           </button>
+          <button
+            type="button"
+            className={portraitSet === "asia3" ? "active" : ""}
+            aria-selected={portraitSet === "asia3"}
+            onClick={() => onPortraitSet("asia3")}
+          >
+            Asian beauty set 3
+          </button>
         </div>
       )}
 
@@ -720,7 +737,9 @@ function AvatarPanel({
           const portraitIdentity =
             portraitSet === "asia"
               ? getAsiaPortraitIdentity(avatar.id)
-              : getPortraitIdentity(avatar.id);
+              : portraitSet === "asia3"
+                ? getAsia3PortraitIdentity(avatar.id)
+                : getPortraitIdentity(avatar.id);
           return (
             <button
               type="button"
@@ -794,7 +813,9 @@ function PersonaPanel({
     renderMode === "2d"
       ? portraitSet === "asia"
         ? asiaPortraitPersonas
-        : portraitPersonas
+        : portraitSet === "asia3"
+          ? asia3PortraitPersonas
+          : portraitPersonas
       : personas.filter((persona) => verifiedPersonaIds.has(persona.id));
   return (
     <div className="panel-content persona-list">
@@ -1963,7 +1984,9 @@ export default function App() {
               renderMode === "2d"
                 ? portraitSet === "asia"
                   ? asiaPortraitAvatarAssets
-                  : portraitAvatarAssets
+                  : portraitSet === "asia3"
+                    ? asia3PortraitAvatarAssets
+                    : portraitAvatarAssets
                 : runtimeAvatarAssets
             ).find(
               (candidate) => candidate.id === nextPersona.id
@@ -1999,9 +2022,15 @@ export default function App() {
             const nextAssets =
               nextSet === "asia"
                 ? asiaPortraitAvatarAssets
-                : portraitAvatarAssets;
+                : nextSet === "asia3"
+                  ? asia3PortraitAvatarAssets
+                  : portraitAvatarAssets;
             const nextPersonas =
-              nextSet === "asia" ? asiaPortraitPersonas : portraitPersonas;
+              nextSet === "asia"
+                ? asiaPortraitPersonas
+                : nextSet === "asia3"
+                  ? asia3PortraitPersonas
+                  : portraitPersonas;
             const nextAsset = nextAssets[0];
             replaceAvatar(nextAsset);
             setPersona(nextPersonas[0]);
