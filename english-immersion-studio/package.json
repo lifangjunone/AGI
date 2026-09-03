@@ -30,6 +30,7 @@
     "voice:check": "node scripts/check-neural-voice.cjs",
     "typecheck": "tsc -b --pretty false",
     "pack": "npm run build && electron-builder --dir",
+    "pack:unsigned": "node scripts/package-app.mjs",
     "dist": "npm run build && electron-builder"
   },
   "dependencies": {

@@ -66,6 +66,23 @@ npm run 2d
 字幕、学习分析和语音均可使用；不会启动 Unreal、Pixel Streaming 或本地
 Audio2Lipsync 服务。
 
+## 打包应用启动
+
+不要双击 `node_modules/electron/dist/Electron.app`，那只是 Electron
+运行时，会显示默认欢迎页。生成真正可双击的应用：
+
+```bash
+npm run pack:unsigned
+```
+
+macOS Apple Silicon 应用位于：
+
+```text
+dist/mac-arm64/English Immersion Studio.app
+```
+
+该应用会直接加载内置 Vite 页面和角色图片，不需要先启动开发服务器。
+
 ## 2D 角色图片生成
 
 角色定义位于 `src/portrait-catalog.json`，原图保存在 `public/portraits/`，
