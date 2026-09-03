@@ -311,7 +311,7 @@ function CharacterStage({
   const direction = performances[performance];
   return (
     <section
-      className={`character-stage render-${renderMode} view-${viewMode}`}
+      className={`character-stage render-${renderMode} view-${viewMode} ${speaking ? "is-speaking" : ""}`}
       style={{ "--scene-image": `url("${scenario.image}")` } as React.CSSProperties}
       aria-label={`${scenario.title} immersive scene`}
     >

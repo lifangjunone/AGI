@@ -1296,37 +1296,51 @@ button:disabled {
 }
 
 .pov-subtitle {
-  width: min(calc(100% - 34px), 540px);
+  width: min(78%, 720px);
   position: absolute;
-  bottom: 14px;
-  left: 17px;
+  bottom: 22px;
+  left: 50%;
   z-index: 8;
-  padding: 7px 58px 8px 11px;
-  border-left: 2px solid rgba(215, 180, 118, 0.72);
+  padding: 13px 22px 14px;
+  border: 1px solid rgba(215, 180, 118, 0.38);
+  border-top: 2px solid rgba(215, 180, 118, 0.9);
   color: #f6f3eb;
-  background: linear-gradient(90deg, rgba(10, 11, 9, 0.72), rgba(10, 11, 9, 0.54) 76%, transparent);
+  background:
+    linear-gradient(90deg, rgba(10, 11, 9, 0.94), rgba(18, 19, 16, 0.9)),
+    linear-gradient(90deg, rgba(215, 180, 118, 0.12), transparent);
   text-align: left;
   text-shadow: 0 2px 12px #000;
   backdrop-filter: blur(8px);
+  transform: translateX(-50%);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .pov-subtitle > span {
   color: var(--gold);
-  font-size: 6px;
+  font-size: 8px;
   font-weight: 800;
+  letter-spacing: 0.1em;
 }
 
 .pov-subtitle p {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   font-family: "Iowan Old Style", "Baskerville", Georgia, serif;
-  font-size: 10px;
-  line-height: 1.25;
+  font-size: clamp(15px, 1.35vw, 21px);
+  line-height: 1.2;
 }
 
 .pov-subtitle .subtitle-zh {
   color: rgba(255, 255, 255, 0.73);
   font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-size: 8px;
+  font-size: clamp(11px, 0.82vw, 14px);
+}
+
+.character-stage.is-speaking .pov-subtitle {
+  border-color: rgba(215, 180, 118, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(215, 180, 118, 0.08),
+    0 16px 40px rgba(0, 0, 0, 0.42);
 }
 
 .conversation-dock {
@@ -3193,7 +3207,8 @@ button:disabled {
   }
 
   .pov-subtitle {
-    width: min(calc(100% - 34px), 500px);
+    width: min(80%, 600px);
+    bottom: 18px;
   }
 
   .live-scores {
