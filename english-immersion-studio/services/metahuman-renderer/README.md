@@ -29,9 +29,11 @@ Restart the editor after enabling plugins.
 
 ## Generate Or Update A Character
 
-`Scripts/setup_sophia.py` creates Sophia from Epic's adult female Tuya preset,
-keeps the preset's native skin tone, applies makeup, selects the
-`Hair_L_StraightBangs` Groom, and removes inherited facial hair. Run
+`Scripts/setup_sophia.py` creates an editable character from an Epic adult
+female preset. Its defaults are `SophiaAoi`, the `Aoi` preset, and the
+`Hair_L_Straight` Groom; command-line arguments can override all three. The
+script keeps the preset's native skin tone, applies makeup, and removes
+inherited facial hair. Run
 `Scripts/build_sophia.py` after setup to download 2K texture sources, create the
 full joints-and-blend-shapes rig, and assemble the optimized runtime assets.
 For an existing source identity, `Scripts/update_character_hair.py` changes
@@ -61,17 +63,18 @@ prompts:
 ```bash
 export EIS_UNREAL_ENGINE_ROOT="/Users/Shared/Epic Games/UE_5.7"
 export EIS_UNREAL_MIRROR="/Users/Shared/EnglishImmersionRenderer"
+export EIS_UNREAL_EDITOR="$EIS_UNREAL_ENGINE_ROOT/Engine/Binaries/Mac/UnrealEditor"
 
 rsync -a --delete --exclude Binaries --exclude Intermediate --exclude Saved \
   ./ "$EIS_UNREAL_MIRROR/"
 
-open -na "$EIS_UNREAL_ENGINE_ROOT/Engine/Binaries/Mac/UnrealEditor.app" \
-  --args "$EIS_UNREAL_MIRROR/EnglishImmersionRenderer.uproject" \
+"$EIS_UNREAL_EDITOR" \
+  "$EIS_UNREAL_MIRROR/EnglishImmersionRenderer.uproject" \
   "-ExecutePythonScript=$EIS_UNREAL_MIRROR/Scripts/setup_sophia.py" \
   -log
 
-open -na "$EIS_UNREAL_ENGINE_ROOT/Engine/Binaries/Mac/UnrealEditor.app" \
-  --args "$EIS_UNREAL_MIRROR/EnglishImmersionRenderer.uproject" \
+"$EIS_UNREAL_EDITOR" \
+  "$EIS_UNREAL_MIRROR/EnglishImmersionRenderer.uproject" \
   "-ExecutePythonScript=$EIS_UNREAL_MIRROR/Scripts/build_sophia.py" \
   -log
 ```
@@ -79,16 +82,18 @@ open -na "$EIS_UNREAL_ENGINE_ROOT/Engine/Binaries/Mac/UnrealEditor.app" \
 The first online build opens Epic device authorization in the browser. Complete
 that flow once; subsequent builds reuse the persistent authorization.
 
-Create the reproducible interview map after Sophia has been assembled:
+Create the reproducible interview map after SophiaTuya, Sophia, and Vivian have
+all been assembled. Direct execution blocks until the current Editor process
+exits; do not run scene setup and verification against the project concurrently.
 
 ```bash
-open -na "$EIS_UNREAL_ENGINE_ROOT/Engine/Binaries/Mac/UnrealEditor.app" \
-  --args "$EIS_UNREAL_MIRROR/EnglishImmersionRenderer.uproject" \
+"$EIS_UNREAL_EDITOR" \
+  "$EIS_UNREAL_MIRROR/EnglishImmersionRenderer.uproject" \
   "-ExecutePythonScript=$EIS_UNREAL_MIRROR/Scripts/setup_interview_scene.py" \
   -log
 
-open -na "$EIS_UNREAL_ENGINE_ROOT/Engine/Binaries/Mac/UnrealEditor.app" \
-  --args "$EIS_UNREAL_MIRROR/EnglishImmersionRenderer.uproject" \
+"$EIS_UNREAL_EDITOR" \
+  "$EIS_UNREAL_MIRROR/EnglishImmersionRenderer.uproject" \
   "-ExecutePythonScript=$EIS_UNREAL_MIRROR/Scripts/verify_interview_scene.py" \
   -log
 ```
@@ -209,12 +214,17 @@ and three optimized runtime Blueprints: SophiaTuya, Sophia/Aera, and Vivian.
 Their verified hair assets are long straight, long straight with bangs, and
 bob straight respectively. Generated assets under
 `Content/Characters/MetaHumans/` and `Content/MetaHumans/` include files larger
-than GitHub's normal 100 MB limit, so distribution requires Git LFS or
-regeneration from the scripts after installing Epic's licensed Core Data.
+than GitHub's normal 100 MB limit. Keep source-format licensed assets in
+access-controlled private storage, or regenerate them from the scripts after
+installing Epic's licensed Core Data. Git LFS does not make public source-asset
+distribution permissible.
+
+See [`../../docs/METAHUMAN_ASSET_REBUILD.md`](../../docs/METAHUMAN_ASSET_REBUILD.md)
+for the asset boundary, checksums, rebuild commands, and acceptance gates.
 
 When Unreal is unavailable, Electron shows a non-blocking reconnect state. It
 does not substitute the old Three.js humanoid as if it were the production
 MetaHuman.
 
 The complete architecture and migration contract is documented in
-[`../english-immersion-studio/TECHNOLOGY.md`](../english-immersion-studio/TECHNOLOGY.md).
+[`../../TECHNOLOGY.md`](../../TECHNOLOGY.md).

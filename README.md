@@ -74,6 +74,7 @@ SERVICE_ROLE=portal python3 platform/app.py
 - 生成的交付物、运行数据和测试证据必须与源码边界分离。
 - 新增子项目时，必须同时补充本 README 和子项目 README。
 - 功能开发完成后，必须在本 README 的“新增功能说明”中维护对应项目的真实能力说明。
+- MetaHuman 源角色和组装资产不得提交到公开仓库；备份、重建和验收流程见 [`english-immersion-studio/docs/METAHUMAN_ASSET_REBUILD.md`](english-immersion-studio/docs/METAHUMAN_ASSET_REBUILD.md)。
 - 版本级变更记录维护在 [`CHANGELOG.md`](CHANGELOG.md)，新增功能使用 `feat`，问题修复使用 `fix`，文档或工程说明使用 `docs`。
 
 ## GitHub 定时同步
@@ -94,6 +95,7 @@ macOS 使用 `launchd` 每 7200 秒检查一次仓库。任务会提交工作区
 ## 新增功能说明
 
 - `english-immersion-studio`：新增沉浸式英语桌面训练产品，覆盖固定/推荐场景、CEFR 难度、语言分析、字幕模式、VRM/GLB 角色、MediaPipe 本地头像烘焙、Microsoft 神经语音和 MetaHuman 5.7 生产级数字人接入。
+- `english-immersion-studio`：补充 [MetaHuman 资产重建说明](english-immersion-studio/docs/METAHUMAN_ASSET_REBUILD.md)，明确公共仓库边界、私有备份、角色重建和视觉验收要求。
 - `avatar-generator-service`：新增 Apple Silicon 本地头像材质生成服务，基于 Hunyuan3D-Swift/MLX Paint 生成 GLB PBR 材质，并保留骨骼、权重和面部 Morph Targets。
 - `metahuman-renderer`：新增 Unreal Engine 5.7 MetaHuman 渲染工程，用于承载 Pixel Streaming、角色状态桥接、摄像机、发型、服装和面部动画运行契约。
 - `hover-translator`：新增 macOS 全局英语翻译工具，支持悬停取词、框选句子、双击单词、Apple Vision OCR、音标词性和离线词典回退。

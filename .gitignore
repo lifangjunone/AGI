@@ -92,5 +92,9 @@ temp/
 # Reproducible third-party source assets (downloaded by setup scripts)
 english-immersion-studio/services/metahuman-renderer/ExternalAssets/
 
+# Epic-licensed MetaHuman source and assembled assets stay in private storage
+english-immersion-studio/services/metahuman-renderer/Content/Characters/MetaHumans/
+english-immersion-studio/services/metahuman-renderer/Content/MetaHumans/
+
 /.ppt_build/
 /docs/
