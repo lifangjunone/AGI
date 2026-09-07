@@ -17,6 +17,7 @@
 | [`english-foundation/`](english-foundation/README.md) | English Foundation | 面向初学者的词汇、句子、语法和错项复习桌面产品 | Tauri 2、React、TypeScript、Rust |
 | [`fde-playbook/`](fde-playbook/README.md) | FDE Playbook | FDE 岗位认知、交付方法、能力地图和制造业实战 | React、TypeScript、Vite |
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
+| [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
 
 ## 产品协作链路
 
@@ -48,6 +49,7 @@ cd ../avatar-generator-service && npm run download:weights && npm start
 cd ../english-foundation && npm install && npm run tauri dev
 cd ../fde-playbook && npm install && npm run dev
 cd ../agent-workforce-console && npm install && npm run dev
+cd ../hover-translator && npm install && npm run dev
 ```
 
 平台服务运行：
@@ -71,7 +73,19 @@ SERVICE_ROLE=portal python3 platform/app.py
 - 不提交 `node_modules/`、`dist/`、`build/`、`target/`、本地模型、`.env`、私钥和证书。
 - 生成的交付物、运行数据和测试证据必须与源码边界分离。
 - 新增子项目时，必须同时补充本 README 和子项目 README。
+- 功能开发完成后，必须在本 README 的“新增功能说明”中维护对应项目的真实能力说明。
 - 版本级变更记录维护在 [`CHANGELOG.md`](CHANGELOG.md)，新增功能使用 `feat`，问题修复使用 `fix`，文档或工程说明使用 `docs`。
+
+## GitHub 定时同步
+
+macOS 使用 `launchd` 每 7200 秒检查一次仓库。任务会提交工作区变更并推送到当前分支，不创建空提交；远端领先、疑似密钥或单文件超过 95 MB 时会安全停止或跳过风险文件。
+
+```bash
+./scripts/install-auto-sync.sh
+./scripts/auto-sync-github.sh --dry-run
+```
+
+任务标识为 `com.lifeyoume.agi-github-sync`，日志位于 `~/Library/Logs/LifeYouMe/`。自动提交只表示阶段性代码快照，不代表功能已经通过验收。
 
 ## 代码索引
 
@@ -82,6 +96,7 @@ SERVICE_ROLE=portal python3 platform/app.py
 - `english-immersion-studio`：新增沉浸式英语桌面训练产品，覆盖固定/推荐场景、CEFR 难度、语言分析、字幕模式、VRM/GLB 角色、MediaPipe 本地头像烘焙、Microsoft 神经语音和 MetaHuman 5.7 生产级数字人接入。
 - `avatar-generator-service`：新增 Apple Silicon 本地头像材质生成服务，基于 Hunyuan3D-Swift/MLX Paint 生成 GLB PBR 材质，并保留骨骼、权重和面部 Morph Targets。
 - `metahuman-renderer`：新增 Unreal Engine 5.7 MetaHuman 渲染工程，用于承载 Pixel Streaming、角色状态桥接、摄像机、发型、服装和面部动画运行契约。
+- `hover-translator`：新增 macOS 全局英语翻译工具，支持悬停取词、框选句子、双击单词、Apple Vision OCR、音标词性和离线词典回退。
 
 ## 远端仓库
 
