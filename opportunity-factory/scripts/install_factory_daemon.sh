@@ -6,8 +6,11 @@ SUPPORT_DIR="$HOME/Library/Application Support/Opportunity Factory"
 ENV_FILE="$SUPPORT_DIR/.env"
 RUNNER="$SUPPORT_DIR/run.sh"
 SERVICE_COPY="$SUPPORT_DIR/autonomous_factory.py"
+ORDER_POLLER="$SUPPORT_DIR/poll-production-orders.py"
 LABEL="com.local.opportunity-factory"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+NOTIFIER_LABEL="com.local.opportunity-factory-order-notifier"
+NOTIFIER_PLIST="$HOME/Library/LaunchAgents/$NOTIFIER_LABEL.plist"
 
 mkdir -p "$SUPPORT_DIR" "$HOME/Library/LaunchAgents"
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -25,6 +28,7 @@ EOF
 fi
 
 install -m 0755 "$PROJECT_DIR/service/autonomous_factory.py" "$SERVICE_COPY"
+install -m 0700 "$PROJECT_DIR/scripts/poll-production-orders.py" "$ORDER_POLLER"
 cat > "$RUNNER" <<EOF
 #!/bin/bash
 set -euo pipefail
@@ -60,8 +64,34 @@ cat > "$PLIST" <<EOF
 </plist>
 EOF
 
+cat > "$NOTIFIER_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$NOTIFIER_LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>$ORDER_POLLER</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>StandardOutPath</key>
+  <string>$SUPPORT_DIR/order-notifier.log</string>
+  <key>StandardErrorPath</key>
+  <string>$SUPPORT_DIR/order-notifier.error.log</string>
+</dict>
+</plist>
+EOF
+
 launchctl bootout "gui/$(id -u)/$LABEL" >/dev/null 2>&1 || true
 launchctl bootstrap "gui/$(id -u)" "$PLIST"
+launchctl bootout "gui/$(id -u)/$NOTIFIER_LABEL" >/dev/null 2>&1 || true
+launchctl bootstrap "gui/$(id -u)" "$NOTIFIER_PLIST"
 sleep 1
 curl --fail --silent http://127.0.0.1:8792/healthz
 echo

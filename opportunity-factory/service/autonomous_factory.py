@@ -56,6 +56,9 @@ REPORT_CURRENCY = os.environ.get("REPORT_CURRENCY", "cny").strip().lower()[:3]
 REPORT_PRICE_USD_CENTS = max(
     1, int(os.environ.get("REPORT_PRICE_USD_CENTS", "3900"))
 )
+WECHAT_OFFER_PRICE_CENTS = max(
+    1, int(os.environ.get("WECHAT_OFFER_PRICE_CENTS", "990"))
+)
 PUBLIC_SAMPLE_REPOSITORIES = (
     "langchain-ai/langchain",
     "crewAIInc/crewAI",
@@ -91,6 +94,35 @@ def now_iso() -> str:
 def clean(value: Any, limit: int = 4000) -> str:
     text = html.unescape(re.sub(r"<[^>]+>", " ", str(value or "")))
     return re.sub(r"\s+", " ", text).strip()[:limit]
+
+
+def wechat_qr_path() -> Path | None:
+    configured = os.environ.get("WECHAT_PAY_QR_PATH", "").strip()
+    if not configured:
+        return None
+    path = Path(configured).expanduser()
+    try:
+        if (
+            path.suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp"}
+            or not path.is_file()
+            or path.stat().st_size > 2_000_000
+        ):
+            return None
+    except OSError:
+        return None
+    return path
+
+
+def wechat_payment_ready() -> bool:
+    return wechat_qr_path() is not None
+
+
+def active_offer_price_cents() -> int:
+    return WECHAT_OFFER_PRICE_CENTS if wechat_payment_ready() else REPORT_PRICE_CENTS
+
+
+def active_offer_price_label() -> str:
+    return f"¥{active_offer_price_cents() / 100:.2f}"
 
 
 def slugify(value: str) -> str:
@@ -351,19 +383,27 @@ def is_test_attribution(source: str, medium: str = "", campaign: str = "") -> bo
 def commercial_experiment_status(metrics: dict[str, int]) -> dict[str, Any]:
     views = int(metrics.get("qualified_views") or 0)
     audits = int(metrics.get("qualified_audits") or 0)
-    intents = int(metrics.get("purchase_intents") or 0)
+    checkouts = int(metrics.get("wechat_checkout_opens") or 0)
+    submissions = int(metrics.get("wechat_payment_submissions") or 0)
+    intents = max(int(metrics.get("purchase_intents") or 0), checkouts)
     payments = int(metrics.get("payments") or 0)
     audit_rate = round(audits / views, 4) if views else 0
     intent_rate = round(intents / audits, 4) if audits else 0
     if payments:
         decision = "validated"
         reason = "已出现真实支付，继续扩大合格流量并监控退款和交付使用率"
+    elif submissions:
+        decision = "verify_payment"
+        reason = "已有买家提交微信付款信息，立即核对到账并完成首单交付"
+    elif checkouts >= 10:
+        decision = "reprice"
+        reason = "已有 10 次微信收款页打开但无付款提交，应调整价格、信任说明或交付物"
     elif intents >= 10:
         decision = "reprice"
         reason = "已有 10 个购买意向但无支付，应调整价格或专业交付物"
     elif audits >= 30 and intent_rate < 0.05:
         decision = "stop_offer"
-        reason = "30 个有效审计后购买意向率低于 5%，停止当前 ¥299 方案"
+        reason = "30 个有效审计后购买意向率低于 5%，停止当前专业报告方案"
     elif views >= 300 and audit_rate < 0.08:
         decision = "reposition"
         reason = "300 个有效访问后审计完成率低于 8%，重做定位和首屏承诺"
@@ -572,6 +612,22 @@ class Store:
                     source TEXT NOT NULL DEFAULT 'direct',
                     created_at TEXT NOT NULL,
                     UNIQUE(product_id, visit_date, visitor_hash)
+                );
+                CREATE TABLE IF NOT EXISTS wechat_orders (
+                    id INTEGER PRIMARY KEY,
+                    order_token TEXT NOT NULL UNIQUE,
+                    report_token TEXT NOT NULL REFERENCES audit_reports(token),
+                    product_id INTEGER NOT NULL REFERENCES products(id),
+                    amount_cents INTEGER NOT NULL,
+                    payment_note TEXT NOT NULL UNIQUE,
+                    buyer_name TEXT NOT NULL DEFAULT '',
+                    buyer_contact TEXT NOT NULL DEFAULT '',
+                    payer_name TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT 'opened',
+                    created_at TEXT NOT NULL,
+                    submitted_at TEXT,
+                    confirmed_at TEXT,
+                    UNIQUE(report_token, status)
                 );
                 """
             )
@@ -1191,6 +1247,158 @@ class Store:
             )
         return True
 
+    def create_wechat_order(self, report_token: str) -> sqlite3.Row | None:
+        with self.connect() as db:
+            report = db.execute(
+                """
+                SELECT token, product_id, pro_unlocked
+                FROM audit_reports WHERE token=?
+                """,
+                (report_token,),
+            ).fetchone()
+            if not report or report["pro_unlocked"]:
+                return None
+            existing = db.execute(
+                """
+                SELECT * FROM wechat_orders
+                WHERE report_token=? AND status IN ('opened','submitted')
+                ORDER BY id DESC LIMIT 1
+                """,
+                (report_token,),
+            ).fetchone()
+            if existing:
+                return existing
+            for _attempt in range(5):
+                order_token = secrets.token_urlsafe(9).replace("_", "").replace("-", "").lower()
+                payment_note = f"OF{order_token[:8].upper()}"
+                try:
+                    db.execute(
+                        """
+                        INSERT INTO wechat_orders(
+                            order_token, report_token, product_id, amount_cents,
+                            payment_note, created_at
+                        ) VALUES (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            order_token,
+                            report_token,
+                            report["product_id"],
+                            WECHAT_OFFER_PRICE_CENTS,
+                            payment_note,
+                            now_iso(),
+                        ),
+                    )
+                    break
+                except sqlite3.IntegrityError:
+                    continue
+            else:
+                raise RuntimeError("无法生成微信订单")
+            row = db.execute(
+                "SELECT * FROM wechat_orders WHERE order_token=?",
+                (order_token,),
+            ).fetchone()
+        if row:
+            self.track_product_event(
+                int(row["product_id"]),
+                "wechat_checkout_opened",
+                "wechat_qr",
+                detail={
+                    "order_token": row["order_token"],
+                    "report_token": report_token,
+                    "amount_cents": row["amount_cents"],
+                },
+            )
+        return row
+
+    def wechat_order(self, order_token: str) -> sqlite3.Row | None:
+        with self.connect() as db:
+            return db.execute(
+                """
+                SELECT wechat_orders.*, audit_reports.repository
+                FROM wechat_orders
+                JOIN audit_reports
+                  ON audit_reports.token=wechat_orders.report_token
+                WHERE order_token=?
+                """,
+                (order_token,),
+            ).fetchone()
+
+    def submit_wechat_order(
+        self,
+        order_token: str,
+        buyer_name: str,
+        buyer_contact: str,
+        payer_name: str,
+    ) -> bool:
+        with self.connect() as db:
+            row = db.execute(
+                """
+                SELECT product_id, status FROM wechat_orders
+                WHERE order_token=?
+                """,
+                (order_token,),
+            ).fetchone()
+            if not row or row["status"] not in ("opened", "submitted"):
+                return False
+            db.execute(
+                """
+                UPDATE wechat_orders
+                SET buyer_name=?, buyer_contact=?, payer_name=?,
+                    status='submitted', submitted_at=COALESCE(submitted_at, ?)
+                WHERE order_token=?
+                """,
+                (
+                    clean(buyer_name, 80),
+                    clean(buyer_contact, 160),
+                    clean(payer_name, 80),
+                    now_iso(),
+                    order_token,
+                ),
+            )
+        self.track_product_event(
+            int(row["product_id"]),
+            "wechat_payment_submitted",
+            "wechat_qr",
+            detail={"order_token": order_token},
+        )
+        return True
+
+    def confirm_wechat_order(self, order_token: str) -> bool:
+        order = self.wechat_order(order_token)
+        if not order or order["status"] not in ("submitted", "confirmed"):
+            return False
+        if not self.unlock_audit_report(
+            order["report_token"],
+            f"wechat:{order_token}",
+            int(order["amount_cents"]),
+            currency="cny",
+            payment_source="wechat_qr",
+        ):
+            return False
+        with self.connect() as db:
+            db.execute(
+                """
+                UPDATE wechat_orders
+                SET status='confirmed', confirmed_at=COALESCE(confirmed_at, ?)
+                WHERE order_token=?
+                """,
+                (now_iso(), order_token),
+            )
+        return True
+
+    def recent_wechat_orders(self, limit: int = 30) -> list[sqlite3.Row]:
+        with self.connect() as db:
+            return db.execute(
+                """
+                SELECT wechat_orders.*, audit_reports.repository
+                FROM wechat_orders
+                JOIN audit_reports
+                  ON audit_reports.token=wechat_orders.report_token
+                ORDER BY wechat_orders.id DESC LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+
     def record_audit_refund(
         self,
         token: str,
@@ -1311,6 +1519,15 @@ class Store:
                 "purchase_intents": db.execute(
                     "SELECT count(*) c FROM leads"
                 ).fetchone()["c"],
+                "wechat_checkout_opens": db.execute(
+                    "SELECT count(*) c FROM wechat_orders"
+                ).fetchone()["c"],
+                "wechat_payment_submissions": db.execute(
+                    """
+                    SELECT count(*) c FROM wechat_orders
+                    WHERE status IN ('submitted','confirmed')
+                    """
+                ).fetchone()["c"],
                 "payments": db.execute(
                     """
                     SELECT count(*) c FROM audit_reports
@@ -1324,12 +1541,23 @@ class Store:
                 "revenue_usd_cents": db.execute(
                     "SELECT coalesce(sum(revenue_usd_cents),0) c FROM products"
                 ).fetchone()["c"],
+                "payments_today": db.execute(
+                    """
+                    SELECT count(*) c FROM wechat_orders
+                    WHERE status='confirmed'
+                      AND substr(confirmed_at,1,10)=?
+                    """,
+                    (dt.datetime.now(dt.timezone.utc).date().isoformat(),),
+                ).fetchone()["c"],
             }
             experiment["status"] = commercial_experiment_status(experiment)
         return {
             "counts": counts, "demands": demands, "products": products,
             "outreach": outreach, "events": events, "funnel": funnel,
             "experiment": experiment,
+            "wechat_orders": [
+                dict(row) for row in self.recent_wechat_orders()
+            ],
         }
 
     def public_products(self) -> list[sqlite3.Row]:
@@ -2239,8 +2467,9 @@ main{{width:min(1080px,calc(100% - 32px));margin:0 auto;padding:40px 0 80px}}h1{
 label{{display:block;margin:11px 0 4px;font-size:10px;color:var(--muted)}}input,textarea,select{{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:inherit}}textarea{{min-height:90px;resize:vertical}}button{{margin-top:14px;padding:10px 14px;border:0;border-radius:6px;background:var(--text);color:var(--panel);font-weight:700;cursor:pointer}}.result{{padding:14px;border-left:3px solid var(--green);background:var(--soft)}}.source{{margin-top:20px;padding-top:15px;border-top:1px solid var(--line);font-size:10px;color:var(--muted)}}.notice{{font-size:10px;color:var(--muted)}}.stats{{display:flex;gap:18px;margin-top:18px}}.stats b{{font-size:22px}}.stats span{{display:block;color:var(--muted);font-size:9px}}
 .guide-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}}.guide{{padding:20px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}}.guide.recommended{{border-top:3px solid var(--green)}}.guide-tag{{display:inline-block;padding:2px 6px;border-radius:4px;background:var(--soft);color:var(--green);font-size:9px;font-weight:700}}.guide h3{{margin:9px 0 4px;font-size:16px}}.guide>p{{margin:0;font-size:11px}}.steps{{display:grid;gap:11px;margin:18px 0}}.step{{display:grid;grid-template-columns:24px 1fr;gap:9px;align-items:start}}.step b{{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--soft);color:var(--green);font-size:10px}}.step span{{padding-top:2px;font-size:11px}}.guide-actions{{display:flex;gap:8px;flex-wrap:wrap}}.guide-actions a{{padding:8px 11px;border:1px solid var(--line);border-radius:6px;color:var(--text);text-decoration:none;font-size:10px;font-weight:700}}.guide-actions a.primary{{border-color:var(--text);background:var(--text);color:var(--panel)}}.guide-note{{margin-top:12px;padding:9px 10px;border-left:3px solid var(--blue);background:var(--bg);color:var(--muted);font-size:10px}}
 .audit-form{{display:grid;gap:8px}}.audit-form button{{width:100%}}.deliverables{{display:grid;gap:8px;margin:14px 0}}.deliverable{{display:grid;grid-template-columns:18px 1fr;gap:7px;font-size:11px}}.deliverable b{{color:var(--green)}}.price{{display:flex;align-items:end;gap:6px;margin:12px 0}}.price strong{{font-size:28px;line-height:1}}.price span{{color:var(--muted);font-size:10px}}.score-hero{{display:grid;grid-template-columns:120px 1fr;gap:20px;align-items:center}}.score-ring{{display:grid;place-items:center;width:120px;height:120px;border:10px solid var(--green);border-radius:50%;font-size:30px;font-weight:800}}.score-ring small{{display:block;font-size:9px;color:var(--muted)}}.metric-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}}.metric-box{{padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--panel)}}.metric-box small{{display:block;color:var(--muted);font-size:9px}}.metric-box b{{font-size:15px}}.check-list{{display:grid;grid-template-columns:1fr 1fr;gap:8px}}.check{{padding:10px;border:1px solid var(--line);border-radius:6px;font-size:11px}}.check.pass{{border-left:3px solid var(--green)}}.check.fail{{border-left:3px solid #b44}}.risk-list{{padding-left:19px;color:var(--muted)}}.evidence-time{{font-size:9px;color:var(--muted)}}.compare-grid{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}.compare-choice{{padding:20px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}}.compare-choice.pass{{border-top:3px solid var(--green)}}.compare-score{{font-size:30px;font-weight:800}}.decision{{padding:18px;border-left:4px solid var(--green);background:var(--soft);margin:20px 0}}
+.payment-layout{{display:grid;grid-template-columns:minmax(280px,420px) minmax(300px,1fr);gap:24px;margin-top:28px;align-items:start}}.qr-panel{{text-align:center}}.payment-qr{{display:block;width:min(100%,320px);aspect-ratio:1;object-fit:contain;margin:0 auto 18px;background:#fff;border:1px solid var(--line)}}.payment-note{{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;background:var(--soft);text-align:left}}.payment-note span{{color:var(--muted);font-size:10px}}.payment-note strong{{font-size:18px;letter-spacing:0}}
 table{{width:100%;border-collapse:collapse;background:var(--panel);font-size:11px}}th,td{{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}}th{{color:var(--muted)}}.badge{{padding:2px 6px;border-radius:4px;background:var(--soft);color:var(--green);white-space:nowrap}}
-@media(max-width:760px){{.grid,.guide-grid,.check-list,.compare-grid{{grid-template-columns:1fr}}.tool,.score-hero{{grid-template-columns:1fr}}.metric-grid{{grid-template-columns:1fr 1fr}}h1{{font-size:28px}}nav{{display:none}}.guide{{padding:17px}}table{{display:block;max-width:100%;overflow-x:auto}}select,button,.guide-actions a{{min-height:44px}}button,.guide-actions a{{display:inline-flex;align-items:center;justify-content:center}}}}
+@media(max-width:760px){{.grid,.guide-grid,.check-list,.compare-grid,.payment-layout{{grid-template-columns:1fr}}.tool,.score-hero{{grid-template-columns:1fr}}.metric-grid{{grid-template-columns:1fr 1fr}}h1{{font-size:28px}}nav{{display:none}}.guide{{padding:17px}}table{{display:block;max-width:100%;overflow-x:auto}}select,button,.guide-actions a{{min-height:44px}}button,.guide-actions a{{display:inline-flex;align-items:center;justify-content:center}}}}
 </style></head><body><header><b>Life You Me</b><span>Open Source Adoption Decisions</span><nav><a href="/">单仓库</a><a href="/compare">候选对比</a><a href="/reports">报告库</a><a href="/updates">订阅</a><a href="/about">关于</a></nav></header><main>{content}</main></body></html>"""
     return document.encode("utf-8")
 
@@ -2739,6 +2968,66 @@ def build_professional_markdown(report: dict[str, Any]) -> bytes:
     return document.encode("utf-8")
 
 
+def render_wechat_payment_page(order: sqlite3.Row) -> bytes:
+    amount = int(order["amount_cents"]) / 100
+    content = f"""
+    <section class="hero payment-hero">
+      <div class="eyebrow">WECHAT PAY · MANUAL VERIFICATION</div>
+      <h1>扫码支付 ¥{amount:.2f}</h1>
+      <p>订单对应 {html.escape(order["repository"])} 的专业采用报告。付款后提交付款人称呼和联系方式，到账确认后即可下载 Markdown 与 JSON 交付物。</p>
+    </section>
+    <section class="payment-layout">
+      <div class="panel qr-panel">
+        <img class="payment-qr" src="/assets/wechat-pay-qr" alt="微信收款码">
+        <div class="payment-note"><span>付款备注</span><strong>{html.escape(order["payment_note"])}</strong></div>
+        <p class="notice">请务必填写付款备注，用于把微信到账记录与本订单匹配。</p>
+      </div>
+      <form class="panel" method="post" action="/api/wechat-order">
+        <input type="hidden" name="order" value="{html.escape(order["order_token"])}">
+        <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px">
+        <div class="eyebrow">PAYMENT CLAIM</div>
+        <h2>已完成支付</h2>
+        <label>付款人微信昵称</label>
+        <input name="payer_name" maxlength="80" required>
+        <label>称呼</label>
+        <input name="buyer_name" maxlength="80" required>
+        <label>接收交付通知的微信号或邮箱</label>
+        <input name="buyer_contact" maxlength="160" required>
+        <button type="submit">提交到账核对</button>
+        <p class="notice">静态收款码没有可信支付回调。系统不会仅凭提交动作伪造收入或自动认定到账。</p>
+      </form>
+    </section>
+    """
+    return page_shell(
+        "微信支付专业采用报告",
+        content,
+        f"支付 ¥{amount:.2f} 解锁 {order['repository']} 专业采用报告",
+        f"/pay/{order['report_token']}",
+    )
+
+
+def render_wechat_order_status(order: sqlite3.Row) -> bytes:
+    confirmed = order["status"] == "confirmed"
+    content = f"""
+    <section class="hero">
+      <div class="eyebrow">{"PAYMENT CONFIRMED" if confirmed else "VERIFYING PAYMENT"}</div>
+      <h1>{"到账已确认，报告已解锁" if confirmed else "付款信息已提交"}</h1>
+      <p>{"现在可以下载完整的 Markdown 与 JSON 交付物。" if confirmed else "正在按付款备注核对微信到账记录。确认后，此页面会显示下载入口。"}</p>
+      <div class="guide-actions">
+        <a class="primary" href="/r/{html.escape(order["report_token"])}">{"查看完整报告" if confirmed else "刷新订单状态"}</a>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>订单信息</h2>
+      <p>仓库：{html.escape(order["repository"])}</p>
+      <p>金额：¥{int(order["amount_cents"]) / 100:.2f}</p>
+      <p>付款备注：<strong>{html.escape(order["payment_note"])}</strong></p>
+      <p>状态：{"已确认到账" if confirmed else "待核对"}</p>
+    </section>
+    """
+    return page_shell("微信订单状态", content)
+
+
 def render_audit_report(
     product: sqlite3.Row,
     report: dict[str, Any],
@@ -2789,6 +3078,11 @@ def render_audit_report(
         )
     )
     paid_block = (
+        f'<div class="guide-actions"><a class="primary" href="/pay/{html.escape(report_token)}">'
+        f'微信扫码支付 ¥{WECHAT_OFFER_PRICE_CENTS / 100:.2f}</a>'
+        f'<a href="{html.escape(report["url"])}" rel="nofollow">查看原仓库</a></div>'
+        if wechat_payment_ready() and report_token
+        else (
         f'<form method="post" action="/api/checkout">'
         f'<input type="hidden" name="report" value="{html.escape(report_token)}">'
         f'<input type="hidden" name="provider" value="lemonsqueezy">'
@@ -2816,6 +3110,7 @@ def render_audit_report(
         """
         )
         )
+        )
     )
     security_rows = "".join(
         f'<tr><td><span class="badge">{html.escape(item["priority"])}</span></td>'
@@ -2829,7 +3124,7 @@ def render_audit_report(
         for item in report.get("remediation_plan") or []
     ) or '<tr><td colspan="4">自动证据未生成额外整改任务。</td></tr>'
     professional_section = f"""
-    {'<section class="panel"><div class="eyebrow">完整专业样例</div><h2>这是一份公开样例，不代表已付款订单</h2><p>下面展示 ¥299 报告的真实结构、证据粒度和可下载交付物。样例不会计入收入。</p></section>' if showcase else ''}
+    {f'<section class="panel"><div class="eyebrow">完整专业样例</div><h2>这是一份公开样例，不代表已付款订单</h2><p>下面展示 {active_offer_price_label()} 报告的真实结构、证据粒度和可下载交付物。样例不会计入收入。</p></section>' if showcase else ''}
     <section><div class="eyebrow">PROFESSIONAL DELIVERABLE</div><h2>OpenSSF 供应链失败项</h2>
       <table><thead><tr><th>优先级</th><th>检查</th><th>得分</th><th>独立证据</th><th>落地动作</th></tr></thead>
       <tbody>{security_rows}</tbody></table></section>
@@ -2841,14 +3136,14 @@ def render_audit_report(
       <p class="notice">本报告用于采用决策筛查，不等同于源代码安全审计、渗透测试或法律意见。</p></section>
     """ if professional else ""
     offer_section = "" if professional else f"""
-    <section id="consult" class="panel"><div class="eyebrow">AUTOMATIC PRO REPORT</div><h2>解锁专业采用报告</h2>
-      <div class="price"><strong>¥299 / $39</strong><span>一次性 · 单仓库</span></div>
+    <section id="consult" class="panel"><div class="eyebrow">ACTIONABLE PRO REPORT</div><h2>解锁专业采用报告</h2>
+      <div class="price"><strong>{active_offer_price_label() if wechat_payment_ready() else "¥299 / $39"}</strong><span>一次性 · 单仓库</span></div>
       <div class="deliverables">
         <div class="deliverable"><b>✓</b><span>OpenSSF 独立安全检查、原始失败原因与优先级</span></div>
         <div class="deliverable"><b>✓</b><span>许可证、维护、工程准备度与供应链四维决策</span></div>
         <div class="deliverable"><b>✓</b><span>自动生成 7 天整改计划、放行门禁与 JSON 证据</span></div>
       </div>{paid_block}
-      <p class="notice">仅在签名支付回调确认后自动解锁。个人二维码或私下转账不会自动计为收入。</p>
+      <p class="notice">微信收款由人工核对到账；Stripe/Lemon Squeezy 仅在签名回调确认后自动解锁。未确认付款不会计入收入。</p>
     </section>
     """
     embed_section = ""
@@ -2998,6 +3293,54 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path
         if path == "/healthz":
             self.send_bytes(200, b'{"status":"ok"}', "application/json")
+        elif path == "/assets/wechat-pay-qr":
+            qr_path = wechat_qr_path()
+            if not qr_path:
+                self.send_error(404)
+                return
+            suffix = qr_path.suffix.lower()
+            content_type = {
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".webp": "image/webp",
+            }.get(suffix, "image/png")
+            self.send_bytes(
+                200,
+                qr_path.read_bytes(),
+                content_type,
+                {"Cache-Control": "private, max-age=3600"},
+            )
+        elif path.startswith("/pay/"):
+            token = path.split("/", 2)[2]
+            if not re.fullmatch(r"[a-z0-9-]{8,80}", token):
+                self.send_error(404)
+                return
+            if not wechat_payment_ready():
+                self.send_error_page(
+                    503,
+                    "微信收款暂未开放",
+                    "收款码尚未配置，请稍后再试。",
+                )
+                return
+            order = self.store.create_wechat_order(token)
+            if not order:
+                report = self.store.audit_report(token)
+                if report and report["pro_unlocked"]:
+                    self.redirect(f"/r/{token}")
+                else:
+                    self.send_error(404)
+                return
+            self.send_bytes(200, render_wechat_payment_page(self.store.wechat_order(order["order_token"])))
+        elif path.startswith("/order/"):
+            order_token = path.split("/", 2)[2]
+            if not re.fullmatch(r"[a-z0-9]{8,40}", order_token):
+                self.send_error(404)
+                return
+            order = self.store.wechat_order(order_token)
+            if not order:
+                self.send_error(404)
+                return
+            self.send_bytes(200, render_wechat_order_status(order))
         elif path == f"/{INDEXNOW_KEY}.txt":
             self.send_bytes(200, INDEXNOW_KEY.encode(), "text/plain; charset=utf-8")
         elif path.startswith("/api/v1/reports/"):
@@ -3163,7 +3506,7 @@ class Handler(BaseHTTPRequestHandler):
             </section>
             <section class="tool">
               <div class="panel"><div class="eyebrow">FREE LIVE AUDIT</div><h2>免费实时审计</h2>{fields}</div>
-              <aside class="panel"><div class="eyebrow">¥299 · AUTOMATIC DELIVERY</div>
+              <aside class="panel"><div class="eyebrow">{active_offer_price_label()} · PROFESSIONAL REPORT</div>
                 <h2>专业采用决策报告</h2>
                 <div class="deliverables">
                   <div class="deliverable"><b>1</b><span>失败检查的原始证据、优先级与具体整改动作</span></div>
@@ -3171,7 +3514,7 @@ class Handler(BaseHTTPRequestHandler):
                   <div class="deliverable"><b>3</b><span>Markdown 决策文档与 JSON 证据，支付后自动交付</span></div>
                 </div>
                 <div class="guide-actions">{showcase_link}</div>
-                <p class="notice">公开样例明确标记，不计入付款或收入。真实报告只在支付平台确认后解锁。</p>
+                <p class="notice">公开样例明确标记，不计入付款或收入。运行免费审计后可购买对应仓库的专业报告。</p>
               </aside>
             </section>
             {f'<section><h2>最新场景化采用报告</h2><div class="grid">{report_cards}</div><p><a href="/reports">查看全部报告</a></p></section>' if report_cards else ''}
@@ -3192,8 +3535,8 @@ class Handler(BaseHTTPRequestHandler):
                         "operatingSystem": "Web",
                         "offers": {
                             "@type": "Offer",
-                            "price": REPORT_PRICE_CENTS / 100,
-                            "priceCurrency": REPORT_CURRENCY.upper(),
+                            "price": active_offer_price_cents() / 100,
+                            "priceCurrency": "CNY",
                         },
                     },
                 ),
@@ -3305,7 +3648,7 @@ class Handler(BaseHTTPRequestHandler):
             <section class="tool"><div class="panel"><h2>免费实时审计</h2>{fields}</div>
             <form class="panel" method="post" action="/api/leads"><div class="eyebrow">AUTOMATIC PRO REPORT</div><h2>专业采用决策报告</h2>
             <input type="hidden" name="product" value="{html.escape(product["slug"])}"><input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px">
-            <div class="price"><strong>¥299</strong><span>一次性 · 单仓库</span></div>
+            <div class="price"><strong>{active_offer_price_label()}</strong><span>一次性 · 单仓库</span></div>
             <div class="deliverables"><div class="deliverable"><b>✓</b><span>GitHub + OpenSSF 四维独立证据</span></div><div class="deliverable"><b>✓</b><span>供应链失败原因、优先级与整改动作</span></div><div class="deliverable"><b>✓</b><span>7 天采用门禁与可下载决策报告</span></div></div>
             <label>称呼</label><input name="name" maxlength="80" required>
             <label>邮箱、微信或其他联系方式</label><input name="contact" maxlength="160" required>
@@ -3506,6 +3849,37 @@ class Handler(BaseHTTPRequestHandler):
 Free reports provide a risk summary. Professional reports add OpenSSF failure evidence, remediation actions, a seven-day adoption gate plan, and downloadable Markdown/JSON artifacts.
 """
             self.send_bytes(200, content.encode(), "text/plain; charset=utf-8")
+        elif path == "/api/admin/wechat-orders":
+            if not self.admin_authorized():
+                return
+            orders = [
+                {
+                    key: row[key]
+                    for key in (
+                        "order_token",
+                        "report_token",
+                        "repository",
+                        "amount_cents",
+                        "payment_note",
+                        "payer_name",
+                        "buyer_name",
+                        "buyer_contact",
+                        "status",
+                        "submitted_at",
+                    )
+                }
+                for row in self.store.recent_wechat_orders()
+                if row["status"] == "submitted"
+            ]
+            self.send_bytes(
+                200,
+                json.dumps(
+                    {"pending": orders, "count": len(orders)},
+                    ensure_ascii=False,
+                ).encode(),
+                "application/json; charset=utf-8",
+                {"Cache-Control": "no-store"},
+            )
         elif path == "/admin":
             if not self.admin_authorized():
                 return
@@ -3518,6 +3892,24 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
                 f"<tr><td>{html.escape(row['kind'])}</td><td>{html.escape(row['source'])}</td><td>{row['count']}</td></tr>"
                 for row in data["funnel"]
             ) or "<tr><td colspan='3'>暂无转化事件</td></tr>"
+            wechat_order_rows = "".join(
+                "<tr>"
+                f"<td>{html.escape(row['payment_note'])}</td>"
+                f"<td>{html.escape(row['repository'])}</td>"
+                f"<td>¥{row['amount_cents']/100:.2f}</td>"
+                f"<td>{html.escape(row['payer_name'] or '-')}</td>"
+                f"<td>{html.escape(row['buyer_contact'] or '-')}</td>"
+                f"<td>{html.escape(row['status'])}</td>"
+                "<td>"
+                + (
+                    f"<form method='post' action='/api/admin/wechat-confirm'>"
+                    f"<input type='hidden' name='order' value='{html.escape(row['order_token'])}'>"
+                    "<button type='submit'>确认到账</button></form>"
+                    if row["status"] == "submitted" else "-"
+                )
+                + "</td></tr>"
+                for row in data["wechat_orders"]
+            ) or "<tr><td colspan='7'>暂无微信订单</td></tr>"
             content = (
                 "<section class='hero'><div class='eyebrow'>Private operations</div>"
                 "<h1>无人值守运行台</h1><div class='stats'>"
@@ -3527,11 +3919,15 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
                 f"<p>{html.escape(data['experiment']['status']['reason'])}</p>"
                 f"<span>有效访问 {data['experiment']['qualified_views']} · "
                 f"有效审计 {data['experiment']['qualified_audits']} · "
-                f"购买意向 {data['experiment']['purchase_intents']} · "
+                f"打开微信收款 {data['experiment']['wechat_checkout_opens']} · "
+                f"提交核对 {data['experiment']['wechat_payment_submissions']} · "
                 f"净支付 {data['experiment']['payments']} · "
+                f"今日微信到账 {data['experiment']['payments_today']} · "
                 f"净收入 ¥{data['experiment']['revenue_cny_cents']/100:.2f} / "
                 f"${data['experiment']['revenue_usd_cents']/100:.2f}</span></div>"
                 f"<table><thead><tr><th>动作</th><th>渠道</th><th>数量</th></tr></thead><tbody>{funnel_rows}</tbody></table>"
+                "<h2>微信订单</h2><table><thead><tr><th>付款备注</th><th>仓库</th><th>金额</th><th>付款人</th><th>联系方式</th><th>状态</th><th>操作</th></tr></thead>"
+                f"<tbody>{wechat_order_rows}</tbody></table>"
                 "<h2>需求信号</h2><table><thead><tr><th>评分</th><th>来源</th><th>需求</th><th>状态</th></tr></thead>"
                 f"<tbody>{demand_rows}</tbody></table>"
             )
@@ -3569,7 +3965,8 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
         if parsed.path not in (
             "/api/leads", "/api/github-audit", "/api/github-compare", "/api/checkout",
             "/api/stripe-webhook", "/api/lemonsqueezy-webhook",
-            "/api/qualified-view",
+            "/api/qualified-view", "/api/wechat-order",
+            "/api/admin/wechat-confirm",
         ):
             self.send_error(404)
             return
@@ -3578,6 +3975,20 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
             self.send_error(413)
             return
         raw_body = self.rfile.read(length)
+        if parsed.path == "/api/admin/wechat-confirm":
+            if not self.admin_authorized():
+                return
+            form = urllib.parse.parse_qs(raw_body.decode("utf-8", "replace"))
+            order_token = clean(form.get("order", [""])[0], 40)
+            if not self.store.confirm_wechat_order(order_token):
+                self.send_error_page(
+                    409,
+                    "订单无法确认",
+                    "订单不存在、尚未提交付款信息，或状态已经失效。",
+                )
+                return
+            self.redirect("/admin")
+            return
         if parsed.path == "/api/stripe-webhook":
             webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
             if not webhook_secret:
@@ -3649,6 +4060,40 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
             self.send_bytes(200, b'{"received":true}', "application/json")
             return
         form = urllib.parse.parse_qs(raw_body.decode("utf-8", "replace"))
+        if parsed.path == "/api/wechat-order":
+            if clean(form.get("website", [""])[0]):
+                self.redirect("/")
+                return
+            order_token = clean(form.get("order", [""])[0], 40)
+            buyer_name = clean(form.get("buyer_name", [""])[0], 80)
+            buyer_contact = clean(form.get("buyer_contact", [""])[0], 160)
+            payer_name = clean(form.get("payer_name", [""])[0], 80)
+            if (
+                not buyer_name
+                or not buyer_contact
+                or not payer_name
+                or not re.search(r"[@+\w\u4e00-\u9fff]", buyer_contact)
+            ):
+                self.send_error_page(
+                    400,
+                    "信息不完整",
+                    "请填写付款人昵称、称呼和接收交付通知的联系方式。",
+                )
+                return
+            if not self.store.submit_wechat_order(
+                order_token,
+                buyer_name,
+                buyer_contact,
+                payer_name,
+            ):
+                self.send_error_page(
+                    409,
+                    "订单状态已变化",
+                    "请返回报告重新打开微信支付。",
+                )
+                return
+            self.redirect(f"/order/{order_token}")
+            return
         if parsed.path == "/api/checkout":
             token = clean(form.get("report", [""])[0], 80)
             provider = clean(form.get("provider", [""])[0], 30)

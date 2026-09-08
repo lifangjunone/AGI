@@ -474,6 +474,92 @@ class AutonomousFactoryTests(unittest.TestCase):
         ]
         self.assertEqual(events[0]["count"], 1)
 
+    def test_wechat_order_requires_manual_confirmation_before_revenue(self):
+        for index, author in enumerate(("alice", "bob", "carol"), 1):
+            self.add(demand(
+                str(index), author,
+                title="Looking for an open source GitHub integration deployment tool",
+            ))
+        product = self.engine.build(force=True)
+        token = self.store.save_audit_report(product["id"], {
+            "repository": "acme/wechat-paid",
+            "url": "https://github.com/acme/wechat-paid",
+            "score": 70,
+            "verdict": "建议先做隔离试点",
+            "evidence_time": factory.now_iso(),
+        })
+
+        first = self.store.create_wechat_order(token)
+        second = self.store.create_wechat_order(token)
+        self.assertEqual(first["order_token"], second["order_token"])
+        self.assertEqual(first["amount_cents"], factory.WECHAT_OFFER_PRICE_CENTS)
+        self.assertTrue(first["payment_note"].startswith("OF"))
+
+        self.assertTrue(self.store.submit_wechat_order(
+            first["order_token"],
+            "Buyer",
+            "buyer@example.com",
+            "Payer",
+        ))
+        with self.store.connect() as db:
+            report_before = db.execute(
+                "SELECT pro_unlocked FROM audit_reports WHERE token=?",
+                (token,),
+            ).fetchone()[0]
+            revenue_before = db.execute(
+                "SELECT revenue_cents FROM products WHERE id=?",
+                (product["id"],),
+            ).fetchone()[0]
+        self.assertEqual((report_before, revenue_before), (0, 0))
+
+        self.assertTrue(self.store.confirm_wechat_order(first["order_token"]))
+        self.assertTrue(self.store.confirm_wechat_order(first["order_token"]))
+        with self.store.connect() as db:
+            report_after = db.execute(
+                """
+                SELECT pro_unlocked, payment_reference
+                FROM audit_reports WHERE token=?
+                """,
+                (token,),
+            ).fetchone()
+            revenue_after = db.execute(
+                "SELECT revenue_cents FROM products WHERE id=?",
+                (product["id"],),
+            ).fetchone()[0]
+        self.assertEqual(
+            tuple(report_after),
+            (1, f"wechat:{first['order_token']}"),
+        )
+        self.assertEqual(revenue_after, factory.WECHAT_OFFER_PRICE_CENTS)
+        metrics = self.store.dashboard()["experiment"]
+        self.assertEqual(metrics["wechat_checkout_opens"], 1)
+        self.assertEqual(metrics["wechat_payment_submissions"], 1)
+        self.assertEqual(metrics["payments"], 1)
+
+    def test_wechat_payment_page_exposes_amount_note_and_manual_boundary(self):
+        for index, author in enumerate(("alice", "bob", "carol"), 1):
+            self.add(demand(
+                str(index), author,
+                title="Looking for an open source GitHub integration deployment tool",
+            ))
+        product = self.engine.build(force=True)
+        token = self.store.save_audit_report(product["id"], {
+            "repository": "acme/wechat-page",
+            "url": "https://github.com/acme/wechat-page",
+            "score": 70,
+            "verdict": "建议先做隔离试点",
+            "evidence_time": factory.now_iso(),
+        })
+        order = self.store.create_wechat_order(token)
+        document = factory.render_wechat_payment_page(
+            self.store.wechat_order(order["order_token"])
+        ).decode()
+
+        self.assertIn("扫码支付 ¥9.90", document)
+        self.assertIn(order["payment_note"], document)
+        self.assertIn("/assets/wechat-pay-qr", document)
+        self.assertIn("不会仅凭提交动作伪造收入", document)
+
     def test_public_showcase_exposes_pro_format_without_claiming_revenue(self):
         for index, author in enumerate(("alice", "bob", "carol"), 1):
             self.add(demand(

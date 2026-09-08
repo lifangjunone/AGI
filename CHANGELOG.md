@@ -12,6 +12,14 @@
 - Changed GitHub auto-sync from a two-hour interval to a one-hour interval.
 - Added a terminal-launched hourly sync loop to avoid macOS Desktop TCC failures from the LaunchAgent path.
 - Allowed `.env.example` template files in auto-sync while continuing to block real `.env` files, private keys, certificates, suspected credential contents, and files larger than 95 MB.
+- Fixed Opportunity Factory deployment so an already-running systemd service restarts onto the newly installed release.
+
+### feat
+
+- Added Opportunity Factory's ¥9.90 WeChat first-payment flow with private QR serving, unique payment notes, buyer payment claims, authenticated receipt confirmation, automatic report unlock, and CNY revenue accounting.
+- Extended the commercial funnel to distinguish checkout opens, payment submissions, confirmed receipts, and today's confirmed WeChat payments.
+- Added a five-minute macOS production-order notifier so new WeChat payment claims surface for receipt verification without exposing admin credentials.
+- Added a one-command private WeChat QR installer that validates the local image, uploads it outside Git, updates production configuration, restarts the service, and verifies health.
 
 ## 2026-09-01
 

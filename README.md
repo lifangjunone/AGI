@@ -2,13 +2,15 @@
 
 这是一个由多个本地优先 AI 产品、交付工具和学习产品组成的产品工作区。每个子项目都可以独立安装、运行、测试和发布；根目录只负责项目导航、协作关系和统一命名。
 
+在线产品：[免费检查 GitHub 开源项目是否适合生产采用](https://audit.lifeyoume.icu/)；专业整改报告 ¥9.90/仓库，支持微信扫码。
+
 ## 项目目录
 
 | 目录 | 产品 | 定位 | 技术形态 |
 | --- | --- | --- | --- |
 | [`lifeyoume-platform/`](lifeyoume-platform/README.md) | LifeYouMe Platform | 产品门户、运营控制、身份/支付边界和私有健康检查 | Python、systemd、Nginx |
 | [`technology-intelligence/`](technology-intelligence/README.md) | Technology Intelligence | 技术信号聚合、主题学习、需求匹配和 Demo 交接 | Python、Objective-C、WebKit |
-| [`opportunity-factory/`](opportunity-factory/README.md) | Opportunity Factory | 从技术和市场信号中发现、审计、验证并推进可收费机会 | Python、Objective-C、WebKit、Nginx |
+| [`opportunity-factory/`](opportunity-factory/README.md) | [Opportunity Factory](https://audit.lifeyoume.icu/) | 免费审计 GitHub 开源项目生产采用风险，生成可付费下载的整改报告 | Python、Objective-C、WebKit、Nginx |
 | [`delivery-control-center/`](delivery-control-center/README.md) | Delivery Control Center | 从需求输入到研发、测试、部署和交付收据的桌面控制中心 | Electron、Node.js |
 | [`delivery-pilot/`](delivery-pilot/README.md) | DeliveryPilot | Tauri 研发交付驾驶舱，负责执行、恢复、验收和质量门禁 | Tauri 2、React、Rust、Swift、SQLite |
 | [`english-speaking-coach/`](english-speaking-coach/README.md) | English Speaking Coach | 面向成年人的英语口语训练和本地语音学习产品 | React、TypeScript、Capacitor、Python MLX |
@@ -102,6 +104,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `avatar-generator-service`：新增 Apple Silicon 本地头像材质生成服务，基于 Hunyuan3D-Swift/MLX Paint 生成 GLB PBR 材质，并保留骨骼、权重和面部 Morph Targets。
 - `metahuman-renderer`：新增 Unreal Engine 5.7 MetaHuman 渲染工程，用于承载 Pixel Streaming、角色状态桥接、摄像机、发型、服装和面部动画运行契约。
 - `hover-translator`：新增 macOS 全局英语翻译工具，支持悬停取词、框选句子、双击单词、Apple Vision OCR、音标词性和离线词典回退。
+- `opportunity-factory`：新增 ¥9.90 微信首单闭环，包含私有收款码、唯一付款备注、付款申报、后台核账确认、报告解锁和人民币收入记账；静态码不被伪装为自动支付接口。
 
 ## 远端仓库
 

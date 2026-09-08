@@ -23,9 +23,9 @@ if ss -ltn | awk '{print $4}' | grep -Eq '(^|:)8787$'; then
 fi
 
 id opportunity >/dev/null 2>&1 || useradd --system --home-dir "$APP_ROOT" --shell /usr/sbin/nologin opportunity
-mkdir -p "$APP_ROOT/service" "$APP_ROOT/runtime" "$APP_ROOT/deploy" "/data/app/backups"
+mkdir -p "$APP_ROOT/service" "$APP_ROOT/runtime" "$APP_ROOT/deploy" "$APP_ROOT/private" "/data/app/backups"
 chmod 0755 "$APP_ROOT" "$APP_ROOT/service" "$APP_ROOT/deploy"
-chmod 0700 "$APP_ROOT/runtime"
+chmod 0700 "$APP_ROOT/runtime" "$APP_ROOT/private"
 chmod 0700 "/data/app/backups"
 
 if [[ -d "$APP_ROOT/service" && -n "$(find "$APP_ROOT/service" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
@@ -50,14 +50,25 @@ if [[ ! -f "$APP_ROOT/.env" ]]; then
 fi
 
 chown -R opportunity:opportunity "$APP_ROOT/runtime"
+chown -R opportunity:opportunity "$APP_ROOT/private"
 chown root:opportunity "$APP_ROOT/.env"
 chmod 0640 "$APP_ROOT/.env"
 install -m 0644 "$SOURCE_DIR/deploy/opportunity-factory.service" /etc/systemd/system/opportunity-factory.service
 
 systemctl daemon-reload
-systemctl enable --now opportunity-factory
+systemctl enable opportunity-factory
+systemctl restart opportunity-factory
 
-curl --fail --silent http://127.0.0.1:8787/healthz
+for attempt in {1..15}; do
+  if curl --fail --silent http://127.0.0.1:8787/healthz; then
+    break
+  fi
+  if [[ "$attempt" -eq 15 ]]; then
+    systemctl status opportunity-factory --no-pager
+    exit 1
+  fi
+  sleep 1
+done
 
 if docker ps --format '{{.Names}}' | grep -qx english_learning_frontend; then
   (cd /data/app/english-learning && docker compose down)

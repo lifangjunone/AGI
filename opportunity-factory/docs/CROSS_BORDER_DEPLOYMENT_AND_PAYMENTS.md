@@ -6,26 +6,32 @@ Verified on 2026-08-18 against official provider documentation.
 
 Keep the current Alibaba Cloud service and SQLite database as the production
 system of record until an overseas account with persistent storage exists.
-Use Lemon Squeezy as the first global checkout candidate. Do not use a personal
-WeChat or Alipay static QR code as the website's automatic payment channel.
+Use Lemon Squeezy as the first global checkout candidate. A personal WeChat
+static code may be used only as a low-value, manually verified domestic
+experiment; it is not an automatic payment channel.
 
 ## Payment options
 
 ### Personal WeChat or Alipay QR code
 
-Not suitable for the production checkout.
+Not suitable for unattended production checkout. The current ¥9.90 first-order
+experiment uses it only with an explicit manual verification gate:
 
 - Personal static collection codes are not the correct product for obvious
   commercial activity and are generally restricted for remote, non-face-to-face
   collection.
 - A static code has no signed order callback, amount binding, refund state, or
   reliable idempotency key.
-- A screenshot or user-entered transaction number is not payment proof.
-- It cannot safely trigger automatic report fulfillment.
+- A screenshot, payer name, or user-entered transaction number is not payment
+  proof.
+- Opening the QR page and submitting a payment claim are tracked separately.
+- An authenticated operator must verify the actual WeChat receipt and click
+  confirm before the report unlocks or revenue is recorded.
+- The QR image remains in a private server directory and is not committed.
 
-If manual contact is retained, it is only a fallback lead channel. The operator
-must verify payment in the merchant account before delivery, and the system must
-not count the lead or screenshot as revenue.
+This is a deliberate bridge to the first real payment, not the final payments
+architecture. Replace it with a merchant API when payment volume justifies
+onboarding or when unattended fulfillment becomes mandatory.
 
 References:
 
