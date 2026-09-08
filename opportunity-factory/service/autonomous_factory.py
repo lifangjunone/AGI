@@ -19,6 +19,7 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -94,6 +95,14 @@ def now_iso() -> str:
 def clean(value: Any, limit: int = 4000) -> str:
     text = html.unescape(re.sub(r"<[^>]+>", " ", str(value or "")))
     return re.sub(r"\s+", " ", text).strip()[:limit]
+
+
+def admin_session_token(password: str) -> str:
+    return hmac.new(
+        password.encode(),
+        b"opportunity-factory-admin-session-v1",
+        hashlib.sha256,
+    ).hexdigest()
 
 
 def wechat_qr_path() -> Path | None:
@@ -3255,9 +3264,15 @@ class Handler(BaseHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(body)
 
-    def redirect(self, location: str) -> None:
+    def redirect(
+        self,
+        location: str,
+        extra_headers: dict[str, str] | None = None,
+    ) -> None:
         self.send_response(303)
         self.send_header("Location", location)
+        for name, value in (extra_headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
 
     def send_error_page(self, status: int, title: str, message: str) -> None:
@@ -3880,8 +3895,33 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
                 "application/json; charset=utf-8",
                 {"Cache-Control": "no-store"},
             )
+        elif path == "/admin/login":
+            error = urllib.parse.parse_qs(parsed.query).get("error")
+            message = (
+                "<p class='notice'>账号或密码错误，请重新输入。</p>"
+                if error else ""
+            )
+            content = f"""
+            <section class="hero"><div class="eyebrow">PRIVATE OPERATIONS</div>
+              <h1>登录运行台</h1>
+              <p>查看推广漏斗、微信付款申报和真实收入。</p>
+            </section>
+            <section class="panel" style="max-width:520px">
+              {message}
+              <form method="post" action="/admin/login">
+                <label>账号<input name="username" autocomplete="username" required></label>
+                <label>密码<input name="password" type="password" autocomplete="current-password" required></label>
+                <button type="submit">登录</button>
+              </form>
+            </section>
+            """
+            self.send_bytes(
+                200,
+                page_shell("登录运行台", content),
+                extra_headers={"Cache-Control": "no-store"},
+            )
         elif path in {"/admin", "/admin/"}:
-            if not self.admin_authorized():
+            if not self.admin_authorized(interactive=True):
                 return
             data = self.store.dashboard()
             demand_rows = "".join(
@@ -3938,27 +3978,43 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
     def do_HEAD(self) -> None:
         self.do_GET()
 
-    def admin_authorized(self) -> bool:
+    def admin_authorized(self, interactive: bool = False) -> bool:
         expected = os.environ.get("ADMIN_PASSWORD", "")
         if not expected:
             self.send_error(503, "Admin password is not configured")
             return False
+        cookies = SimpleCookie()
+        try:
+            cookies.load(self.headers.get("Cookie", ""))
+        except Exception:
+            cookies = SimpleCookie()
+        session = cookies.get("of_admin_session")
+        if session and secrets.compare_digest(
+            session.value,
+            admin_session_token(expected),
+        ):
+            return True
         authorization = self.headers.get("Authorization", "")
-        if not authorization.startswith("Basic "):
+        if authorization.startswith("Basic "):
+            import base64
+            try:
+                decoded = base64.b64decode(authorization[6:]).decode()
+                username, password = decoded.split(":", 1)
+            except (ValueError, UnicodeDecodeError):
+                username, password = "", ""
+            expected_user = os.environ.get("ADMIN_USER", "operator")
+            if (
+                secrets.compare_digest(username, expected_user)
+                and secrets.compare_digest(password, expected)
+            ):
+                return True
+        if interactive:
+            self.redirect("/admin/login")
+        else:
             self.send_response(401)
             self.send_header("WWW-Authenticate", 'Basic realm="Opportunity Factory"')
             self.end_headers()
-            return False
-        import base64
-        try:
-            decoded = base64.b64decode(authorization[6:]).decode()
-            _, password = decoded.split(":", 1)
-        except (ValueError, UnicodeDecodeError):
-            password = ""
-        if not secrets.compare_digest(password, expected):
-            self.send_error(403)
-            return False
-        return True
+        return False
 
     def do_POST(self) -> None:
         parsed = urllib.parse.urlparse(self.path)
@@ -3966,7 +4022,7 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
             "/api/leads", "/api/github-audit", "/api/github-compare", "/api/checkout",
             "/api/stripe-webhook", "/api/lemonsqueezy-webhook",
             "/api/qualified-view", "/api/wechat-order",
-            "/api/admin/wechat-confirm",
+            "/api/admin/wechat-confirm", "/admin/login",
         ):
             self.send_error(404)
             return
@@ -3975,6 +4031,25 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
             self.send_error(413)
             return
         raw_body = self.rfile.read(length)
+        if parsed.path == "/admin/login":
+            form = urllib.parse.parse_qs(raw_body.decode("utf-8", "replace"))
+            username = clean(form.get("username", [""])[0], 80)
+            password = form.get("password", [""])[0]
+            expected_user = os.environ.get("ADMIN_USER", "operator")
+            expected_password = os.environ.get("ADMIN_PASSWORD", "")
+            if (
+                expected_password
+                and secrets.compare_digest(username, expected_user)
+                and secrets.compare_digest(password, expected_password)
+            ):
+                cookie = (
+                    f"of_admin_session={admin_session_token(expected_password)}; "
+                    "Path=/admin; Max-Age=86400; HttpOnly; Secure; SameSite=Strict"
+                )
+                self.redirect("/admin", {"Set-Cookie": cookie})
+            else:
+                self.redirect("/admin/login?error=1")
+            return
         if parsed.path == "/api/admin/wechat-confirm":
             if not self.admin_authorized():
                 return

@@ -56,6 +56,12 @@ class AutonomousFactoryTests(unittest.TestCase):
         self.store.upsert_demand(row, score, category)
         return score
 
+    def test_admin_session_token_is_stable_and_password_bound(self):
+        first = factory.admin_session_token("secret-one")
+        self.assertEqual(first, factory.admin_session_token("secret-one"))
+        self.assertNotEqual(first, factory.admin_session_token("secret-two"))
+        self.assertEqual(len(first), 64)
+
     def test_paid_explicit_demand_scores_above_generic_issue(self):
         paid = demand("1", "buyer")
         generic = demand("2", "maintainer", labels=["help wanted"])

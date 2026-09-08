@@ -192,4 +192,4 @@ clang -fobjc-arc -fsyntax-only -framework Cocoa -framework WebKit native/NativeS
 
 后续应使用真实访谈、报价和成交结果调整评分，而不是继续增加抽象趋势指标。
 
-生产运行台位于 `https://audit.lifeyoume.icu/admin`，同时兼容末尾带 `/` 的地址；访问凭据保存在本机 `~/Library/Application Support/Opportunity Factory/server-credentials.txt`。
+生产运行台位于 `https://audit.lifeyoume.icu/admin`，同时兼容末尾带 `/` 的地址。页面使用表单登录和安全会话 Cookie，API 继续支持 Basic Auth；访问凭据保存在本机 `~/Library/Application Support/Opportunity Factory/server-credentials.txt`。
