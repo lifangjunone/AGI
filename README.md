@@ -106,6 +106,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `hover-translator`：新增 macOS 全局英语翻译工具，支持悬停取词、框选句子、双击单词、Apple Vision OCR、音标词性和离线词典回退。
 - `opportunity-factory`：新增 ¥9.90 微信首单闭环，包含私有收款码、唯一付款备注、付款申报、后台核账确认、报告解锁和人民币收入记账；静态码不被伪装为自动支付接口。
 - `opportunity-factory`：生产运行台同时兼容 `/admin` 与 `/admin/`，使用网页登录和安全会话 Cookie，避免原生 Basic Auth 在部分浏览器中显示空白或错误页。
+- `opportunity-factory`：将商机罗盘左侧七阶段导航升级为动态扩散网络，并新增洞察、验证、成交、复利业务增长飞轮。
 
 ## 远端仓库
 

@@ -743,9 +743,9 @@ html,body{{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(-
   font:13px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}}
 button,textarea,select{{font:inherit;color:inherit}}
 button{{letter-spacing:0}}
-.shell{{height:100%;display:grid;grid-template-columns:210px 350px minmax(430px,1fr)}}
+.shell{{height:100%;display:grid;grid-template-columns:258px 350px minmax(430px,1fr)}}
 .sidebar{{display:flex;flex-direction:column;min-height:0;padding:18px 12px 14px;
-  background:var(--sidebar);border-right:1px solid var(--line)}}
+  overflow-y:auto;background:var(--sidebar);border-right:1px solid var(--line)}}
 .brand{{display:flex;align-items:center;gap:10px;padding:3px 9px 20px}}
 .brand-mark{{width:30px;height:30px;display:grid;place-items:center;border-radius:7px;
   background:#176b5e;color:white;font-weight:800;box-shadow:0 5px 14px rgba(23,91,81,.22)}}
@@ -755,10 +755,40 @@ button{{letter-spacing:0}}
   gap:5px;padding:0 9px;border:0;border-radius:6px;background:transparent;text-align:left;cursor:pointer}}
 .nav:hover{{background:color-mix(in srgb,var(--text) 5%,transparent)}}.nav.active{{background:var(--selection);font-weight:650}}
 .nav i{{font-style:normal;color:var(--muted);text-align:center}}.nav em{{font-style:normal;color:var(--muted);font-size:9px}}
-.pipeline{{display:grid;gap:2px}}.pipeline .nav i{{width:8px;height:8px;border-radius:50%;justify-self:center;background:var(--faint)}}
-.pipeline .nav[data-stage="validate"] i,.pipeline .nav[data-stage="build"] i{{background:var(--blue)}}
-.pipeline .nav[data-stage="launch"] i,.pipeline .nav[data-stage="promote"] i{{background:var(--amber)}}
-.pipeline .nav[data-stage="monetize"] i,.pipeline .nav[data-stage="optimize"] i{{background:var(--green)}}
+.pipeline{{position:relative;height:294px;margin:2px 0 5px;isolation:isolate}}
+.network-lines{{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}}
+.network-lines path{{fill:none;stroke:var(--line);stroke-width:1.4;vector-effect:non-scaling-stroke}}
+.network-lines .flow{{stroke:var(--blue);stroke-dasharray:3 7;stroke-linecap:round;animation:networkFlow 5s linear infinite}}
+.network-lines .return{{stroke:var(--green);stroke-dasharray:2 8;opacity:.62;animation-duration:8s}}
+.pipeline .nav{{position:absolute;left:var(--x);top:var(--y);width:138px;height:38px;padding:0;
+  grid-template-columns:22px 1fr auto;z-index:2;border-radius:5px}}
+.pipeline .nav:hover,.pipeline .nav.active{{background:var(--panel);box-shadow:0 5px 16px rgba(26,34,43,.09)}}
+.pipeline .nav i{{position:relative;width:12px;height:12px;border:2px solid var(--faint);border-radius:50%;
+  justify-self:center;background:var(--sidebar);box-shadow:0 0 0 4px color-mix(in srgb,var(--faint) 12%,transparent)}}
+.pipeline .nav i::after{{content:"";position:absolute;inset:-7px;border:1px solid currentColor;border-radius:50%;opacity:0}}
+.pipeline .nav span{{font-size:11px;font-weight:620}}.pipeline .nav em{{padding-right:5px}}
+.pipeline .nav[data-stage="validate"] i,.pipeline .nav[data-stage="build"] i{{border-color:var(--blue);color:var(--blue)}}
+.pipeline .nav[data-stage="launch"] i,.pipeline .nav[data-stage="promote"] i{{border-color:var(--amber);color:var(--amber)}}
+.pipeline .nav[data-stage="monetize"] i,.pipeline .nav[data-stage="optimize"] i{{border-color:var(--green);color:var(--green)}}
+.pipeline .nav.has-items i{{background:currentColor}}
+.pipeline .nav.active i::after{{animation:nodePulse 1.8s ease-out infinite}}
+.pipeline .nav.active span{{color:var(--text)}}.pipeline .nav.active em{{color:var(--green);font-weight:750}}
+@keyframes networkFlow{{to{{stroke-dashoffset:-40}}}}
+@keyframes nodePulse{{0%{{transform:scale(.7);opacity:.8}}75%,100%{{transform:scale(2.1);opacity:0}}}}
+.flywheel{{position:relative;width:184px;height:154px;margin:0 auto 5px}}
+.flywheel svg{{position:absolute;left:30px;top:15px;width:124px;height:124px;overflow:visible}}
+.flywheel-track{{fill:none;stroke:var(--line);stroke-width:1.5}}
+.flywheel-motion{{fill:none;stroke:var(--green);stroke-width:2;stroke-linecap:round;stroke-dasharray:56 22;
+  transform-origin:60px 60px;animation:flywheelSpin 12s linear infinite}}
+.flywheel-core{{position:absolute;left:57px;top:42px;width:70px;height:70px;display:grid;place-content:center;
+  border:1px solid var(--line);border-radius:50%;background:var(--panel);text-align:center;box-shadow:var(--shadow)}}
+.flywheel-core b{{font-size:17px;line-height:1;color:var(--green)}}.flywheel-core span{{margin-top:5px;color:var(--muted);font-size:8px}}
+.flywheel-label{{position:absolute;color:var(--muted);font-size:8px;font-weight:650;white-space:nowrap}}
+.flywheel-label::before{{content:"";display:inline-block;width:5px;height:5px;margin-right:4px;border-radius:50%;background:var(--blue)}}
+.flywheel-label.signal{{left:69px;top:0}}.flywheel-label.validate{{right:0;top:70px}}
+.flywheel-label.revenue{{left:64px;bottom:0}}.flywheel-label.compound{{left:0;top:70px}}
+.flywheel-label:nth-of-type(3)::before{{background:var(--amber)}}.flywheel-label:nth-of-type(4)::before{{background:var(--green)}}
+@keyframes flywheelSpin{{to{{transform:rotate(360deg)}}}}
 .source-health{{margin-top:auto;padding:12px 10px;border-top:1px solid var(--line)}}
 .source-health div{{display:flex;justify-content:space-between;gap:8px}}.source-health b{{font-size:11px}}
 .source-health span,.source-health p{{color:var(--muted);font-size:9px}}.source-health p{{margin:6px 0 0}}
@@ -842,10 +872,24 @@ button{{letter-spacing:0}}
 .empty{{padding:70px 30px;text-align:center;color:var(--muted)}}
 .toast{{position:fixed;right:18px;bottom:18px;padding:9px 12px;border-radius:7px;background:var(--text);color:var(--panel);font-size:10px;box-shadow:var(--shadow);opacity:0;transform:translateY(8px);pointer-events:none;transition:.18s}}
 .toast.show{{opacity:1;transform:translateY(0)}}
-@media(max-width:1050px){{.shell{{grid-template-columns:176px 310px minmax(420px,1fr)}}.detail-inner{{padding-left:28px;padding-right:28px}}}}
+@media(max-width:1050px){{.shell{{grid-template-columns:238px 310px minmax(420px,1fr)}}.detail-inner{{padding-left:28px;padding-right:28px}}
+  .pipeline .nav{{width:128px}}.pipeline .nav[data-stage="monetize"]{{--x:70px!important}}.pipeline .nav[data-stage="optimize"]{{--x:76px!important}}}}
 @media(max-width:1100px){{.economics,.profit-summary{{grid-template-columns:1fr 1fr}}}}
 @media(max-width:900px){{.shell{{grid-template-columns:300px minmax(390px,1fr)}}.sidebar{{display:none}}.detail-inner{{padding-left:24px;padding-right:24px}}.detail h1{{font-size:25px}}.fact-grid{{grid-template-columns:1fr}}.fact.offer{{grid-column:auto}}.score-strip{{grid-template-columns:1fr 1fr}}.score-strip>div:nth-child(3){{padding-left:0;border-left:0}}.lifecycle-rail{{grid-template-columns:repeat(4,1fr)}}}}
 @media(max-width:650px){{.shell{{grid-template-columns:1fr}}.detail{{display:none}}}}
+@media(max-height:700px) and (min-width:901px){{
+  .sidebar{{padding-top:10px;padding-bottom:8px}}.brand{{padding-bottom:8px}}
+  .section-label{{padding-top:6px;padding-bottom:3px}}.sidebar>.nav{{height:30px}}
+  .pipeline{{height:238px;flex:0 0 238px}}
+  .pipeline .nav[data-stage="discover"]{{--y:0px!important}}.pipeline .nav[data-stage="validate"]{{--y:34px!important}}
+  .pipeline .nav[data-stage="build"]{{--y:68px!important}}.pipeline .nav[data-stage="launch"]{{--y:102px!important}}
+  .pipeline .nav[data-stage="promote"]{{--y:136px!important}}.pipeline .nav[data-stage="monetize"]{{--y:170px!important}}
+  .pipeline .nav[data-stage="optimize"]{{--y:204px!important}}
+  .flywheel{{height:118px;flex:0 0 118px}}.flywheel svg{{top:4px;width:104px;height:104px;left:40px}}
+  .flywheel-core{{left:64px;top:27px;width:56px;height:56px}}.flywheel-core b{{font-size:14px}}
+  .flywheel-label.signal{{top:0}}.flywheel-label.validate,.flywheel-label.compound{{top:53px}}.flywheel-label.revenue{{bottom:0}}
+  .source-health{{padding-top:7px;padding-bottom:0}}
+}}
 @media(prefers-reduced-motion:reduce){{*,*::before,*::after{{scroll-behavior:auto!important;transition:none!important;animation:none!important}}}}
 </style>
 </head>
@@ -856,15 +900,31 @@ button{{letter-spacing:0}}
     <div class="section-label">工作台</div>
     <button class="nav active" data-filter="all"><i>⌁</i><span>今日商机</span><em>{len(opportunities)}</em></button>
     <button class="nav" data-filter="history"><i>◷</i><span>历史报告</span><em>{health.get('history_days', 0)}天</em></button>
-    <div class="section-label">经营阶段</div>
+    <div class="section-label">经营路径 · 逐级扩散</div>
     <div class="pipeline">
-      <button class="nav" data-stage="discover"><i></i><span>商机确认</span><em id="count-discover">0</em></button>
-      <button class="nav" data-stage="validate"><i></i><span>需求验证</span><em id="count-validate">0</em></button>
-      <button class="nav" data-stage="build"><i></i><span>开发交付</span><em id="count-build">0</em></button>
-      <button class="nav" data-stage="launch"><i></i><span>正式上线</span><em id="count-launch">0</em></button>
-      <button class="nav" data-stage="promote"><i></i><span>推广获客</span><em id="count-promote">0</em></button>
-      <button class="nav" data-stage="monetize"><i></i><span>收款盈利</span><em id="count-monetize">0</em></button>
-      <button class="nav" data-stage="optimize"><i></i><span>复盘复利</span><em id="count-optimize">0</em></button>
+      <svg class="network-lines" viewBox="0 0 234 294" aria-hidden="true">
+        <path d="M11 20 C22 35 22 48 27 61 S36 89 41 102 S50 130 55 143 S64 171 69 184 S78 212 83 225 S90 252 95 266"/>
+        <path class="flow" d="M11 20 C22 35 22 48 27 61 S36 89 41 102 S50 130 55 143 S64 171 69 184 S78 212 83 225 S90 252 95 266"/>
+        <path d="M27 61 C78 56 129 58 185 55 M55 143 C105 134 158 137 205 145 M83 225 C120 216 154 221 185 235"/>
+        <path class="flow return" d="M95 266 C219 269 229 66 185 35 C142 5 65 8 11 20"/>
+      </svg>
+      <button class="nav" style="--x:0px;--y:1px" data-stage="discover"><i></i><span>商机确认</span><em id="count-discover">0</em></button>
+      <button class="nav" style="--x:16px;--y:42px" data-stage="validate"><i></i><span>需求验证</span><em id="count-validate">0</em></button>
+      <button class="nav" style="--x:30px;--y:83px" data-stage="build"><i></i><span>开发交付</span><em id="count-build">0</em></button>
+      <button class="nav" style="--x:44px;--y:124px" data-stage="launch"><i></i><span>正式上线</span><em id="count-launch">0</em></button>
+      <button class="nav" style="--x:58px;--y:165px" data-stage="promote"><i></i><span>推广获客</span><em id="count-promote">0</em></button>
+      <button class="nav" style="--x:72px;--y:206px" data-stage="monetize"><i></i><span>收款盈利</span><em id="count-monetize">0</em></button>
+      <button class="nav" style="--x:84px;--y:247px" data-stage="optimize"><i></i><span>复盘复利</span><em id="count-optimize">0</em></button>
+    </div>
+    <div class="section-label">业务增长飞轮</div>
+    <div class="flywheel" aria-label="洞察、验证、成交、复利循环">
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="flywheel-track" cx="60" cy="60" r="50"/>
+        <circle class="flywheel-motion" cx="60" cy="60" r="50"/>
+      </svg>
+      <div class="flywheel-core"><b id="flywheel-progress">0</b><span>已推进商机</span></div>
+      <span class="flywheel-label signal">洞察</span><span class="flywheel-label validate">验证</span>
+      <span class="flywheel-label revenue">成交</span><span class="flywheel-label compound">复利</span>
     </div>
     <div class="source-health">
       <div><b>数据源健康</b><span>{health.get('healthy', 0)} / {health.get('total', 0)}</span></div>
@@ -908,7 +968,14 @@ function visibleOpportunities(){{
   return activeFilter==='all'?sorted:sorted.filter(item=>getState(item.id).stage===activeFilter);
 }}
 function updateCounts(){{
-  stageOrder.forEach(stage=>{{const node=document.getElementById('count-'+stage);if(node)node.textContent=report.opportunities.filter(item=>getState(item.id).stage===stage).length;}});
+  stageOrder.forEach(stage=>{{
+    const count=report.opportunities.filter(item=>getState(item.id).stage===stage).length;
+    const node=document.getElementById('count-'+stage);
+    if(node){{node.textContent=count;node.closest('.nav')?.classList.toggle('has-items',count>0);}}
+  }});
+  const advanced=report.opportunities.filter(item=>stageOrder.indexOf(getState(item.id).stage)>0).length;
+  const progress=document.getElementById('flywheel-progress');
+  if(progress)progress.textContent=advanced;
 }}
 function renderQueue(){{
   const items=visibleOpportunities();

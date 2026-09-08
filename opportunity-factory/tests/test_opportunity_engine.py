@@ -153,6 +153,20 @@ class OpportunityEngineTests(unittest.TestCase):
         self.assertIn("更新数据", document)
         self.assertIn("action:'refresh'", document)
 
+    def test_html_exposes_growth_network_and_flywheel(self):
+        report = engine.generate_report([(Path("2026-08-17.json"), sample_report())])
+        document = engine.render_html(report)
+
+        self.assertIn("经营路径 · 逐级扩散", document)
+        self.assertIn('class="network-lines"', document)
+        self.assertIn("业务增长飞轮", document)
+        self.assertIn('id="flywheel-progress"', document)
+        for stage in (
+            "discover", "validate", "build", "launch",
+            "promote", "monetize", "optimize",
+        ):
+            self.assertIn(f'data-stage="{stage}"', document)
+
 
 if __name__ == "__main__":
     unittest.main()
