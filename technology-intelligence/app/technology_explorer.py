@@ -2448,19 +2448,34 @@ def product_intelligence_context(report: dict, research: dict) -> dict:
         ),
         reverse=True,
     )
-    hotspot_candidates = [
-        {
-            "vendor": vendor["vendor"],
-            "region": vendor["region"],
-            "product_type": product_type,
-            **product,
-        }
-        for vendor in rows
-        for product_type, product in vendor["cells"].items()
-        if product["name"] != "-" and product["mentions"] > 0
+    product_types = tuple(PRODUCT_MATRIX[0]["products"])
+    hotspots = {}
+    for product_type in product_types:
+        candidates_for_type = [
+            {
+                "vendor": vendor["vendor"],
+                "region": vendor["region"],
+                "product_type": product_type,
+                **vendor["cells"][product_type],
+            }
+            for vendor in rows
+            if vendor["cells"][product_type]["name"] != "-"
+        ]
+        hotspots[product_type] = max(
+            candidates_for_type,
+            key=lambda product: (
+                product["mentions"],
+                parse_date((product.get("latest") or {}).get("published_at"))
+                or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+            ),
+            default=None,
+        )
+    active_hotspots = [
+        product for product in hotspots.values()
+        if product and product["mentions"] > 0
     ]
     hotspot = max(
-        hotspot_candidates,
+        active_hotspots,
         key=lambda product: (
             product["mentions"],
             parse_date((product.get("latest") or {}).get("published_at"))
@@ -2480,6 +2495,7 @@ def product_intelligence_context(report: dict, research: dict) -> dict:
         ],
         "feed": feed[:12],
         "hotspot": hotspot,
+        "hotspots": hotspots,
     }
 
 
@@ -2582,17 +2598,26 @@ class ReportStore:
                 f'aria-label="拖动调整卡片大小"></button></section>'
             )
 
-        focus_cards = []
-        for product in product_intelligence["focus"]:
-            latest = product.get("latest")
-            status = f'今日 {product["mentions"]} 条' if product["mentions"] else "持续跟踪"
-            latest_url = html.escape(str((latest or {}).get("url") or ""))
-            tag = "a" if latest_url else "span"
-            href = f' href="{latest_url}"' if latest_url else ""
-            focus_cards.append(
-                f'<{tag} class="focus-product"{href}><i></i>'
-                f'<strong>{html.escape(product["name"])}</strong><small>{status}</small>'
-                f'</{tag}>'
+        product_type_labels = {
+            "desktop": "桌面办公", "mobile": "手机端",
+            "platform": "Agent 开发平台", "governance": "Agent 纳管平台",
+            "data": "知识引擎", "coding": "Code 工具",
+        }
+        type_hot_cards = []
+        for product_type, label in product_type_labels.items():
+            leader = product_intelligence["hotspots"].get(product_type)
+            if not leader:
+                continue
+            status = (
+                f'{leader["mentions"]} 条动态'
+                if leader["mentions"] else "持续跟踪"
+            )
+            type_hot_cards.append(
+                f'<a class="focus-product" href="{html.escape(leader["url"])}" '
+                f'data-hot-type="{product_type}" title="打开 {html.escape(leader["name"])} 官方入口">'
+                f'<i></i><small>{html.escape(label)} · HOT 01</small>'
+                f'<strong>{html.escape(leader["name"])}</strong>'
+                f'<span>{html.escape(leader["vendor"])} · {status}</span></a>'
             )
 
         company_options = []
@@ -2609,12 +2634,8 @@ class ReportStore:
             )
 
         product_rows = []
-        product_type_labels = {
-            "desktop": "桌面办公", "mobile": "手机端",
-            "platform": "Agent 开发平台", "governance": "Agent 纳管平台",
-            "data": "知识引擎", "coding": "Code 工具",
-        }
         hotspot = product_intelligence.get("hotspot")
+        type_hotspots = product_intelligence["hotspots"]
         if hotspot:
             hotspot_vendor = html.escape(hotspot["vendor"])
             hotspot_name = html.escape(hotspot["name"])
@@ -2649,7 +2670,10 @@ class ReportStore:
             )
         for vendor in product_intelligence["rows"]:
             cells = []
-            is_hot_vendor = bool(hotspot and vendor["vendor"] == hotspot["vendor"])
+            is_hot_vendor = any(
+                leader and vendor["vendor"] == leader["vendor"]
+                for leader in type_hotspots.values()
+            )
             for product_type in product_type_labels:
                 product = vendor["cells"][product_type]
                 name = html.escape(product["name"])
@@ -2663,8 +2687,11 @@ class ReportStore:
                     f'<b>{product["mentions"]}</b> 条动态'
                     if product["mentions"] else "持续跟踪"
                 )
+                type_leader = type_hotspots.get(product_type)
                 is_hot_product = bool(
-                    is_hot_vendor and product_type == hotspot["product_type"]
+                    type_leader
+                    and vendor["vendor"] == type_leader["vendor"]
+                    and product["name"] == type_leader["name"]
                 )
                 hot_badge = '<em class="hot-cell-badge">HOT 01</em>' if is_hot_product else ""
                 cells.append(
@@ -2682,7 +2709,7 @@ class ReportStore:
                 f'data-search="{html.escape(vendor["search"], quote=True)}">'
                 f'<th><span class="vendor-mark">{html.escape(vendor["vendor"])[:1]}</span>'
                 f'<span>{html.escape(vendor["vendor"])}'
-                f'<small>{"今日热度第一" if is_hot_vendor else vendor["tier"] + "跟踪"}</small></span></th>'
+                f'<small>{"分类 HOT 01" if is_hot_vendor else vendor["tier"] + "跟踪"}</small></span></th>'
                 f'{"".join(cells)}</tr>'
             )
 
@@ -3109,8 +3136,12 @@ html,body{{height:100%;overflow:hidden;background:var(--panel)}}
 .focus-product:first-of-type{{border-left:0}}
 .focus-product:hover{{background:#f4f8fd}}.focus-product i{{display:block;width:18px;height:3px;margin-bottom:8px;background:#5e87d8}}
 .focus-product:nth-child(3n) i{{background:#1b9a78}}.focus-product:nth-child(3n+1) i{{background:#e16a4a}}
-.focus-product strong,.focus-product small{{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}}
-.focus-product strong{{font-size:11px}}.focus-product small{{margin-top:3px;color:var(--muted);font-size:9px}}
+.focus-product strong,.focus-product small,.focus-product>span{{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}}
+.focus-product small{{margin:0 0 4px;color:#d64a2e;font-size:6px;font-weight:800;letter-spacing:.03em}}
+.focus-product strong{{font-size:9px;line-height:1.25}}.focus-product>span{{margin-top:5px;color:#7b8794;font-size:6px}}
+.focus-product[data-hot-type="desktop"] i,.focus-product[data-hot-type="coding"] i{{background:#527fd8}}
+.focus-product[data-hot-type="mobile"] i,.focus-product[data-hot-type="data"] i{{background:#16a07b}}
+.focus-product[data-hot-type="platform"] i,.focus-product[data-hot-type="governance"] i{{background:#ec684b}}
 .product-toolbar{{display:grid;grid-template-columns:auto minmax(0,1fr) auto 210px;align-items:end;gap:10px;margin-bottom:12px;padding:11px 12px;border:1px solid #d8e0e8;background:#fff;box-shadow:0 2px 8px rgba(25,39,58,.04)}}
 .filter-block{{min-width:0}}.filter-block>span{{display:block;margin:0 0 5px 2px;color:#7a8694;font-size:8px;font-weight:750}}
 .matrix-filters{{display:flex;min-width:0;padding:2px;border-radius:5px;background:#edf1f5}}
@@ -3204,7 +3235,7 @@ html,body{{height:100%;overflow:hidden;background:var(--panel)}}
 <div class="desktop-shell"><aside class="source-list"><div class="sidebar-head"><div class="sidebar-title">SIGNAL DESK<small>技术情报工作台</small></div><button class="sidebar-collapse" id="sidebar-collapse" type="button" title="折叠导航栏" aria-label="折叠导航栏" aria-expanded="true">‹</button></div><section><label>资料库</label><button class="source-nav active" data-workspace-mode="signals" title="今日热点"><i>⌁</i><span>今日热点</span><b>{len(signal_items[:8])}</b></button><button class="source-nav" data-workspace-mode="search" title="主动搜索"><i>⌕</i><span>主动搜索</span></button><button class="source-nav" data-workspace-mode="products" title="产品矩阵"><i>▤</i><span>产品矩阵</span><b>{len(PRODUCT_MATRIX)}</b></button><button class="source-nav" data-workspace-mode="boards" title="探索榜单"><i>▦</i><span>探索榜单</span><b>{len(report.get("news_boards", []))}</b></button><button class="source-nav" data-workspace-mode="ai" title="技术雷达"><i>◇</i><span>技术雷达</span><b>{len(report.get("items", [])[:10])}</b></button></section><section class="source-topics"><label>关注主题</label><button class="active" data-topic="all" title="全部主题"><i></i><span>全部主题</span></button>{topic_buttons}<button class="manage-topics" id="manage-topics" title="管理主题"><i>＋</i><span>管理主题</span></button></section><div class="sidebar-learning"><div><span>今日学习</span><b id="mastered-count">0 / {len(signal_items[:8])}</b></div><div class="progress-track"><i id="mastered-progress"></i></div><button class="unmastered-filter" id="unmastered-filter" type="button">只看未掌握</button></div><div class="topic-onboarding" id="topic-onboarding"><b>提示</b><span>选择主题后，热点、榜单、雷达和产品矩阵会同步变化。</span><button id="dismiss-topic-guide" aria-label="知道了">×</button></div></aside><div class="workspace-content">
 <section id="signals-view" class="signals-view overview"><section class="signal-browser"><header><div><h1>今日热点</h1><p>按综合热度排序 · 从 <b>{ok_count}</b> 个来源中筛选出 <b>{len(signal_items[:8])}</b> 条关键技术动态 · 已过滤 {rejected_count} 条低质量内容</p></div><button class="browser-filter" id="browser-filter" title="筛选未掌握">⌄</button><button class="overview-return" id="overview-return" type="button" title="返回热点总览"><span>←</span>总览</button></header><div class="signal-search"><span>⌕</span><input class="search" id="search" type="search" aria-label="搜索热点、来源或主题" placeholder="搜索今日热点"></div><div class="signal-index-list">{"".join(signal_index_rows)}</div><div class="topic-empty" id="topic-empty" hidden>该主题今天暂无高质量信号，系统仍在持续关注。</div></section><main class="signal-detail"><div class="signal-list">{"".join(signal_cards)}</div></main></section>
 <section id="search-view" class="active-search-view hidden"><div class="active-search-inner"><header class="active-search-head"><div><h1>主动搜索</h1><p>技术、产品、论文与开源项目</p></div><span class="search-live-badge"><i></i>实时检索</span></header><form class="active-search-form" id="active-search-form"><div class="active-search-input-wrap"><span>⌕</span><input id="active-search-input" class="active-search-input" type="search" maxlength="120" autocomplete="off" aria-label="搜索技术或产品" placeholder="输入技术、产品或问题，例如：Agent 纳管平台"></div><button class="active-search-submit" id="active-search-submit" type="submit">搜索</button><div class="active-search-controls"><div class="search-filter-group"><span>类型</span><div class="active-search-kinds" role="group" aria-label="搜索类型"><button class="active" type="button" data-search-kind="all">全部</button><button type="button" data-search-kind="technology">技术</button><button type="button" data-search-kind="product">产品</button></div></div><div class="search-filter-group"><span>时间</span><div class="active-search-ranges" role="group" aria-label="时间范围"><button type="button" data-search-range="7d">近一周</button><button class="active" type="button" data-search-range="30d">近一个月</button><button type="button" data-search-range="1y">近 1 年</button><button type="button" data-search-range="3y">近 3 年</button><button type="button" data-search-range="all">不限制</button></div></div><span class="search-hint">⌘ K 快速打开</span></div></form><div class="search-history" id="search-history"></div><section class="search-state search-initial" id="search-initial"><h2>搜索你正在关注的方向</h2><p>结果将合并产品矩阵、本机报告与实时公开来源。</p><div class="search-suggestions"><button type="button" data-search-query="Agent Portal"><b>Agent Portal</b><small>纳管平台与治理动态</small></button><button type="button" data-search-query="企业知识引擎"><b>企业知识引擎</b><small>知识接入、检索与 Agent 应用</small></button><button type="button" data-search-query="AI Coding Agent"><b>AI Coding Agent</b><small>产品、开源项目与技术进展</small></button></div></section><section class="search-state search-loading" id="search-loading" hidden><header><i></i><span>正在检索多个实时来源…</span></header><div class="search-loading-lines"><i></i><i></i><i></i></div></section><section class="search-state" id="search-results" hidden><header class="search-results-head"><strong id="search-result-title">搜索结果</strong><span id="search-result-meta"></span><time id="search-result-time"></time></header><div class="search-result-list" id="search-result-list"></div></section><section class="search-state search-error" id="search-error" hidden><b>搜索暂时不可用</b><p id="search-error-message"></p></section></div></section>
-<section id="products-view" class="product-view hidden"><div class="product-view-inner"><header class="product-head"><div><h1>产品情报矩阵</h1><p>覆盖个人助手、Agent 开发与纳管、知识引擎和 AI Coding，动态关联当天采集结果。</p></div><div class="product-stats"><span><b>{len(PRODUCT_MATRIX)}</b><small>国内外厂商</small></span><span><b>{product_activity_count}</b><small>今日产品动态</small></span></div></header><div class="product-highlights">{hotspot_html}<section class="focus-strip"><header><strong>国内第一梯队</strong><small>2026 重点跟踪</small></header>{"".join(focus_cards)}</section></div><div class="product-toolbar"><div class="filter-block"><span>市场范围</span><div class="matrix-filters" aria-label="地区筛选"><button class="active" data-product-region="all">全部</button><button data-product-region="china">国内</button><button data-product-region="global">国外</button></div></div><div class="filter-block"><span>产品维度</span><div class="matrix-filters" aria-label="产品类型筛选"><button class="active" data-product-scope="all">完整矩阵</button><button data-product-scope="desktop">桌面办公</button><button data-product-scope="mobile">手机端</button><button data-product-scope="platform">开发平台</button><button data-product-scope="governance">纳管平台</button><button data-product-scope="data">知识引擎</button><button data-product-scope="coding">Code 工具</button></div></div><button class="company-picker-button" id="company-picker-button" type="button" aria-expanded="false" aria-controls="company-picker">选择公司 <span id="company-picker-button-count">{len(PRODUCT_MATRIX)}/{len(PRODUCT_MATRIX)}</span></button><input class="product-search" id="product-search" type="search" placeholder="搜索厂商或产品" aria-label="搜索厂商或产品"></div><section class="company-picker" id="company-picker" hidden><header class="company-picker-head"><input class="company-picker-search" id="company-picker-search" type="search" placeholder="搜索公司或旗下产品" aria-label="搜索可选公司"><div class="company-picker-actions"><button id="select-all-companies" type="button">全选</button><button id="clear-all-companies" type="button">全不选</button><button id="close-company-picker" type="button">完成</button></div><span class="company-picker-count" id="company-picker-count">已选择 {len(PRODUCT_MATRIX)} / {len(PRODUCT_MATRIX)} 家</span></header><div class="company-options">{"".join(company_options)}</div></section><div class="product-workspace"><main><div class="matrix-wrap"><table class="product-table"><thead><tr><th>厂商</th><th data-product-column="desktop">个人助理（桌面办公）</th><th data-product-column="mobile">个人助理（手机端）</th><th data-product-column="platform">Agent 开发平台</th><th data-product-column="governance">Agent 纳管平台</th><th data-product-column="data">知识引擎</th><th data-product-column="coding">Code 工具</th></tr></thead><tbody>{"".join(product_rows)}</tbody></table></div><div class="matrix-empty" id="matrix-empty" hidden>当前没有已选公司，或筛选条件下暂无匹配产品。</div></main><aside class="product-feed"><header><h2>产品动态</h2><p>来自今日已采集来源，点击查看原文</p></header>{"".join(product_feed)}<div class="matrix-empty product-feed-empty" id="product-feed-empty" hidden>当前所选公司暂无产品动态。</div></aside></div></div></section>
+<section id="products-view" class="product-view hidden"><div class="product-view-inner"><header class="product-head"><div><h1>产品情报矩阵</h1><p>覆盖个人助手、Agent 开发与纳管、知识引擎和 AI Coding，动态关联当天采集结果。</p></div><div class="product-stats"><span><b>{len(PRODUCT_MATRIX)}</b><small>国内外厂商</small></span><span><b>{product_activity_count}</b><small>今日产品动态</small></span></div></header><div class="product-highlights">{hotspot_html}<section class="focus-strip"><header><strong>六维 HOT 01</strong><small>各产品类型当前第一</small></header>{"".join(type_hot_cards)}</section></div><div class="product-toolbar"><div class="filter-block"><span>市场范围</span><div class="matrix-filters" aria-label="地区筛选"><button class="active" data-product-region="all">全部</button><button data-product-region="china">国内</button><button data-product-region="global">国外</button></div></div><div class="filter-block"><span>产品维度</span><div class="matrix-filters" aria-label="产品类型筛选"><button class="active" data-product-scope="all">完整矩阵</button><button data-product-scope="desktop">桌面办公</button><button data-product-scope="mobile">手机端</button><button data-product-scope="platform">开发平台</button><button data-product-scope="governance">纳管平台</button><button data-product-scope="data">知识引擎</button><button data-product-scope="coding">Code 工具</button></div></div><button class="company-picker-button" id="company-picker-button" type="button" aria-expanded="false" aria-controls="company-picker">选择公司 <span id="company-picker-button-count">{len(PRODUCT_MATRIX)}/{len(PRODUCT_MATRIX)}</span></button><input class="product-search" id="product-search" type="search" placeholder="搜索厂商或产品" aria-label="搜索厂商或产品"></div><section class="company-picker" id="company-picker" hidden><header class="company-picker-head"><input class="company-picker-search" id="company-picker-search" type="search" placeholder="搜索公司或旗下产品" aria-label="搜索可选公司"><div class="company-picker-actions"><button id="select-all-companies" type="button">全选</button><button id="clear-all-companies" type="button">全不选</button><button id="close-company-picker" type="button">完成</button></div><span class="company-picker-count" id="company-picker-count">已选择 {len(PRODUCT_MATRIX)} / {len(PRODUCT_MATRIX)} 家</span></header><div class="company-options">{"".join(company_options)}</div></section><div class="product-workspace"><main><div class="matrix-wrap"><table class="product-table"><thead><tr><th>厂商</th><th data-product-column="desktop">个人助理（桌面办公）</th><th data-product-column="mobile">个人助理（手机端）</th><th data-product-column="platform">Agent 开发平台</th><th data-product-column="governance">Agent 纳管平台</th><th data-product-column="data">知识引擎</th><th data-product-column="coding">Code 工具</th></tr></thead><tbody>{"".join(product_rows)}</tbody></table></div><div class="matrix-empty" id="matrix-empty" hidden>当前没有已选公司，或筛选条件下暂无匹配产品。</div></main><aside class="product-feed"><header><h2>产品动态</h2><p>来自今日已采集来源，点击查看原文</p></header>{"".join(product_feed)}<div class="matrix-empty product-feed-empty" id="product-feed-empty" hidden>当前所选公司暂无产品动态。</div></aside></div></div></section>
 <div id="boards-view" class="dashboard hidden"><aside class="sidebar"><h3>内容分类</h3>{category_nav}</aside><main class="board-area"><div class="board-summary"><div><h1>探索榜单</h1><p>{ok_count} 个有效来源，聚合 {total_candidates} 条实时信号</p></div><button class="board-customize-button" id="board-customize-button" type="button" title="调整排版、主题、卡片顺序、大小和颜色"><span class="sliders-icon" aria-hidden="true"></span><span>自定义看板</span></button><div class="stat"><b>{len(report.get("news_boards", []))}</b><small>热点榜单</small></div></div><div class="board-grid" id="board-grid" data-layout="adaptive">{"".join(board_cards)}</div></main><aside class="rightbar"><h3>内容门户</h3>{portal_cards}<h3 style="margin-top:20px">采集状态</h3><ul class="health">{"".join(health_rows)}</ul>{errors}</aside></div>
 <section id="ai-view" class="ai-view"><div class="ai-head"><h1>技术雷达</h1><p>正在聚合 {len(topics)} 个关注主题、{len(scope.get("keywords", []))} 个关键词的高相关技术信号。</p></div>{"".join(ai_cards)}</section></div></div><div class="topic-modal" id="topic-modal" role="dialog" aria-modal="true" aria-labelledby="topic-dialog-title" hidden><div class="topic-dialog"><header><div><h2 id="topic-dialog-title">管理关注主题</h2><p>每天会同时采集所有关注主题；首页默认合并展示，也可以随时单独切换。</p></div><button id="close-topic-modal" aria-label="关闭">×</button></header><div class="topic-rows" id="topic-rows"></div><div class="topic-guide">每个主题建议填写 3-8 个具体关键词。英文短语会按完整词匹配，避免 RAG 误命中 STRATEGY 之类的噪声。</div><div class="topic-status" id="topic-status" role="status" hidden></div><div class="topic-actions"><button id="add-topic">＋ 添加主题</button><button id="cancel-topics">取消</button><button class="save-topics" id="save-topics">保存并刷新</button></div></div></div><script>
 let researchTopics={topics_json};

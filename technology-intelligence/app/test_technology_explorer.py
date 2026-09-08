@@ -141,7 +141,12 @@ class ProductMatrixRenderTests(unittest.TestCase):
         self.assertIn("今日热度焦点", page)
         self.assertIn('class="hottest-vendor"', page)
         self.assertIn('class="hottest-product"', page)
-        self.assertIn("HOT 01", page)
+        self.assertIn("六维 HOT 01", page)
+        self.assertEqual(page.count('class="hot-cell-badge"'), 6)
+        for product_type in (
+            "desktop", "mobile", "platform", "governance", "data", "coding"
+        ):
+            self.assertIn(f'data-hot-type="{product_type}"', page)
 
 
 class ActiveSearchTests(unittest.TestCase):
