@@ -17,6 +17,8 @@
 
 ### feat
 
+- Added `short-video-studio`, a local-first AI video workspace that generates 5, 10, 20, 30, or 60-second MP4 files, supports three aspect ratios, keeps model credentials server-side, and provides preview, download, and local history.
+- Added FFmpeg duration normalization so model outputs are measured and trimmed or looped to the requested delivery length.
 - Added branded Opportunity Factory favicon and Apple Touch assets based on the product's growth-compass identity.
 - Replaced Opportunity Compass's Finder-based history action with an in-app, date-grouped archive that restores each historical opportunity's full execution detail.
 - Redesigned Opportunity Compass's seven-stage sidebar as an animated outward-expanding business network and added a live insight-to-compounding growth flywheel.

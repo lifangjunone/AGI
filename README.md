@@ -20,6 +20,7 @@
 | [`fde-playbook/`](fde-playbook/README.md) | FDE Playbook | FDE 岗位认知、交付方法、能力地图和制造业实战 | React、TypeScript、Vite |
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
+| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 Short Video Studio | 生成 5–60 秒精确时长的 AI 短视频，并提供预览、下载与本地作品库 | Node.js、FFmpeg、原生 Web |
 
 ## 产品协作链路
 
@@ -52,6 +53,7 @@ cd ../english-foundation && npm install && npm run tauri dev
 cd ../fde-playbook && npm install && npm run dev
 cd ../agent-workforce-console && npm install && npm run dev
 cd ../hover-translator && npm install && npm run dev
+cd ../short-video-studio && npm start
 ```
 
 平台服务运行：
@@ -109,6 +111,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `opportunity-factory`：将商机罗盘左侧七阶段导航升级为动态扩散网络，并新增洞察、验证、成交、复利业务增长飞轮。
 - `opportunity-factory`：将“历史报告”升级为应用内时间线，可直接回看最近 30 期商机及完整执行详情，不再跳转本地文件夹。
 - `opportunity-factory`：网站新增与桌面端一致的“增长罗盘”favicon 和 Apple Touch 图标，替换浏览器默认地球图标。
+- `short-video-studio`：新增 FRAME/60 AI 短视频工作台，支持 5、10、20、30、60 秒与三种画面比例，通过服务端模型代理和 FFmpeg 校验交付精确时长。
 
 ## 远端仓库
 

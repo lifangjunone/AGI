@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>FRAME/60 · AI 短视频工作台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="FRAME/60 首页">
+          <span class="brand-mark"><span></span><span></span><span></span></span>
+          <strong>FRAME/60</strong>
+        </a>
+        <nav class="view-tabs" aria-label="主导航">
+          <button class="view-tab is-active" data-view="create">创作台</button>
+          <button class="view-tab" data-view="library">作品库 <span id="library-count">0</span></button>
+        </nav>
+        <div class="service-state" id="service-state">
+          <span class="status-dot"></span>
+          <span>连接中</span>
+        </div>
+      </header>
+
+      <main>
+        <section class="workspace" id="create-view">
+          <aside class="composer">
+            <div class="section-heading">
+              <span>01</span>
+              <div>
+                <p>创意描述</p>
+                <h1>导演你的下一条片子</h1>
+              </div>
+            </div>
+
+            <form id="generate-form">
+              <label class="field-label" for="prompt">画面提示词</label>
+              <div class="prompt-wrap">
+                <textarea
+                  id="prompt"
+                  maxlength="6000"
+                  placeholder="描述主体、动作、环境、光线与镜头运动..."
+                  required
+                ></textarea>
+                <div class="prompt-meta">
+                  <button type="button" class="icon-button" id="clear-prompt" title="清空提示词" aria-label="清空提示词">
+                    <i data-lucide="trash-2"></i>
+                  </button>
+                  <span><b id="prompt-count">0</b> / 6000</span>
+                </div>
+              </div>
+
+              <div class="presets" aria-label="提示词模板">
+                <button type="button" data-preset="product">产品广告</button>
+                <button type="button" data-preset="city">城市电影</button>
+                <button type="button" data-preset="food">美食微距</button>
+              </div>
+
+              <fieldset>
+                <legend>成片时长</legend>
+                <div class="segmented duration-options">
+                  <label><input type="radio" name="duration" value="5" checked /><span>5s</span></label>
+                  <label><input type="radio" name="duration" value="10" /><span>10s</span></label>
+                  <label><input type="radio" name="duration" value="20" /><span>20s</span></label>
+                  <label><input type="radio" name="duration" value="30" /><span>30s</span></label>
+                  <label><input type="radio" name="duration" value="60" /><span>60s</span></label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>画面比例</legend>
+                <div class="ratio-options">
+                  <label>
+                    <input type="radio" name="ratio" value="9:16" checked />
+                    <span><i class="ratio-shape vertical"></i><b>9:16</b><small>短视频</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="ratio" value="16:9" />
+                    <span><i class="ratio-shape landscape"></i><b>16:9</b><small>横屏</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="ratio" value="1:1" />
+                    <span><i class="ratio-shape square"></i><b>1:1</b><small>方形</small></span>
+                  </label>
+                </div>
+              </fieldset>
+
+              <button class="generate-button" id="generate-button" type="submit">
+                <span class="button-icon"><i data-lucide="sparkles"></i></span>
+                <span class="button-copy"><b>开始生成</b><small id="generate-summary">5 秒 · 9:16</small></span>
+                <i data-lucide="arrow-up-right"></i>
+              </button>
+            </form>
+          </aside>
+
+          <section class="stage-column">
+            <div class="stage-toolbar">
+              <div>
+                <span class="eyebrow">PREVIEW / 预览</span>
+                <strong id="stage-title">等待创意</strong>
+              </div>
+              <div class="stage-actions">
+                <button class="icon-button" id="copy-prompt" title="复制提示词" aria-label="复制提示词" disabled>
+                  <i data-lucide="copy"></i>
+                </button>
+                <a class="icon-button is-disabled" id="download-video" title="下载视频" aria-label="下载视频">
+                  <i data-lucide="download"></i>
+                </a>
+              </div>
+            </div>
+
+            <div class="stage" id="stage">
+              <img
+                class="stage-poster"
+                src="/studio-poster.jpg"
+                alt="电影制作监视器与摄影棚"
+              />
+              <div class="stage-shade"></div>
+              <div class="empty-state" id="empty-state">
+                <span class="frame-index">00:00:00</span>
+                <h2>画面从一句话开始</h2>
+                <p>选择时长与比例，然后生成。</p>
+              </div>
+              <video id="video-player" controls playsinline></video>
+              <div class="render-state" id="render-state" hidden>
+                <div class="render-orbit"><i data-lucide="aperture"></i></div>
+                <strong id="render-title">正在构建镜头</strong>
+                <span id="render-timer">00:00</span>
+                <div class="render-track"><span id="render-progress"></span></div>
+                <p id="render-detail">正在向模型提交创意...</p>
+              </div>
+              <div class="duration-stamp" id="duration-stamp">5 SEC</div>
+            </div>
+
+            <div class="timeline">
+              <div class="timeline-header">
+                <span>OUTPUT TIMELINE</span>
+                <span id="timeline-duration">00:05</span>
+              </div>
+              <div class="timeline-track" id="timeline-track"></div>
+              <div class="timeline-scale">
+                <span>00:00</span><span>25%</span><span>50%</span><span>75%</span><span id="timeline-end">00:05</span>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="library-view" id="library-view" hidden>
+          <div class="library-header">
+            <div class="section-heading">
+              <span>02</span>
+              <div><p>本地作品</p><h1>生成记录</h1></div>
+            </div>
+            <button class="secondary-button" id="refresh-library"><i data-lucide="refresh-cw"></i>刷新</button>
+          </div>
+          <div class="library-grid" id="library-grid"></div>
+          <div class="library-empty" id="library-empty">
+            <i data-lucide="film"></i>
+            <p>还没有生成作品</p>
+          </div>
+        </section>
+      </main>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
