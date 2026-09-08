@@ -108,6 +108,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `opportunity-factory`：生产运行台同时兼容 `/admin` 与 `/admin/`，使用网页登录和安全会话 Cookie，避免原生 Basic Auth 在部分浏览器中显示空白或错误页。
 - `opportunity-factory`：将商机罗盘左侧七阶段导航升级为动态扩散网络，并新增洞察、验证、成交、复利业务增长飞轮。
 - `opportunity-factory`：将“历史报告”升级为应用内时间线，可直接回看最近 30 期商机及完整执行详情，不再跳转本地文件夹。
+- `opportunity-factory`：网站新增与桌面端一致的“增长罗盘”favicon 和 Apple Touch 图标，替换浏览器默认地球图标。
 
 ## 远端仓库
 

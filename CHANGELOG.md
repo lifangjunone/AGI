@@ -17,6 +17,7 @@
 
 ### feat
 
+- Added branded Opportunity Factory favicon and Apple Touch assets based on the product's growth-compass identity.
 - Replaced Opportunity Compass's Finder-based history action with an in-app, date-grouped archive that restores each historical opportunity's full execution detail.
 - Redesigned Opportunity Compass's seven-stage sidebar as an animated outward-expanding business network and added a live insight-to-compounding growth flywheel.
 - Added Opportunity Factory's ¥9.90 WeChat first-payment flow with private QR serving, unique payment notes, buyer payment claims, authenticated receipt confirmation, automatic report unlock, and CNY revenue accounting.

@@ -4,6 +4,8 @@
 **专业报告：** ¥9.90/仓库，微信扫码付款，到账确认后解锁 Markdown 和 JSON 整改清单。
 
 产品类型：商机发现、审计与验证工作台
+
+网站使用与桌面端一致的“增长罗盘”品牌图标，并提供浏览器标签页和 Apple 设备主屏图标。
 原产品名：商机罗盘 / Opportunity Compass
 运行形态：macOS 桌面应用 + 本地/服务器无人值守服务
 上游项目：[`technology-intelligence/`](../technology-intelligence/)

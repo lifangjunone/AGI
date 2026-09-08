@@ -28,6 +28,7 @@ from typing import Any
 APP_NAME = "Opportunity Factory"
 BASE_DIR = Path(os.environ.get("OPPORTUNITY_FACTORY_HOME", Path(__file__).resolve().parents[1] / "runtime"))
 DB_PATH = BASE_DIR / "factory.db"
+WEB_ASSET_DIR = Path(__file__).resolve().parent / "assets"
 HOST = os.environ.get("FACTORY_HOST", "127.0.0.1")
 PORT = int(os.environ.get("FACTORY_PORT", "8787"))
 PUBLIC_URL = os.environ.get("PUBLIC_URL", "https://audit.lifeyoume.icu").rstrip("/")
@@ -2462,6 +2463,9 @@ def page_shell(
 <meta property="og:url" content="{html.escape(canonical_url)}">
 <meta name="twitter:card" content="summary"><meta name="twitter:title" content="{html.escape(title)}">
 <meta name="twitter:description" content="{html.escape(description or title)}">{schema}
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon.png?v=2">
+<link rel="shortcut icon" href="/favicon.ico?v=2">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
 <link rel="alternate" type="application/rss+xml" title="Life You Me 产品与报告更新" href="{PUBLIC_URL}/feed.xml">
 <title>{html.escape(title)} · Life You Me</title>
 <style>
@@ -3308,6 +3312,20 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path
         if path == "/healthz":
             self.send_bytes(200, b'{"status":"ok"}', "application/json")
+        elif path in {"/favicon.ico", "/favicon.png"}:
+            self.send_bytes(
+                200,
+                (WEB_ASSET_DIR / "favicon-64.png").read_bytes(),
+                "image/png",
+                {"Cache-Control": "public, max-age=86400"},
+            )
+        elif path == "/apple-touch-icon.png":
+            self.send_bytes(
+                200,
+                (WEB_ASSET_DIR / "apple-touch-icon.png").read_bytes(),
+                "image/png",
+                {"Cache-Control": "public, max-age=86400"},
+            )
         elif path == "/assets/wechat-pay-qr":
             qr_path = wechat_qr_path()
             if not qr_path:

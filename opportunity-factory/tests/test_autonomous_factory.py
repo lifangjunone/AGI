@@ -174,6 +174,16 @@ class AutonomousFactoryTests(unittest.TestCase):
         self.assertIn('select="rss/channel/item"', stylesheet)
         self.assertIn('href="/updates">订阅</a>', factory.page_shell("test", "").decode())
 
+    def test_page_shell_declares_branded_favicons(self):
+        document = factory.page_shell("test", "").decode()
+
+        self.assertIn('href="/favicon.png?v=2"', document)
+        self.assertIn('href="/favicon.ico?v=2"', document)
+        self.assertIn('href="/apple-touch-icon.png?v=2"', document)
+        favicon = factory.WEB_ASSET_DIR / "favicon-64.png"
+        self.assertTrue(favicon.is_file())
+        self.assertTrue(favicon.read_bytes().startswith(b"\x89PNG\r\n\x1a\n"))
+
     def test_aggregated_bounty_alert_is_rejected(self):
         row = demand("alert", "scanner", title="Bounty Alert: 8 New Opportunities Found")
         row.metadata["repository_url"] = "https://api.github.com/repos/example/BountyScout"

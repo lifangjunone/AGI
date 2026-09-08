@@ -23,8 +23,8 @@ if ss -ltn | awk '{print $4}' | grep -Eq '(^|:)8787$'; then
 fi
 
 id opportunity >/dev/null 2>&1 || useradd --system --home-dir "$APP_ROOT" --shell /usr/sbin/nologin opportunity
-mkdir -p "$APP_ROOT/service" "$APP_ROOT/runtime" "$APP_ROOT/deploy" "$APP_ROOT/private" "/data/app/backups"
-chmod 0755 "$APP_ROOT" "$APP_ROOT/service" "$APP_ROOT/deploy"
+mkdir -p "$APP_ROOT/service/assets" "$APP_ROOT/runtime" "$APP_ROOT/deploy" "$APP_ROOT/private" "/data/app/backups"
+chmod 0755 "$APP_ROOT" "$APP_ROOT/service" "$APP_ROOT/service/assets" "$APP_ROOT/deploy"
 chmod 0700 "$APP_ROOT/runtime" "$APP_ROOT/private"
 chmod 0700 "/data/app/backups"
 
@@ -33,6 +33,8 @@ if [[ -d "$APP_ROOT/service" && -n "$(find "$APP_ROOT/service" -mindepth 1 -maxd
 fi
 
 install -m 0755 "$SOURCE_DIR/service/autonomous_factory.py" "$APP_ROOT/service/autonomous_factory.py"
+install -m 0644 "$SOURCE_DIR/service/assets/favicon-64.png" "$APP_ROOT/service/assets/favicon-64.png"
+install -m 0644 "$SOURCE_DIR/service/assets/apple-touch-icon.png" "$APP_ROOT/service/assets/apple-touch-icon.png"
 install -m 0644 "$SOURCE_DIR/deploy/docker-proxy-compose.yml" "$APP_ROOT/deploy/docker-proxy-compose.yml"
 install -m 0644 "$SOURCE_DIR/deploy/proxy.conf" "$APP_ROOT/deploy/proxy.conf"
 install -m 0644 "$SOURCE_DIR/deploy/empty.conf" "$APP_ROOT/deploy/empty.conf"
