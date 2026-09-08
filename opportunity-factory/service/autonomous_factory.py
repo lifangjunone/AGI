@@ -3880,7 +3880,7 @@ Free reports provide a risk summary. Professional reports add OpenSSF failure ev
                 "application/json; charset=utf-8",
                 {"Cache-Control": "no-store"},
             )
-        elif path == "/admin":
+        elif path in {"/admin", "/admin/"}:
             if not self.admin_authorized():
                 return
             data = self.store.dashboard()

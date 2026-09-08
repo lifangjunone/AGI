@@ -13,6 +13,7 @@
 - Added a terminal-launched hourly sync loop to avoid macOS Desktop TCC failures from the LaunchAgent path.
 - Allowed `.env.example` template files in auto-sync while continuing to block real `.env` files, private keys, certificates, suspected credential contents, and files larger than 95 MB.
 - Fixed Opportunity Factory deployment so an already-running systemd service restarts onto the newly installed release.
+- Fixed Opportunity Factory's production dashboard route to accept both `/admin` and `/admin/`.
 
 ### feat
 
