@@ -79,14 +79,17 @@ SERVICE_ROLE=portal python3 platform/app.py
 
 ## GitHub 定时同步
 
-macOS 使用 `launchd` 每 3600 秒检查一次仓库。任务会提交工作区变更并推送到当前分支，不创建空提交；远端领先、疑似密钥或单文件超过 95 MB 时会安全停止或跳过风险文件。发现跳过项时会立即发送 macOS 系统通知，并将完整路径和原因写入 `~/Library/Logs/LifeYouMe/agi-github-sync-skipped.txt`。
+macOS 每 3600 秒检查一次仓库。任务会提交工作区变更并推送到当前分支，不创建空提交；远端领先、疑似密钥或单文件超过 95 MB 时会安全停止或跳过风险文件。发现跳过项时会立即发送 macOS 系统通知，并将完整路径和原因写入 `~/Library/Logs/LifeYouMe/agi-github-sync-skipped.txt`。
+
+`launchd` 可能被 macOS Desktop 目录 TCC 权限拦截，表现为 `Operation not permitted`。当前推荐使用由已授权终端会话启动的后台循环：
 
 ```bash
+./scripts/start-auto-sync-loop.sh
 ./scripts/install-auto-sync.sh
 ./scripts/auto-sync-github.sh --dry-run
 ```
 
-任务标识为 `com.lifeyoume.agi-github-sync`，日志位于 `~/Library/Logs/LifeYouMe/`。自动提交只表示阶段性代码快照，不代表功能已经通过验收。
+LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID 位于 `~/Library/Application Support/LifeYouMe/agi-github-sync-loop.pid`。日志位于 `~/Library/Logs/LifeYouMe/`。自动提交只表示阶段性代码快照，不代表功能已经通过验收。
 
 ## 代码索引
 
