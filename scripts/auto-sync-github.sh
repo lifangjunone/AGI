@@ -108,6 +108,8 @@ git add -A
 skipped_count=0
 while IFS= read -r -d '' path; do
   case "$path" in
+    *.env.example|*/.env.example)
+      ;;
     *.env|*.env.*|*.pem|*.key|*.p12|*.pfx|*/.env|*/.env.*|*/.ssh/*|credentials.json|*/credentials.json|secrets.json|*/secrets.json)
       git restore --staged -- "$path" 2>/dev/null || git reset -q HEAD -- "$path"
       log "Skipped sensitive-looking path: $path"
