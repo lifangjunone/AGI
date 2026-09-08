@@ -138,6 +138,10 @@ class ProductMatrixRenderTests(unittest.TestCase):
         self.assertIn("technology-product-vendor-selection-v1", page)
         self.assertIn("selectedVendors=new Set()", page)
         self.assertIn("vendorMatches&&regionMatches", page)
+        self.assertIn("今日热度焦点", page)
+        self.assertIn('class="hottest-vendor"', page)
+        self.assertIn('class="hottest-product"', page)
+        self.assertIn("HOT 01", page)
 
 
 class ActiveSearchTests(unittest.TestCase):
