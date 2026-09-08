@@ -17,7 +17,7 @@ chmod +x "$SYNC_SCRIPT"
 /usr/bin/plutil -insert ProgramArguments -json \
   "[\"/bin/bash\", \"$SYNC_SCRIPT\"]" "$PLIST_PATH"
 /usr/bin/plutil -insert WorkingDirectory -string "$ROOT" "$PLIST_PATH"
-/usr/bin/plutil -insert StartInterval -integer 7200 "$PLIST_PATH"
+/usr/bin/plutil -insert StartInterval -integer 3600 "$PLIST_PATH"
 /usr/bin/plutil -insert ProcessType -string Background "$PLIST_PATH"
 /usr/bin/plutil -insert LowPriorityIO -bool true "$PLIST_PATH"
 /usr/bin/plutil -insert StandardOutPath -string \
@@ -28,5 +28,5 @@ chmod +x "$SYNC_SCRIPT"
 /bin/launchctl bootout "$DOMAIN/$LABEL" >/dev/null 2>&1 || true
 /bin/launchctl bootstrap "$DOMAIN" "$PLIST_PATH"
 
-printf 'Installed %s with a 7200-second interval.\n' "$LABEL"
+printf 'Installed %s with a 3600-second interval.\n' "$LABEL"
 printf 'Logs: %s/agi-github-sync.log\n' "$LOG_DIR"
