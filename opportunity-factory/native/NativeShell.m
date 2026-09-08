@@ -302,10 +302,6 @@
     }
 }
 
-- (void)openReports:(id)sender {
-    [[NSWorkspace sharedWorkspace] openURL:[self reportsDirectory]];
-}
-
 - (void)scheduleDailyRefresh {
     [self.dailyTimer invalidate];
     NSDate *now = [NSDate date];
@@ -350,8 +346,6 @@
         if (url && [@[@"http", @"https"] containsObject:url.scheme.lowercaseString]) {
             [[NSWorkspace sharedWorkspace] openURL:url];
         }
-    } else if ([action isEqualToString:@"open-reports"]) {
-        [self openReports:nil];
     } else if ([action isEqualToString:@"refresh"]) {
         [self refresh:nil];
     } else if ([action isEqualToString:@"copy-text"]) {

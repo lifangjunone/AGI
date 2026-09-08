@@ -1,3 +1,4 @@
+import json
 import sys
 import tempfile
 import unittest
@@ -134,10 +135,18 @@ class OpportunityEngineTests(unittest.TestCase):
                 engine.SUPPORT_DIR = Path(temp)
                 engine.REPORT_DIR = Path(temp) / "reports"
                 engine.LATEST_HTML = Path(temp) / "latest.html"
+                engine.REPORT_DIR.mkdir(parents=True)
+                archived = {**report, "date": "2026-08-16"}
+                (engine.REPORT_DIR / "2026-08-16.json").write_text(
+                    json.dumps(archived, ensure_ascii=False),
+                    encoding="utf-8",
+                )
                 json_path, html_path = engine.save_report(report)
                 self.assertTrue(json_path.exists())
                 self.assertTrue(html_path.exists())
-                self.assertIn("商机罗盘", html_path.read_text(encoding="utf-8"))
+                document = html_path.read_text(encoding="utf-8")
+                self.assertIn("商机罗盘", document)
+                self.assertIn("2026-08-16", document)
             finally:
                 engine.REPORT_DIR = original_report_dir
                 engine.SUPPORT_DIR = original_support_dir
@@ -166,6 +175,17 @@ class OpportunityEngineTests(unittest.TestCase):
             "promote", "monetize", "optimize",
         ):
             self.assertIn(f'data-stage="{stage}"', document)
+
+    def test_history_reports_are_rendered_inside_the_app(self):
+        report = engine.generate_report([(Path("2026-08-17.json"), sample_report())])
+        archived = {**report, "date": "2026-08-16"}
+        document = engine.render_html(report, [report, archived])
+
+        self.assertIn("2期", document)
+        self.assertIn("Opportunity archive", document)
+        self.assertIn("history-group", document)
+        self.assertIn("2026-08-16", document)
+        self.assertNotIn("action:'open-reports'", document)
 
 
 if __name__ == "__main__":

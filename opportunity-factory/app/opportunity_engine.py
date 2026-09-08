@@ -679,7 +679,19 @@ def save_report(report: dict[str, Any]) -> tuple[Path, Path]:
     SUPPORT_DIR.mkdir(parents=True, exist_ok=True)
     json_path = REPORT_DIR / f"{report['date']}.json"
     html_path = REPORT_DIR / f"{report['date']}.html"
-    document = render_html(report)
+    history = [report]
+    for path in sorted(REPORT_DIR.glob("*.json"), reverse=True):
+        if path.stem == report["date"]:
+            continue
+        try:
+            archived = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(archived, dict) and archived.get("opportunities"):
+            history.append(archived)
+        if len(history) >= 30:
+            break
+    document = render_html(report, history)
     json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     html_path.write_text(document, encoding="utf-8")
     LATEST_HTML.write_text(document, encoding="utf-8")
@@ -701,9 +713,14 @@ def escape_json_for_script(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False).replace("<", "\\u003c")
 
 
-def render_html(report: dict[str, Any]) -> str:
+def render_html(
+    report: dict[str, Any],
+    history_reports: list[dict[str, Any]] | None = None,
+) -> str:
     opportunities = report.get("opportunities") or []
     payload = escape_json_for_script(report)
+    history_reports = history_reports or [report]
+    history_payload = escape_json_for_script(history_reports)
     date_label = clean(report.get("date")).replace("-", ".")
     health = report.get("source_health") or {}
     generated_at = parse_date(report.get("generated_at"))
@@ -818,6 +835,16 @@ button{{letter-spacing:0}}
 .status-chip{{margin-left:auto;color:var(--muted);font-size:8px}}.queue-item h2{{margin:0;font-size:14px;line-height:1.45}}
 .queue-item p{{display:-webkit-box;overflow:hidden;margin:8px 0 0;color:var(--muted);font-size:10px;-webkit-line-clamp:2;-webkit-box-orient:vertical}}
 .queue-meta{{display:flex;justify-content:space-between;gap:8px;margin-top:12px;padding-top:9px;border-top:1px solid var(--line);font-size:8px;color:var(--muted)}}
+.history-group{{position:relative;padding:0 0 14px 17px}}
+.history-group::before{{content:"";position:absolute;left:4px;top:9px;bottom:-3px;width:1px;background:var(--line)}}
+.history-group:last-child::before{{bottom:auto;height:12px}}
+.history-group-head{{position:relative;display:flex;justify-content:space-between;align-items:center;padding:4px 8px 8px 0}}
+.history-group-head::before{{content:"";position:absolute;left:-17px;top:9px;width:9px;height:9px;border:2px solid var(--green);
+  border-radius:50%;background:var(--list);box-shadow:0 0 0 4px var(--green-soft)}}
+.history-group-head time{{font-size:11px;font-weight:750}}.history-group-head span{{color:var(--muted);font-size:8px}}
+.history-group .queue-item{{padding:13px 12px;background:var(--panel);border:1px solid var(--line);border-radius:6px}}
+.history-group .queue-item+.queue-item{{margin-top:6px}}.history-group .queue-item.selected{{border-color:var(--green);box-shadow:0 3px 12px rgba(22,134,111,.10)}}
+.archive-chip{{color:var(--green);font-size:8px;font-weight:700}}
 .detail{{min-width:0;min-height:0;overflow-y:auto;background:var(--panel)}}
 .detail-inner{{max-width:900px;margin:0 auto;padding:36px 44px 70px}}
 .detail-kicker{{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:9px}}
@@ -899,7 +926,7 @@ button{{letter-spacing:0}}
     <div class="brand"><div class="brand-mark">O</div><div><b>商机罗盘</b><small>Opportunity Compass</small></div></div>
     <div class="section-label">工作台</div>
     <button class="nav active" data-filter="all"><i>⌁</i><span>今日商机</span><em>{len(opportunities)}</em></button>
-    <button class="nav" data-filter="history"><i>◷</i><span>历史报告</span><em>{health.get('history_days', 0)}天</em></button>
+    <button class="nav" data-filter="history"><i>◷</i><span>历史报告</span><em>{len(history_reports)}期</em></button>
     <div class="section-label">经营路径 · 逐级扩散</div>
     <div class="pipeline">
       <svg class="network-lines" viewBox="0 0 234 294" aria-hidden="true">
@@ -932,10 +959,10 @@ button{{letter-spacing:0}}
     </div>
   </aside>
   <section class="opportunity-list">
-    <header class="list-head"><div class="list-head-top"><div class="eyebrow">Daily opportunity brief</div>
+    <header class="list-head"><div class="list-head-top"><div class="eyebrow" id="list-eyebrow">Daily opportunity brief</div>
       <button class="refresh-data" id="refresh-data" type="button" title="重新读取 Technology Exploration 最新数据并计算商机"><i>↻</i><span>更新数据</span></button>
-      </div><h1>{date_label} 商机</h1><p>按团队承载力重算投入、落地与盈利路径</p>
-      <div class="data-freshness"><span title="本页商机完成计算的时间"><i></i>商机生成 {generated_label}</span><span title="Technology Exploration 上游报告的生成时间">来源数据 {source_generated_label}</span></div>
+      </div><h1 id="list-title">{date_label} 商机</h1><p id="list-subtitle">按团队承载力重算投入、落地与盈利路径</p>
+      <div class="data-freshness" id="data-freshness"><span title="本页商机完成计算的时间"><i></i>商机生成 {generated_label}</span><span title="Technology Exploration 上游报告的生成时间">来源数据 {source_generated_label}</span></div>
       <div class="team-switch" id="team-switch"><button data-team="solo">1 人</button><button data-team="micro">2-5 人</button><button data-team="growth">6-20 人</button></div>
     </header>
     <div class="queue" id="queue"></div>
@@ -945,6 +972,7 @@ button{{letter-spacing:0}}
 <div class="toast" id="toast">已保存</div>
 <script>
 const report={payload};
+const reportHistory={history_payload};
 const stageLabels={{discover:'商机',validate:'验证',build:'开发',launch:'上线',promote:'推广',monetize:'盈利',optimize:'复利'}};
 const stageOrder=Object.keys(stageLabels);
 let selectedId=localStorage.getItem('opportunity.selected')||report.opportunities[0]?.id||'';
@@ -963,7 +991,11 @@ function nativeMessage(message){{
   const handler=window.webkit?.messageHandlers?.opportunityCompass;
   if(handler)handler.postMessage(message);else if(message.action==='open-url')window.open(message.url,'_blank');
 }}
+function historicalOpportunities(){{
+  return reportHistory.flatMap(archive=>(archive.opportunities||[]).map(item=>({{...item,_reportDate:archive.date}})));
+}}
 function visibleOpportunities(){{
+  if(activeFilter==='history')return historicalOpportunities();
   const sorted=[...report.opportunities].sort((a,b)=>profileFor(b).fit_score-profileFor(a).fit_score);
   return activeFilter==='all'?sorted:sorted.filter(item=>getState(item.id).stage===activeFilter);
 }}
@@ -977,19 +1009,36 @@ function updateCounts(){{
   const progress=document.getElementById('flywheel-progress');
   if(progress)progress.textContent=advanced;
 }}
+function renderListHeader(){{
+  const historyMode=activeFilter==='history';
+  document.getElementById('list-eyebrow').textContent=historyMode?'Opportunity archive':'Daily opportunity brief';
+  document.getElementById('list-title').textContent=historyMode?`${{reportHistory.length}} 期历史报告`:'{date_label} 商机';
+  document.getElementById('list-subtitle').textContent=historyMode?'按日期回看商机判断、证据与执行方案':'按团队承载力重算投入、落地与盈利路径';
+  document.getElementById('data-freshness').style.display=historyMode?'none':'flex';
+  document.getElementById('team-switch').style.display=historyMode?'none':'grid';
+  document.getElementById('refresh-data').style.visibility=historyMode?'hidden':'visible';
+}}
+function queueCard(item,archived=false){{
+  const state=getState(item.id),profile=profileFor(item);
+  return `<button class="queue-item ${{item.id===selectedId?'selected':''}}" data-id="${{item.id}}">
+    <div class="queue-top"><span class="rank">${{profile.label}}</span><span class="confidence">${{profile.feasibility}}落地 · ${{profile.fit_score}}分</span><span class="${{archived?'archive-chip':'status-chip'}}">${{archived?item._reportDate:stageLabels[state.stage]}}</span></div>
+    <h2>${{escapeHtml(item.title)}}</h2><p>${{escapeHtml(profile.first_offer)}}</p>
+    <div class="queue-meta"><span>投入 ¥${{money(profile.cash_budget)}} · ${{profile.hours}}h</span><span>${{profile.launch_days}} 天上线</span></div></button>`;
+}}
 function renderQueue(){{
+  renderListHeader();
   const items=visibleOpportunities();
-  document.getElementById('queue').innerHTML=items.length?items.map(item=>{{
-    const state=getState(item.id),profile=profileFor(item);
-    return `<button class="queue-item ${{item.id===selectedId?'selected':''}}" data-id="${{item.id}}">
-      <div class="queue-top"><span class="rank">${{profile.label}}</span><span class="confidence">${{profile.feasibility}}落地 · ${{profile.fit_score}}分</span><span class="status-chip">${{stageLabels[state.stage]}}</span></div>
-      <h2>${{escapeHtml(item.title)}}</h2><p>${{escapeHtml(profile.first_offer)}}</p>
-      <div class="queue-meta"><span>投入 ¥${{money(profile.cash_budget)}} · ${{profile.hours}}h</span><span>${{profile.launch_days}} 天上线</span></div></button>`;
-  }}).join(''):'<div class="empty">该阶段暂时没有商机</div>';
+  const historyMarkup=reportHistory.map(archive=>{{
+    const archivedItems=(archive.opportunities||[]).map(item=>({{...item,_reportDate:archive.date}}));
+    return `<section class="history-group"><header class="history-group-head"><time>${{escapeHtml(archive.date.replaceAll('-','.'))}}</time><span>${{archivedItems.length}} 条商机</span></header>${{archivedItems.map(item=>queueCard(item,true)).join('')}}</section>`;
+  }}).join('');
+  document.getElementById('queue').innerHTML=activeFilter==='history'
+    ?(historyMarkup||'<div class="empty">暂无历史报告</div>')
+    :(items.length?items.map(item=>queueCard(item)).join(''):'<div class="empty">该阶段暂时没有商机</div>');
   document.querySelectorAll('.queue-item').forEach(button=>button.addEventListener('click',()=>{{selectedId=button.dataset.id;viewedStage='';localStorage.setItem('opportunity.selected',selectedId);renderQueue();renderDetail();}}));
 }}
 function renderDetail(){{
-  const item=report.opportunities.find(row=>row.id===selectedId)||visibleOpportunities()[0];
+  const item=(activeFilter==='history'?historicalOpportunities():report.opportunities).find(row=>row.id===selectedId)||visibleOpportunities()[0];
   if(!item){{document.getElementById('detail').innerHTML='<div class="empty">请选择一条商机</div>';return;}}
   selectedId=item.id;
   const state=getState(item.id),profile=profileFor(item);
@@ -1064,7 +1113,7 @@ function escapeHtml(value){{return String(value??'').replace(/[&<>"']/g,char=>({
 function showToast(message){{const toast=document.getElementById('toast');toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1600);}}
 document.querySelectorAll('.nav[data-stage]').forEach(button=>button.addEventListener('click',()=>{{activeFilter=button.dataset.stage;document.querySelectorAll('.nav').forEach(node=>node.classList.remove('active'));button.classList.add('active');const first=visibleOpportunities()[0];if(first)selectedId=first.id;renderQueue();renderDetail();}}));
 document.querySelector('.nav[data-filter="all"]').addEventListener('click',event=>{{activeFilter='all';document.querySelectorAll('.nav').forEach(node=>node.classList.remove('active'));event.currentTarget.classList.add('active');renderQueue();renderDetail();}});
-document.querySelector('.nav[data-filter="history"]').addEventListener('click',()=>nativeMessage({{action:'open-reports'}}));
+document.querySelector('.nav[data-filter="history"]').addEventListener('click',event=>{{activeFilter='history';document.querySelectorAll('.nav').forEach(node=>node.classList.remove('active'));event.currentTarget.classList.add('active');const first=visibleOpportunities()[0];if(first)selectedId=first.id;viewedStage='';renderQueue();renderDetail();}});
 document.getElementById('refresh-data').addEventListener('click',event=>{{
   const button=event.currentTarget;
   const handler=window.webkit?.messageHandlers?.opportunityCompass;
