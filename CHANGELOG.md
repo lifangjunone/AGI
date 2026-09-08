@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-08
+
+### docs
+
+- Added the MetaHuman asset rebuild guide with public repository boundaries, private backup guidance, SHA-256 checksums, rebuild commands, and acceptance gates.
+- Updated the workspace README with MetaHuman rebuild documentation and GitHub auto-sync operational notes.
+
+### fix
+
+- Changed GitHub auto-sync from a two-hour interval to a one-hour interval.
+- Added a terminal-launched hourly sync loop to avoid macOS Desktop TCC failures from the LaunchAgent path.
+- Allowed `.env.example` template files in auto-sync while continuing to block real `.env` files, private keys, certificates, suspected credential contents, and files larger than 95 MB.
+
 ## 2026-09-01
 
 ### feat
