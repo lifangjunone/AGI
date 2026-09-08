@@ -71,14 +71,19 @@ export const portraitPersonas: Persona[] = portraitIdentities.map(
 );
 
 export const portraitAvatarAssets: AvatarAsset[] = portraitIdentities.map(
-  (identity) => ({
-    id: identity.id,
-    label: identity.name,
-    modelUrl: DEFAULT_AVATAR_URL,
-    photoUrl: `${import.meta.env.BASE_URL}${identity.portrait}`,
-    stageImageUrl: `${import.meta.env.BASE_URL}portrait-cutouts/${identity.id}.png`,
-    source: "synthetic"
-  })
+  (identity) => {
+    const basename = identity.portrait.split("/").pop() ?? "";
+    return {
+      id: identity.id,
+      label: identity.name,
+      modelUrl: DEFAULT_AVATAR_URL,
+      photoUrl: `${import.meta.env.BASE_URL}portraits-half/${basename}`,
+      stageImageUrl: `${import.meta.env.BASE_URL}portrait-cutouts-half/${basename.replace(/\.[^.]+$/, ".png")}`,
+      fullPhotoUrl: `${import.meta.env.BASE_URL}portraits-full/${basename}`,
+      fullStageImageUrl: `${import.meta.env.BASE_URL}portrait-cutouts-full/${basename.replace(/\.[^.]+$/, ".png")}`,
+      source: "synthetic"
+    };
+  }
 );
 
 export function getPortraitIdentity(id: string) {

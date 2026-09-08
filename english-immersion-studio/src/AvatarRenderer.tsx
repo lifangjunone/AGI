@@ -14,6 +14,7 @@ export type RenderMode = "2d" | "3d";
 type AvatarRendererProps = {
   actorName: string;
   avatarAsset: AvatarAsset;
+  portraitFrame?: "half" | "full";
   renderMode: RenderMode;
   outfitId: string;
   performance: PerformanceState;
@@ -72,11 +73,6 @@ export default function AvatarRenderer(props: AvatarRendererProps) {
     return (
       <div className="renderer-shell">
         <PortraitStage
-          actorName={props.actorName}
-          portraitUrl={
-            props.avatarAsset.stageImageUrl ?? props.avatarAsset.photoUrl
-          }
-          sceneImage={props.sceneImage}
           performance={props.performance}
           speaking={props.speaking}
           onRenderState={props.onRenderState}

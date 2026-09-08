@@ -5,7 +5,8 @@ const {
   escapeXml,
   normalizeFaceAnimation,
   normalizeTimeline,
-  rateToPercent
+  rateToPercent,
+  resolveSpeechDirection
 } = require("./tts.cjs");
 
 test("separates lightweight 2D audio from neural face-animation cache entries", () => {
@@ -13,6 +14,47 @@ test("separates lightweight 2D audio from neural face-animation cache entries", 
     createSpeechCacheKey("ava-sweet", "-10%", "Hello", false),
     createSpeechCacheKey("ava-sweet", "-10%", "Hello", true)
   );
+});
+
+test("separates teaching styles in the speech cache", () => {
+  assert.notEqual(
+    createSpeechCacheKey(
+      "ava-sweet",
+      "-10%",
+      "Hello",
+      false,
+      "teaching",
+      "meaning"
+    ),
+    createSpeechCacheKey(
+      "ava-sweet",
+      "-10%",
+      "Hello",
+      false,
+      "teaching",
+      "repeat"
+    )
+  );
+});
+
+test("uses a dedicated teacher voice and cue-specific direction", () => {
+  const meaning = resolveSpeechDirection(
+    "sonia-british",
+    0.92,
+    "teaching",
+    "meaning"
+  );
+  const repeat = resolveSpeechDirection(
+    "sonia-british",
+    0.92,
+    "teaching",
+    "repeat"
+  );
+
+  assert.equal(meaning.profile.voice, "en-US-AvaMultilingualNeural");
+  assert.equal(meaning.purpose, "teaching");
+  assert.notEqual(meaning.rate, repeat.rate);
+  assert.notEqual(meaning.pitch, repeat.pitch);
 });
 
 test("escapes text before inserting it into SSML", () => {

@@ -7,9 +7,11 @@ import {
   createReplyLine,
   createSuggestions,
   difficultyProfiles,
+  splitLocalizedLine,
   subtitleLines,
   subtitleModes
 } from "./language";
+import { getListeningDialogue } from "./listening-dialogues";
 
 describe("adaptive language learning", () => {
   it("supports all CEFR difficulty levels", () => {
@@ -48,6 +50,19 @@ describe("adaptive language learning", () => {
       "project"
     ]);
     expect(words.every((word) => word.ipa !== "/—/" && word.meaning)).toBe(true);
+    expect(words.every((word) => word.root && word.rootMeaning)).toBe(true);
+  });
+
+  it("pairs bilingual content as individual sentence units", () => {
+    expect(
+      splitLocalizedLine({
+        english: "That is clear. Tell me more.",
+        chinese: "这很清楚。请再多说一点。"
+      })
+    ).toEqual([
+      { english: "That is clear.", chinese: "这很清楚。" },
+      { english: "Tell me more.", chinese: "请再多说一点。" }
+    ]);
   });
 
   it("covers every word used by the scripted openings and prompts", () => {
@@ -74,6 +89,11 @@ describe("adaptive language learning", () => {
     expect(analysis.sentenceType).toBe("疑问句");
     expect(analysis.pattern).toContain("情态动词");
     expect(analysis.segments.map((segment) => segment.role)).toContain("主语");
+    expect(analysis.segments.map((segment) => segment.role)).toContain(
+      "宾语/补充"
+    );
+    expect(analysis.skeleton).toContain("主语");
+    expect(analysis.imitation).toContain("[替换最后的具体信息]");
   });
 
   it("overrides dictionary meanings for the phrase context", () => {
@@ -83,5 +103,62 @@ describe("adaptive language learning", () => {
     expect(forward?.meaning).toContain("期待");
     expect(forward?.phrase).toContain("look forward to");
     expect(to?.meaning).toContain("动名词");
+    expect(forward?.root).toBe("forward");
+    expect(words.find((word) => word.normalized === "looking")?.root).toBe(
+      "look"
+    );
+  });
+
+  it("provides real Chinese meanings for every scene-listening word", () => {
+    const words = scenarios.flatMap((scenario) =>
+      getListeningDialogue(scenario.id).flatMap((line) =>
+        analyzeWords(line.english)
+      )
+    );
+    const missing = [
+      ...new Set(
+        words
+          .filter((word) => word.part === "待补充")
+          .map((word) => word.normalized)
+      )
+    ].sort();
+    expect(missing).toEqual([]);
+    expect(
+      words.some((word) => word.meaning.includes("当前句中的语境义"))
+    ).toBe(false);
+    expect(
+      words
+        .filter((word) => word.part !== "专有名词")
+        .every(
+          (word) =>
+            /^\/.+\/$/.test(word.ipa) &&
+            word.phrase.length > 0 &&
+            word.exampleEnglish.length > 0
+        )
+    ).toBe(true);
+  });
+
+  it("explains slightly with its core meaning and word formation", () => {
+    const slightly = analyzeWords(
+      "I felt slightly nauseous this morning."
+    ).find((word) => word.normalized === "slightly");
+    expect(slightly?.meaning).toBe("稍微；有点");
+    expect(slightly?.part).toBe("副词");
+    expect(slightly?.root).toBe("slight");
+    expect(slightly?.rootMeaning).toBe("轻微的；少量的");
+    expect(slightly?.formation).toContain("-ly");
+  });
+
+  it("includes IPA, a useful phrase, and a simple example for opportunity", () => {
+    const opportunity = analyzeWords(
+      "Thank you for giving me the opportunity."
+    ).find((word) => word.normalized === "opportunity");
+    expect(opportunity?.ipa).toBe("/ˌɑpɚˈtunəti/");
+    expect(opportunity?.part).toBe("名词");
+    expect(opportunity?.phrase).toContain("an opportunity to");
+    expect(opportunity?.exampleEnglish).toBe(
+      "This is a good opportunity to learn."
+    );
+    expect(opportunity?.exampleChinese).toBe("这是一个很好的学习机会。");
   });
 });

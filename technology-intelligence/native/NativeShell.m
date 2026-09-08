@@ -193,7 +193,7 @@
     toolbar.orientation = NSUserInterfaceLayoutOrientationHorizontal;
     toolbar.alignment = NSLayoutAttributeCenterY;
     toolbar.spacing = 10;
-    toolbar.edgeInsets = NSEdgeInsetsMake(11, 14, 9, 16);
+    toolbar.edgeInsets = NSEdgeInsetsMake(11, 76, 9, 16);
     toolbar.translatesAutoresizingMaskIntoConstraints = NO;
     [toolbar setHuggingPriority:NSLayoutPriorityRequired forOrientation:NSLayoutConstraintOrientationVertical];
 

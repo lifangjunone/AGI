@@ -10,6 +10,13 @@ const audioCache = new Map();
 const MAX_CACHE_ENTRIES = 40;
 const MAX_TEXT_LENGTH = 1200;
 const DEFAULT_LIPSYNC_URL = "http://127.0.0.1:8765";
+const TEACHER_VOICE_ID = "ava-sweet";
+const teachingDirections = {
+  meaning: { rateAdjust: -4, pitch: "+0Hz" },
+  usage: { rateAdjust: -2, pitch: "+0Hz" },
+  example: { rateAdjust: 1, pitch: "+2Hz" },
+  repeat: { rateAdjust: -9, pitch: "-2Hz" }
+};
 
 function escapeXml(value) {
   return value
@@ -37,10 +44,40 @@ function createSpeechCacheKey(
   profileId,
   rate,
   text,
-  includeFaceAnimation
+  includeFaceAnimation,
+  purpose = "default",
+  teachingCue = ""
 ) {
   const animationMode = includeFaceAnimation ? "face" : "audio";
-  return `${profileId}:${rate}:${animationMode}:${text}`;
+  return `${profileId}:${rate}:${animationMode}:${purpose}:${teachingCue}:${text}`;
+}
+
+function resolveSpeechDirection(voiceId, speed, purpose, teachingCue) {
+  const requestedProfile = profileById.get(voiceId);
+  if (!requestedProfile) throw new Error("Unknown neural voice.");
+
+  if (purpose !== "teaching") {
+    return {
+      profile: requestedProfile,
+      rate: rateToPercent(speed, requestedProfile.rateAdjust),
+      pitch: requestedProfile.pitch,
+      purpose: "default",
+      teachingCue: ""
+    };
+  }
+
+  const teacherProfile = profileById.get(TEACHER_VOICE_ID) || requestedProfile;
+  const cue = Object.hasOwn(teachingDirections, teachingCue)
+    ? teachingCue
+    : "meaning";
+  const direction = teachingDirections[cue];
+  return {
+    profile: teacherProfile,
+    rate: rateToPercent(speed, direction.rateAdjust),
+    pitch: direction.pitch,
+    purpose: "teaching",
+    teachingCue: cue
+  };
 }
 
 function normalizeTimeline(value) {
@@ -143,23 +180,34 @@ async function getLipSyncHealth() {
   }
 }
 
-async function synthesizeSpeech({ text, voiceId, speed, includeFaceAnimation = true }) {
+async function synthesizeSpeech({
+  text,
+  voiceId,
+  speed,
+  includeFaceAnimation = true,
+  purpose = "default",
+  teachingCue = ""
+}) {
   const cleanText = typeof text === "string" ? text.trim() : "";
-  const profile = profileById.get(voiceId);
 
   if (!cleanText || cleanText.length > MAX_TEXT_LENGTH) {
     throw new Error("Speech text must contain between 1 and 1200 characters.");
   }
-  if (!profile) {
-    throw new Error("Unknown neural voice.");
-  }
 
-  const rate = rateToPercent(speed, profile.rateAdjust);
+  const direction = resolveSpeechDirection(
+    voiceId,
+    speed,
+    purpose,
+    teachingCue
+  );
+  const { profile, rate, pitch } = direction;
   const cacheKey = createSpeechCacheKey(
     profile.id,
     rate,
     cleanText,
-    includeFaceAnimation
+    includeFaceAnimation,
+    direction.purpose,
+    direction.teachingCue
   );
   const cached = audioCache.get(cacheKey);
   if (cached) return { ...cached, cached: true };
@@ -174,7 +222,7 @@ async function synthesizeSpeech({ text, voiceId, speed, includeFaceAnimation = t
     outputFormat: "audio-24khz-96kbitrate-mono-mp3",
     saveSubtitles: true,
     rate,
-    pitch: profile.pitch,
+    pitch,
     volume: "+0%",
     timeout: 18000
   });
@@ -234,5 +282,6 @@ module.exports = {
   normalizeTimeline,
   rateToPercent,
   registerTtsHandlers,
+  resolveSpeechDirection,
   synthesizeSpeech
 };

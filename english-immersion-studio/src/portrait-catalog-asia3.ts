@@ -26,8 +26,10 @@ export const asia3PortraitAvatarAssets: AvatarAsset[] =
       id: identity.id,
       label: identity.name,
       modelUrl: DEFAULT_AVATAR_URL,
-      photoUrl: `${import.meta.env.BASE_URL}${identity.portrait}`,
-      stageImageUrl: `${import.meta.env.BASE_URL}portrait-cutouts-asia3/${basename}.png`,
+      photoUrl: `${import.meta.env.BASE_URL}portraits-asia3-half/${basename}.jpg`,
+      stageImageUrl: `${import.meta.env.BASE_URL}portrait-cutouts-asia3-half/${basename}.png`,
+      fullPhotoUrl: `${import.meta.env.BASE_URL}portraits-asia3-full/${basename}.jpg`,
+      fullStageImageUrl: `${import.meta.env.BASE_URL}portrait-cutouts-asia3-full/${basename}.png`,
       source: "synthetic"
     };
   });

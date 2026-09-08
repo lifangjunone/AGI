@@ -1,7 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, session } = require("electron");
 const path = require("node:path");
 const { createRendererBridge } = require("./renderer-bridge.cjs");
+const { registerSpeechModelHandlers } = require("./speech-model.cjs");
 const { registerTtsHandlers } = require("./tts.cjs");
+const { registerGrammarAiHandlers } = require("./grammar-ai.cjs");
+const { registerStudyExplainerHandlers } = require("./study-explainer.cjs");
 
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 if (process.env.EIS_REMOTE_DEBUGGING_PORT) {
@@ -40,8 +43,25 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  session.defaultSession.setPermissionCheckHandler(
+    (_webContents, permission) =>
+      permission === "media" || permission === "speechRecognition"
+  );
+  session.defaultSession.setPermissionRequestHandler(
+    (_webContents, permission, callback, details) => {
+      const requestsAudio =
+        !details.mediaTypes || details.mediaTypes.includes("audio");
+      callback(
+        (permission === "media" && requestsAudio) ||
+          permission === "speechRecognition"
+      );
+    }
+  );
   rendererBridge = createRendererBridge();
+  registerSpeechModelHandlers(ipcMain, app);
   registerTtsHandlers(ipcMain);
+  registerGrammarAiHandlers(ipcMain, app);
+  registerStudyExplainerHandlers(ipcMain, app);
   ipcMain.handle("renderer:state", (_event, message) =>
     rendererBridge.publish(message)
   );

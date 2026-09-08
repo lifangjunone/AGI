@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDailyPracticePlan,
   buildRecommendations,
   initialLearningProfile,
   updateLearningProfile
@@ -39,5 +40,23 @@ describe("adaptive scene recommendations", () => {
     expect(recommendation.scenario.openingChinese).toBeTruthy();
     expect(recommendation.scenario.suggestionChinese).toHaveLength(3);
     expect(["B2", "C1"]).toContain(recommendation.difficulty);
+  });
+
+  it("builds a daily plan around the weakest skill and selected duration", () => {
+    const plan = buildDailyPracticePlan(
+      {
+        ...initialLearningProfile,
+        expression: 48,
+        fluency: 81,
+        accuracy: 78,
+        vocabulary: 74
+      },
+      "B2",
+      30
+    );
+    expect(plan.focus).toBe("expression");
+    expect(plan.duration).toBe(30);
+    expect(plan.steps.map((step) => step.minutes)).toEqual([6, 18, 6]);
+    expect(plan.steps.reduce((total, step) => total + step.minutes, 0)).toBe(30);
   });
 });

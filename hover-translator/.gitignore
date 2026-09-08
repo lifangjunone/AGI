@@ -1,0 +1,9 @@
+node_modules/
+dist/
+release/
+native/bin/
+*.log
+*.tsbuildinfo
+.DS_Store
+vite.config.js
+vite.config.d.ts

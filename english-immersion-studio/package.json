@@ -11,9 +11,11 @@
     "portraits:generate": "node scripts/generate-portrait-catalog.mjs && npm run portraits:cutout",
     "portraits:generate:asia": "PORTRAIT_CATALOG_FILE=portrait-catalog-asia.json PORTRAIT_OUTPUT_DIR=portraits-asia node scripts/generate-portrait-catalog.mjs && PORTRAIT_INPUT_DIR=portraits-asia PORTRAIT_CUTOUT_DIR=portrait-cutouts-asia node scripts/remove-portrait-backgrounds.mjs",
     "portraits:generate:all": "npm run portraits:generate && npm run portraits:generate:asia && PORTRAIT_CATALOG_FILE=portrait-catalog-asia3.json PORTRAIT_OUTPUT_DIR=portraits-asia3 node scripts/generate-portrait-catalog.mjs && rm -f public/portrait-cutouts-asia3/*.png && PORTRAIT_INPUT_DIR=portraits-asia3 PORTRAIT_CUTOUT_DIR=portrait-cutouts-asia3 node scripts/remove-portrait-backgrounds.mjs",
+    "portraits:generate:frames": "PORTRAIT_FRAME=half PORTRAIT_OUTPUT_DIR=portraits-half node scripts/generate-portrait-catalog.mjs && PORTRAIT_FRAME=full PORTRAIT_OUTPUT_DIR=portraits-full node scripts/generate-portrait-catalog.mjs && PORTRAIT_FRAME=half PORTRAIT_CATALOG_FILE=portrait-catalog-asia.json PORTRAIT_OUTPUT_DIR=portraits-asia-half node scripts/generate-portrait-catalog.mjs && PORTRAIT_FRAME=full PORTRAIT_CATALOG_FILE=portrait-catalog-asia.json PORTRAIT_OUTPUT_DIR=portraits-asia-full node scripts/generate-portrait-catalog.mjs && PORTRAIT_FRAME=half PORTRAIT_CATALOG_FILE=portrait-catalog-asia3.json PORTRAIT_OUTPUT_DIR=portraits-asia3-half node scripts/generate-portrait-catalog.mjs && PORTRAIT_FRAME=full PORTRAIT_CATALOG_FILE=portrait-catalog-asia3.json PORTRAIT_OUTPUT_DIR=portraits-asia3-full node scripts/generate-portrait-catalog.mjs",
     "portraits:fix:asia3-seoyeon": "PORTRAIT_CATALOG_FILE=portrait-catalog-asia3.json PORTRAIT_OUTPUT_DIR=portraits-asia3 PORTRAIT_IDS=asia-seoul-nurse node scripts/generate-portrait-catalog.mjs && rm -f public/portrait-cutouts-asia3/seoul-nurse.png && PORTRAIT_INPUT_DIR=portraits-asia3 PORTRAIT_CUTOUT_DIR=portrait-cutouts-asia3 node scripts/remove-portrait-backgrounds.mjs",
     "portraits:cutout": "node scripts/remove-portrait-backgrounds.mjs",
     "lipsync:setup": "node scripts/setup-lipsync.mjs",
+    "lexicon:generate": "node scripts/generate-scene-ipa.mjs",
     "metahuman": "node scripts/start-metahuman.mjs",
     "2d": "npm run dev",
     "metahuman:build": "node scripts/build-metahuman-renderer.mjs",
@@ -42,6 +44,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "three": "^0.180.0",
+    "vosk-browser": "^0.0.8",
     "ws": "^8.21.0"
   },
   "devDependencies": {
@@ -53,6 +56,7 @@
     "@types/three": "^0.180.0",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^4.7.0",
+    "cmu-pronouncing-dictionary": "^3.0.0",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
     "electron": "^44.0.0",
@@ -74,6 +78,9 @@
     ],
     "mac": {
       "category": "public.app-category.education",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "English Immersion Studio uses the microphone only while you hold the speak button to practice English."
+      },
       "target": [
         "dmg",
         "zip"

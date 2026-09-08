@@ -21,6 +21,7 @@ import uuid
 import webbrowser
 import xml.etree.ElementTree as ET
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -69,7 +70,257 @@ DEFAULT_RESEARCH_TOPICS = [
         "name": "RAG 与知识工程",
         "keywords": ["RAG", "knowledge graph", "vector database", "retrieval augmented generation"],
     },
+    {
+        "id": "personal-assistants",
+        "name": "个人助理",
+        "keywords": [
+            "WorkBuddy", "千问办公", "豆包工作", "Kimi Work",
+            "TRAE Work", "阶跃桌面版", "desktop agent", "AI 办公助手",
+        ],
+    },
+    {
+        "id": "agent-platforms",
+        "name": "Agent 平台",
+        "keywords": [
+            "腾讯 ADP", "HiAgent", "阿里百炼", "Agent Builder",
+            "Copilot Studio", "智能体开发平台", "Agent governance",
+            "Agent Portal", "Agent ID Guard", "Agent 365",
+            "Agent Registry", "AgentCore", "Agent Fabric",
+            "AI Control Tower", "AgentSphere", "智能体纳管",
+        ],
+    },
+    {
+        "id": "ai-coding",
+        "name": "AI Coding",
+        "keywords": [
+            "Codex", "TRAE", "CodeBuddy", "Claude Code",
+            "Cursor", "Windsurf", "Qoder", "coding agent",
+        ],
+    },
+    {
+        "id": "knowledge-engines",
+        "name": "知识引擎",
+        "keywords": [
+            "ima", "腾讯乐享", "企业知识引擎", "Agentic RAG",
+            "百度甄知", "千帆知识库", "NotebookLM", "Cloud Search",
+            "SharePoint", "Microsoft Graph", "Amazon Q Business",
+            "enterprise knowledge", "AI knowledge base",
+        ],
+    },
 ]
+REQUIRED_TRACKING_TOPICS = DEFAULT_RESEARCH_TOPICS[-4:]
+PRODUCT_MATRIX = [
+    {
+        "vendor": "腾讯", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("WorkBuddy", "https://www.workbuddy.cn/"),
+            "mobile": ("腾讯元宝 / WorkBuddy", "https://yuanbao.tencent.com/"),
+            "platform": ("腾讯云 ADP", "https://cloud.tencent.com/product/adp"),
+            "governance": ("ADP Agent Portal", "https://adp.tencentcloud.com/zh/blog/adp-agent-portal"),
+            "data": ("ima / 腾讯乐享", "https://cloud.tencent.com.cn/product/lexiang"),
+            "coding": ("CodeBuddy", "https://www.codebuddy.ai/"),
+        },
+    },
+    {
+        "vendor": "阿里巴巴", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("千问办公", "https://qwenwork.cn/"),
+            "mobile": ("千问", "https://www.qianwen.com/"),
+            "platform": ("阿里云百炼", "https://bailian.console.aliyun.com/"),
+            "governance": ("Agent ID Guard", "https://help.aliyun.com/zh/idaas/eiam/user-guide/scenarios-for-using-agent-id-guard"),
+            "data": ("百炼 Agentic RAG", "https://rag.console.aliyun.com/"),
+            "coding": ("Qoder / 通义灵码", "https://qoder.com/"),
+        },
+    },
+    {
+        "vendor": "字节跳动", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("豆包工作 / TRAE Work", "https://work.trae.cn/"),
+            "mobile": ("豆包 / TRAE", "https://www.doubao.com/"),
+            "platform": ("火山引擎 HiAgent / 扣子", "https://www.volcengine.com/product/hiagent"),
+            "governance": ("AgentSphere", "https://www.volcengine.com/product/hiagent"),
+            "data": ("企业知识引擎", "https://www.volcengine.com/docs/86760/1867053"),
+            "coding": ("TRAE", "https://www.trae.cn/"),
+        },
+    },
+    {
+        "vendor": "月之暗面", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("Kimi Work", "https://www.kimi.com/zh-cn/products/kimi-work"),
+            "mobile": ("Kimi", "https://www.kimi.com/"),
+            "platform": ("Kimi 开放平台", "https://platform.moonshot.cn/"),
+            "governance": ("-", ""),
+            "data": ("Kimi 知识库", "https://www.kimi.com/"),
+            "coding": ("Kimi Code", "https://www.kimi.com/code/"),
+        },
+    },
+    {
+        "vendor": "阶跃星辰", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("阶跃桌面版", "https://stepfun.com/"),
+            "mobile": ("阶跃 AI", "https://stepfun.com/"),
+            "platform": ("阶跃开放平台", "https://platform.stepfun.com/"),
+            "governance": ("-", ""),
+            "data": ("-", ""),
+            "coding": ("-", ""),
+        },
+    },
+    {
+        "vendor": "百度", "region": "china", "tier": "观察",
+        "products": {
+            "desktop": ("文心一言", "https://yiyan.baidu.com/"),
+            "mobile": ("文小言", "https://yiyan.baidu.com/"),
+            "platform": ("百度智能云千帆", "https://cloud.baidu.com/product/wenxinworkshop"),
+            "governance": ("-", ""),
+            "data": ("甄知 / 千帆知识库", "https://zhenzhi.cloud.baidu.com/"),
+            "coding": ("Comate", "https://comate.baidu.com/"),
+        },
+    },
+    {
+        "vendor": "华为", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("小艺（HarmonyOS PC）", "https://consumer.huawei.com/cn/mobileservices/celia/"),
+            "mobile": ("小艺", "https://consumer.huawei.com/cn/mobileservices/celia/"),
+            "platform": ("小艺智能体平台", "https://developer.huawei.com/consumer/cn/doc/service/platform-concepts-0000002625401382"),
+            "governance": ("-", ""),
+            "data": ("盘古大模型知识库", "https://www.huaweicloud.com/product/pangu.html"),
+            "coding": ("CodeArts Doer", "https://www.huaweicloud.com/product/codearts.html"),
+        },
+    },
+    {
+        "vendor": "京东", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("JoyClaw", "https://joyagent.jd.com/pl/enterprise"),
+            "mobile": ("京言", "https://oxygen.jd.com/solution"),
+            "platform": ("JoyAgent 开发平台", "https://joyagent.jd.com/pl/enterprise"),
+            "governance": ("大模型安全网关", "https://joyagent.jd.com/pl/enterprise"),
+            "data": ("JoyContext", "https://joyagent.jd.com/pl/enterprise"),
+            "coding": ("JoyCode", "https://joyagent.jd.com/pl/enterprise"),
+        },
+    },
+    {
+        "vendor": "小米", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("Xiaomi MiMo Desktop", "https://mimo.xiaomi.com/zh"),
+            "mobile": ("超级小爱", "https://developers.xiaoai.mi.com/xiaoai"),
+            "platform": ("Xiaomi MiMo API", "https://platform.xiaomimimo.com/"),
+            "governance": ("-", ""),
+            "data": ("-", ""),
+            "coding": ("MiMo Code", "https://mimo.xiaomi.com/zh"),
+        },
+    },
+    {
+        "vendor": "美团", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("CatPaw / Tabbit", "https://tech.meituan.com/2026/07/28/CatPaw-LongCat.html"),
+            "mobile": ("CatPaw / 小团", "https://www.meituan.com/technology"),
+            "platform": ("CatPaw Managed Agents", "https://tech.meituan.com/2026/07/28/CatPaw-LongCat.html"),
+            "governance": ("CatPaw 企业管理", "https://tech.meituan.com/2026/07/28/CatPaw-LongCat.html"),
+            "data": ("-", ""),
+            "coding": ("-", ""),
+        },
+    },
+    {
+        "vendor": "智谱", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("AutoGLM / 智谱清言", "https://chatglm.cn/"),
+            "mobile": ("智谱清言", "https://chatglm.cn/"),
+            "platform": ("智谱开放平台", "https://open.bigmodel.cn/"),
+            "governance": ("-", ""),
+            "data": ("智谱知识库", "https://open.bigmodel.cn/"),
+            "coding": ("Z Code / GLM Coding Plan", "https://bigmodel.cn/activity/trial-card/HLKCALKANE"),
+        },
+    },
+    {
+        "vendor": "DeepSeek", "region": "china", "tier": "重点",
+        "products": {
+            "desktop": ("DeepSeek", "https://chat.deepseek.com/"),
+            "mobile": ("DeepSeek", "https://chat.deepseek.com/"),
+            "platform": ("DeepSeek 开放平台", "https://platform.deepseek.com/"),
+            "governance": ("-", ""),
+            "data": ("-", ""),
+            "coding": ("DeepSeek Harness", "https://deepseek-harness.github.io/deepseek-harness/"),
+        },
+    },
+    {
+        "vendor": "OpenAI", "region": "global", "tier": "重点",
+        "products": {
+            "desktop": ("ChatGPT Desktop", "https://chatgpt.com/download/"),
+            "mobile": ("ChatGPT", "https://chatgpt.com/download/"),
+            "platform": ("OpenAI Agent Platform", "https://platform.openai.com/"),
+            "governance": ("-", ""),
+            "data": ("-", ""),
+            "coding": ("Codex", "https://openai.com/codex/"),
+        },
+    },
+    {
+        "vendor": "Anthropic", "region": "global", "tier": "重点",
+        "products": {
+            "desktop": ("Claude Desktop", "https://claude.ai/download"),
+            "mobile": ("Claude", "https://claude.ai/"),
+            "platform": ("Claude Agent SDK", "https://docs.anthropic.com/"),
+            "governance": ("-", ""),
+            "data": ("-", ""),
+            "coding": ("Claude Code", "https://www.anthropic.com/claude-code"),
+        },
+    },
+    {
+        "vendor": "Google", "region": "global", "tier": "重点",
+        "products": {
+            "desktop": ("Gemini", "https://gemini.google.com/"),
+            "mobile": ("Gemini", "https://gemini.google.com/"),
+            "platform": ("Gemini Enterprise Agent Platform", "https://cloud.google.com/generative-ai-app-builder"),
+            "governance": ("Agent Registry / Gateway", "https://cloud.google.com/blog/products/ai-machine-learning/introducing-gemini-enterprise-agent-platform"),
+            "data": ("NotebookLM / Cloud Search", "https://workspace.google.com/products/cloud-search/"),
+            "coding": ("Gemini Code Assist / Jules", "https://codeassist.google/"),
+        },
+    },
+    {
+        "vendor": "Microsoft", "region": "global", "tier": "重点",
+        "products": {
+            "desktop": ("Microsoft 365 Copilot", "https://www.microsoft.com/microsoft-365/copilot"),
+            "mobile": ("Microsoft Copilot", "https://copilot.microsoft.com/"),
+            "platform": ("Copilot Studio / Foundry", "https://www.microsoft.com/microsoft-copilot/microsoft-copilot-studio"),
+            "governance": ("Microsoft Agent 365", "https://www.microsoft.com/en/microsoft-agent-365"),
+            "data": ("SharePoint / Microsoft Graph", "https://www.microsoft.com/microsoft-365/sharepoint/collaboration"),
+            "coding": ("GitHub Copilot", "https://github.com/features/copilot"),
+        },
+    },
+    {
+        "vendor": "Amazon", "region": "global", "tier": "观察",
+        "products": {
+            "desktop": ("Amazon Q", "https://aws.amazon.com/q/"),
+            "mobile": ("Alexa+", "https://www.amazon.com/alexa"),
+            "platform": ("Amazon Bedrock Agents", "https://aws.amazon.com/bedrock/agents/"),
+            "governance": ("Bedrock AgentCore", "https://aws.amazon.com/bedrock/agentcore/"),
+            "data": ("Amazon Q Business", "https://aws.amazon.com/q/business/"),
+            "coding": ("Kiro", "https://kiro.dev/"),
+        },
+    },
+    {
+        "vendor": "ServiceNow", "region": "global", "tier": "纳管重点",
+        "products": {
+            "desktop": ("Now Assist", "https://www.servicenow.com/products/now-assist.html"),
+            "mobile": ("Now Mobile", "https://www.servicenow.com/products/mobile-employee-experience.html"),
+            "platform": ("AI Agent Studio", "https://www.servicenow.com/products/ai-agents.html"),
+            "governance": ("AI Control Tower", "https://www.servicenow.com/products/ai-control-tower.html"),
+            "data": ("Knowledge Management", "https://www.servicenow.com/products/knowledge-management.html"),
+            "coding": ("-", ""),
+        },
+    },
+    {
+        "vendor": "Salesforce", "region": "global", "tier": "纳管重点",
+        "products": {
+            "desktop": ("Agentforce / Slack", "https://www.salesforce.com/agentforce/"),
+            "mobile": ("Agentforce", "https://www.salesforce.com/agentforce/"),
+            "platform": ("Agentforce Builder", "https://www.salesforce.com/agentforce/"),
+            "governance": ("MuleSoft Agent Fabric", "https://www.mulesoft.com/ai/agent-fabric"),
+            "data": ("Data 360", "https://www.salesforce.com/data/"),
+            "coding": ("Agentforce Vibes", "https://developer.salesforce.com/agentforce"),
+        },
+    },
+]
+PRODUCT_FOCUS = ("WorkBuddy", "千问办公", "豆包工作", "Kimi Work", "TRAE Work", "阶跃桌面版")
 AI_TERMS = (
     "ai", "llm", "agent", "model", "transformer", "diffusion", "rag", "mcp",
     "multimodal", "inference", "robot", "copilot", "gpt", "claude", "gemini",
@@ -203,7 +454,7 @@ def research_context(config: dict) -> dict:
             configured = DEFAULT_RESEARCH_TOPICS
     topics = []
     used_ids = set()
-    for index, raw_topic in enumerate(configured[:8]):
+    for index, raw_topic in enumerate(configured[:10]):
         if not isinstance(raw_topic, dict):
             continue
         name = clean_text(str(raw_topic.get("name") or ""))[:40]
@@ -226,6 +477,29 @@ def research_context(config: dict) -> dict:
             suffix += 1
         used_ids.add(topic_id)
         topics.append({"id": topic_id[:40], "name": name, "keywords": keywords[:12]})
+    tracking_markers = {
+        "personal-assistants": ("workbuddy", "千问办公", "豆包工作", "kimi work", "trae work", "阶跃桌面版"),
+        "agent-platforms": ("腾讯 adp", "hiagent", "阿里百炼", "agent builder", "copilot studio"),
+        "ai-coding": ("codex", "codebuddy", "claude code", "windsurf"),
+        "knowledge-engines": ("腾讯乐享", "企业知识引擎", "agentic rag", "千帆知识库", "cloud search"),
+    }
+    configured_terms = {
+        clean_text(str(value)).lower()
+        for topic in topics
+        for value in [topic.get("name"), *(topic.get("keywords") or [])]
+        if clean_text(str(value or ""))
+    }
+    for required in REQUIRED_TRACKING_TOPICS:
+        markers = tracking_markers[required["id"]]
+        if required["id"] in used_ids or any(marker in configured_terms for marker in markers):
+            continue
+        topics.append({
+            "id": required["id"],
+            "name": required["name"],
+            "keywords": list(required["keywords"]),
+        })
+        used_ids.add(required["id"])
+        configured_terms.update(keyword.lower() for keyword in required["keywords"])
     all_keywords = []
     for keyword_index in range(12):
         for topic in topics:
@@ -1463,6 +1737,10 @@ class Aggregator:
             trend_score = freshness * 0.75 + percentiles.get(id(item), 0.5) * 55 + completeness
             row = asdict(item)
             row["score"] = round(trend_score, 1)
+            row["topic_ids"] = matching_topic_ids(
+                f"{item.title} {item.summary}",
+                self.research,
+            )
             row["_key"] = normalized
             board["items"].append(row)
 
@@ -1520,6 +1798,415 @@ class Aggregator:
             if len(selected) == 10:
                 break
         return selected
+
+
+SEARCH_TYPE_LABELS = {
+    "desktop": "桌面助手",
+    "mobile": "手机助手",
+    "platform": "Agent 开发平台",
+    "governance": "Agent 纳管平台",
+    "data": "知识引擎",
+    "coding": "Code 工具",
+}
+SEARCH_TIME_RANGES = {
+    "7d": ("近一周", 7),
+    "30d": ("近一个月", 30),
+    "1y": ("近 1 年", 365),
+    "3y": ("近 3 年", 1095),
+    "all": ("不限制", None),
+}
+SEARCH_CACHE: dict[tuple[str, str, int, str], tuple[float, dict]] = {}
+SEARCH_CACHE_LOCK = threading.Lock()
+
+
+def normalize_search_time_range(value: str) -> str:
+    return value if value in SEARCH_TIME_RANGES else "30d"
+
+
+def search_time_cutoff(value: str) -> Optional[dt.datetime]:
+    value = normalize_search_time_range(value)
+    days = SEARCH_TIME_RANGES[value][1]
+    if days is None:
+        return None
+    now = dt.datetime.now(dt.timezone.utc)
+    if value in {"1y", "3y"}:
+        years = 1 if value == "1y" else 3
+        try:
+            return now.replace(year=now.year - years)
+        except ValueError:
+            return now.replace(year=now.year - years, day=28)
+    return now - dt.timedelta(days=days)
+
+
+def search_item_in_time_range(item: dict, value: str) -> bool:
+    cutoff = search_time_cutoff(value)
+    if cutoff is None or item.get("source") == "产品矩阵":
+        return True
+    published = parse_date(item.get("publishedAt"))
+    return bool(published and published >= cutoff)
+
+
+def search_query_with_time(query: str, value: str) -> str:
+    value = normalize_search_time_range(value)
+    days = SEARCH_TIME_RANGES[value][1]
+    if days is None:
+        return query
+    if value in {"7d", "30d"}:
+        return f"{query} when:{days}d"
+    cutoff = search_time_cutoff(value)
+    return f"{query} after:{cutoff.date().isoformat()}" if cutoff else query
+
+
+def search_query_terms(query: str) -> list[str]:
+    cleaned = clean_text(query)[:120]
+    if not cleaned:
+        return []
+    values = [cleaned]
+    values.extend(
+        part for part in re.split(r"[\s,，、;/|]+", cleaned)
+        if len(part.strip()) >= 2
+    )
+    return list(dict.fromkeys(value.lower() for value in values if value.strip()))
+
+
+def search_relevance(query: str, *values: str) -> int:
+    terms = search_query_terms(query)
+    haystack = clean_text(" ".join(str(value or "") for value in values)).lower()
+    compact_haystack = re.sub(r"[^a-z0-9\u4e00-\u9fff]", "", haystack)
+    compact_query = re.sub(r"[^a-z0-9\u4e00-\u9fff]", "", clean_text(query).lower())
+    score = 0
+    if compact_query and compact_query in compact_haystack:
+        score += 60
+    for term in terms:
+        compact_term = re.sub(r"[^a-z0-9\u4e00-\u9fff]", "", term)
+        if compact_term and compact_term in compact_haystack:
+            score += 14
+    return min(100, score)
+
+
+def product_catalog_search(query: str) -> list[dict]:
+    results = []
+    for vendor in PRODUCT_MATRIX:
+        for product_type, (name, url) in vendor["products"].items():
+            if name == "-":
+                continue
+            aliases = product_aliases(name)
+            label = SEARCH_TYPE_LABELS.get(product_type, "产品")
+            relevance = search_relevance(
+                query, vendor["vendor"], name, label, " ".join(aliases)
+            )
+            if relevance < 28:
+                continue
+            results.append({
+                "title": name,
+                "url": url,
+                "source": "产品矩阵",
+                "summary": f'{vendor["vendor"]} · {label} · {vendor["tier"]}跟踪',
+                "publishedAt": "",
+                "score": min(100, relevance + 26),
+                "type": "产品",
+                "evidence": "已纳入产品情报矩阵，链接指向官方入口",
+            })
+    return results
+
+
+def cached_report_search(query: str, time_range: str = "30d") -> list[dict]:
+    report = ReportStore().latest()
+    if not report:
+        return []
+    candidates, seen = [], set()
+    candidates.extend(report.get("items", []))
+    for board in report.get("news_boards", []):
+        candidates.extend(board.get("items", []))
+    for signal in report.get("signals", []):
+        candidates.append(signal)
+        candidates.extend(signal.get("evidence", []))
+    product_terms = [
+        alias.lower()
+        for vendor in PRODUCT_MATRIX
+        for name, _url in vendor["products"].values()
+        if name != "-"
+        for alias in product_aliases(name)
+    ]
+    results = []
+    for item in candidates:
+        title = clean_text(str(item.get("title") or ""))
+        url = str(item.get("url") or "")
+        key = url or re.sub(r"\W+", "", title.lower())
+        if not title or key in seen:
+            continue
+        seen.add(key)
+        summary = clean_text(str(item.get("summary") or item.get("takeaway") or ""))
+        relevance = search_relevance(query, title, summary, str(item.get("source") or ""))
+        if relevance <= 0:
+            continue
+        content = f"{title} {summary}".lower()
+        result_type = "产品" if any(alias in content for alias in product_terms) else "技术"
+        result = {
+            "title": title,
+            "url": url,
+            "source": str(item.get("source") or "历史报告"),
+            "summary": summary[:500],
+            "publishedAt": str(item.get("published_at") or item.get("generated_at") or ""),
+            "score": min(96, relevance + round(number(item.get("score")) * 0.2) + 8),
+            "type": result_type,
+            "evidence": str(item.get("evidence") or "来自本机历史情报报告"),
+        }
+        if search_item_in_time_range(result, time_range):
+            results.append(result)
+    return results
+
+
+def google_news_search(query: str, time_range: str = "30d") -> list[dict]:
+    params = urllib.parse.urlencode({
+        "q": search_query_with_time(query, time_range),
+        "hl": "zh-CN",
+        "gl": "CN",
+        "ceid": "CN:zh-Hans",
+    })
+    root = ET.fromstring(HTTPClient().request(
+        f"https://news.google.com/rss/search?{params}", timeout=25
+    ))
+    results = []
+    for entry in root.findall("./channel/item")[:18]:
+        title = clean_text(entry.findtext("title", ""))
+        source = clean_text(entry.findtext("source", "")) or "Google News"
+        if title.endswith(f" - {source}"):
+            title = title[:-(len(source) + 3)].rstrip()
+        published = entry.findtext("pubDate", "")
+        try:
+            published_at = email.utils.parsedate_to_datetime(published).isoformat()
+        except (TypeError, ValueError):
+            published_at = ""
+        results.append({
+            "title": title,
+            "url": entry.findtext("link", ""),
+            "source": source,
+            "summary": f"Google News 实时检索 · {source}",
+            "publishedAt": published_at,
+            "score": min(92, search_relevance(query, title) + 22),
+            "type": "动态",
+            "evidence": "Google News 实时索引",
+        })
+    return results
+
+
+def github_repository_search(query: str, time_range: str = "30d") -> list[dict]:
+    cutoff = search_time_cutoff(time_range)
+    date_filter = f" pushed:>={cutoff.date().isoformat()}" if cutoff else ""
+    params = urllib.parse.urlencode({
+        "q": f"{query} in:name,description,readme{date_filter}",
+        "sort": "updated",
+        "order": "desc",
+        "per_page": 12,
+    })
+    payload = json.loads(HTTPClient().request(
+        f"https://api.github.com/search/repositories?{params}",
+        headers={"Accept": "application/vnd.github+json"},
+        timeout=25,
+    ))
+    results = []
+    for row in payload.get("items", []):
+        title = clean_text(str(row.get("full_name") or ""))
+        summary = clean_text(str(row.get("description") or ""))
+        stars = int(number(row.get("stargazers_count")))
+        results.append({
+            "title": title,
+            "url": str(row.get("html_url") or ""),
+            "source": "GitHub",
+            "summary": summary,
+            "publishedAt": str(row.get("updated_at") or ""),
+            "score": min(94, search_relevance(query, title, summary) + 14 + min(20, math.log10(stars + 1) * 5)),
+            "type": "开源项目",
+            "evidence": f"{stars:,} Stars · {row.get('language') or '多语言'}",
+        })
+    return results
+
+
+def hacker_news_search(query: str, time_range: str = "30d") -> list[dict]:
+    request_params = {
+        "query": query,
+        "tags": "story",
+        "hitsPerPage": 12,
+    }
+    cutoff = search_time_cutoff(time_range)
+    if cutoff:
+        request_params["numericFilters"] = f"created_at_i>={int(cutoff.timestamp())}"
+    params = urllib.parse.urlencode(request_params)
+    payload = json.loads(HTTPClient().request(
+        f"https://hn.algolia.com/api/v1/search?{params}", timeout=20
+    ))
+    results = []
+    for row in payload.get("hits", []):
+        title = clean_text(str(row.get("title") or ""))
+        points = int(number(row.get("points")))
+        comments = int(number(row.get("num_comments")))
+        object_id = str(row.get("objectID") or "")
+        results.append({
+            "title": title,
+            "url": str(row.get("url") or f"https://news.ycombinator.com/item?id={object_id}"),
+            "source": "Hacker News",
+            "summary": clean_text(str(row.get("story_text") or ""))[:500],
+            "publishedAt": str(row.get("created_at") or ""),
+            "score": min(92, search_relevance(query, title) + 14 + min(18, math.log10(points + comments + 1) * 6)),
+            "type": "技术",
+            "evidence": f"{points} points · {comments} comments",
+        })
+    return results
+
+
+def arxiv_topic_search(query: str, time_range: str = "30d") -> list[dict]:
+    search_query = f'all:"{query}"'
+    cutoff = search_time_cutoff(time_range)
+    if cutoff:
+        start = cutoff.strftime("%Y%m%d%H%M")
+        end = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d%H%M")
+        search_query += f" AND submittedDate:[{start} TO {end}]"
+    params = urllib.parse.urlencode({
+        "search_query": search_query,
+        "start": 0,
+        "max_results": 12,
+        "sortBy": "submittedDate",
+        "sortOrder": "descending",
+    })
+    root = ET.fromstring(HTTPClient().request(
+        f"https://export.arxiv.org/api/query?{params}", timeout=25
+    ))
+    ns = {"a": "http://www.w3.org/2005/Atom"}
+    results = []
+    for entry in root.findall("a:entry", ns):
+        title = clean_text(entry.findtext("a:title", "", ns))
+        summary = clean_text(entry.findtext("a:summary", "", ns))
+        link_node = next(
+            (node for node in entry.findall("a:link", ns) if node.attrib.get("rel") == "alternate"),
+            None,
+        )
+        results.append({
+            "title": title,
+            "url": link_node.attrib.get("href", "") if link_node is not None else "",
+            "source": "arXiv",
+            "summary": summary[:500],
+            "publishedAt": entry.findtext("a:published", "", ns),
+            "score": min(90, search_relevance(query, title, summary) + 18),
+            "type": "论文",
+            "evidence": "arXiv 按提交时间检索",
+        })
+    return results
+
+
+def active_search(
+    query: str,
+    kind: str = "all",
+    limit: int = 24,
+    time_range: str = "30d",
+) -> dict:
+    query = clean_text(query)[:120]
+    kind = kind if kind in {"all", "technology", "product"} else "all"
+    time_range = normalize_search_time_range(time_range)
+    limit = max(1, min(40, int(limit)))
+    if len(query) < 2:
+        raise ValueError("请输入至少 2 个字符")
+    cache_key = (query.lower(), kind, limit, time_range)
+    with SEARCH_CACHE_LOCK:
+        cached = SEARCH_CACHE.get(cache_key)
+        if cached and time.time() - cached[0] < 300:
+            return {**cached[1], "cached": True}
+
+    results = []
+    source_status = []
+    if kind in {"all", "product"}:
+        catalog_results = product_catalog_search(query)
+        results.extend(catalog_results)
+        source_status.append({
+            "source": "产品矩阵", "status": "ok", "items": len(catalog_results),
+        })
+    local_results = cached_report_search(query, time_range)
+    if kind == "product":
+        local_results = [item for item in local_results if item["type"] == "产品"]
+    results.extend(local_results)
+    source_status.append({
+        "source": "本机历史报告", "status": "ok", "items": len(local_results),
+    })
+
+    collectors = {"Google News": google_news_search}
+    if kind in {"all", "technology"}:
+        collectors.update({
+            "GitHub": github_repository_search,
+            "Hacker News": hacker_news_search,
+            "arXiv": arxiv_topic_search,
+        })
+    with ThreadPoolExecutor(max_workers=len(collectors)) as executor:
+        futures = {
+            executor.submit(collector, query, time_range): source
+            for source, collector in collectors.items()
+        }
+        for future in as_completed(futures):
+            source = futures[future]
+            try:
+                collected = future.result()
+                if kind == "product":
+                    collected = [
+                        item for item in collected
+                        if search_relevance(
+                            query, item["title"], item["summary"], "产品 product"
+                        ) > 0
+                    ]
+                results.extend(collected)
+                source_status.append({
+                    "source": source, "status": "ok", "items": len(collected),
+                })
+            except Exception as exc:
+                source_status.append({
+                    "source": source,
+                    "status": "error",
+                    "detail": clean_text(str(exc))[:180],
+                })
+
+    unique = {}
+    for item in results:
+        if not item.get("title"):
+            continue
+        if kind == "technology" and item.get("type") == "产品":
+            continue
+        if (
+            item.get("source") != "产品矩阵"
+            and search_relevance(query, item.get("title"), item.get("summary")) < 28
+        ):
+            continue
+        if not search_item_in_time_range(item, time_range):
+            continue
+        key = str(item.get("url") or "").split("?", 1)[0]
+        if not key:
+            key = re.sub(r"[^a-z0-9\u4e00-\u9fff]", "", item["title"].lower())
+        current = unique.get(key)
+        if current is None or number(item.get("score")) > number(current.get("score")):
+            unique[key] = item
+    ordered = sorted(
+        unique.values(),
+        key=lambda item: (
+            number(item.get("score")),
+            parse_date(item.get("publishedAt")) or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+        ),
+        reverse=True,
+    )[:limit]
+    payload = {
+        "query": query,
+        "kind": kind,
+        "timeRange": time_range,
+        "timeLabel": SEARCH_TIME_RANGES[time_range][0],
+        "searchedAt": now_iso(),
+        "total": len(ordered),
+        "sourceCount": sum(1 for status in source_status if status["status"] == "ok"),
+        "sourceStatus": source_status,
+        "results": ordered,
+        "cached": False,
+    }
+    with SEARCH_CACHE_LOCK:
+        SEARCH_CACHE[cache_key] = (time.time(), payload)
+        if len(SEARCH_CACHE) > 50:
+            oldest = min(SEARCH_CACHE, key=lambda key: SEARCH_CACHE[key][0])
+            SEARCH_CACHE.pop(oldest, None)
+    return payload
 
 
 def plain_language_signal(signal: dict, profile: dict) -> str:
@@ -1609,6 +2296,172 @@ def signal_business_context(signal: dict, profile: dict) -> dict:
     }
 
 
+def product_aliases(product_name: str) -> list[str]:
+    aliases = [clean_text(value) for value in re.split(r"\s*/\s*", product_name) if clean_text(value)]
+    alias_map = {
+        "腾讯云 ADP": ["腾讯 ADP", "Tencent ADP"],
+        "火山引擎 HiAgent": ["HiAgent"],
+        "阿里云百炼": ["阿里百炼", "Model Studio"],
+        "ADP Agent Portal": ["Agent Portal", "ADP Agent Portal"],
+        "Agent ID Guard": ["Agent ID Guard", "Agent 身份安全"],
+        "AgentSphere": ["AgentSphere", "Agent Sphere", "HiAgent 数字员工治理"],
+        "百度智能云千帆": ["百度千帆", "千帆平台"],
+        "小艺（HarmonyOS PC）": ["华为小艺", "Celia", "HarmonyOS PC"],
+        "小艺智能体平台": ["小艺开放平台", "华为智能体平台"],
+        "盘古大模型知识库": ["华为盘古", "盘古知识库"],
+        "CodeArts Doer": ["华为 CodeArts Doer", "CodeArts"],
+        "JoyClaw": ["京东 JoyClaw", "JoyAgent 个人助手"],
+        "京言": ["京东京言", "京言电商智能体"],
+        "JoyAgent 开发平台": ["京东 JoyAgent", "JoyAgent"],
+        "大模型安全网关": ["京东大模型安全网关"],
+        "JoyContext": ["京东 JoyContext", "JoyContext 知识库"],
+        "JoyCode": ["京东 JoyCode"],
+        "Xiaomi MiMo Desktop": ["小米 MiMo Desktop", "MiMo 桌面客户端"],
+        "超级小爱": ["小米超级小爱", "小爱同学"],
+        "Xiaomi MiMo API": ["小米 MiMo API", "MiMo 开放平台"],
+        "MiMo Code": ["Xiaomi MiMo Code", "小米 MiMo Code"],
+        "CatPaw": ["美团 CatPaw"],
+        "Tabbit": ["美团 Tabbit"],
+        "小团": ["美团小团"],
+        "CatPaw Managed Agents": ["美团 Managed Agents", "CatPaw Agent 平台"],
+        "CatPaw 企业管理": ["CatPaw Managed Agents", "美团 Agent 管理"],
+        "AutoGLM": ["智谱 AutoGLM"],
+        "智谱清言": ["ChatGLM", "智谱清言"],
+        "智谱开放平台": ["BigModel", "智谱 BigModel"],
+        "智谱知识库": ["BigModel 知识库"],
+        "Z Code": ["智谱 Z Code"],
+        "GLM Coding Plan": ["智谱 GLM Coding Plan"],
+        "DeepSeek 开放平台": ["DeepSeek API", "DeepSeek Platform"],
+        "DeepSeek Harness": ["DeepSeek Harness", "DSH"],
+        "OpenAI Agent Platform": ["OpenAI Agents SDK", "AgentKit"],
+        "Gemini Enterprise Agent Platform": ["Gemini Enterprise Agent Platform", "Vertex AI Agent Builder"],
+        "Agent Registry": ["Google Agent Registry", "Agent Registry"],
+        "Microsoft Agent 365": ["Microsoft Agent 365", "Agent 365"],
+        "Bedrock AgentCore": ["Bedrock AgentCore", "AgentCore"],
+        "AI Control Tower": ["ServiceNow AI Control Tower", "AI Control Tower"],
+        "MuleSoft Agent Fabric": ["MuleSoft Agent Fabric", "Agent Fabric"],
+        "ima": ["ima.copilot", "腾讯 ima", "ima 知识库"],
+        "腾讯乐享": ["腾讯乐享", "乐享知识库"],
+        "百炼 Agentic RAG": ["百炼 Agentic RAG", "Agentic RAG"],
+        "企业知识引擎": ["火山引擎企业知识引擎", "字节知识引擎", "企业知识引擎"],
+        "Kimi 知识库": ["Kimi 知识库"],
+        "甄知": ["百度甄知", "甄知"],
+        "千帆知识库": ["百度千帆知识库", "千帆知识库"],
+        "NotebookLM": ["Google NotebookLM", "NotebookLM"],
+        "Cloud Search": ["Google Cloud Search", "Cloud Search"],
+        "SharePoint": ["Microsoft SharePoint", "SharePoint"],
+        "Microsoft Graph": ["Microsoft Graph"],
+        "Amazon Q Business": ["Amazon Q Business"],
+        "Knowledge Management": ["ServiceNow Knowledge Management"],
+        "Data 360": ["Salesforce Data 360", "Data Cloud"],
+        "Amazon Bedrock Agents": ["Bedrock Agents"],
+        "Microsoft 365 Copilot": ["Microsoft 365 Copilot", "M365 Copilot"],
+        "Gemini Code Assist": ["Gemini Code Assist"],
+        "GitHub Copilot": ["GitHub Copilot"],
+    }
+    expanded = []
+    for alias in aliases:
+        expanded.append(alias)
+        expanded.extend(alias_map.get(alias, []))
+    return list(dict.fromkeys(expanded))
+
+
+def product_intelligence_context(report: dict, research: dict) -> dict:
+    candidates = []
+    seen = set()
+    raw_items = list(report.get("items", []))
+    for board in report.get("news_boards", []):
+        raw_items.extend(board.get("items", []))
+    for signal in report.get("signals", []):
+        raw_items.extend(signal.get("evidence", []))
+    for item in raw_items:
+        identity = str(item.get("url") or item.get("title") or "").strip()
+        if not identity or identity in seen:
+            continue
+        seen.add(identity)
+        candidates.append(item)
+
+    rows = []
+    product_mentions = {}
+    product_lookup = []
+    for vendor in PRODUCT_MATRIX:
+        cells = {}
+        vendor_topic_ids = set()
+        search_terms = [vendor["vendor"]]
+        for product_type, (name, url) in vendor["products"].items():
+            aliases = [] if name == "-" else product_aliases(name)
+            matches = [
+                item for item in candidates
+                if any(
+                    keyword_matches(f'{item.get("title", "")} {item.get("summary", "")}', alias)
+                    for alias in aliases
+                )
+            ]
+            matches.sort(
+                key=lambda item: (
+                    parse_date(item.get("published_at")) or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+                    number(item.get("score")),
+                ),
+                reverse=True,
+            )
+            cells[product_type] = {
+                "name": name,
+                "url": url,
+                "mentions": len(matches),
+                "latest": matches[0] if matches else None,
+            }
+            product_mentions[name] = matches
+            if aliases:
+                product_lookup.append((vendor["vendor"], name, aliases))
+                search_terms.extend(aliases)
+                vendor_topic_ids.update(matching_topic_ids(" ".join(aliases), research))
+        rows.append({
+            **vendor,
+            "cells": cells,
+            "topic_ids": sorted(vendor_topic_ids),
+            "search": " ".join(search_terms).lower(),
+        })
+
+    feed = []
+    for item in candidates:
+        text = f'{item.get("title", "")} {item.get("summary", "")}'
+        matched = next(
+            (
+                (vendor, product)
+                for vendor, product, aliases in product_lookup
+                if any(keyword_matches(text, alias) for alias in aliases)
+            ),
+            None,
+        )
+        if not matched:
+            continue
+        payload = dict(item)
+        payload["vendor"], payload["product"] = matched
+        payload["topic_ids"] = sorted(
+            set(item.get("topic_ids") or []) | set(matching_topic_ids(text, research))
+        )
+        feed.append(payload)
+    feed.sort(
+        key=lambda item: (
+            parse_date(item.get("published_at")) or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+            number(item.get("score")),
+        ),
+        reverse=True,
+    )
+    return {
+        "rows": rows,
+        "focus": [
+            {
+                "name": name,
+                "mentions": len(product_mentions.get(name, [])),
+                "latest": (product_mentions.get(name) or [None])[0],
+            }
+            for name in PRODUCT_FOCUS
+        ],
+        "feed": feed[:12],
+    }
+
+
 class ReportStore:
     def __init__(self):
         REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -1633,18 +2486,25 @@ class ReportStore:
     def render_html(self, report: dict) -> str:
         generated = parse_date(report["generated_at"])
         stamp = generated.astimezone().strftime("%Y年%m月%d日 %H:%M") if generated else ""
-        scope = report.get("research_context") or research_context({})
-        topics = scope.get("topics") or research_context({})["topics"]
+        report_scope = report.get("research_context") or research_context({})
+        scope = research_context({"research_topics": report_scope.get("topics")})
+        topics = scope["topics"]
         topic_names = {
             str(topic.get("id") or ""): str(topic.get("name") or "")
             for topic in topics
         }
+        def resolved_topic_ids(item: dict) -> list[str]:
+            text = f'{item.get("title", "")} {item.get("summary", "")}'
+            return sorted(set(item.get("topic_ids") or []) | set(matching_topic_ids(text, scope)))
+
         topics_json = json.dumps(topics, ensure_ascii=False).replace("<", "\\u003c")
         topic_buttons = "".join(
-            f'<button data-topic="{html.escape(str(topic["id"]))}">'
+            f'<button data-topic="{html.escape(str(topic["id"]))}" '
+            f'title="{html.escape(str(topic["name"]))}">'
             f'<i></i><span>{html.escape(str(topic["name"]))}</span></button>'
             for topic in topics
         )
+        product_intelligence = product_intelligence_context(report, scope)
         category_labels = {
             "all": "全部热点", "china": "国内热榜", "world": "国际中文",
             "tech": "科技产品", "crypto": "加密快讯", "finance": "财经宏观",
@@ -1667,15 +2527,30 @@ class ReportStore:
                 title = html.escape(str(item.get("title") or ""))
                 url = html.escape(str(item.get("url") or ""))
                 heat = round(number(item.get("score")))
+                item_topic_ids = resolved_topic_ids(item)
+                item_topics = html.escape(" ".join(item_topic_ids))
+                search_text = html.escape(
+                    clean_text(f'{item.get("title", "")} {item.get("summary", "")}').lower(),
+                    quote=True,
+                )
                 link = f'<a href="{url}" title="{title}">{title}</a>' if url else f"<span>{title}</span>"
                 rows.append(
-                    f'<li data-search="{title.lower()}"><em>{index}</em><div>{link}'
+                    f'<li data-search="{search_text}" data-topics="{item_topics}">'
+                    f'<em>{index}</em><div>{link}'
                     f'<small>{html.escape(str(item.get("evidence") or ""))}</small></div>'
                     f'<strong>{heat}</strong></li>'
                 )
+            board_topics = html.escape(" ".join(sorted({
+                topic_id
+                for item in board.get("items", [])
+                for topic_id in (
+                    resolved_topic_ids(item)
+                )
+            })))
             board_cards.append(
                 f'<section class="board-card" data-board-key="{board_key}" '
-                f'data-category="{html.escape(board.get("category", "all"))}" draggable="false">'
+                f'data-category="{html.escape(board.get("category", "all"))}" '
+                f'data-topics="{board_topics}" draggable="false">'
                 f'<header><button class="drag-handle" title="拖动排序" aria-label="拖动排序">⠿</button>'
                 f'<div class="source-mark">{html.escape(str(board.get("label") or "?"))[:1]}</div>'
                 f'<div><h2>{html.escape(str(board.get("label") or "热点"))}</h2>'
@@ -1685,6 +2560,88 @@ class ReportStore:
                 f'<button class="resize-grip" title="拖动调整卡片大小" '
                 f'aria-label="拖动调整卡片大小"></button></section>'
             )
+
+        focus_cards = []
+        for product in product_intelligence["focus"]:
+            latest = product.get("latest")
+            status = f'今日 {product["mentions"]} 条' if product["mentions"] else "持续跟踪"
+            latest_url = html.escape(str((latest or {}).get("url") or ""))
+            tag = "a" if latest_url else "span"
+            href = f' href="{latest_url}"' if latest_url else ""
+            focus_cards.append(
+                f'<{tag} class="focus-product"{href}><i></i>'
+                f'<strong>{html.escape(product["name"])}</strong><small>{status}</small>'
+                f'</{tag}>'
+            )
+
+        company_options = []
+        for vendor in product_intelligence["rows"]:
+            vendor_name = html.escape(vendor["vendor"], quote=True)
+            region_label = "国内" if vendor["region"] == "china" else "国外"
+            company_options.append(
+                f'<label class="company-option" data-company-search="'
+                f'{html.escape(vendor["search"], quote=True)}">'
+                f'<input type="checkbox" data-vendor-choice="{vendor_name}" checked>'
+                f'<span class="company-check" aria-hidden="true"></span>'
+                f'<span class="company-name">{vendor_name}</span>'
+                f'<small>{region_label}</small></label>'
+            )
+
+        product_rows = []
+        product_type_labels = {
+            "desktop": "桌面办公", "mobile": "手机端",
+            "platform": "Agent 开发平台", "governance": "Agent 纳管平台",
+            "data": "知识引擎", "coding": "Code 工具",
+        }
+        for vendor in product_intelligence["rows"]:
+            cells = []
+            for product_type in product_type_labels:
+                product = vendor["cells"][product_type]
+                name = html.escape(product["name"])
+                url = html.escape(product["url"])
+                if product["name"] == "-":
+                    cells.append(
+                        f'<td data-product-type="{product_type}" class="product-empty-cell">暂无独立产品</td>'
+                    )
+                    continue
+                signal_label = (
+                    f'<b>{product["mentions"]}</b> 条动态'
+                    if product["mentions"] else "持续跟踪"
+                )
+                cells.append(
+                    f'<td data-product-type="{product_type}"><a href="{url}" '
+                    f'title="打开 {name} 官方入口"><span>{name}</span><i>↗</i></a>'
+                    f'<small class="{"has-signal" if product["mentions"] else ""}">{signal_label}</small></td>'
+                )
+            product_rows.append(
+                f'<tr data-region="{vendor["region"]}" '
+                f'data-vendor="{html.escape(vendor["vendor"], quote=True)}" '
+                f'data-topics="{html.escape(" ".join(vendor["topic_ids"]))}" '
+                f'data-search="{html.escape(vendor["search"], quote=True)}">'
+                f'<th><span class="vendor-mark">{html.escape(vendor["vendor"])[:1]}</span>'
+                f'<span>{html.escape(vendor["vendor"])}<small>{vendor["tier"]}跟踪</small></span></th>'
+                f'{"".join(cells)}</tr>'
+            )
+
+        product_feed = []
+        for item in product_intelligence["feed"]:
+            title = html.escape(str(item.get("title") or ""))
+            url = html.escape(str(item.get("url") or ""))
+            topic_ids = html.escape(" ".join(resolved_topic_ids(item)))
+            published = parse_date(item.get("published_at"))
+            date_label = published.astimezone().strftime("%m-%d %H:%M") if published else "今日采集"
+            product_feed.append(
+                f'<a class="product-feed-item" href="{url}" data-topics="{topic_ids}" '
+                f'data-vendor="{html.escape(item["vendor"], quote=True)}" '
+                f'data-search="{html.escape(clean_text(str(item.get("title") or "")).lower(), quote=True)}">'
+                f'<span><b>{html.escape(item["vendor"])}</b>{html.escape(item["product"])}</span>'
+                f'<strong>{title}</strong><small>{html.escape(str(item.get("source") or ""))} · {date_label}</small></a>'
+            )
+        product_activity_count = sum(
+            product["mentions"]
+            for vendor in product_intelligence["rows"]
+            for product in vendor["cells"].values()
+        )
 
         portal_cards = "".join(
             f'<a class="portal" href="{html.escape(portal.get("url") or "")}">'
@@ -1716,6 +2673,11 @@ class ReportStore:
             }
             for item in report.get("items", [])[:5]
         ]
+        signal_items = sorted(
+            signal_items,
+            key=lambda item: number(item.get("score")),
+            reverse=True,
+        )
         for index, signal in enumerate(signal_items[:8], 1):
             profile = project_profile(signal)
             title = html.escape(str(signal.get("title") or ""))
@@ -1729,7 +2691,8 @@ class ReportStore:
                 signal.get("takeaway") or signal.get("summary") or profile["positioning"]
             ))
             takeaway = takeaway[:110].rstrip() + ("…" if len(takeaway) > 110 else "")
-            topic_ids = " ".join(signal.get("topic_ids") or [])
+            signal["topic_ids"] = resolved_topic_ids(signal)
+            topic_ids = " ".join(signal["topic_ids"])
             points = signal.get("knowledge_points") or [
                 profile["positioning"],
                 profile["highlight"],
@@ -1788,12 +2751,19 @@ class ReportStore:
                 str(business["domain"]),
                 str(business["value"]),
             )).lower()
+            rank_label = (
+                "今日最热" if index == 1
+                else "热度第二" if index == 2
+                else "热度第三" if index == 3
+                else f"热度第 {index}"
+            )
             signal_index_rows.append(
                 f'<button class="signal-index-item{" selected" if index == 1 else ""}" '
                 f'data-signal-key="{signal_key}" data-topics="{html.escape(topic_ids)}" '
-                f'data-attention="{attention}" '
+                f'data-attention="{attention}" data-rank="{index}" style="--heat:{score}%" '
                 f'data-search="{html.escape(search_text, quote=True)}">'
-                f'<span class="index-copy"><span class="index-context">'
+                f'<span class="hot-rank"><strong>{index:02d}</strong>'
+                f'<span>{rank_label}</span></span><span class="index-copy"><span class="index-context">'
                 f'<span class="index-topic">{html.escape(topic_label)}</span>'
                 f'<span class="index-priority">{strength_label}</span></span>'
                 f'<b class="index-title">{title}</b>'
@@ -1807,7 +2777,8 @@ class ReportStore:
                 f'<span class="index-why"><strong>为什么看</strong>'
                 f'<span>{html.escape(why_text)}</span></span>'
                 f'<span class="index-meta"><span>{primary_source} · {consensus} 个来源</span>'
-                f'<span>信号强度 {score}/100</span></span></span></button>'
+                f'<span>热度 {score}</span></span><span class="heat-track" aria-label="热度 {score}">'
+                f'<i></i></span></span></button>'
             )
             signal_cards.append(
                 f'<article class="signal-card{" selected" if index == 1 else ""}" data-signal-key="{signal_key}" '
@@ -1846,7 +2817,7 @@ class ReportStore:
             title = html.escape(str(item.get("title") or ""))
             title_html = f'<a href="{url}">{title}</a>' if url else title
             ai_cards.append(
-                f'<article class="ai-card" data-topics="{html.escape(" ".join(item.get("topic_ids") or []))}">'
+                f'<article class="ai-card" data-topics="{html.escape(" ".join(resolved_topic_ids(item)))}">'
                 f'<em>{index:02d}</em><div><div class="ai-meta">'
                 f'{html.escape(str(item.get("source") or ""))} · {round(number(item.get("score")))} 分</div>'
                 f'<h2>{title_html}</h2><p>{html.escape(profile["positioning"])}</p>'
@@ -1876,7 +2847,7 @@ html[data-theme="graphite"]{{--bg:#1d2024;--panel:#272b30;--soft:#30353b;--text:
 html[data-theme="paper"]{{--bg:#f4f1e9;--panel:#fffefa;--soft:#f0ede5;--text:#242522;--muted:#76766f;--line:#dfddd4;--accent:#d95738;--blue:#386ca8;--green:#367d68;--shadow:0 2px 10px rgba(65,58,40,.06);color-scheme:light}}
 .customize-button{{height:34px;display:flex;align-items:center;gap:6px;padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--text);cursor:pointer;font-size:11px;font-weight:650;white-space:nowrap}}.customize-button[hidden]{{display:none!important}}.customize-button:hover,.customize-button.active{{border-color:var(--blue);color:var(--blue);background:var(--panel)}}.sliders-icon{{position:relative;width:15px;height:12px;display:block;background:linear-gradient(var(--muted),var(--muted)) 0 1px/15px 1px no-repeat,linear-gradient(var(--muted),var(--muted)) 0 6px/15px 1px no-repeat,linear-gradient(var(--muted),var(--muted)) 0 11px/15px 1px no-repeat}}.sliders-icon::before{{content:"";position:absolute;width:3px;height:3px;border:1px solid currentColor;border-radius:50%;background:var(--panel);left:3px;top:-1px;box-shadow:6px 5px 0 -1px var(--panel),6px 5px 0 0 currentColor,-3px 10px 0 -1px var(--panel),-3px 10px 0 0 currentColor}}.customizer{{position:fixed;z-index:20;right:18px;top:76px;width:310px;max-height:calc(100vh - 94px);overflow:auto;padding:18px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 60px rgba(15,20,30,.22)}}.customizer[hidden]{{display:none}}.customizer-head{{display:flex;align-items:center;margin-bottom:18px}}.customizer-head h2{{font-size:16px;margin:0}}.customizer-head button{{margin-left:auto;width:28px;height:28px;border:0;background:var(--soft);border-radius:7px;color:var(--muted);cursor:pointer}}.setting-group{{padding:14px 0;border-top:1px solid var(--line)}}.setting-group:first-of-type{{border-top:0;padding-top:0}}.setting-group h3{{font-size:11px;margin:0 0 10px;color:var(--muted)}}.layout-options{{display:grid;grid-template-columns:1fr 1fr;gap:8px}}.layout-option{{min-height:64px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--muted);cursor:pointer;text-align:left}}.layout-option b{{display:block;color:var(--text);font-size:11px;margin-top:5px}}.layout-option.active{{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}}.layout-preview{{height:20px;display:grid;gap:2px}}.layout-preview i{{display:block;background:var(--muted);border-radius:2px;opacity:.5}}.layout-preview.adaptive{{grid-template-columns:1fr 1fr}}.layout-preview.fixed{{grid-template-columns:1fr 1fr}}.layout-preview.list{{grid-template-columns:1fr}}.layout-preview.compact{{grid-template-columns:1fr 1fr 1fr}}.theme-options,.card-palette{{display:flex;gap:9px;flex-wrap:wrap}}.theme-option,.color-option{{width:30px;height:30px;border:2px solid var(--panel);border-radius:50%;box-shadow:0 0 0 1px var(--line);cursor:pointer}}.theme-option.active,.color-option.active{{box-shadow:0 0 0 2px var(--blue)}}.theme-option[data-value="system"]{{background:linear-gradient(135deg,#fff 50%,#25282d 50%)}}.theme-option[data-value="light"]{{background:#fff}}.theme-option[data-value="dark"]{{background:#1a1d21}}.theme-option[data-value="graphite"]{{background:#30353b}}.theme-option[data-value="paper"]{{background:#f4f1e9}}.edit-toggle{{display:flex;align-items:center;gap:8px}}.switch{{position:relative;width:38px;height:22px;border:0;border-radius:11px;background:var(--line);cursor:pointer}}.switch::after{{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.15s}}.switch.active{{background:var(--blue)}}.switch.active::after{{transform:translateX(16px)}}.setting-note{{font-size:10px;color:var(--muted);margin:8px 0 0}}.reset-button{{width:100%;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--soft);color:var(--muted);cursor:pointer}}.board-grid[data-layout="adaptive"]{{grid-template-columns:repeat(auto-fit,minmax(310px,1fr))}}.board-grid[data-layout="fixed"]{{grid-template-columns:repeat(2,minmax(0,1fr))}}.board-grid[data-layout="list"]{{grid-template-columns:1fr}}.board-grid[data-layout="compact"]{{grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px}}.board-grid[data-layout="compact"] .board-card li{{min-height:36px;padding-top:4px;padding-bottom:4px}}.board-grid[data-layout="compact"] .board-card li small{{display:none}}.board-card{{position:relative;background:var(--card-bg,var(--panel));grid-column:span var(--card-span,1)}}.board-card[data-visible-rows="5"] li:nth-child(n+6){{display:none}}.board-card[data-card-color="rose"]{{--card-bg:#fff1f0}}.board-card[data-card-color="sky"]{{--card-bg:#eef6ff}}.board-card[data-card-color="mint"]{{--card-bg:#eefaf5}}.board-card[data-card-color="amber"]{{--card-bg:#fff7e8}}.board-card[data-card-color="lavender"]{{--card-bg:#f5f1ff}}html[data-theme="dark"] .board-card[data-card-color="rose"],html[data-theme="graphite"] .board-card[data-card-color="rose"]{{--card-bg:#3a2728}}html[data-theme="dark"] .board-card[data-card-color="sky"],html[data-theme="graphite"] .board-card[data-card-color="sky"]{{--card-bg:#233141}}html[data-theme="dark"] .board-card[data-card-color="mint"],html[data-theme="graphite"] .board-card[data-card-color="mint"]{{--card-bg:#20352f}}html[data-theme="dark"] .board-card[data-card-color="amber"],html[data-theme="graphite"] .board-card[data-card-color="amber"]{{--card-bg:#3a3021}}html[data-theme="dark"] .board-card[data-card-color="lavender"],html[data-theme="graphite"] .board-card[data-card-color="lavender"]{{--card-bg:#302a41}}.board-card.dragging-source{{opacity:.24}}.drag-ghost{{position:fixed;z-index:100;pointer-events:none;margin:0;overflow:hidden;border-color:var(--blue);box-shadow:0 18px 48px rgba(16,24,40,.24);transform:rotate(.35deg) scale(1.015);will-change:left,top}}.drag-ghost ol{{max-height:140px;overflow:hidden}}.drag-handle,.card-style{{display:none;border:0;background:transparent;color:var(--muted);cursor:pointer}}.drag-handle{{font-size:18px;padding:6px;margin-left:-7px;cursor:grab;touch-action:none;user-select:none}}.drag-handle:active{{cursor:grabbing}}.card-style{{font-size:16px;padding:5px}}.editing .drag-handle,.editing .card-style{{display:block}}.editing .live-dot{{display:none}}.resize-grip{{display:none;position:absolute;right:1px;bottom:1px;width:20px;height:20px;border:0;background:linear-gradient(135deg,transparent 48%,var(--muted) 49%,var(--muted) 55%,transparent 56%,transparent 68%,var(--muted) 69%,var(--muted) 75%,transparent 76%);opacity:.65;cursor:nwse-resize;touch-action:none}}.editing .resize-grip{{display:block}}.resize-badge{{position:fixed;z-index:90;pointer-events:none;padding:5px 8px;border-radius:6px;background:var(--text);color:var(--panel);font-size:10px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.18)}}.color-popover{{position:fixed;z-index:30;display:flex;gap:8px;padding:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 35px rgba(0,0,0,.2)}}.color-popover[hidden]{{display:none}}.color-option[data-color="default"]{{background:var(--panel)}}.color-option[data-color="rose"]{{background:#fff1f0}}.color-option[data-color="sky"]{{background:#eef6ff}}.color-option[data-color="mint"]{{background:#eefaf5}}.color-option[data-color="amber"]{{background:#fff7e8}}.color-option[data-color="lavender"]{{background:#f5f1ff}}html[data-theme="dark"] .color-option[data-color="rose"],html[data-theme="graphite"] .color-option[data-color="rose"]{{background:#3a2728}}html[data-theme="dark"] .color-option[data-color="sky"],html[data-theme="graphite"] .color-option[data-color="sky"]{{background:#233141}}html[data-theme="dark"] .color-option[data-color="mint"],html[data-theme="graphite"] .color-option[data-color="mint"]{{background:#20352f}}html[data-theme="dark"] .color-option[data-color="amber"],html[data-theme="graphite"] .color-option[data-color="amber"]{{background:#3a3021}}html[data-theme="dark"] .color-option[data-color="lavender"],html[data-theme="graphite"] .color-option[data-color="lavender"]{{background:#302a41}}@media(max-width:1100px){{.board-grid[data-layout="compact"]{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}@media(max-width:760px){{.customizer{{right:10px;left:10px;width:auto}}.board-grid[data-layout]{{grid-template-columns:1fr}}.board-card{{grid-column:span 1!important}}}}
 </style><style>
-.signals-view{{max-width:1040px;margin:auto;padding:34px 28px 64px}}.signals-head{{display:flex;align-items:flex-end;gap:18px;margin-bottom:20px}}.signals-head h1{{font-size:27px;margin:0 0 5px}}.signals-head p{{margin:0;color:var(--muted)}}.quality-summary{{margin-left:auto;display:flex;gap:18px;text-align:right}}.quality-summary b{{display:block;font-size:17px}}.quality-summary span{{font-size:10px;color:var(--muted)}}.signal-list{{display:grid;gap:12px}}.signal-card{{display:grid;grid-template-columns:44px 1fr;gap:16px;padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}}.signal-rank{{width:36px;height:36px;display:grid;place-items:center;border-radius:8px;background:var(--soft);font-weight:800;color:var(--muted)}}.signal-card:first-child .signal-rank{{background:var(--accent);color:#fff}}.signal-meta{{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px}}.signal-meta b{{color:var(--green);font-size:13px}}.signal-meta i{{width:3px;height:3px;border-radius:50%;background:var(--muted)}}.signal-card h2{{font-size:19px;line-height:1.35;margin:7px 0 6px}}.signal-card h2 a:hover{{color:var(--blue)}}.signal-card p{{margin:0;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}.signal-why{{display:grid;grid-template-columns:120px 1fr;gap:10px;margin-top:14px;padding:11px 12px;border-left:3px solid var(--blue);background:var(--soft);border-radius:0 7px 7px 0;font-size:11px}}.signal-why b{{color:var(--blue)}}.signal-card footer{{display:flex;align-items:center;gap:12px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}}.signal-sources{{display:flex;gap:5px;flex:1;overflow:hidden}}.signal-sources span{{white-space:nowrap;padding:3px 7px;border-radius:5px;background:var(--soft);color:var(--muted);font-size:9px}}.signal-card footer>a{{color:var(--blue);font-size:11px;font-weight:650;white-space:nowrap}}.mode-switch{{flex:none;white-space:nowrap}}.mode-switch button{{white-space:nowrap}}.category-button span{{white-space:nowrap}}@media(max-width:1050px){{.app-head{{height:auto;min-height:68px;flex-wrap:wrap;gap:8px 12px;padding:10px 14px}}.brand{{min-width:140px;flex:1;order:1}}.customize-button{{order:2}}.updated{{display:none}}.mode-switch{{order:3}}.search{{order:4;flex:1;width:auto;min-width:180px;margin-left:0}}.dashboard{{display:block}}.sidebar{{position:sticky;top:116px;z-index:4;display:flex;gap:4px;max-height:none;padding:8px 12px;overflow-x:auto;background:var(--bg);border:0;border-bottom:1px solid var(--line)}}.sidebar h3{{display:none}}.category-button{{width:auto;min-width:max-content;flex:none;padding:0 10px}}.board-area{{padding:16px}}.rightbar{{display:block;position:static;max-height:none;border:0;border-top:1px solid var(--line);padding:18px}}.rightbar>.portal{{display:inline-block;width:190px;margin-right:6px;vertical-align:top}}.health{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}}}}@media(max-width:700px){{.brand{{min-width:120px}}.brand small{{display:none}}.mode-switch{{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}}.mode-switch button{{padding:0 7px}}.search{{min-width:0}}.signals-view{{padding:22px 14px 50px}}.signals-head{{align-items:flex-start;flex-direction:column}}.quality-summary{{margin-left:0;text-align:left}}.signal-card{{grid-template-columns:1fr;padding:16px}}.signal-rank{{display:none}}.signal-why{{grid-template-columns:1fr;gap:3px}}.signal-card footer{{align-items:flex-start;flex-direction:column}}.sidebar{{top:152px}}.health{{grid-template-columns:1fr}}}}
+.signals-view{{max-width:1040px;margin:auto;padding:34px 28px 64px}}.signals-head{{display:flex;align-items:flex-end;gap:18px;margin-bottom:20px}}.signals-head h1{{font-size:27px;margin:0 0 5px}}.signals-head p{{margin:0;color:var(--muted)}}.quality-summary{{margin-left:auto;display:flex;gap:18px;text-align:right}}.quality-summary b{{display:block;font-size:17px}}.quality-summary span{{font-size:10px;color:var(--muted)}}.signal-list{{display:grid;gap:12px}}.signal-card{{display:grid;grid-template-columns:44px 1fr;gap:16px;padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}}.signal-rank{{width:36px;height:36px;display:grid;place-items:center;border-radius:8px;background:var(--soft);font-weight:800;color:var(--muted)}}.signal-card:first-child .signal-rank{{background:var(--accent);color:#fff}}.signal-meta{{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px}}.signal-meta b{{color:var(--green);font-size:13px}}.signal-meta i{{width:3px;height:3px;border-radius:50%;background:var(--muted)}}.signal-card h2{{font-size:19px;line-height:1.35;margin:7px 0 6px}}.signal-card h2 a:hover{{color:var(--blue)}}.signal-card p{{margin:0;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}.signal-why{{display:grid;grid-template-columns:120px 1fr;gap:10px;margin-top:14px;padding:11px 12px;border-left:3px solid var(--blue);background:var(--soft);border-radius:0 7px 7px 0;font-size:11px}}.signal-why b{{color:var(--blue)}}.signal-card footer{{display:flex;align-items:center;gap:12px;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}}.signal-sources{{display:flex;gap:5px;flex:1;overflow:hidden}}.signal-sources span{{white-space:nowrap;padding:3px 7px;border-radius:5px;background:var(--soft);color:var(--muted);font-size:9px}}.signal-card footer>a{{color:var(--blue);font-size:11px;font-weight:650;white-space:nowrap}}.mode-switch{{flex:none;white-space:nowrap}}.mode-switch button{{white-space:nowrap}}.category-button span{{white-space:nowrap}}@media(max-width:1050px){{.app-head{{height:auto;min-height:68px;flex-wrap:wrap;gap:8px 12px;padding:10px 14px}}.brand{{min-width:140px;flex:1;order:1}}.customize-button{{order:2}}.updated{{display:none}}.mode-switch{{order:3}}.search{{order:4;flex:1;width:auto;min-width:180px;margin-left:0}}.dashboard{{display:block}}.sidebar{{position:sticky;top:116px;z-index:4;display:flex;gap:4px;max-height:none;padding:8px 12px;overflow-x:auto;background:var(--bg);border:0;border-bottom:1px solid var(--line)}}.sidebar h3{{display:none}}.category-button{{width:auto;min-width:max-content;flex:none;padding:0 10px}}.board-area{{padding:16px}}.rightbar{{display:block;position:static;max-height:none;border:0;border-top:1px solid var(--line);padding:18px}}.rightbar>.portal{{display:inline-block;width:190px;margin-right:6px;vertical-align:top}}.health{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 12px}}}}@media(max-width:700px){{.brand{{min-width:120px}}.brand small{{display:none}}.mode-switch{{width:100%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}}.mode-switch button{{min-width:0;padding:0 4px;font-size:10px}}.search{{min-width:0}}.signals-view{{padding:22px 14px 50px}}.signals-head{{align-items:flex-start;flex-direction:column}}.quality-summary{{margin-left:0;text-align:left}}.signal-card{{grid-template-columns:1fr;padding:16px}}.signal-rank{{display:none}}.signal-why{{grid-template-columns:1fr;gap:3px}}.signal-card footer{{align-items:flex-start;flex-direction:column}}.sidebar{{top:152px}}.health{{grid-template-columns:1fr}}}}
 </style><style>
 .learning-bar{{display:flex;align-items:center;gap:12px;margin:18px 0 14px;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:9px}}.learning-progress{{flex:1;min-width:160px}}.learning-progress>div{{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px;font-size:11px}}.learning-progress b{{color:var(--green)}}.progress-track{{height:5px;background:var(--soft);border-radius:3px;overflow:hidden}}.progress-track i{{display:block;width:0;height:100%;background:var(--green);border-radius:3px;transition:width .25s}}.unmastered-filter{{height:30px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:var(--soft);color:var(--muted);cursor:pointer;white-space:nowrap}}.unmastered-filter.active{{color:var(--blue);border-color:var(--blue);background:var(--panel)}}.quick-read{{display:grid;grid-template-columns:140px 1fr;gap:18px;margin-bottom:14px;padding:16px 18px;background:var(--panel);border:1px solid var(--line);border-radius:10px}}.quick-read header b{{display:block;font-size:14px}}.quick-read header span{{font-size:10px;color:var(--muted)}}.quick-read ol{{display:grid;gap:8px;padding:0;margin:0;list-style:none}}.quick-read li{{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start}}.quick-read li b{{width:20px;height:20px;display:grid;place-items:center;border-radius:5px;background:var(--accent);color:#fff;font-size:10px}}.quick-read li span{{font-size:11px;line-height:1.5}}.takeaway{{display:grid;grid-template-columns:86px 1fr;gap:10px;align-items:start;margin:10px 0 0;padding:11px 12px;background:var(--soft);border-radius:7px}}.takeaway>b{{font-size:10px;color:var(--accent)}}.takeaway p{{color:var(--text);font-weight:600;-webkit-line-clamp:3}}.knowledge-grid{{display:grid;grid-template-columns:1.35fr 1fr;gap:12px;margin-top:12px}}.knowledge-grid section{{padding:11px 12px;border:1px solid var(--line);border-radius:7px}}.knowledge-grid section>b{{display:block;margin-bottom:6px;color:var(--blue);font-size:10px}}.knowledge-grid ul{{display:grid;gap:5px;margin:0;padding-left:16px}}.knowledge-grid li,.knowledge-grid p{{font-size:11px;color:var(--muted)}}.knowledge-grid section>p{{margin:0 0 9px;display:block}}.signal-card.mastered{{opacity:.68}}.signal-card.mastered .signal-rank{{background:var(--green);color:#fff}}.signal-actions{{display:flex;gap:6px}}.signal-actions button{{height:28px;padding:0 9px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--muted);cursor:pointer;font-size:10px;white-space:nowrap}}.signal-actions button:hover{{border-color:var(--blue);color:var(--blue)}}.master-button.active{{background:var(--green);border-color:var(--green);color:#fff}}.evidence-panel{{margin-top:12px;padding:12px;background:var(--soft);border-radius:7px}}.evidence-panel[hidden]{{display:none}}.evidence-panel>b{{font-size:10px;color:var(--muted)}}.evidence-panel ul{{display:grid;gap:9px;margin:8px 0 0;padding:0;list-style:none}}.evidence-panel li{{display:grid;grid-template-columns:7px 1fr;gap:8px}}.evidence-panel li>i{{width:6px;height:6px;margin-top:6px;border-radius:50%;background:var(--green)}}.evidence-panel small{{display:block;color:var(--muted);font-size:9px}}.evidence-panel a,.evidence-panel li>div>span{{display:block;margin-top:2px;font-size:11px}}.evidence-panel a:hover{{color:var(--blue)}}.evidence-panel a b{{margin-left:4px;color:var(--blue)}}@media(max-width:700px){{.learning-bar{{align-items:stretch;flex-direction:column}}.quick-read{{grid-template-columns:1fr;gap:10px}}.takeaway{{grid-template-columns:1fr;gap:3px}}.knowledge-grid{{grid-template-columns:1fr}}.signal-actions{{width:100%}}.signal-actions button{{flex:1}}}}
 </style><style>
@@ -1962,7 +2933,7 @@ html,body{{height:100%;overflow:hidden;background:var(--panel)}}
 .source-list{{display:flex;flex-direction:column;min-height:0;padding:18px 12px 12px;background:var(--sidebar);border-right:1px solid var(--line);user-select:none}}
 .source-brand{{display:none}}
 .source-list section{{margin-bottom:16px}}.source-list label{{display:block;padding:0 9px 6px;color:var(--muted);font-size:9px;font-weight:700}}
-.source-list button{{width:100%;height:31px;display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:6px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--text);cursor:default;text-align:left;font-size:11px}}.source-list button:hover{{background:color-mix(in srgb,var(--text) 5%,transparent)}}.source-list button.active{{background:var(--selection);color:var(--selection-text);font-weight:650}}.source-list button i{{font-style:normal;text-align:center;color:var(--muted)}}.source-list button.active i{{color:inherit}}.source-list button b{{color:var(--muted);font-size:9px;font-weight:500}}
+.source-list button{{width:100%;height:34px;display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:7px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--text);cursor:default;text-align:left;font-size:12px}}.source-list button:hover{{background:color-mix(in srgb,var(--text) 5%,transparent)}}.source-list button.active{{background:var(--selection);color:var(--selection-text);font-weight:650}}.source-list button i{{font-style:normal;text-align:center;color:var(--muted)}}.source-list button.active i{{color:inherit}}.source-list button b{{color:var(--muted);font-size:10px;font-weight:600}}
 .source-topics button i{{width:7px;height:7px;justify-self:center;border-radius:50%;background:#aab0ba}}.source-topics button:nth-of-type(2) i{{background:#587fda}}.source-topics button:nth-of-type(3) i{{background:#9a6ec0}}.source-topics button:nth-of-type(4) i{{background:#4f9c84}}.source-topics button:nth-of-type(5) i{{background:#c78850}}.source-topics .manage-topics i{{width:auto;height:auto;background:transparent}}
 .sidebar-learning{{margin-top:auto;padding:12px 9px 8px;border-top:1px solid var(--line)}}.sidebar-learning>div:first-child{{display:flex;justify-content:space-between;margin-bottom:7px;color:var(--muted);font-size:9px}}.sidebar-learning b{{color:var(--text)}}.sidebar-learning .unmastered-filter{{height:27px;margin-top:8px;padding:0;text-align:center;display:block;border:0;color:var(--muted);font-size:9px}}
 .source-list .topic-onboarding{{position:relative;display:block;margin:6px 4px 0;padding:9px 24px 9px 10px;border:1px solid color-mix(in srgb,var(--blue) 18%,var(--line));border-radius:6px;background:color-mix(in srgb,var(--blue) 7%,var(--panel));font-size:9px;line-height:1.45}}.source-list .topic-onboarding b{{display:block;margin-bottom:2px}}.source-list .topic-onboarding button{{position:absolute;right:3px;top:3px;width:20px;height:20px;display:block;padding:0;text-align:center}}
@@ -1982,14 +2953,198 @@ html,body{{height:100%;overflow:hidden;background:var(--panel)}}
 .board-summary .board-customize-button{{height:32px;display:flex;align-items:center;gap:7px;margin-left:auto;padding:0 11px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--text);cursor:pointer;font-size:10px;font-weight:650;white-space:nowrap}}.board-summary .board-customize-button:hover,.board-summary .board-customize-button.active{{border-color:var(--blue);color:var(--blue);background:color-mix(in srgb,var(--blue) 5%,var(--panel))}}.board-summary .stat{{margin-left:0}}
 @media(prefers-color-scheme:dark){{:root{{--sidebar:#202328;--list-bg:#181b1f;--selection:#23456f;--selection-text:#eef5ff}}}}html[data-theme="dark"],html[data-theme="graphite"]{{--sidebar:#202328;--list-bg:#181b1f;--selection:#23456f;--selection-text:#eef5ff}}
 @media(max-width:980px){{.desktop-shell{{grid-template-columns:190px minmax(0,1fr)}}.signals-view{{grid-template-columns:300px minmax(0,1fr)}}.signals-view.overview .signal-index-list{{grid-template-columns:repeat(2,minmax(0,1fr))}}.signal-detail .signal-card{{padding-left:28px;padding-right:28px}}.signal-detail .signal-card h2{{font-size:23px}}.business-detail{{grid-template-columns:1fr 1fr}}.business-detail .business-value{{grid-column:1/-1;grid-row:1;padding-left:0;border-left:0;border-bottom:1px solid var(--line)}}}}
-@media(max-width:760px){{html,body{{overflow:auto}}.app-head{{display:flex;position:sticky}}.desktop-shell{{display:block;height:auto}}.source-list{{display:none}}.workspace-content{{overflow:visible}}.signals-view{{display:block;height:auto}}.signal-browser{{border:0}}.signal-index-list{{max-height:none;overflow:visible}}.signal-detail{{display:none}}.dashboard,.ai-view{{height:auto;overflow:visible}}}}
-</style></head><body><header class="app-head"><div class="brand"><div class="brand-mark">R</div><div><strong>热点雷达</strong><small>Daily Signal</small></div></div><div class="mode-switch" role="tablist" aria-label="内容视图"><button class="active" role="tab" aria-selected="true" data-mode="signals">今日信号</button><button role="tab" aria-selected="false" data-mode="boards">探索榜单</button><button role="tab" aria-selected="false" data-mode="ai">技术雷达</button></div><button class="customize-button" id="customize-button" title="自定义看板的布局、主题和卡片" aria-label="自定义看板" hidden><span class="sliders-icon" aria-hidden="true"></span><span>自定义</span></button><span class="updated">{stamp}</span></header>
+@media(max-width:760px){{html,body{{overflow:auto}}.app-head{{display:flex;position:sticky}}.desktop-shell{{display:block;height:auto}}.source-list{{display:none}}.workspace-content{{overflow:visible}}.signals-view{{display:block;height:auto}}.signal-browser{{border:0}}.signal-index-list{{max-height:none;overflow:visible}}.signal-detail{{display:none}}.dashboard,.ai-view,.product-view,.active-search-view{{height:auto;overflow:visible}}}}
+</style><style>
+.source-list span,.source-list b{{transition:opacity .14s ease}}
+.source-list label{{font-size:10px;letter-spacing:.02em}}
+.sidebar-head{{height:32px;display:flex;align-items:center;margin:0 2px 18px;padding-left:8px}}
+.sidebar-title{{min-width:0;overflow:hidden;color:var(--text);font-size:11px;font-weight:750;white-space:nowrap}}
+.sidebar-title small{{display:block;color:var(--muted);font-size:8px;font-weight:550}}
+.sidebar-collapse{{width:28px!important;height:28px!important;display:grid!important;grid-template-columns:1fr!important;place-items:center;margin-left:auto;padding:0!important;border:1px solid var(--line)!important;background:color-mix(in srgb,var(--panel) 65%,transparent)!important;color:var(--muted)!important;cursor:pointer!important;font-size:17px!important}}
+.sidebar-collapse:hover{{border-color:color-mix(in srgb,var(--blue) 45%,var(--line))!important;color:var(--blue)!important}}
+.desktop-shell.sidebar-collapsed{{grid-template-columns:64px minmax(0,1fr)!important}}
+.desktop-shell.sidebar-collapsed .source-list{{min-width:0;padding-left:9px;padding-right:9px}}
+.desktop-shell.sidebar-collapsed .sidebar-head{{justify-content:center;padding:0}}
+.desktop-shell.sidebar-collapsed .sidebar-title,.desktop-shell.sidebar-collapsed .source-list label,.desktop-shell.sidebar-collapsed .source-list button>span,.desktop-shell.sidebar-collapsed .source-list button>b,.desktop-shell.sidebar-collapsed .sidebar-learning,.desktop-shell.sidebar-collapsed .topic-onboarding{{display:none}}
+.desktop-shell.sidebar-collapsed .sidebar-collapse{{margin:0}}
+.desktop-shell.sidebar-collapsed .source-list section{{margin-bottom:12px}}
+.desktop-shell.sidebar-collapsed .source-list section button{{height:36px;display:grid;grid-template-columns:1fr;padding:0;place-items:center}}
+.desktop-shell.sidebar-collapsed .source-list section button i{{font-size:13px}}
+.desktop-shell.sidebar-collapsed .source-topics button i{{width:8px;height:8px}}
+.signals-view.overview .signal-index-list{{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:auto;gap:14px;padding-bottom:44px}}
+.signals-view.overview .signal-index-item{{grid-column:span 2;height:max-content;min-height:270px;padding:20px 20px 24px 78px}}
+.signals-view.overview .signal-index-item:nth-child(1){{grid-column:1/-1;min-height:300px;padding:28px 32px 27px 108px;background:#1d2731;color:#fff;border-color:#344452;box-shadow:0 18px 42px rgba(20,27,38,.18)}}
+.signals-view.overview .signal-index-item:nth-child(2),.signals-view.overview .signal-index-item:nth-child(3){{grid-column:span 3;min-height:330px;padding:22px 22px 19px 78px}}
+.signals-view.overview .signal-index-item:nth-child(2) .index-title,.signals-view.overview .signal-index-item:nth-child(3) .index-title{{font-size:18px}}
+.signals-view.overview .signal-index-item:nth-child(1)::before{{width:5px;background:#ff6546}}
+.signals-view.overview .signal-index-item:nth-child(2)::before{{width:4px;background:#e1a33b;opacity:1}}
+.signals-view.overview .signal-index-item:nth-child(3)::before{{width:4px;background:#5486d9;opacity:1}}
+.hot-rank{{position:absolute;left:18px;top:20px;width:43px;display:flex;flex-direction:column;align-items:center;color:#5e6875}}
+.hot-rank strong{{font:750 24px/1.05 ui-monospace,SFMono-Regular,Menlo,monospace}}
+.hot-rank span{{margin-top:5px;font-size:10px;font-weight:700;white-space:nowrap}}
+.signals-view.overview .signal-index-item:nth-child(1) .hot-rank{{left:30px;top:29px;width:54px;color:#ff8b72}}
+.signals-view.overview .signal-index-item:nth-child(1) .hot-rank strong{{font-size:30px;color:#fff}}
+.signals-view.overview .signal-index-item:nth-child(2) .hot-rank strong{{color:#b8760c}}
+.signals-view.overview .signal-index-item:nth-child(3) .hot-rank strong{{color:#356fd6}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-copy{{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(260px,.8fr);column-gap:42px}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-context,.signals-view.overview .signal-index-item:nth-child(1) .index-title,.signals-view.overview .signal-index-item:nth-child(1) .index-summary{{grid-column:1}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-value,.signals-view.overview .signal-index-item:nth-child(1) .index-facts,.signals-view.overview .signal-index-item:nth-child(1) .index-why{{grid-column:2}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-value{{grid-row:1/3;margin:0;padding:14px 16px;border-left-color:#20a47d;background:#edf8f4}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-facts{{grid-row:3;margin-top:13px}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-why{{grid-row:4}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-title{{display:block;max-width:760px;overflow:visible;font-size:24px;line-height:1.32;color:#fff}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-topic{{color:#9dc4ff}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-priority{{color:#a8ead5;background:#25443e}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-summary strong,.signals-view.overview .signal-index-item:nth-child(1) .index-why strong,.signals-view.overview .signal-index-item:nth-child(1) .index-facts strong{{color:#b6c1cc}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-summary>span,.signals-view.overview .signal-index-item:nth-child(1) .index-why>span,.signals-view.overview .signal-index-item:nth-child(1) .index-facts>span>span{{color:#f5f7fa}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-value strong{{color:#08785e}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-value>span{{color:#17212b!important}}
+.signals-view.overview .signal-index-item:nth-child(1) .tech-tags span{{border-color:#58708a;background:#2b3946;color:#d4e5ff!important}}
+.signals-view.overview .signal-index-item:nth-child(1) .index-meta{{grid-column:1/-1;color:#c5cdd6;border-color:#52606d}}
+.signals-view.overview .signal-index-item:nth-child(1)::after{{color:#a8caff}}
+.signals-view.overview .signal-index-item:nth-child(n+4) .index-facts,.signals-view.overview .signal-index-item:nth-child(n+4) .index-why{{display:none}}
+.signals-view.overview .signal-index-item:nth-child(n+4) .index-title{{font-size:15px}}
+.signals-view.overview .index-topic,.signals-view.overview .index-priority{{font-size:11px}}
+.signals-view.overview .index-summary,.signals-view.overview .index-value,.signals-view.overview .index-why{{font-size:12px;line-height:1.55}}
+.signals-view.overview .index-summary strong,.signals-view.overview .index-value strong,.signals-view.overview .index-why strong,.signals-view.overview .index-facts strong{{font-size:10px}}
+.signals-view.overview .index-facts>span>span{{font-size:12px}}
+.signals-view.overview .tech-tags span{{font-size:10px!important}}
+.signals-view.overview .index-meta{{font-size:10px}}
+.heat-track{{position:absolute;left:19px;right:19px;bottom:11px;height:3px;overflow:hidden;border-radius:2px;background:color-mix(in srgb,var(--muted) 16%,transparent)}}
+.heat-track i{{display:block;width:var(--heat);height:100%;border-radius:inherit;background:#89919b}}
+.signals-view.overview .signal-index-item:nth-child(1) .heat-track{{left:108px;right:32px;background:#3b4652}}.signals-view.overview .signal-index-item:nth-child(1) .heat-track i{{background:#ff6546}}
+.signals-view.overview .signal-index-item:nth-child(2) .heat-track i{{background:#e1a33b}}.signals-view.overview .signal-index-item:nth-child(3) .heat-track i{{background:#5486d9}}
+.product-view{{height:100%;overflow-y:auto;overflow-x:hidden;background:#f3f6f9;padding:24px 26px 46px}}
+.product-view-inner{{width:min(1440px,100%);margin:0 auto}}
+.product-head{{display:flex;align-items:center;gap:24px;margin-bottom:16px;padding-bottom:15px;border-bottom:1px solid #d8e0e8}}
+.product-head h1{{margin:0 0 5px;font-family:"Songti SC","STSong",serif;font-size:27px;font-weight:800;letter-spacing:0}}
+.product-head p{{margin:0;color:#647180;font-size:11px}}
+.product-stats{{display:flex;gap:8px;margin-left:auto;text-align:left}}
+.product-stats span{{min-width:104px;padding:9px 12px;border-left:3px solid #2f6fdb;background:#fff;box-shadow:0 1px 2px rgba(22,34,51,.05)}}
+.product-stats span:last-child{{border-left-color:#14a17d}}
+.product-stats b{{display:block;font-size:20px;line-height:1;font-variant-numeric:tabular-nums}}
+.product-stats small{{display:block;margin-top:5px;color:#788493;font-size:8px}}
+.focus-strip{{display:flex;min-height:72px;margin-bottom:12px;overflow-x:auto;border:1px solid #d8e0e8;background:#fff;box-shadow:0 2px 8px rgba(25,39,58,.04)}}
+.focus-strip>header{{display:flex;min-width:142px;flex-direction:column;justify-content:center;padding:12px 15px;border-right:1px solid #324252;background:#202c38;color:#fff}}
+.focus-strip>header strong{{font-size:11px}}.focus-strip>header small{{margin-top:3px;color:#aebac6;font-size:8px}}
+.focus-product{{position:relative;min-width:108px;flex:1;padding:12px 11px 10px;border-left:1px solid #e3e8ee}}
+.focus-product:first-of-type{{border-left:0}}
+.focus-product:hover{{background:#f4f8fd}}.focus-product i{{display:block;width:18px;height:3px;margin-bottom:8px;background:#5e87d8}}
+.focus-product:nth-child(3n) i{{background:#1b9a78}}.focus-product:nth-child(3n+1) i{{background:#e16a4a}}
+.focus-product strong,.focus-product small{{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}}
+.focus-product strong{{font-size:11px}}.focus-product small{{margin-top:3px;color:var(--muted);font-size:9px}}
+.product-toolbar{{display:grid;grid-template-columns:auto minmax(0,1fr) auto 210px;align-items:end;gap:10px;margin-bottom:12px;padding:11px 12px;border:1px solid #d8e0e8;background:#fff;box-shadow:0 2px 8px rgba(25,39,58,.04)}}
+.filter-block{{min-width:0}}.filter-block>span{{display:block;margin:0 0 5px 2px;color:#7a8694;font-size:8px;font-weight:750}}
+.matrix-filters{{display:flex;min-width:0;padding:2px;border-radius:5px;background:#edf1f5}}
+.matrix-filters button{{height:28px;padding:0 10px;border:0;border-radius:4px;background:transparent;color:#65717e;cursor:pointer;font-size:9px;font-weight:700;white-space:nowrap}}
+.matrix-filters button:hover{{color:#1d2936}}.matrix-filters button.active{{background:#202b37;color:#fff;box-shadow:0 1px 3px rgba(13,25,39,.18)}}
+.company-picker-button{{height:33px;padding:0 11px;border:1px solid #cfd8e2;border-radius:5px;background:#fff;color:#285fb9;font-size:9px;font-weight:750;cursor:pointer;white-space:nowrap}}
+.company-picker-button:hover,.company-picker-button[aria-expanded="true"]{{border-color:#2f6fdb;background:#f3f7ff;color:#1f5fc8}}
+.company-picker-button span{{display:inline-block;margin-left:4px;padding:2px 5px;border-radius:8px;background:#e8f0ff;font-variant-numeric:tabular-nums}}
+.product-search{{width:100%;height:33px;margin:0;padding:0 10px;border:1px solid #cfd8e2;border-radius:5px;background:#f8fafc;color:var(--text);outline:0;font-size:10px}}
+.product-search:focus{{border-color:#2f6fdb;background:#fff;box-shadow:0 0 0 3px rgba(47,111,219,.1)}}
+.company-picker{{margin:-3px 0 12px;border:1px solid #cfd8e2;border-radius:6px;background:#fff;box-shadow:0 12px 30px rgba(28,43,61,.12)}}
+.company-picker[hidden]{{display:none}}
+.company-picker-head{{display:flex;align-items:center;gap:10px;padding:11px 12px;border-bottom:1px solid #e1e7ed}}
+.company-picker-search{{width:min(340px,100%);height:32px;padding:0 10px;border:1px solid #cfd8e2;border-radius:5px;background:#f7f9fb;color:var(--text);outline:0;font-size:10px}}
+.company-picker-search:focus{{border-color:var(--blue);background:var(--panel)}}
+.company-picker-actions{{display:flex;gap:6px;margin-left:auto}}
+.company-picker-actions button{{height:28px;padding:0 9px;border:1px solid #d5dde5;border-radius:4px;background:#fff;color:#667383;font-size:9px;font-weight:700;cursor:pointer}}
+.company-picker-actions button:last-child{{border-color:#2f6fdb;background:#2f6fdb;color:#fff}}
+.company-picker-actions button:hover{{border-color:var(--blue);color:var(--blue)}}
+.company-picker-actions button:last-child:hover{{border-color:#2258b5;background:#2258b5;color:#fff}}
+.company-picker-count{{min-width:88px;color:var(--muted);font-size:9px;text-align:right}}
+.company-options{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));max-height:190px;gap:4px;overflow:auto;padding:9px}}
+.company-option{{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;gap:7px;min-height:38px;padding:6px 8px;border:1px solid transparent;border-radius:5px;cursor:pointer}}
+.company-option:hover{{border-color:#d7e0e9;background:#f5f8fc}}.company-option.hidden{{display:none}}
+.company-option input{{position:absolute;opacity:0;pointer-events:none}}
+.company-check{{width:15px;height:15px;display:grid;place-items:center;border:1px solid #bdc8d4;border-radius:3px;background:#fff}}
+.company-option input:checked+.company-check{{border-color:#2f6fdb;background:#2f6fdb}}
+.company-option input:checked+.company-check::after{{content:"✓";color:#fff;font-size:10px;font-weight:800}}
+.company-name{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:700}}
+.company-option small{{color:var(--muted);font-size:8px}}
+.product-workspace{{display:grid;grid-template-columns:minmax(680px,1fr) 282px;gap:12px;align-items:start;min-width:0}}
+.product-workspace main{{min-width:0}}
+.matrix-wrap{{max-height:calc(100vh - 248px);overflow:auto;border:1px solid #d5dde5;border-radius:6px;background:#fff;box-shadow:0 3px 12px rgba(25,39,58,.05)}}
+.product-table{{width:100%;min-width:1080px;border-collapse:separate;border-spacing:0;table-layout:fixed}}
+.product-table th,.product-table td{{border-bottom:1px solid #e1e7ed;border-right:1px solid #e6ebf0;text-align:left;vertical-align:top}}
+.product-table thead th{{position:sticky;top:0;z-index:3;height:42px;padding:0 12px;border-bottom-color:#cbd5df;background:#edf2f6;color:#52606f;font-size:8px;font-weight:800}}
+.product-table thead th:first-child{{left:0;z-index:5;width:142px;background:#e8eef4}}.product-table thead th:last-child,.product-table tbody td:last-child{{border-right:0}}
+.product-table tbody th{{position:sticky;left:0;z-index:2;height:74px;padding:12px;background:#f8fafc;font-size:10px}}
+.product-table tbody tr:nth-child(even) th{{background:#f2f6f9}}
+.product-table tbody tr:hover th,.product-table tbody tr:hover td{{background:#f1f6fd!important}}
+.product-table tbody th>span:last-child{{display:inline-block;vertical-align:middle}}
+.vendor-mark{{width:27px;height:27px;display:inline-grid!important;place-items:center;margin-right:8px;border:1px solid #cbd6e2;border-radius:5px;background:#fff;color:#2f6fdb;font-weight:800;box-shadow:0 1px 2px rgba(20,35,52,.05)}}
+.product-table tbody th small{{display:block;margin-top:2px;color:var(--muted);font-size:8px;font-weight:500}}
+.product-table td{{height:74px;padding:11px 12px;background:#fff}}
+.product-table tbody tr:nth-child(even) td{{background:#fbfcfd}}
+.product-table [data-product-column="governance"],.product-table [data-product-type="governance"]{{background:#f0f8f5}}
+.product-table [data-product-column="data"],.product-table [data-product-type="data"]{{background:#f2f6fc}}
+.product-table td a{{display:flex;align-items:start;gap:5px;font-size:9px;font-weight:750;line-height:1.35}}
+.product-table td a span{{min-width:0}}.product-table td a i{{margin-left:auto;color:var(--muted);font-style:normal}}
+.product-table td a:hover{{color:#2f6fdb}}.product-table td small{{display:block;margin-top:8px;color:#86919d;font-size:7px}}
+.product-table td small.has-signal{{display:inline-block;padding:2px 5px;border-radius:3px;background:#e6f7f1;color:#087e61;font-weight:700}}.product-table td small b{{font-size:9px}}
+.product-empty-cell{{color:var(--muted);font-size:9px}}
+.matrix-empty{{padding:30px;border:1px dashed var(--line);background:var(--panel);text-align:center;color:var(--muted);font-size:11px}}
+.matrix-empty[hidden]{{display:none}}
+.product-feed{{max-height:calc(100vh - 248px);overflow:auto;border:1px solid #d5dde5;border-top:3px solid #202c38;border-radius:6px;background:#fff;box-shadow:0 3px 12px rgba(25,39,58,.05)}}
+.product-feed>header{{position:sticky;top:0;z-index:2;padding:13px 14px;border-bottom:1px solid #e1e7ed;background:#fff}}.product-feed h2{{margin:0;font-size:12px}}.product-feed header p{{margin:3px 0 0;color:#7b8794;font-size:8px}}
+.product-feed-item{{display:block;padding:12px 14px;border-bottom:1px solid #e5eaf0}}
+.product-feed-item:hover{{background:#f4f8fd}}.product-feed-item>span{{display:flex;gap:6px;margin-bottom:5px;color:#2f6fdb;font-size:8px}}
+.product-feed-item>span b{{color:var(--text)}}.product-feed-item>strong{{display:-webkit-box;overflow:hidden;font-size:10px;line-height:1.45;-webkit-box-orient:vertical;-webkit-line-clamp:2}}
+.product-feed-item>small{{display:block;margin-top:5px;color:var(--muted);font-size:8px}}
+.product-feed-empty{{margin:12px;border:1px dashed var(--line)}}
+.active-search-view{{height:100%;overflow-y:auto;background:var(--bg);padding:34px 34px 64px}}
+.active-search-inner{{width:min(1080px,100%);margin:0 auto}}
+.active-search-head{{display:flex;align-items:end;gap:24px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}}
+.active-search-head h1{{margin:0 0 4px;font-size:27px}}.active-search-head p{{margin:0;color:var(--muted);font-size:11px}}
+.search-live-badge{{display:flex;align-items:center;gap:7px;margin-left:auto;color:var(--green);font-size:10px;font-weight:700;white-space:nowrap}}.search-live-badge i{{width:7px;height:7px;border-radius:50%;background:var(--green)}}
+.active-search-form{{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;padding:16px;border:1px solid var(--line);background:var(--panel)}}
+.active-search-input-wrap{{position:relative}}.active-search-input-wrap>span{{position:absolute;left:13px;top:10px;color:var(--muted);font-size:15px}}
+.active-search-input{{width:100%;height:42px;padding:0 14px 0 38px;border:1px solid var(--line);border-radius:6px;background:var(--soft);color:var(--text);outline:0;font-size:13px}}.active-search-input:focus{{border-color:var(--blue);background:var(--panel);box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 12%,transparent)}}
+.active-search-submit{{height:42px;padding:0 18px;border:0;border-radius:6px;background:var(--blue);color:#fff;font-size:11px;font-weight:700;cursor:pointer}}.active-search-submit:disabled{{opacity:.58;cursor:wait}}
+.active-search-controls{{grid-column:1/-1;display:flex;align-items:center;gap:14px}}
+.search-filter-group{{display:flex;align-items:center;gap:6px}}.search-filter-group>span{{color:var(--muted);font-size:9px;font-weight:700}}
+.active-search-kinds,.active-search-ranges{{display:flex;padding:3px;border:1px solid var(--line);background:var(--soft)}}.active-search-kinds button,.active-search-ranges button{{height:26px;padding:0 10px;border:0;background:transparent;color:var(--muted);font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap}}.active-search-kinds button.active,.active-search-ranges button.active{{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(20,27,38,.1)}}
+.search-hint{{margin-left:auto;color:var(--muted);font-size:9px}}
+.search-history{{display:flex;align-items:center;gap:7px;min-height:38px;padding:9px 0;overflow-x:auto}}.search-history>span{{color:var(--muted);font-size:9px;white-space:nowrap}}.search-history button{{height:24px;padding:0 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--muted);font-size:9px;white-space:nowrap;cursor:pointer}}.search-history button:hover{{border-color:var(--blue);color:var(--blue)}}
+.search-state{{margin-top:8px;border-top:3px solid #202a34;background:var(--panel)}}.search-state[hidden]{{display:none}}
+.search-initial{{padding:34px 28px 38px}}.search-initial h2{{margin:0 0 5px;font-size:17px}}.search-initial>p{{margin:0;color:var(--muted);font-size:11px}}.search-suggestions{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin-top:24px;border:1px solid var(--line)}}.search-suggestions button{{min-height:72px;padding:13px 15px;border:0;border-right:1px solid var(--line);background:transparent;color:var(--text);text-align:left;cursor:pointer}}.search-suggestions button:last-child{{border-right:0}}.search-suggestions button:hover{{background:var(--soft)}}.search-suggestions b,.search-suggestions small{{display:block}}.search-suggestions b{{font-size:11px}}.search-suggestions small{{margin-top:4px;color:var(--muted);font-size:9px}}
+.search-loading{{padding:28px}}.search-loading header{{display:flex;align-items:center;gap:9px;margin-bottom:18px;font-size:11px;font-weight:700}}.search-loading header i{{width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:search-spin .7s linear infinite}}.search-loading-lines{{display:grid;gap:12px}}.search-loading-lines i{{display:block;height:58px;background:linear-gradient(90deg,var(--soft),color-mix(in srgb,var(--blue) 5%,var(--panel)),var(--soft));background-size:200% 100%;animation:search-pulse 1.2s ease infinite}}@keyframes search-spin{{to{{transform:rotate(360deg)}}}}@keyframes search-pulse{{to{{background-position:-200% 0}}}}
+.search-results-head{{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}}.search-results-head strong{{font-size:12px}}.search-results-head span{{color:var(--muted);font-size:9px}}.search-results-head time{{margin-left:auto;color:var(--muted);font-size:9px}}
+.search-result-list{{display:grid}}.search-result{{display:grid;grid-template-columns:92px minmax(0,1fr) 30px;gap:14px;min-height:112px;padding:17px 16px;border-bottom:1px solid var(--line)}}.search-result:hover{{background:var(--soft)}}.search-result-source{{min-width:0}}.search-result-source b,.search-result-source span{{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}.search-result-source b{{color:var(--blue);font-size:9px}}.search-result-source span{{margin-top:5px;color:var(--muted);font-size:8px}}.search-result-copy{{min-width:0}}.search-result-copy h2{{margin:0;font-size:14px;line-height:1.4}}.search-result-copy h2 a:hover{{color:var(--blue)}}.search-result-copy p{{display:-webkit-box;overflow:hidden;margin:7px 0 0;color:var(--muted);font-size:10px;line-height:1.5;-webkit-line-clamp:2;-webkit-box-orient:vertical}}.search-result-copy small{{display:block;margin-top:8px;color:var(--green);font-size:8px}}.search-result-open{{align-self:center;width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--line);border-radius:6px;color:var(--muted);font-size:12px}}.search-result-open:hover{{border-color:var(--blue);color:var(--blue);background:var(--panel)}}
+.search-error,.search-empty{{padding:42px 24px;text-align:center}}.search-error b,.search-empty b{{display:block;font-size:14px}}.search-error p,.search-empty p{{margin:6px 0 0;color:var(--muted);font-size:10px}}.search-error b{{color:var(--accent)}}
+@media(max-width:1120px){{.product-toolbar{{grid-template-columns:auto minmax(0,1fr) auto}}.product-search{{grid-column:1/-1}}.company-options{{grid-template-columns:repeat(3,minmax(0,1fr))}}.product-workspace{{grid-template-columns:1fr}}.matrix-wrap{{max-height:calc(100vh - 278px)}}.product-feed{{display:grid;grid-template-columns:repeat(2,1fr);max-height:none;margin-top:12px}}.product-feed>header,.product-feed-empty{{grid-column:1/-1}}}}
+@media(max-width:1120px) and (min-width:761px){{.signals-view.overview .signal-index-list{{grid-template-columns:repeat(2,minmax(0,1fr))}}.signals-view.overview .signal-index-item,.signals-view.overview .signal-index-item:nth-child(2),.signals-view.overview .signal-index-item:nth-child(3){{grid-column:span 1}}.signals-view.overview .signal-index-item:nth-child(1){{grid-column:1/-1;padding-left:92px}}.signals-view.overview .signal-index-item:nth-child(1) .index-copy{{display:block}}.signals-view.overview .signal-index-item:nth-child(1) .index-value{{margin-top:12px}}.signals-view.overview .signal-index-item:nth-child(1) .heat-track{{left:92px}}}}
+@media(max-width:760px){{.signals-view.overview .signal-index-list{{display:grid;grid-template-columns:1fr;padding:0 14px 30px}}.signals-view.overview .signal-index-item,.signals-view.overview .signal-index-item:nth-child(1),.signals-view.overview .signal-index-item:nth-child(2),.signals-view.overview .signal-index-item:nth-child(3){{grid-column:1;min-height:0;padding:18px 18px 22px 68px}}.signals-view.overview .signal-index-item:nth-child(1) .index-copy{{display:block}}.signals-view.overview .signal-index-item:nth-child(1) .index-title{{font-size:18px}}.signals-view.overview .signal-index-item:nth-child(1) .heat-track{{left:68px;right:18px}}.hot-rank,.signals-view.overview .signal-index-item:nth-child(1) .hot-rank{{left:15px;top:19px;width:40px}}.product-view,.active-search-view{{height:auto;padding:18px 12px 36px}}.product-head,.active-search-head{{align-items:start;flex-direction:column}}.product-stats,.search-live-badge{{margin-left:0;text-align:left}}.focus-strip>header{{min-width:125px}}.product-toolbar{{grid-template-columns:1fr;padding:10px}}.product-toolbar>*{{grid-column:1}}.matrix-filters{{overflow-x:auto}}.product-search{{width:100%;margin-left:0}}.company-picker-head{{align-items:stretch;flex-direction:column}}.company-picker-search{{width:100%}}.company-picker-actions{{margin-left:0}}.company-picker-count{{text-align:left}}.company-options{{grid-template-columns:repeat(2,minmax(0,1fr))}}.matrix-wrap{{max-width:100%;max-height:none}}.product-feed{{grid-template-columns:1fr}}.active-search-form{{grid-template-columns:1fr}}.active-search-submit{{width:100%}}.active-search-controls{{align-items:flex-start;flex-direction:column}}.search-filter-group{{width:100%;align-items:flex-start;flex-direction:column}}.active-search-ranges{{max-width:100%;overflow-x:auto}}.search-hint{{margin-left:0}}.search-suggestions{{grid-template-columns:1fr}}.search-suggestions button{{border-right:0;border-bottom:1px solid var(--line)}}.search-suggestions button:last-child{{border-bottom:0}}.search-result{{grid-template-columns:76px minmax(0,1fr) 28px;gap:9px;padding-left:10px;padding-right:10px}}}}
+</style></head><body><header class="app-head"><div class="brand"><div class="brand-mark">R</div><div><strong>热点雷达</strong><small>Daily Signal</small></div></div><div class="mode-switch" role="tablist" aria-label="内容视图"><button class="active" role="tab" aria-selected="true" data-mode="signals">今日信号</button><button role="tab" aria-selected="false" data-mode="search">主动搜索</button><button role="tab" aria-selected="false" data-mode="products">产品矩阵</button><button role="tab" aria-selected="false" data-mode="boards">探索榜单</button><button role="tab" aria-selected="false" data-mode="ai">技术雷达</button></div><button class="customize-button" id="customize-button" title="自定义看板的布局、主题和卡片" aria-label="自定义看板" hidden><span class="sliders-icon" aria-hidden="true"></span><span>自定义</span></button><span class="updated">{stamp}</span></header>
 <aside class="customizer" id="customizer" hidden><div class="customizer-head"><h2>自定义看板</h2><button id="close-customizer" title="关闭" aria-label="关闭">×</button></div><section class="setting-group"><h3>排版样式</h3><div class="layout-options"><button class="layout-option" data-layout-option="adaptive"><span class="layout-preview adaptive"><i></i><i></i></span><b>自适应瀑布流</b></button><button class="layout-option" data-layout-option="fixed"><span class="layout-preview fixed"><i></i><i></i></span><b>固定双列</b></button><button class="layout-option" data-layout-option="list"><span class="layout-preview list"><i></i></span><b>单列阅读</b></button><button class="layout-option" data-layout-option="compact"><span class="layout-preview compact"><i></i><i></i><i></i></span><b>紧凑三列</b></button></div></section><section class="setting-group"><h3>整体主题</h3><div class="theme-options"><button class="theme-option" data-value="system" title="跟随系统"></button><button class="theme-option" data-value="light" title="明亮"></button><button class="theme-option" data-value="dark" title="深色"></button><button class="theme-option" data-value="graphite" title="石墨"></button><button class="theme-option" data-value="paper" title="纸张"></button></div></section><section class="setting-group"><h3>卡片布局</h3><div class="edit-toggle"><button class="switch" id="edit-toggle" role="switch" aria-checked="false"></button><span>编辑卡片位置与大小</span></div><p class="setting-note">开启后，按住卡片左上角拖动柄移动位置；拖动右下角调整宽度和显示条数。</p></section><section class="setting-group"><button class="reset-button" id="reset-board">恢复默认布局</button></section></aside><div class="color-popover" id="color-popover" hidden><button class="color-option" data-color="default" title="默认"></button><button class="color-option" data-color="rose" title="浅红"></button><button class="color-option" data-color="sky" title="浅蓝"></button><button class="color-option" data-color="mint" title="浅绿"></button><button class="color-option" data-color="amber" title="浅黄"></button><button class="color-option" data-color="lavender" title="浅紫"></button></div>
-<div class="desktop-shell"><aside class="source-list"><div class="source-brand"><span>◉</span><div><b>Signal Desk</b><small>技术情报工作台</small></div></div><section><label>资料库</label><button class="source-nav active" data-workspace-mode="signals"><i>⌁</i><span>今日信号</span><b>{len(signal_items[:8])}</b></button><button class="source-nav" data-workspace-mode="boards"><i>▦</i><span>探索榜单</span><b>{len(report.get("news_boards", []))}</b></button><button class="source-nav" data-workspace-mode="ai"><i>◇</i><span>技术雷达</span><b>{len(report.get("items", [])[:10])}</b></button></section><section class="source-topics"><label>关注主题</label><button class="active" data-topic="all"><i></i><span>全部主题</span></button>{topic_buttons}<button class="manage-topics" id="manage-topics"><i>＋</i><span>管理主题</span></button></section><div class="sidebar-learning"><div><span>今日学习</span><b id="mastered-count">0 / {len(signal_items[:8])}</b></div><div class="progress-track"><i id="mastered-progress"></i></div><button class="unmastered-filter" id="unmastered-filter" type="button">只看未掌握</button></div><div class="topic-onboarding" id="topic-onboarding"><b>提示</b><span>选择主题可快速聚焦；“管理主题”可修改每日关注范围。</span><button id="dismiss-topic-guide" aria-label="知道了">×</button></div></aside><div class="workspace-content">
-<section id="signals-view" class="signals-view overview"><section class="signal-browser"><header><div><h1>今日信号</h1><p>从 <b>{ok_count}</b> 个来源中筛选出 <b>{len(signal_items[:8])}</b> 条关键技术动态 · 已过滤 {rejected_count} 条低质量内容</p></div><button class="browser-filter" id="browser-filter" title="筛选未掌握">⌄</button><button class="overview-return" id="overview-return" type="button" title="返回信号总览"><span>←</span>总览</button></header><div class="signal-search"><span>⌕</span><input class="search" id="search" type="search" aria-label="搜索信号、来源或主题" placeholder="搜索今日信号"></div><div class="signal-index-list">{"".join(signal_index_rows)}</div><div class="topic-empty" id="topic-empty" hidden>该主题今天暂无高质量信号，系统仍在持续关注。</div></section><main class="signal-detail"><div class="signal-list">{"".join(signal_cards)}</div></main></section>
+<div class="desktop-shell"><aside class="source-list"><div class="sidebar-head"><div class="sidebar-title">SIGNAL DESK<small>技术情报工作台</small></div><button class="sidebar-collapse" id="sidebar-collapse" type="button" title="折叠导航栏" aria-label="折叠导航栏" aria-expanded="true">‹</button></div><section><label>资料库</label><button class="source-nav active" data-workspace-mode="signals" title="今日热点"><i>⌁</i><span>今日热点</span><b>{len(signal_items[:8])}</b></button><button class="source-nav" data-workspace-mode="search" title="主动搜索"><i>⌕</i><span>主动搜索</span></button><button class="source-nav" data-workspace-mode="products" title="产品矩阵"><i>▤</i><span>产品矩阵</span><b>{len(PRODUCT_MATRIX)}</b></button><button class="source-nav" data-workspace-mode="boards" title="探索榜单"><i>▦</i><span>探索榜单</span><b>{len(report.get("news_boards", []))}</b></button><button class="source-nav" data-workspace-mode="ai" title="技术雷达"><i>◇</i><span>技术雷达</span><b>{len(report.get("items", [])[:10])}</b></button></section><section class="source-topics"><label>关注主题</label><button class="active" data-topic="all" title="全部主题"><i></i><span>全部主题</span></button>{topic_buttons}<button class="manage-topics" id="manage-topics" title="管理主题"><i>＋</i><span>管理主题</span></button></section><div class="sidebar-learning"><div><span>今日学习</span><b id="mastered-count">0 / {len(signal_items[:8])}</b></div><div class="progress-track"><i id="mastered-progress"></i></div><button class="unmastered-filter" id="unmastered-filter" type="button">只看未掌握</button></div><div class="topic-onboarding" id="topic-onboarding"><b>提示</b><span>选择主题后，热点、榜单、雷达和产品矩阵会同步变化。</span><button id="dismiss-topic-guide" aria-label="知道了">×</button></div></aside><div class="workspace-content">
+<section id="signals-view" class="signals-view overview"><section class="signal-browser"><header><div><h1>今日热点</h1><p>按综合热度排序 · 从 <b>{ok_count}</b> 个来源中筛选出 <b>{len(signal_items[:8])}</b> 条关键技术动态 · 已过滤 {rejected_count} 条低质量内容</p></div><button class="browser-filter" id="browser-filter" title="筛选未掌握">⌄</button><button class="overview-return" id="overview-return" type="button" title="返回热点总览"><span>←</span>总览</button></header><div class="signal-search"><span>⌕</span><input class="search" id="search" type="search" aria-label="搜索热点、来源或主题" placeholder="搜索今日热点"></div><div class="signal-index-list">{"".join(signal_index_rows)}</div><div class="topic-empty" id="topic-empty" hidden>该主题今天暂无高质量信号，系统仍在持续关注。</div></section><main class="signal-detail"><div class="signal-list">{"".join(signal_cards)}</div></main></section>
+<section id="search-view" class="active-search-view hidden"><div class="active-search-inner"><header class="active-search-head"><div><h1>主动搜索</h1><p>技术、产品、论文与开源项目</p></div><span class="search-live-badge"><i></i>实时检索</span></header><form class="active-search-form" id="active-search-form"><div class="active-search-input-wrap"><span>⌕</span><input id="active-search-input" class="active-search-input" type="search" maxlength="120" autocomplete="off" aria-label="搜索技术或产品" placeholder="输入技术、产品或问题，例如：Agent 纳管平台"></div><button class="active-search-submit" id="active-search-submit" type="submit">搜索</button><div class="active-search-controls"><div class="search-filter-group"><span>类型</span><div class="active-search-kinds" role="group" aria-label="搜索类型"><button class="active" type="button" data-search-kind="all">全部</button><button type="button" data-search-kind="technology">技术</button><button type="button" data-search-kind="product">产品</button></div></div><div class="search-filter-group"><span>时间</span><div class="active-search-ranges" role="group" aria-label="时间范围"><button type="button" data-search-range="7d">近一周</button><button class="active" type="button" data-search-range="30d">近一个月</button><button type="button" data-search-range="1y">近 1 年</button><button type="button" data-search-range="3y">近 3 年</button><button type="button" data-search-range="all">不限制</button></div></div><span class="search-hint">⌘ K 快速打开</span></div></form><div class="search-history" id="search-history"></div><section class="search-state search-initial" id="search-initial"><h2>搜索你正在关注的方向</h2><p>结果将合并产品矩阵、本机报告与实时公开来源。</p><div class="search-suggestions"><button type="button" data-search-query="Agent Portal"><b>Agent Portal</b><small>纳管平台与治理动态</small></button><button type="button" data-search-query="企业知识引擎"><b>企业知识引擎</b><small>知识接入、检索与 Agent 应用</small></button><button type="button" data-search-query="AI Coding Agent"><b>AI Coding Agent</b><small>产品、开源项目与技术进展</small></button></div></section><section class="search-state search-loading" id="search-loading" hidden><header><i></i><span>正在检索多个实时来源…</span></header><div class="search-loading-lines"><i></i><i></i><i></i></div></section><section class="search-state" id="search-results" hidden><header class="search-results-head"><strong id="search-result-title">搜索结果</strong><span id="search-result-meta"></span><time id="search-result-time"></time></header><div class="search-result-list" id="search-result-list"></div></section><section class="search-state search-error" id="search-error" hidden><b>搜索暂时不可用</b><p id="search-error-message"></p></section></div></section>
+<section id="products-view" class="product-view hidden"><div class="product-view-inner"><header class="product-head"><div><h1>产品情报矩阵</h1><p>覆盖个人助手、Agent 开发与纳管、知识引擎和 AI Coding，动态关联当天采集结果。</p></div><div class="product-stats"><span><b>{len(PRODUCT_MATRIX)}</b><small>国内外厂商</small></span><span><b>{product_activity_count}</b><small>今日产品动态</small></span></div></header><section class="focus-strip"><header><strong>国内第一梯队</strong><small>2026 重点跟踪</small></header>{"".join(focus_cards)}</section><div class="product-toolbar"><div class="filter-block"><span>市场范围</span><div class="matrix-filters" aria-label="地区筛选"><button class="active" data-product-region="all">全部</button><button data-product-region="china">国内</button><button data-product-region="global">国外</button></div></div><div class="filter-block"><span>产品维度</span><div class="matrix-filters" aria-label="产品类型筛选"><button class="active" data-product-scope="all">完整矩阵</button><button data-product-scope="desktop">桌面办公</button><button data-product-scope="mobile">手机端</button><button data-product-scope="platform">开发平台</button><button data-product-scope="governance">纳管平台</button><button data-product-scope="data">知识引擎</button><button data-product-scope="coding">Code 工具</button></div></div><button class="company-picker-button" id="company-picker-button" type="button" aria-expanded="false" aria-controls="company-picker">选择公司 <span id="company-picker-button-count">{len(PRODUCT_MATRIX)}/{len(PRODUCT_MATRIX)}</span></button><input class="product-search" id="product-search" type="search" placeholder="搜索厂商或产品" aria-label="搜索厂商或产品"></div><section class="company-picker" id="company-picker" hidden><header class="company-picker-head"><input class="company-picker-search" id="company-picker-search" type="search" placeholder="搜索公司或旗下产品" aria-label="搜索可选公司"><div class="company-picker-actions"><button id="select-all-companies" type="button">全选</button><button id="clear-all-companies" type="button">全不选</button><button id="close-company-picker" type="button">完成</button></div><span class="company-picker-count" id="company-picker-count">已选择 {len(PRODUCT_MATRIX)} / {len(PRODUCT_MATRIX)} 家</span></header><div class="company-options">{"".join(company_options)}</div></section><div class="product-workspace"><main><div class="matrix-wrap"><table class="product-table"><thead><tr><th>厂商</th><th data-product-column="desktop">个人助理（桌面办公）</th><th data-product-column="mobile">个人助理（手机端）</th><th data-product-column="platform">Agent 开发平台</th><th data-product-column="governance">Agent 纳管平台</th><th data-product-column="data">知识引擎</th><th data-product-column="coding">Code 工具</th></tr></thead><tbody>{"".join(product_rows)}</tbody></table></div><div class="matrix-empty" id="matrix-empty" hidden>当前没有已选公司，或筛选条件下暂无匹配产品。</div></main><aside class="product-feed"><header><h2>产品动态</h2><p>来自今日已采集来源，点击查看原文</p></header>{"".join(product_feed)}<div class="matrix-empty product-feed-empty" id="product-feed-empty" hidden>当前所选公司暂无产品动态。</div></aside></div></div></section>
 <div id="boards-view" class="dashboard hidden"><aside class="sidebar"><h3>内容分类</h3>{category_nav}</aside><main class="board-area"><div class="board-summary"><div><h1>探索榜单</h1><p>{ok_count} 个有效来源，聚合 {total_candidates} 条实时信号</p></div><button class="board-customize-button" id="board-customize-button" type="button" title="调整排版、主题、卡片顺序、大小和颜色"><span class="sliders-icon" aria-hidden="true"></span><span>自定义看板</span></button><div class="stat"><b>{len(report.get("news_boards", []))}</b><small>热点榜单</small></div></div><div class="board-grid" id="board-grid" data-layout="adaptive">{"".join(board_cards)}</div></main><aside class="rightbar"><h3>内容门户</h3>{portal_cards}<h3 style="margin-top:20px">采集状态</h3><ul class="health">{"".join(health_rows)}</ul>{errors}</aside></div>
 <section id="ai-view" class="ai-view"><div class="ai-head"><h1>技术雷达</h1><p>正在聚合 {len(topics)} 个关注主题、{len(scope.get("keywords", []))} 个关键词的高相关技术信号。</p></div>{"".join(ai_cards)}</section></div></div><div class="topic-modal" id="topic-modal" role="dialog" aria-modal="true" aria-labelledby="topic-dialog-title" hidden><div class="topic-dialog"><header><div><h2 id="topic-dialog-title">管理关注主题</h2><p>每天会同时采集所有关注主题；首页默认合并展示，也可以随时单独切换。</p></div><button id="close-topic-modal" aria-label="关闭">×</button></header><div class="topic-rows" id="topic-rows"></div><div class="topic-guide">每个主题建议填写 3-8 个具体关键词。英文短语会按完整词匹配，避免 RAG 误命中 STRATEGY 之类的噪声。</div><div class="topic-status" id="topic-status" role="status" hidden></div><div class="topic-actions"><button id="add-topic">＋ 添加主题</button><button id="cancel-topics">取消</button><button class="save-topics" id="save-topics">保存并刷新</button></div></div></div><script>
 let researchTopics={topics_json};
+const desktopShell=document.querySelector('.desktop-shell');
+const sidebarCollapse=document.getElementById('sidebar-collapse');
+const sidebarStorageKey='technology-radar-sidebar-collapsed-v1';
+const setSidebarCollapsed=collapsed=>{{
+  desktopShell.classList.toggle('sidebar-collapsed',collapsed);
+  sidebarCollapse.textContent=collapsed?'›':'‹';
+  sidebarCollapse.title=collapsed?'展开导航栏':'折叠导航栏';
+  sidebarCollapse.setAttribute('aria-label',sidebarCollapse.title);
+  sidebarCollapse.setAttribute('aria-expanded',String(!collapsed));
+}};
+let sidebarCollapsed=false;
+try{{sidebarCollapsed=localStorage.getItem(sidebarStorageKey)==='1';}}catch(error){{}}
+setSidebarCollapsed(sidebarCollapsed);
+sidebarCollapse.addEventListener('click',()=>{{
+  sidebarCollapsed=!desktopShell.classList.contains('sidebar-collapsed');
+  setSidebarCollapsed(sidebarCollapsed);
+  try{{localStorage.setItem(sidebarStorageKey,sidebarCollapsed?'1':'0');}}catch(error){{}}
+}});
+const workspaceModeKey='technology-workspace-mode-v1';
 const modeButtons=[...document.querySelectorAll('[data-mode]')];
 modeButtons.forEach(button=>button.addEventListener('click',()=>{{
   modeButtons.forEach(item=>{{
@@ -1997,6 +3152,8 @@ modeButtons.forEach(button=>button.addEventListener('click',()=>{{
     item.setAttribute('aria-selected',String(item===button));
   }});
   document.getElementById('signals-view').classList.toggle('hidden',button.dataset.mode!=='signals');
+  document.getElementById('search-view').classList.toggle('hidden',button.dataset.mode!=='search');
+  document.getElementById('products-view').classList.toggle('hidden',button.dataset.mode!=='products');
   document.getElementById('boards-view').classList.toggle('hidden',button.dataset.mode!=='boards');
   document.getElementById('ai-view').classList.toggle('active',button.dataset.mode==='ai');
   document.getElementById('customize-button').hidden=button.dataset.mode!=='boards';
@@ -2008,24 +3165,56 @@ modeButtons.forEach(button=>button.addEventListener('click',()=>{{
   document.querySelectorAll('[data-workspace-mode]').forEach(item=>item.classList.toggle(
     'active',item.dataset.workspaceMode===button.dataset.mode
   ));
+  try{{localStorage.setItem(workspaceModeKey,button.dataset.mode);}}catch(error){{}}
+  if(button.dataset.mode==='search')setTimeout(()=>document.getElementById('active-search-input')?.focus(),80);
   window.scrollTo({{top:0,behavior:'smooth'}});
 }}));
 document.querySelectorAll('[data-workspace-mode]').forEach(button=>button.addEventListener('click',()=>{{
   document.querySelector(`[data-mode="${{button.dataset.workspaceMode}}"]`)?.click();
   if(button.dataset.workspaceMode==='signals') showSignalOverview();
 }}));
+try{{
+  const savedWorkspaceMode=localStorage.getItem(workspaceModeKey);
+  if(savedWorkspaceMode)document.querySelector(`[data-mode="${{savedWorkspaceMode}}"]`)?.click();
+}}catch(error){{}}
 const categoryButtons=[...document.querySelectorAll('[data-category].category-button')];
 const boards=[...document.querySelectorAll('.board-card')];
+let activeCategory='all';
 categoryButtons.forEach(button=>button.addEventListener('click',()=>{{
+  activeCategory=button.dataset.category;
   categoryButtons.forEach(item=>item.classList.toggle('active',item===button));
-  boards.forEach(board=>board.classList.toggle('hidden',button.dataset.category!=='all'&&board.dataset.category!==button.dataset.category));
+  applyBoardVisibility();
 }}));
 const signalCards=[...document.querySelectorAll('.signal-card')];
 const signalIndexItems=[...document.querySelectorAll('.signal-index-item')];
 const signalsView=document.getElementById('signals-view');
 const aiCards=[...document.querySelectorAll('.ai-card')];
+const productRows=[...document.querySelectorAll('.product-table tbody tr')];
+const productFeedItems=[...document.querySelectorAll('.product-feed-item')];
+const productRegionButtons=[...document.querySelectorAll('[data-product-region]')];
+const productScopeButtons=[...document.querySelectorAll('[data-product-scope]')];
+const companyPicker=document.getElementById('company-picker');
+const companyPickerButton=document.getElementById('company-picker-button');
+const companyPickerSearch=document.getElementById('company-picker-search');
+const companyOptions=[...document.querySelectorAll('.company-option')];
+const vendorChoices=[...document.querySelectorAll('[data-vendor-choice]')];
+const allVendorNames=productRows.map(row=>row.dataset.vendor);
+const vendorSelectionStorageKey='technology-product-vendor-selection-v1';
+let selectedVendors=new Set(allVendorNames);
+try{{
+  const storedVendors=localStorage.getItem(vendorSelectionStorageKey);
+  if(storedVendors!==null){{
+    const parsed=JSON.parse(storedVendors);
+    if(Array.isArray(parsed))selectedVendors=new Set(
+      parsed.filter(vendor=>allVendorNames.includes(vendor))
+    );
+  }}
+}}catch(error){{}}
+vendorChoices.forEach(choice=>choice.checked=selectedVendors.has(choice.dataset.vendorChoice));
 const topicButtons=[...document.querySelectorAll('[data-topic]')];
 let activeTopic='all';
+let activeProductRegion='all';
+let activeProductScope='all';
 let selectedSignalKey=signalIndexItems[0]?.dataset.signalKey||'';
 const learningStorageKey='technology-radar-learning-v1';
 let learningState={{mastered:{{}},unmasteredOnly:false}};
@@ -2047,6 +3236,89 @@ const showSignalOverview=()=>{{
 }};
 signalIndexItems.forEach(item=>item.addEventListener('click',()=>selectSignal(item.dataset.signalKey)));
 document.getElementById('overview-return').addEventListener('click',showSignalOverview);
+const hasActiveTopic=item=>activeTopic==='all'||(item.dataset.topics||'').split(' ').includes(activeTopic);
+const applyBoardVisibility=()=>{{
+  const query=document.getElementById('search').value.trim().toLowerCase();
+  boards.forEach(board=>{{
+    let matches=0;
+    board.querySelectorAll('li').forEach(row=>{{
+      const queryMatches=!query||row.dataset.search.includes(query)||
+        board.querySelector('h2').textContent.toLowerCase().includes(query);
+      const visible=queryMatches&&hasActiveTopic(row);
+      row.classList.toggle('hidden',!visible);
+      if(visible)matches++;
+    }});
+    const categoryMatches=activeCategory==='all'||board.dataset.category===activeCategory;
+    board.classList.toggle('hidden',!categoryMatches||matches===0);
+  }});
+}};
+const applyProductVisibility=()=>{{
+  const query=document.getElementById('product-search').value.trim().toLowerCase();
+  let visibleRows=0;
+  let visibleFeedItems=0;
+  document.querySelectorAll('[data-product-column],[data-product-type]').forEach(cell=>{{
+    const type=cell.dataset.productColumn||cell.dataset.productType;
+    cell.classList.toggle('hidden',activeProductScope!=='all'&&type!==activeProductScope);
+  }});
+  productRows.forEach(row=>{{
+    const vendorMatches=selectedVendors.has(row.dataset.vendor);
+    const regionMatches=activeProductRegion==='all'||row.dataset.region===activeProductRegion;
+    const searchMatches=!query||row.dataset.search.includes(query);
+    const scopeCell=activeProductScope==='all'?null:row.querySelector(`[data-product-type="${{activeProductScope}}"]`);
+    const scopeMatches=!scopeCell||!scopeCell.classList.contains('product-empty-cell');
+    const visible=vendorMatches&&regionMatches&&searchMatches&&scopeMatches&&hasActiveTopic(row);
+    row.classList.toggle('hidden',!visible);
+    if(visible)visibleRows++;
+  }});
+  productFeedItems.forEach(item=>{{
+    const vendorMatches=selectedVendors.has(item.dataset.vendor);
+    const searchMatches=!query||item.dataset.search.includes(query);
+    const visible=vendorMatches&&searchMatches&&hasActiveTopic(item);
+    item.classList.toggle('hidden',!visible);
+    if(visible)visibleFeedItems++;
+  }});
+  document.getElementById('matrix-empty').hidden=visibleRows>0;
+  document.getElementById('product-feed-empty').hidden=visibleFeedItems>0;
+}};
+const syncVendorSelection=()=>{{
+  vendorChoices.forEach(choice=>choice.checked=selectedVendors.has(choice.dataset.vendorChoice));
+  const count=selectedVendors.size;
+  document.getElementById('company-picker-count').textContent=
+    `已选择 ${{count}} / ${{allVendorNames.length}} 家`;
+  document.getElementById('company-picker-button-count').textContent=
+    `${{count}}/${{allVendorNames.length}}`;
+  try{{
+    localStorage.setItem(vendorSelectionStorageKey,JSON.stringify([...selectedVendors]));
+  }}catch(error){{}}
+  applyProductVisibility();
+}};
+const setCompanyPickerOpen=open=>{{
+  companyPicker.hidden=!open;
+  companyPickerButton.setAttribute('aria-expanded',String(open));
+  if(open)setTimeout(()=>companyPickerSearch.focus(),50);
+}};
+companyPickerButton.addEventListener('click',()=>setCompanyPickerOpen(companyPicker.hidden));
+document.getElementById('close-company-picker').addEventListener('click',()=>setCompanyPickerOpen(false));
+document.getElementById('select-all-companies').addEventListener('click',()=>{{
+  selectedVendors=new Set(allVendorNames);
+  syncVendorSelection();
+}});
+document.getElementById('clear-all-companies').addEventListener('click',()=>{{
+  selectedVendors=new Set();
+  syncVendorSelection();
+}});
+vendorChoices.forEach(choice=>choice.addEventListener('change',()=>{{
+  if(choice.checked)selectedVendors.add(choice.dataset.vendorChoice);
+  else selectedVendors.delete(choice.dataset.vendorChoice);
+  syncVendorSelection();
+}}));
+companyPickerSearch.addEventListener('input',()=>{{
+  const query=companyPickerSearch.value.trim().toLowerCase();
+  companyOptions.forEach(option=>option.classList.toggle(
+    'hidden',Boolean(query)&&!option.dataset.companySearch.includes(query)
+  ));
+}});
+syncVendorSelection();
 const applySignalVisibility=()=>{{
   const query=document.getElementById('search').value.trim().toLowerCase();
   const visibleItems=signalIndexItems.filter(item=>{{
@@ -2075,12 +3347,145 @@ const applySignalVisibility=()=>{{
     activeTopic!=='all'&&!card.dataset.topics.split(' ').includes(activeTopic)
   ));
   document.getElementById('topic-empty').hidden=visibleItems.length>0;
+  applyBoardVisibility();
+  applyProductVisibility();
 }};
 topicButtons.forEach(button=>button.addEventListener('click',()=>{{
   activeTopic=button.dataset.topic;
   topicButtons.forEach(item=>item.classList.toggle('active',item===button));
   applySignalVisibility();
 }}));
+productRegionButtons.forEach(button=>button.addEventListener('click',()=>{{
+  activeProductRegion=button.dataset.productRegion;
+  productRegionButtons.forEach(item=>item.classList.toggle('active',item===button));
+  applyProductVisibility();
+}}));
+productScopeButtons.forEach(button=>button.addEventListener('click',()=>{{
+  activeProductScope=button.dataset.productScope;
+  productScopeButtons.forEach(item=>item.classList.toggle('active',item===button));
+  applyProductVisibility();
+}}));
+document.getElementById('product-search').addEventListener('input',applyProductVisibility);
+const activeSearchInput=document.getElementById('active-search-input');
+const activeSearchSubmit=document.getElementById('active-search-submit');
+const activeSearchKinds=[...document.querySelectorAll('[data-search-kind]')];
+const activeSearchRanges=[...document.querySelectorAll('[data-search-range]')];
+const activeSearchInitial=document.getElementById('search-initial');
+const activeSearchLoading=document.getElementById('search-loading');
+const activeSearchResults=document.getElementById('search-results');
+const activeSearchError=document.getElementById('search-error');
+const activeSearchHistory=document.getElementById('search-history');
+const activeSearchHistoryKey='technology-active-search-history-v1';
+const activeSearchRangeKey='technology-active-search-range-v1';
+let activeSearchKind='all';
+let activeSearchTimeRange='30d';
+let activeSearchController=null;
+let searchHistory=[];
+try{{searchHistory=JSON.parse(localStorage.getItem(activeSearchHistoryKey)||'[]').filter(Boolean).slice(0,8);}}catch(error){{}}
+try{{
+  const storedRange=localStorage.getItem(activeSearchRangeKey);
+  if(activeSearchRanges.some(button=>button.dataset.searchRange===storedRange))activeSearchTimeRange=storedRange;
+}}catch(error){{}}
+activeSearchRanges.forEach(button=>button.classList.toggle('active',button.dataset.searchRange===activeSearchTimeRange));
+const escapeSearchHTML=value=>String(value??'').replace(/[&<>"']/g,char=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[char]));
+const setActiveSearchState=state=>{{
+  activeSearchInitial.hidden=state!=='initial';
+  activeSearchLoading.hidden=state!=='loading';
+  activeSearchResults.hidden=state!=='results';
+  activeSearchError.hidden=state!=='error';
+}};
+const renderSearchHistory=()=>{{
+  activeSearchHistory.innerHTML=searchHistory.length
+    ?`<span>最近搜索</span>${{searchHistory.map(query=>`<button type="button" data-history-query="${{escapeSearchHTML(query)}}">${{escapeSearchHTML(query)}}</button>`).join('')}}`
+    :'<span>最近搜索将在这里显示</span>';
+  activeSearchHistory.querySelectorAll('[data-history-query]').forEach(button=>button.addEventListener('click',()=>{{
+    activeSearchInput.value=button.dataset.historyQuery;
+    runActiveSearch();
+  }}));
+}};
+const searchDate=value=>{{
+  if(!value)return'';
+  const date=new Date(value);
+  return Number.isNaN(date.getTime())?'':date.toLocaleDateString('zh-CN',{{month:'2-digit',day:'2-digit'}});
+}};
+const renderActiveSearchResults=data=>{{
+  const list=document.getElementById('search-result-list');
+  const failed=(data.sourceStatus||[]).filter(source=>source.status!=='ok').length;
+  document.getElementById('search-result-title').textContent=`“${{data.query}}”`;
+  document.getElementById('search-result-meta').textContent=
+    `${{data.timeLabel}} · ${{data.total}} 条结果 · ${{data.sourceCount}} 个来源${{failed?` · ${{failed}} 个来源暂不可用`:''}}`;
+  document.getElementById('search-result-time').textContent=data.cached?'缓存结果':'刚刚更新';
+  if(!data.results?.length){{
+    list.innerHTML='<div class="search-empty"><b>暂未找到相关结果</b><p>可以更换产品全名、英文名或技术关键词后重试。</p></div>';
+    setActiveSearchState('results');
+    return;
+  }}
+  list.innerHTML=data.results.map(item=>{{
+    const date=searchDate(item.publishedAt);
+    const link=item.url
+      ?`<a href="${{escapeSearchHTML(item.url)}}" title="打开原始来源">${{escapeSearchHTML(item.title)}}</a>`
+      :escapeSearchHTML(item.title);
+    const open=item.url?`<a class="search-result-open" href="${{escapeSearchHTML(item.url)}}" title="打开原始来源" aria-label="打开原始来源">↗</a>`:'';
+    return `<article class="search-result"><div class="search-result-source"><b>${{escapeSearchHTML(item.source)}}</b><span>${{escapeSearchHTML(item.type)}}${{date?` · ${{date}}`:''}}</span></div><div class="search-result-copy"><h2>${{link}}</h2><p>${{escapeSearchHTML(item.summary||'暂无摘要')}}</p><small>${{escapeSearchHTML(item.evidence||'实时检索结果')}}</small></div>${{open}}</article>`;
+  }}).join('');
+  setActiveSearchState('results');
+}};
+const runActiveSearch=async()=>{{
+  const query=activeSearchInput.value.trim();
+  if(query.length<2){{
+    activeSearchInput.focus();
+    activeSearchInput.setCustomValidity('请输入至少 2 个字符');
+    activeSearchInput.reportValidity();
+    return;
+  }}
+  activeSearchInput.setCustomValidity('');
+  activeSearchController?.abort();
+  const controller=new AbortController();
+  activeSearchController=controller;
+  activeSearchSubmit.disabled=true;
+  activeSearchSubmit.textContent='搜索中…';
+  setActiveSearchState('loading');
+  try{{
+    const url=`http://127.0.0.1:43128/v1/search?q=${{encodeURIComponent(query)}}&kind=${{activeSearchKind}}&range=${{activeSearchTimeRange}}&limit=24`;
+    const response=await fetch(url,{{signal:controller.signal}});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.error||'搜索请求失败');
+    searchHistory=[query,...searchHistory.filter(value=>value.toLowerCase()!==query.toLowerCase())].slice(0,8);
+    try{{localStorage.setItem(activeSearchHistoryKey,JSON.stringify(searchHistory));}}catch(error){{}}
+    renderSearchHistory();
+    renderActiveSearchResults(data);
+  }}catch(error){{
+    if(error.name==='AbortError')return;
+    document.getElementById('search-error-message').textContent=
+      error.message||'无法连接实时搜索服务，请稍后重试。';
+    setActiveSearchState('error');
+  }}finally{{
+    if(activeSearchController===controller){{
+      activeSearchSubmit.disabled=false;
+      activeSearchSubmit.textContent='搜索';
+    }}
+  }}
+}};
+document.getElementById('active-search-form').addEventListener('submit',event=>{{
+  event.preventDefault();
+  runActiveSearch();
+}});
+activeSearchKinds.forEach(button=>button.addEventListener('click',()=>{{
+  activeSearchKind=button.dataset.searchKind;
+  activeSearchKinds.forEach(item=>item.classList.toggle('active',item===button));
+  if(activeSearchInput.value.trim().length>=2)runActiveSearch();
+}}));
+activeSearchRanges.forEach(button=>button.addEventListener('click',()=>{{
+  activeSearchTimeRange=button.dataset.searchRange;
+  activeSearchRanges.forEach(item=>item.classList.toggle('active',item===button));
+  try{{localStorage.setItem(activeSearchRangeKey,activeSearchTimeRange);}}catch(error){{}}
+  if(activeSearchInput.value.trim().length>=2)runActiveSearch();
+}}));
+document.querySelectorAll('[data-search-query]').forEach(button=>button.addEventListener('click',()=>{{
+  activeSearchInput.value=button.dataset.searchQuery;
+  runActiveSearch();
+}}));
+renderSearchHistory();
 const topicModal=document.getElementById('topic-modal');
 const topicRows=document.getElementById('topic-rows');
 const topicStatus=document.getElementById('topic-status');
@@ -2127,7 +3532,7 @@ document.addEventListener('keydown',event=>{{
   if(event.key==='Escape'&&!topicModal.hidden)closeTopicModal();
 }});
 document.getElementById('add-topic').addEventListener('click',()=>{{
-  if(editingTopics.length>=8)return;
+  if(editingTopics.length>=10)return;
   editingTopics.push({{id:`topic-${{Date.now()}}`,name:'新关注主题',keywords:['关键词']}});
   renderTopicRows();topicRows.lastElementChild?.querySelector('input')?.select();
 }});
@@ -2196,27 +3601,17 @@ document.getElementById('unmastered-filter').classList.toggle('active',learningS
 document.getElementById('unmastered-filter').textContent=learningState.unmasteredOnly?'显示全部':'只看未掌握';
 document.getElementById('browser-filter').addEventListener('click',()=>document.getElementById('unmastered-filter').click());
 updateLearningProgress();
-document.getElementById('search').addEventListener('input',event=>{{
-  const query=event.target.value.trim().toLowerCase();
-  applySignalVisibility();
-  boards.forEach(board=>{{
-    let matches=0;
-    board.querySelectorAll('li').forEach(row=>{{
-      const visible=!query||row.dataset.search.includes(query)||board.querySelector('h2').textContent.toLowerCase().includes(query);
-      row.classList.toggle('hidden',!visible);
-      if(visible) matches++;
-    }});
-    board.classList.toggle('hidden',matches===0);
-  }});
-}});
+document.getElementById('search').addEventListener('input',applySignalVisibility);
 document.addEventListener('keydown',event=>{{
   if((event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==='k'){{
     event.preventDefault();
-    document.getElementById('search').focus();
+    document.querySelector('[data-mode="search"]')?.click();
+    activeSearchInput.focus();
   }}
   if(event.key==='Escape'){{
     if(!signalsView.classList.contains('overview')) showSignalOverview();
     document.getElementById('search').blur();
+    activeSearchInput.blur();
     document.getElementById('customizer').hidden=true;
     document.querySelectorAll('#customize-button,#board-customize-button')
       .forEach(item=>item.classList.remove('active'));
@@ -3942,6 +5337,7 @@ class AdvisoryProviderHandler(BaseHTTPRequestHandler):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -3955,10 +5351,33 @@ class AdvisoryProviderHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(payload)
 
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.end_headers()
+
     def do_GET(self):
-        path = urllib.parse.urlparse(self.path).path
+        parsed_url = urllib.parse.urlparse(self.path)
+        path = parsed_url.path
         if path in ("/projects", "/projects/"):
             self.send_html(project_center_html())
+            return
+        if path == "/v1/search":
+            query = urllib.parse.parse_qs(parsed_url.query)
+            try:
+                payload = active_search(
+                    (query.get("q") or [""])[0],
+                    (query.get("kind") or ["all"])[0],
+                    int((query.get("limit") or ["24"])[0]),
+                    (query.get("range") or ["30d"])[0],
+                )
+                self.send_json(200, payload)
+            except ValueError as exc:
+                self.send_json(400, {"error": clean_text(str(exc))[:300]})
+            except Exception as exc:
+                self.send_json(500, {"error": clean_text(str(exc))[:500]})
             return
         if path == "/v1/projects":
             self.send_json(200, {
@@ -3997,7 +5416,7 @@ class AdvisoryProviderHandler(BaseHTTPRequestHandler):
                     "advisory", "repository-discovery", "trend-evidence",
                     "requirement-projects", "five-minute-monitor",
                     "demo-handoff", "oneopc-delivery", "delivery-pilot-delivery",
-                    "configurable-research-topic",
+                    "configurable-research-topic", "active-search",
                 ],
             })
             return

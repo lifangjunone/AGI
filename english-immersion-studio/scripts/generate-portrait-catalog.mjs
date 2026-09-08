@@ -14,12 +14,22 @@ const outputRoot = path.join(
   "public",
   process.env.PORTRAIT_OUTPUT_DIR || "portraits"
 );
+const frame = process.env.PORTRAIT_FRAME || "default";
 const endpoint = "https://ark.cn-beijing.volces.com/api/v3/images/generations";
 const envPath = path.join(root, ".env.local");
 const sharedDirection = [
   "photorealistic editorial portrait",
-  "full-body head-to-toe composition with complete silhouette and both feet visible",
-  "dynamic natural standing pose that clearly shows the full outfit, proportions, posture, hands and expression",
+  frame === "half"
+    ? "half-body composition framed from head to waist, both shoulders and upper torso fully visible"
+    : frame === "full"
+      ? "full-body head-to-toe composition with complete silhouette, both feet and shoes fully visible"
+      : "full-body head-to-toe composition with complete silhouette and both feet visible",
+  frame === "half"
+    ? "natural conversational pose that clearly shows the face, expression, neckline, shoulders, hands and upper outfit"
+    : "dynamic natural standing pose that clearly shows the full outfit, proportions, posture, hands and expression",
+  frame === "full"
+    ? "camera pulled far back, generous space above the head and below both feet, no crop, no desk, no chair, no foreground obstruction"
+    : "",
   "confident direct eye contact",
   "realistic skin texture and natural facial detail",
   "tasteful sensual high-fashion styling",
@@ -71,22 +81,32 @@ if (!apiKey) {
 
 async function requestImage(prompt, entryId) {
   for (let attempt = 1; attempt <= 4; attempt += 1) {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        prompt,
-        response_format: "url",
-        size: "2K",
-        stream: false,
-        watermark: false
-      }),
-      signal: AbortSignal.timeout(600_000)
-    });
+    let response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          response_format: "url",
+          size: "2K",
+          stream: false,
+          watermark: false
+        }),
+        signal: AbortSignal.timeout(600_000)
+      });
+    } catch (error) {
+      if (attempt === 4) throw error;
+      process.stdout.write(
+        `[portrait] retry ${entryId} after network error ${attempt}/4\n`
+      );
+      await new Promise((resolve) => setTimeout(resolve, attempt * 5_000));
+      continue;
+    }
     if (response.ok) {
       const payload = await response.json();
       const imageUrl = payload?.data?.[0]?.url;
@@ -105,6 +125,19 @@ async function requestImage(prompt, entryId) {
 }
 
 async function generate(entry) {
+  const target = path.join(outputRoot, path.basename(entry.portrait));
+  if (process.env.PORTRAIT_SKIP_EXISTING === "1") {
+    try {
+      const existing = await readFile(target);
+      if (existing.length >= 20_000) {
+        const hash = createHash("md5").update(existing).digest("hex");
+        process.stdout.write(`[portrait] skip existing ${entry.id}\n`);
+        return hash;
+      }
+    } catch {
+      // Generate missing or unreadable files.
+    }
+  }
   const prompt = `${sharedDirection}, ${entry.prompt}`;
   process.stdout.write(`[portrait] generating ${entry.id}\n`);
   const imageUrl = await requestImage(prompt, entry.id);
@@ -118,7 +151,6 @@ async function generate(entry) {
   if (bytes.length < 20_000) {
     throw new Error(`${entry.id}: generated image is unexpectedly small`);
   }
-  const target = path.join(root, "public", entry.portrait);
   await writeFile(target, bytes);
   const hash = createHash("md5").update(bytes).digest("hex");
   process.stdout.write(
@@ -127,7 +159,10 @@ async function generate(entry) {
   return hash;
 }
 
-const concurrency = 2;
+const concurrency = Math.max(
+  1,
+  Math.min(6, Number(process.env.PORTRAIT_CONCURRENCY || 4))
+);
 const hashes = [];
 for (let index = 0; index < generationCatalog.length; index += concurrency) {
   hashes.push(

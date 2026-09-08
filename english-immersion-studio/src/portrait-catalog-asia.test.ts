@@ -11,7 +11,13 @@ describe("asia portrait catalog", () => {
     expect(asiaPortraitIdentities.every((item) => item.adultAge >= 21)).toBe(true);
     expect(
       asiaPortraitIdentities.every((item) =>
-        existsSync(resolve("public", item.portrait))
+        existsSync(
+          resolve(
+            "public",
+            "portraits-asia-half",
+            `${item.portrait.split("/").pop()?.replace(/\.[^.]+$/, "")}.jpg`
+          )
+        )
       )
     ).toBe(true);
     expect(
@@ -19,8 +25,19 @@ describe("asia portrait catalog", () => {
         existsSync(
           resolve(
             "public",
-            "portrait-cutouts-asia",
+            "portrait-cutouts-asia-half",
             `${item.portrait.split("/").pop()?.replace(/\.[^.]+$/, "")}.png`
+          )
+        )
+      )
+    ).toBe(true);
+    expect(
+      asiaPortraitIdentities.every((item) =>
+        existsSync(
+          resolve(
+            "public",
+            "portraits-asia-full",
+            `${item.portrait.split("/").pop()?.replace(/\.[^.]+$/, "")}.jpg`
           )
         )
       )

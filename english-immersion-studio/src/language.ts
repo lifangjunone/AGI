@@ -1,4 +1,6 @@
 import { createReply, type Persona, type Scenario, type ScenarioId } from "./data";
+import { supplementalIpa } from "./supplemental-ipa";
+import { supplementalMeanings } from "./supplemental-lexicon";
 
 export type Difficulty = "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
 export type SubtitleMode = "english" | "none" | "en-zh" | "zh-en" | "chinese";
@@ -237,7 +239,89 @@ export function subtitleLines(line: LocalizedLine, mode: SubtitleMode) {
   ];
 }
 
+export function splitSentences(text: string) {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  return (
+    normalized.match(/[^.!?。！？]+(?:[.!?。！？]+["'”’]?)?|[^.!?。！？]+$/gu) ??
+    [normalized]
+  ).map((sentence) => sentence.trim());
+}
+
+export function splitLocalizedLine(line: LocalizedLine): LocalizedLine[] {
+  const english = splitSentences(line.english);
+  const chinese = splitSentences(line.chinese);
+  return english.map((sentence, index) => ({
+    english: sentence,
+    chinese: chinese[index] ?? ""
+  }));
+}
+
 type LexiconEntry = { ipa: string; meaning: string; part: string };
+type WordFormation = {
+  root: string;
+  rootMeaning: string;
+  formation: string;
+};
+
+type WordUsage = {
+  phrase: string;
+  exampleEnglish: string;
+  exampleChinese: string;
+};
+
+const wordUsage: Record<string, WordUsage> = {
+  opportunity: {
+    phrase: "an opportunity to do something · 做某事的机会",
+    exampleEnglish: "This is a good opportunity to learn.",
+    exampleChinese: "这是一个很好的学习机会。"
+  },
+  slightly: {
+    phrase: "slightly different · 略有不同",
+    exampleEnglish: "I feel slightly better today.",
+    exampleChinese: "我今天感觉稍微好一些。"
+  },
+  nauseous: {
+    phrase: "feel nauseous · 感到恶心",
+    exampleEnglish: "I felt nauseous this morning.",
+    exampleChinese: "我今天早上感到恶心。"
+  },
+  vision: {
+    phrase: "normal vision · 视力正常",
+    exampleEnglish: "My vision is normal.",
+    exampleChinese: "我的视力正常。"
+  },
+  available: {
+    phrase: "be available · 可用；有空",
+    exampleEnglish: "A quiet room is available.",
+    exampleChinese: "现在有一间安静的房间。"
+  },
+  recommend: {
+    phrase: "recommend something to someone · 向某人推荐某物",
+    exampleEnglish: "What dish would you recommend?",
+    exampleChinese: "您会推荐哪道菜？"
+  },
+  decision: {
+    phrase: "make a decision · 做决定",
+    exampleEnglish: "We need to make a decision today.",
+    exampleChinese: "我们今天需要做出决定。"
+  },
+  experience: {
+    phrase: "learn from experience · 从经验中学习",
+    exampleEnglish: "I learned a lot from that experience.",
+    exampleChinese: "我从那次经历中学到了很多。"
+  },
+  improve: {
+    phrase: "improve quickly · 快速改善",
+    exampleEnglish: "Your English will improve with practice.",
+    exampleChinese: "通过练习，你的英语会有所提高。"
+  },
+  result: {
+    phrase: "as a result · 因此；结果是",
+    exampleEnglish: "The result was better than expected.",
+    exampleChinese: "结果比预期更好。"
+  }
+};
 
 const lexicon: Record<string, LexiconEntry> = {
   a: { ipa: "/ə/", meaning: "一个；一项", part: "冠词" },
@@ -471,18 +555,158 @@ const contextualPhrases: Array<{
   }
 ];
 
+const wordFormations: Record<string, WordFormation> = {
+  assumptions: {
+    root: "assume",
+    rootMeaning: "认为；假设",
+    formation: "assume + -tion（名词）+ -s（复数）"
+  },
+  booking: {
+    root: "book",
+    rootMeaning: "预订",
+    formation: "book + -ing（名词）"
+  },
+  choices: {
+    root: "choose",
+    rootMeaning: "选择",
+    formation: "choose → choice + -s（复数）"
+  },
+  departing: {
+    root: "depart",
+    rootMeaning: "离开；出发",
+    formation: "depart + -ing（进行）"
+  },
+  including: {
+    root: "include",
+    rootMeaning: "包括",
+    formation: "include + -ing"
+  },
+  looking: {
+    root: "look",
+    rootMeaning: "看；寻找",
+    formation: "look + -ing（进行）"
+  },
+  meeting: {
+    root: "meet",
+    rootMeaning: "见面",
+    formation: "meet + -ing（动名词）"
+  },
+  neighborhood: {
+    root: "neighbor",
+    rootMeaning: "邻居；邻近",
+    formation: "neighbor + -hood（区域/状态）"
+  },
+  ordered: {
+    root: "order",
+    rootMeaning: "点餐；订购",
+    formation: "order + -ed（过去式）"
+  },
+  precisely: {
+    root: "precise",
+    rootMeaning: "精确的",
+    formation: "precise + -ly（副词）"
+  },
+  reasoning: {
+    root: "reason",
+    rootMeaning: "理由；推理",
+    formation: "reason + -ing（过程/能力）"
+  },
+  realistic: {
+    root: "real",
+    rootMeaning: "真实的",
+    formation: "real + -istic（具有……特征）"
+  },
+  recommendations: {
+    root: "recommend",
+    rootMeaning: "推荐",
+    formation: "recommend + -ation（名词）+ -s（复数）"
+  },
+  served: {
+    root: "serve",
+    rootMeaning: "服务；供应",
+    formation: "serve + -ed（过去分词）"
+  },
+  simplify: {
+    root: "simple",
+    rootMeaning: "简单的",
+    formation: "simple + -ify（使……化）"
+  },
+  taking: {
+    root: "take",
+    rootMeaning: "拿取；承担",
+    formation: "take + -ing（进行）"
+  },
+  troubling: {
+    root: "trouble",
+    rootMeaning: "麻烦；困扰",
+    formation: "trouble + -ing（进行）"
+  }
+};
+
+function getWordFormation(
+  normalized: string,
+  entry: LexiconEntry
+): WordFormation {
+  if (normalized.endsWith("ly") && normalized.length > 4) {
+    const root = normalized.slice(0, -2);
+    const rootMeaning =
+      lexicon[root]?.meaning ?? supplementalMeanings[root];
+    if (rootMeaning) {
+      return {
+        root,
+        rootMeaning,
+        formation: `${root} + -ly（副词后缀：以……方式）`
+      };
+    }
+  }
+  return (
+    wordFormations[normalized] ?? {
+      root: normalized,
+      rootMeaning: entry.meaning,
+      formation: "基础词，无需拆分词缀"
+    }
+  );
+}
+
+function inferSupplementalPart(word: string) {
+  if (word.endsWith("ly")) return "副词";
+  if (/(tion|sion|ment|ness|ity|ance|ence|ship|ism)$/.test(word)) {
+    return "名词";
+  }
+  if (/(ous|ful|less|able|ible|al|ive|ic)$/.test(word)) {
+    return "形容词";
+  }
+  if (word.endsWith("ing") || word.endsWith("ed")) return "动词";
+  return "常用词";
+}
+
 export function analyzeWords(sentence: string) {
   const words = (sentence.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) ?? []).map((raw) => {
     const key = raw.toLowerCase();
+    const supplementalMeaning = supplementalMeanings[key];
+    const entry =
+      lexicon[key] ??
+      (supplementalMeaning
+        ? {
+            ipa: supplementalIpa[key] || "点击扬声器听发音",
+            meaning: supplementalMeaning,
+            part: inferSupplementalPart(key)
+          }
+        : {
+            ipa: "点击扬声器听发音",
+            meaning: /^[A-Z]/.test(raw)
+              ? `${raw}（名称）`
+              : "该词词义尚未收录",
+            part: /^[A-Z]/.test(raw) ? "专有名词" : "待补充"
+          });
     return {
       word: raw,
       normalized: key,
-      phrase: "",
-      ...(lexicon[key] ?? {
-        ipa: "/—/",
-        meaning: /^[A-Z]/.test(raw) ? `${raw}（专有名称）` : `${raw}（当前句中的语境义）`,
-        part: /^[A-Z]/.test(raw) ? "专有名词" : "语境词"
-      })
+      phrase: wordUsage[key]?.phrase ?? "",
+      exampleEnglish: wordUsage[key]?.exampleEnglish ?? sentence,
+      exampleChinese: wordUsage[key]?.exampleChinese ?? "",
+      ...entry,
+      ...getWordFormation(key, entry)
     };
   });
 
@@ -499,61 +723,130 @@ export function analyzeWords(sentence: string) {
     }
   });
 
+  words.forEach((word, index) => {
+    if (word.phrase) return;
+    const start = Math.max(0, index - 1);
+    const end = Math.min(words.length, index + 2);
+    word.phrase = `${words
+      .slice(start, end)
+      .map((item) => item.word)
+      .join(" ")} · 本句搭配`;
+  });
+
   return words;
 }
 
 export function analyzeStructure(sentence: string) {
   const normalized = sentence.trim();
   const lower = normalized.toLowerCase();
-  const sentenceUnits = normalized.match(/[^.!?]+[.!?]?/g)?.map((unit) => unit.trim()) ?? [];
+  const sentenceUnits = splitSentences(normalized);
   const question = sentenceUnits.length === 1 && normalized.endsWith("?");
   const hasQuestion = sentenceUnits.some((unit) => unit.endsWith("?"));
   const hasModal = /\b(can|could|would|may|shall|should)\b/.test(lower);
   const hasPerfect = /\b(have|has|had)\b.+\b\w+(ed|en)\b/.test(lower);
   const hasConnector = /\b(because|although|however|but|and)\b/.test(lower);
   const clauses = sentenceUnits.flatMap((clause) => {
-      const words = clause.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) ?? [];
+      const rawWords = clause.match(/[A-Za-z]+(?:'[A-Za-z]+)?/g) ?? [];
+      const words = rawWords.flatMap((word) => {
+        const contraction = word.toLowerCase();
+        if (contraction === "that's") return ["That", "is"];
+        if (contraction === "it's") return ["It", "is"];
+        if (contraction === "i'm") return ["I", "am"];
+        if (contraction === "you're") return ["You", "are"];
+        if (contraction === "we're") return ["We", "are"];
+        if (contraction === "i've") return ["I", "have"];
+        if (contraction === "i'd") return ["I", "would"];
+        return [word];
+      });
       if (!words.length) return [];
       const clauseQuestion = clause.endsWith("?");
       const clauseHasModal = /\b(can|could|would|may|shall|should)\b/i.test(clause);
       const subjectIndex = words.findIndex((word) =>
         /^(i|you|we|they|he|she|it|this|that)$/i.test(word)
       );
-      const connectorIndex = words.findIndex((word) =>
-        /^(and|but|because|although|however|as)$/i.test(word)
-      );
       const segments: Array<{ text: string; role: string }> = [];
       if (subjectIndex < 0) {
         return [{ text: words.join(" "), role: "寒暄/话语标记" }];
       }
       if (subjectIndex > 0) {
-        segments.push({ text: words.slice(0, subjectIndex).join(" "), role: "引导/语境" });
+        const lead = words.slice(0, subjectIndex);
+        segments.push({
+          text: lead.join(" "),
+          role: lead.some((word) =>
+            /^(can|could|would|may|shall|should|do|does|did|is|are|am|what|where|how)$/i.test(
+              word
+            )
+          )
+            ? "疑问/助动"
+            : "引导/语境"
+        });
       }
-      if (subjectIndex >= 0) {
-        segments.push({ text: words[subjectIndex], role: "主语" });
+      segments.push({ text: words[subjectIndex], role: "主语" });
+
+      const leadHasLinkingVerb = words
+        .slice(0, subjectIndex)
+        .some((word) => /^(am|is|are|was|were)$/i.test(word));
+      const predicateStart = subjectIndex + 1;
+      let predicateEnd = predicateStart;
+      if (!leadHasLinkingVerb && predicateStart < words.length) {
+        if (
+          /^(have|has|had)$/i.test(words[predicateStart]) &&
+          /^(been)$/i.test(words[predicateStart + 1] ?? "")
+        ) {
+          predicateEnd = Math.min(predicateStart + 3, words.length);
+          if (
+            /^(forward)$/i.test(words[predicateEnd] ?? "") &&
+            /^(to)$/i.test(words[predicateEnd + 1] ?? "")
+          ) {
+            predicateEnd += 2;
+          }
+        } else if (
+          /^(can|could|would|may|shall|should|will)$/i.test(
+            words[predicateStart]
+          )
+        ) {
+          predicateEnd = Math.min(predicateStart + 2, words.length);
+        } else {
+          predicateEnd = Math.min(predicateStart + 1, words.length);
+        }
       }
-      const predicateStart = subjectIndex >= 0 ? subjectIndex + 1 : 0;
-      const predicateEnd =
-        connectorIndex > predicateStart ? connectorIndex : Math.min(predicateStart + 3, words.length);
       if (predicateEnd > predicateStart) {
         segments.push({
           text: words.slice(predicateStart, predicateEnd).join(" "),
-          role: clauseQuestion && clauseHasModal ? "情态/谓语" : "谓语"
+          role: clauseQuestion && clauseHasModal ? "核心谓语" : "谓语"
         });
       }
-      if (connectorIndex >= predicateEnd) {
-        segments.push({ text: words[connectorIndex], role: "连接词" });
-      }
-      const complementStart =
-        connectorIndex >= predicateEnd ? connectorIndex + 1 : predicateEnd;
+
+      const complementStart = predicateEnd;
       if (complementStart < words.length) {
+        const predicateText = words
+          .slice(predicateStart, predicateEnd)
+          .join(" ")
+          .toLowerCase();
+        const firstComplement = words[complementStart].toLowerCase();
         segments.push({
           text: words.slice(complementStart).join(" "),
-          role: "补充信息"
+          role:
+            leadHasLinkingVerb ||
+            /^(am|is|are|was|were|look|looks|seem|feel)$/.test(predicateText)
+              ? "表语"
+              : /^(in|on|at|for|with|about|from|under|as|because|when|where)$/.test(
+                    firstComplement
+                  )
+                ? "状语/补充"
+                : "宾语/补充"
         });
       }
       return segments;
     });
+  const structuralRoles = clauses
+    .map((segment) => segment.role)
+    .filter((role) => !/引导|寒暄/.test(role));
+  const subject = clauses.find((segment) => segment.role === "主语")?.text;
+  const predicate = clauses.find((segment) => /谓语/.test(segment.role))?.text;
+  const tail = clauses.find((segment) =>
+    /宾语|表语|状语|补充/.test(segment.role)
+  )?.text;
 
   return {
     sentenceType:
@@ -582,6 +875,16 @@ export function analyzeStructure(sentence: string) {
     note: hasConnector
       ? "连接词让观点之间的逻辑关系更清楚。"
       : "先找到主语和核心动词，再理解后面的补充信息。",
-    segments: clauses
+    segments: clauses,
+    skeleton: structuralRoles.length
+      ? structuralRoles.join(" + ")
+      : "核心表达",
+    imitation: `${subject ?? "[谁/什么]"} + ${
+      predicate ?? "[做什么/是什么]"
+    } + ${tail ? "[替换最后的具体信息]" : "[补充具体信息]"}`,
+    memoryTip:
+      subject && predicate
+        ? `先记住核心“${subject} ${predicate}”，再替换后面的内容，就能快速造出同类句。`
+        : "把这句当作一个完整语块记忆，先模仿语调，再替换其中的关键词。"
   };
 }

@@ -34,15 +34,28 @@
 “今日信号”顶部提供主题切换与“管理主题”入口：
 
 - 默认关注：`AI 智能体`、`大模型与多模态`、`开源开发工具`、`RAG 与知识工程`
+- 产品跟踪主题：`个人助理`、`Agent 平台`、`AI Coding`；旧配置会自动补齐缺少的产品主题
 - 默认选择“全部主题”，将所有关注内容合并展示
-- 点击任一主题可单独查看，30 秒速读和技术雷达会同步切换
-- 可新增、改名、取消关注，并为每个主题维护独立关键词；最多 8 个主题
+- 点击任一主题可单独查看，今日热点、探索榜单、产品矩阵和技术雷达会同步切换
+- 可新增、改名、取消关注，并为每个主题维护独立关键词；最多 10 个主题
 - 保存后立即按全部关注主题重新采集
 - Hacker News、arXiv、YouTube、X、TikHub、AiNews 和技术雷达统一使用关注配置
 - 每条信号会记录命中的主题，每份日报会保存当天关注主题快照
 - 英文关键词采用完整词或短语匹配，避免 `RAG` 误命中 `STRATEGY`
 
 首次进入会显示简短操作引导；原生设置页也会指向首页的“管理主题”，避免两个入口产生冲突。
+
+## 主动搜索
+
+“主动搜索”用于按需检索当前想了解的技术或产品，不受每日关注主题限制：
+
+- 支持“全部 / 技术 / 产品”范围切换
+- 支持“近一周 / 近一个月 / 近 1 年 / 近 3 年 / 不限制”时间筛选，默认近一个月
+- 同时检索产品矩阵、本机历史报告、Google News、GitHub、Hacker News 和 arXiv
+- 外部来源并行查询；单个来源不可用时仍展示其他结果及来源状态
+- 结果包含类型、来源、时间、摘要、证据和原始链接
+- 最近 8 条搜索保存在本机，支持一键再次检索
+- 使用 `Command + K` 可从任意工作区直接进入主动搜索
 
 知识获取按渐进层级组织：
 
@@ -76,6 +89,20 @@
 `~/Library/Application Support/Technology Exploration Agent/demo-handoffs/`
 
 原有平台热榜保留在“探索榜单”，AI 高相关内容保留在“技术雷达”。TopHub 用于探索页的信息架构参考；数据由各平台公开接口、NewsNow、Buzzing、BWEnews 和 6551 等来源提供。
+
+## 产品情报矩阵
+
+“产品矩阵”按厂商对齐六类产品：个人助理（桌面办公）、个人助理（手机端）、Agent 开发平台、Agent 纳管平台、知识引擎和 Code 工具。
+
+- 当前覆盖 19 家国内外厂商，新增华为、京东、小米、美团、智谱和 DeepSeek
+- 支持搜索公司或旗下产品，并勾选任意公司进行横向对比
+- 支持全选、全不选和逐家公司取消；允许保持零家公司，选择结果保存在本机
+- 国内重点跟踪：WorkBuddy、千问办公、豆包工作、Kimi Work、TRAE Work、阶跃桌面版
+- Agent 开发平台重点跟踪：腾讯云 ADP、火山引擎 HiAgent、阿里云百炼、百度千帆，以及海外主流平台
+- Agent 纳管平台重点跟踪：ADP Agent Portal、Agent ID Guard、AgentSphere、Microsoft Agent 365、Gemini Enterprise Agent Registry、Bedrock AgentCore、ServiceNow AI Control Tower 和 MuleSoft Agent Fabric
+- 知识引擎重点跟踪：ima / 腾讯乐享、百炼 Agentic RAG、字节企业知识引擎、百度甄知 / 千帆知识库、NotebookLM / Cloud Search、SharePoint / Microsoft Graph、Amazon Q Business 等
+- AI Coding 重点跟踪：Codex、TRAE、CodeBuddy、Qoder、Claude Code、GitHub Copilot 等
+- 矩阵中的“今日动态”来自已有采集源实时匹配，支持主题、国内外、产品类型和关键词组合筛选
 
 ## 看板个性化
 

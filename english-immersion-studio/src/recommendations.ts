@@ -20,6 +20,20 @@ export type AdaptiveRecommendation = {
   reason: string;
 };
 
+export type PracticeDuration = 5 | 10 | 20 | 30 | 60;
+
+export type DailyPracticePlan = {
+  focus: AdaptiveRecommendation["focus"];
+  focusLabel: string;
+  summary: string;
+  duration: PracticeDuration;
+  steps: Array<{
+    minutes: number;
+    label: string;
+  }>;
+  recommendation: AdaptiveRecommendation;
+};
+
 export const initialLearningProfile: LearningProfile = {
   turns: 0,
   fluency: 82,
@@ -216,4 +230,39 @@ export function buildRecommendations(
   return ranked
     .slice(0, 3)
     .map(({ focus }) => recommendedScenario(focus, profile, difficulty));
+}
+
+export function buildDailyPracticePlan(
+  profile: LearningProfile,
+  difficulty: Difficulty,
+  duration: PracticeDuration
+): DailyPracticePlan {
+  const recommendation = buildRecommendations(profile, difficulty)[0];
+  const focus = recommendation.focus;
+  const focusLabel = recommendation.focusLabel;
+  const stepLabels: Record<AdaptiveRecommendation["focus"], string[]> = {
+    fluency: ["跟读热身", "限时情景回应", "复述回合"],
+    accuracy: ["关键句听辨", "信息确认", "纠错复述"],
+    expression: ["素材输入", "补充细节", "完整表达"],
+    vocabulary: ["主题词激活", "场景使用", "间隔回忆"]
+  };
+  const splits: Record<PracticeDuration, number[]> = {
+    5: [1, 3, 1],
+    10: [2, 6, 2],
+    20: [4, 12, 4],
+    30: [6, 18, 6],
+    60: [12, 36, 12]
+  };
+  const labels = stepLabels[focus];
+  return {
+    focus,
+    focusLabel,
+    duration,
+    recommendation,
+    summary: `今天优先补强${focusLabel}，围绕「${recommendation.scenario.title}」完成一轮可复用表达。`,
+    steps: splits[duration].map((minutes, index) => ({
+      minutes,
+      label: labels[index]
+    }))
+  };
 }
