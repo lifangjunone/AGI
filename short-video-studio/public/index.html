@@ -4,7 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <title>FRAME/60 · AI 短视频工作台</title>
+    <meta name="theme-color" content="#101010" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>FRAME/60 · 商品内容包</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/frame60-icon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -21,16 +26,86 @@
           <strong>FRAME/60</strong>
         </a>
         <nav class="view-tabs" aria-label="主导航">
-          <button class="view-tab is-active" data-view="create">创作台</button>
+          <button class="view-tab is-active" data-view="content">内容包</button>
+          <button class="view-tab" data-view="create">视频工作台</button>
           <button class="view-tab" data-view="library">作品库 <span id="library-count">0</span></button>
         </nav>
-        <div class="service-state" id="service-state">
-          <span class="status-dot"></span>
-          <span>连接中</span>
+        <div class="runtime-meta">
+          <button class="install-button" id="install-app" type="button" hidden>
+            <i data-lucide="download"></i><span>安装</span>
+          </button>
+          <span class="platform-badge" id="platform-badge">WEB</span>
+          <div class="service-state" id="service-state">
+            <span class="status-dot"></span>
+            <span>连接中</span>
+          </div>
         </div>
       </header>
 
       <main>
+        <section class="content-pack-view" id="content-view">
+          <div class="content-pack-intro">
+            <div class="eyebrow">PRODUCT CONTENT KIT / 01</div>
+            <h1>把一个商品，变成<br /><em>7 天可发布内容。</em></h1>
+            <p>输入真实卖点，生成标题、口播、分镜和发布计划。先免费预览一个标题，完整内容包定价 <b>¥9.90</b>。</p>
+            <div class="proof-strip">
+              <span><b>10</b> 个标题</span>
+              <span><b>3</b> 条口播</span>
+              <span><b>7</b> 天计划</span>
+            </div>
+          </div>
+
+          <div class="content-pack-grid">
+            <form class="pack-form" id="content-pack-form">
+              <div class="pack-form-head">
+                <span class="step-number">A</span>
+                <div><span class="eyebrow">输入商品</span><h2>先说清楚你卖什么</h2></div>
+              </div>
+              <label class="field-label" for="product-name">商品或服务名称</label>
+              <input id="product-name" name="productName" maxlength="80" placeholder="例如：轻薄防晒外套" required />
+              <label class="field-label" for="audience">目标客户</label>
+              <input id="audience" name="audience" maxlength="120" placeholder="例如：通勤、怕晒又不想闷热的女生" required />
+              <label class="field-label" for="selling-points">核心卖点</label>
+              <textarea id="selling-points" name="sellingPoints" maxlength="500" placeholder="材质、功能、使用体验、价格优势……至少写 8 个字" required></textarea>
+              <div class="pack-form-row">
+                <div><label class="field-label" for="pack-platform">发布平台</label><select id="pack-platform" name="platform"><option>抖音</option><option>小红书</option><option>视频号</option></select></div>
+                <div><label class="field-label" for="pack-tone">表达风格</label><select id="pack-tone" name="tone"><option>真实种草</option><option>专业测评</option><option>轻松口语</option></select></div>
+              </div>
+              <label class="field-label" for="pack-offer">优惠或行动引导 <span>可选</span></label>
+              <input id="pack-offer" name="offer" maxlength="120" placeholder="例如：首单立减 20 元" />
+              <button class="pack-submit" type="submit"><span>免费生成预览</span><i data-lucide="arrow-up-right"></i></button>
+              <small class="form-note">不需要注册。点击解锁后会跳转支付宝收银台。</small>
+            </form>
+
+            <section class="pack-result" id="content-pack-result" aria-live="polite">
+              <div class="result-empty" id="pack-empty">
+                <span class="result-corner">PREVIEW / 预览</span>
+                <i data-lucide="sparkles"></i>
+                <h2>你的内容会出现在这里</h2>
+                <p>先生成一个免费标题，看看方向是否适合你的商品。</p>
+              </div>
+              <div class="result-content" id="pack-content" hidden>
+                <div class="result-head">
+                  <div><span class="eyebrow">CONTENT PACK / 预览</span><h2 id="pack-result-title"></h2></div>
+                  <span class="result-badge">免费预览</span>
+                </div>
+                <div class="preview-title">
+                  <span>免费标题 01</span><strong id="free-title"></strong>
+                </div>
+                <div class="locked-output">
+                  <div><i data-lucide="lock-keyhole"></i><span>完整内容包</span></div>
+                  <p>9 个标题 · 3 条口播 · 3 套分镜 · 7 天发布计划</p>
+                  <button type="button" class="unlock-button" id="unlock-pack"><span>解锁完整内容包 · ¥9.90</span><i data-lucide="arrow-right"></i></button>
+                  <small>支付成功后以支付宝异步通知或交易查询为准</small>
+                </div>
+                <div class="pack-sample">
+                  <span>示例口播</span><p id="sample-script"></p>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
         <section class="workspace" id="create-view">
           <aside class="composer">
             <div class="section-heading">

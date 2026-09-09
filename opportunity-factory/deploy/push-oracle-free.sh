@@ -16,6 +16,8 @@ fi
 
 tar -C "$PROJECT_DIR" -czf "$ARCHIVE" \
   service/autonomous_factory.py \
+  service/poc_pay_skill.py \
+  requirements-pay-skill.txt \
   deploy/opportunity-factory.env.example \
   deploy/install-oracle-free.sh
 

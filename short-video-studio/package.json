@@ -3,13 +3,56 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "apps/desktop/main.mjs",
+  "author": "LifeYouMe",
   "description": "Local-first AI short video generator with exact-duration delivery.",
   "scripts": {
-    "start": "node server.mjs",
+    "start": "npm run web",
+    "web": "node apps/web/start.mjs",
+    "mobile": "node apps/mobile/start.mjs",
+    "desktop": "electron apps/desktop/main.mjs",
+    "desktop:config": "node apps/desktop/install-config.mjs",
+    "desktop:pack": "electron-builder --mac dir --arm64",
     "dev": "node --watch server.mjs",
     "test": "node --test"
   },
+  "devDependencies": {
+    "electron": "^44.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.lifeyoume.frame60",
+    "productName": "FRAME 60",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "apps/desktop/**/*",
+      "assets/**/*",
+      "lib/**/*",
+      "public/**/*",
+      "server.mjs",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "icon": "assets/AppIcon.icns",
+      "identity": null,
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ]
+    }
+  },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "alipay-sdk": "^4.14.0"
   }
 }

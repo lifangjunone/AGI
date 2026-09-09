@@ -5,4 +5,6 @@ dist/
 test-results/
 assets/AppIcon.iconset/
 runtime/
+.venv-pay/
 .env
+/.alipay-sandbox.json

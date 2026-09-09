@@ -1,0 +1,27 @@
+[Unit]
+Description=Opportunity Factory Alipay A2M Pay Skill
+After=network-online.target opportunity-factory.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=opportunity
+Group=opportunity
+WorkingDirectory=/data/app/opportunity-factory
+EnvironmentFile=/data/app/opportunity-factory/.env
+ExecStart=/data/app/opportunity-factory/.venv-pay/bin/python /data/app/opportunity-factory/service/poc_pay_skill.py
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/app/opportunity-factory/runtime
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

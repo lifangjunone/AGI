@@ -1,7 +1,7 @@
 # Opportunity Factory
 
-**在线使用：** [免费审计 GitHub 开源项目](https://audit.lifeyoume.icu/)
-**专业报告：** ¥9.90/仓库，微信扫码付款，到账确认后解锁 Markdown 和 JSON 整改清单。
+**当前线上实验：** [GitHub 开源项目审计](https://audit.lifeyoume.icu/)（已停止继续扩展，保留历史数据）
+**新验证方向：** 政企 AI POC 验收与投标应答审计 Pay Skill
 
 产品类型：商机发现、审计与验证工作台
 
@@ -9,6 +9,12 @@
 原产品名：商机罗盘 / Opportunity Compass
 运行形态：macOS 桌面应用 + 本地/服务器无人值守服务
 上游项目：[`technology-intelligence/`](../technology-intelligence/)
+
+## 当前商业方向
+
+2026-09-08 起，项目不再把 GitHub 开源项目审计作为主要商业假设。新的首要产品将招标文件、需求书或 POC 要求转为需求追踪矩阵、验收用例、证据清单、演示脚本、风险缺口和投标应答审查。
+
+支付与分发采用 SkillHub Pay Skill。个人阶段先使用支付宝 A2M 按量付费完成自动验付和自动履约；微信自动支付需要企业认证和微信商户号，个人微信收款码仅作为人工备选。详细证据、飞轮和止损指标见 [`docs/2026-09-08-PAID-SKILL-PIVOT.md`](docs/2026-09-08-PAID-SKILL-PIVOT.md)。
 
 每天从 Technology Intelligence 的本机报告中筛选 1-3 个可收费、可触达、可在 7 天内验证的商机。
 

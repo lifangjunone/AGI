@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-09-09
+
+### feat
+
+- Added Alipay web payment integration to `short-video-studio`: server-side `pageExec` checkout form, persistent pending orders, signed notification verification, trade query, refund, refund query, close, and neutral return page.
+- Added the C-end product content-pack MVP to `short-video-studio`: users can enter a product, audience, selling points, platform, tone, and offer to receive a free title preview plus locally generated titles, scripts, shot lists, hashtags, and a seven-day publishing plan.
+- Configured seller ID `2088122111133366` for Alipay service `API_4BAB0CE91B3743BE`; the production Pay Skill now listens on port `8788`.
+
+### verify
+
+- Verified the checkout button opens the real Alipay sandbox cashier with the `¥9.90` product and price. The sandbox payment itself was not completed.
+- Verified the return page responds with a neutral payment-confirmation state. Production web-payment signing remains blocked by an authorization mismatch, and a public HTTPS `notify_url` is still required before production readiness.
+- Verified the new `/api/content-pack` endpoint, browser form submission, preview rendering, and the checkout handoff into the Alipay sandbox cashier.
+- Verified the public Pay Skill endpoint returns the expected pre-payment `400 INVALID_REQUEST` response for invalid input without creating an order or charging money.
+- Verified a valid production-shaped request returns `402 Payment-Needed` with a signed payment challenge; no payment was submitted.
+
+### fix
+
+- Fixed production Pay Skill activation by removing the invalid systemd environment condition, correcting service-user permissions for the payment virtual environment and Alipay key directory, and restoring the Nginx route and certificate coverage for `audit.lifeyoume.icu`.
+
 ## 2026-09-08
 
 ### docs
@@ -9,6 +29,7 @@
 
 ### fix
 
+- Fixed intermittent Alipay discovery `Not logged in` failures by serializing read-only signing, service, and application CLI calls to avoid local credential/log state races.
 - Changed GitHub auto-sync from a two-hour interval to a one-hour interval.
 - Added a terminal-launched hourly sync loop to avoid macOS Desktop TCC failures from the LaunchAgent path.
 - Allowed `.env.example` template files in auto-sync while continuing to block real `.env` files, private keys, certificates, suspected credential contents, and files larger than 95 MB.
@@ -17,6 +38,11 @@
 
 ### feat
 
+- Submitted Alipay production signing, created active service `API_4BAB0CE91B3743BE` at `1.99 CNY` per call, brought application `2021006197631772` online, and deployed the Pay Skill service plus proxy route; the runtime now only awaits seller-ID injection before activation.
+- Pivoted Opportunity Factory from GitHub adoption audits to a paid enterprise AI POC acceptance and bid-response audit Skill, with six traceable deliverables.
+- Added an Alipay A2M pay-per-call service with signed 402 billing, SQLite order persistence, strict payment matching, idempotent fulfillment, and a verified sandbox flow.
+- Expanded FRAME/60 into three shared-core editions under `short-video-studio/apps`: an installable mobile PWA with LAN access, an Electron desktop application, and a browser-based Web workspace.
+- Added dedicated `/mobile/`, `/desktop/`, and `/web/` runtime entrypoints, mobile offline shell caching, install metadata, Electron lifecycle handling, and platform-aware UI treatment.
 - Added `short-video-studio`, a local-first AI video workspace that generates 5, 10, 20, 30, or 60-second MP4 files, supports three aspect ratios, keeps model credentials server-side, and provides preview, download, and local history.
 - Added FFmpeg duration normalization so model outputs are measured and trimmed or looped to the requested delivery length.
 - Added branded Opportunity Factory favicon and Apple Touch assets based on the product's growth-compass identity.

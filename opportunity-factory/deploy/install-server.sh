@@ -14,6 +14,9 @@ fi
 command -v python3 >/dev/null
 command -v systemctl >/dev/null
 command -v docker >/dev/null
+if command -v apt-get >/dev/null 2>&1; then
+  apt-get install -y -qq python3-venv
+fi
 
 if ss -ltn | awk '{print $4}' | grep -Eq '(^|:)8787$'; then
   if ! systemctl is-active --quiet opportunity-factory; then
@@ -33,6 +36,14 @@ if [[ -d "$APP_ROOT/service" && -n "$(find "$APP_ROOT/service" -mindepth 1 -maxd
 fi
 
 install -m 0755 "$SOURCE_DIR/service/autonomous_factory.py" "$APP_ROOT/service/autonomous_factory.py"
+install -m 0755 "$SOURCE_DIR/service/poc_pay_skill.py" "$APP_ROOT/service/poc_pay_skill.py"
+if [[ -f "$SOURCE_DIR/requirements-pay-skill.txt" ]]; then
+  python3 -m venv "$APP_ROOT/.venv-pay"
+  "$APP_ROOT/.venv-pay/bin/pip" install --disable-pip-version-check --quiet \
+    -r "$SOURCE_DIR/requirements-pay-skill.txt"
+  chown -R opportunity:opportunity "$APP_ROOT/.venv-pay"
+  chmod 0755 "$APP_ROOT/.venv-pay" "$APP_ROOT/.venv-pay/bin"
+fi
 install -m 0644 "$SOURCE_DIR/service/assets/favicon-64.png" "$APP_ROOT/service/assets/favicon-64.png"
 install -m 0644 "$SOURCE_DIR/service/assets/apple-touch-icon.png" "$APP_ROOT/service/assets/apple-touch-icon.png"
 install -m 0644 "$SOURCE_DIR/deploy/docker-proxy-compose.yml" "$APP_ROOT/deploy/docker-proxy-compose.yml"
@@ -56,10 +67,17 @@ chown -R opportunity:opportunity "$APP_ROOT/private"
 chown root:opportunity "$APP_ROOT/.env"
 chmod 0640 "$APP_ROOT/.env"
 install -m 0644 "$SOURCE_DIR/deploy/opportunity-factory.service" /etc/systemd/system/opportunity-factory.service
+install -m 0644 "$SOURCE_DIR/deploy/poc-pay-skill.service" /etc/systemd/system/poc-pay-skill.service
 
 systemctl daemon-reload
 systemctl enable opportunity-factory
 systemctl restart opportunity-factory
+if grep -q '^AIPAY_APP_ID=' "$APP_ROOT/.env"; then
+  systemctl enable poc-pay-skill
+  systemctl restart poc-pay-skill
+else
+  systemctl disable --now poc-pay-skill 2>/dev/null || true
+fi
 
 for attempt in {1..15}; do
   if curl --fail --silent http://127.0.0.1:8787/healthz; then

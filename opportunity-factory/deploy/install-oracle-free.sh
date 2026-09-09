@@ -34,6 +34,11 @@ fi
 
 install -m 0755 "$SOURCE_DIR/service/autonomous_factory.py" \
   "$APP_ROOT/service/autonomous_factory.py"
+install -m 0755 "$SOURCE_DIR/service/poc_pay_skill.py" \
+  "$APP_ROOT/service/poc_pay_skill.py"
+python3 -m venv "$APP_ROOT/.venv-pay"
+"$APP_ROOT/.venv-pay/bin/pip" install --disable-pip-version-check --quiet \
+  -r "$SOURCE_DIR/requirements-pay-skill.txt"
 
 if [[ ! -f "$APP_ROOT/.env" ]]; then
   ADMIN_PASSWORD="$(openssl rand -hex 24)"
@@ -89,6 +94,15 @@ server {
     server_name $DOMAIN;
 
     client_max_body_size 128k;
+    location /api/pay-skills/ {
+        proxy_pass http://127.0.0.1:8788;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_read_timeout 120s;
+    }
     location / {
         proxy_pass http://127.0.0.1:8787;
         proxy_http_version 1.1;
@@ -107,6 +121,38 @@ rm -f /etc/nginx/sites-enabled/default
 
 systemctl daemon-reload
 systemctl enable --now opportunity-factory
+if grep -q '^AIPAY_APP_ID=' "$APP_ROOT/.env"; then
+  cat > /etc/systemd/system/poc-pay-skill.service <<EOF
+[Unit]
+Description=Opportunity Factory Alipay A2M Pay Skill
+After=network-online.target opportunity-factory.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=opportunity
+Group=opportunity
+WorkingDirectory=$APP_ROOT
+EnvironmentFile=$APP_ROOT/.env
+ExecStart=$APP_ROOT/.venv-pay/bin/python $APP_ROOT/service/poc_pay_skill.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=$APP_ROOT/runtime
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+  systemctl enable --now poc-pay-skill
+fi
 nginx -t
 systemctl enable --now nginx
 curl --fail --silent http://127.0.0.1:8787/healthz

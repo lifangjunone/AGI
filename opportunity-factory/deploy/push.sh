@@ -12,7 +12,7 @@ if [[ -z "$KEY" || ! -f "$KEY" ]]; then
   exit 2
 fi
 
-tar -C "$PROJECT_DIR" -czf "$ARCHIVE" service deploy
+tar -C "$PROJECT_DIR" -czf "$ARCHIVE" service deploy requirements-pay-skill.txt
 scp -i "$KEY" -o StrictHostKeyChecking=accept-new "$ARCHIVE" "$USER@$HOST:/tmp/opportunity-factory-deploy.tgz"
 ssh -i "$KEY" "$USER@$HOST" '
   set -e

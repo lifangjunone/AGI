@@ -2,7 +2,9 @@
 
 这是一个由多个本地优先 AI 产品、交付工具和学习产品组成的产品工作区。每个子项目都可以独立安装、运行、测试和发布；根目录只负责项目导航、协作关系和统一命名。
 
-在线产品：[免费检查 GitHub 开源项目是否适合生产采用](https://audit.lifeyoume.icu/)；专业整改报告 ¥9.90/仓库，支持微信扫码。
+Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与投标应答审计”Pay Skill；旧网站保留用于历史数据，不再作为主要商业方向。
+
+当前生产状态：支付宝应用 `2021006197631772` 已上线，服务 `API_4BAB0CE91B3743BE` 已激活，卖家 ID 已配置，Pay Skill 在 `8788` 运行并由 `audit.lifeyoume.icu/api/pay-skills/` 暴露。已通过不付款的输入校验检查；真实付款和陌生用户收入仍待验证。
 
 ## 项目目录
 
@@ -10,7 +12,7 @@
 | --- | --- | --- | --- |
 | [`lifeyoume-platform/`](lifeyoume-platform/README.md) | LifeYouMe Platform | 产品门户、运营控制、身份/支付边界和私有健康检查 | Python、systemd、Nginx |
 | [`technology-intelligence/`](technology-intelligence/README.md) | Technology Intelligence | 技术信号聚合、主题学习、需求匹配和 Demo 交接 | Python、Objective-C、WebKit |
-| [`opportunity-factory/`](opportunity-factory/README.md) | [Opportunity Factory](https://audit.lifeyoume.icu/) | 免费审计 GitHub 开源项目生产采用风险，生成可付费下载的整改报告 | Python、Objective-C、WebKit、Nginx |
+| [`opportunity-factory/`](opportunity-factory/README.md) | Opportunity Factory | 将政企 AI 招标与 POC 材料转为可追踪的验收矩阵，通过 Pay Skill 按次自动收款与交付 | Python、SkillHub、支付宝 A2M、Objective-C |
 | [`delivery-control-center/`](delivery-control-center/README.md) | Delivery Control Center | 从需求输入到研发、测试、部署和交付收据的桌面控制中心 | Electron、Node.js |
 | [`delivery-pilot/`](delivery-pilot/README.md) | DeliveryPilot | Tauri 研发交付驾驶舱，负责执行、恢复、验收和质量门禁 | Tauri 2、React、Rust、Swift、SQLite |
 | [`english-speaking-coach/`](english-speaking-coach/README.md) | English Speaking Coach | 面向成年人的英语口语训练和本地语音学习产品 | React、TypeScript、Capacitor、Python MLX |
@@ -20,7 +22,7 @@
 | [`fde-playbook/`](fde-playbook/README.md) | FDE Playbook | FDE 岗位认知、交付方法、能力地图和制造业实战 | React、TypeScript、Vite |
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
-| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 Short Video Studio | 生成 5–60 秒精确时长的 AI 短视频，并提供预览、下载与本地作品库 | Node.js、FFmpeg、原生 Web |
+| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 Short Video Studio | 生成 5–60 秒精确时长的 AI 短视频，提供移动 PWA、Electron 桌面端和 Web 端 | Node.js、FFmpeg、PWA、Electron |
 
 ## 产品协作链路
 
@@ -53,7 +55,7 @@ cd ../english-foundation && npm install && npm run tauri dev
 cd ../fde-playbook && npm install && npm run dev
 cd ../agent-workforce-console && npm install && npm run dev
 cd ../hover-translator && npm install && npm run dev
-cd ../short-video-studio && npm start
+cd ../short-video-studio && npm install && npm run web
 ```
 
 平台服务运行：
@@ -111,7 +113,10 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `opportunity-factory`：将商机罗盘左侧七阶段导航升级为动态扩散网络，并新增洞察、验证、成交、复利业务增长飞轮。
 - `opportunity-factory`：将“历史报告”升级为应用内时间线，可直接回看最近 30 期商机及完整执行详情，不再跳转本地文件夹。
 - `opportunity-factory`：网站新增与桌面端一致的“增长罗盘”favicon 和 Apple Touch 图标，替换浏览器默认地球图标。
-- `short-video-studio`：新增 FRAME/60 AI 短视频工作台，支持 5、10、20、30、60 秒与三种画面比例，通过服务端模型代理和 FFmpeg 校验交付精确时长。
+- `opportunity-factory`：修复支付宝 discovery 并发调用 `alipay-cli` 导致本地凭据状态竞争、间歇返回 `Not logged in` 的问题；签约、服务和应用查询现按串行顺序执行。
+- `opportunity-factory`：支付宝生产签约已提交，AI 按量付费服务 `API_4BAB0CE91B3743BE` 已为 `ACTIVE`，应用 `2021006197631772` 已为 `ON_LINE`；生产服务器已部署 Pay Skill 代码、代理路由及受限密钥文件，当前仅等待卖家 ID 注入后启动真实生产支付服务。
+- `short-video-studio`：FRAME/60 扩展为同目录三端产品，包含可安装移动 PWA、Electron 桌面应用和 Web 工作台；三端共享模型代理、作品库及 FFmpeg 精确时长与画幅交付。
+- `short-video-studio`：新增“商品短视频内容包”C 端验证入口，支持免费标题预览、本地模板生成 10 个标题/3 条口播/3 套分镜/7 天计划；完整包定价 ¥9.90，已接入支付宝网页收款下单、回跳、异步通知、查询、退款、退款查询和关单代码。生产签约、公网 notify_url 和真实付款仍待验证。
 
 ## 远端仓库
 

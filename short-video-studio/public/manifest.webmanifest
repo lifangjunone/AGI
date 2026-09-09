@@ -1,0 +1,19 @@
+{
+  "name": "FRAME/60 Mobile Studio",
+  "short_name": "FRAME/60",
+  "description": "AI 短视频生成、预览与作品管理",
+  "start_url": "/mobile/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#101010",
+  "theme_color": "#101010",
+  "icons": [
+    {
+      "src": "/frame60-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

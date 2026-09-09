@@ -58,9 +58,9 @@ class ProductMatrixRenderTests(unittest.TestCase):
     def test_matrix_contains_requested_vendors_without_duplicates(self):
         vendors = [vendor["vendor"] for vendor in PRODUCT_MATRIX]
 
-        self.assertEqual(len(vendors), 19)
+        self.assertEqual(len(vendors), 20)
         self.assertEqual(len(vendors), len(set(vendors)))
-        for vendor in ("华为", "京东", "小米", "美团", "智谱", "DeepSeek"):
+        for vendor in ("华为", "京东", "小米", "美团", "智谱", "DeepSeek", "Meta"):
             self.assertIn(vendor, vendors)
 
     def test_every_vendor_has_a_governance_column(self):
@@ -135,6 +135,10 @@ class ProductMatrixRenderTests(unittest.TestCase):
         self.assertIn('id="clear-all-companies"', page)
         self.assertIn('data-vendor="华为"', page)
         self.assertIn('data-vendor-choice="DeepSeek"', page)
+        self.assertIn('data-vendor="Meta"', page)
+        self.assertIn('data-vendor-choice="Meta"', page)
+        self.assertIn('id="company-picker-empty"', page)
+        self.assertIn("matches=0", page)
         self.assertIn("technology-product-vendor-selection-v1", page)
         self.assertIn("selectedVendors=new Set()", page)
         self.assertIn("vendorMatches&&regionMatches", page)

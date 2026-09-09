@@ -5,6 +5,11 @@ import path from "node:path";
 
 export const ALLOWED_DURATIONS = Object.freeze([5, 10, 20, 30, 60]);
 export const ALLOWED_RATIOS = Object.freeze(["9:16", "16:9", "1:1"]);
+const OUTPUT_SIZES = Object.freeze({
+  "9:16": [720, 1280],
+  "16:9": [1280, 720],
+  "1:1": [720, 720]
+});
 
 export function validateGenerationInput(input) {
   const prompt = typeof input?.prompt === "string" ? input.prompt.trim() : "";
@@ -112,8 +117,10 @@ export async function normalizeDuration({
   outputPath,
   targetDuration,
   sourceDuration,
+  ratio = "9:16",
   ffmpeg = "ffmpeg"
 }) {
+  const [width, height] = OUTPUT_SIZES[ratio] || OUTPUT_SIZES["9:16"];
   await run(ffmpeg, [
     "-y",
     "-stream_loop",
@@ -126,6 +133,8 @@ export async function normalizeDuration({
     "0:a?",
     "-t",
     String(targetDuration),
+    "-vf",
+    `scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height}`,
     "-c:v",
     "libx264",
     "-preset",
@@ -203,6 +212,7 @@ export async function generateVideo({
       outputPath,
       targetDuration: validated.duration,
       sourceDuration,
+      ratio: validated.ratio,
       ffmpeg
     });
     const deliveredDuration = await probeDuration(outputPath, ffprobe);
