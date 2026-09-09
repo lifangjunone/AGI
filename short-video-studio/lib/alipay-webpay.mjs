@@ -1,9 +1,11 @@
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { AlipaySdk } from "alipay-sdk";
 
 const PRODUCT_CODE = "FAST_INSTANT_TRADE_PAY";
-const PAYMENT_METHOD = "alipay.trade.page.pay";
+const DESKTOP_PAYMENT_METHOD = "alipay.trade.page.pay";
+const MOBILE_PAYMENT_METHOD = "alipay.trade.wap.pay";
 
 function formatTimestamp(date = new Date()) {
   const pad = (value) => String(value).padStart(2, "0");
@@ -118,7 +120,7 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     return order;
   }
 
-  async function buildPaymentForm({ input, origin }) {
+  async function buildPaymentForm({ input, origin, mobile = false }) {
     const { config, sdk } = await sdkOrNull();
     if (!sdk) {
       const error = new Error("支付宝网页收款配置未完成，请配置 ALIPAY_APP_ID、ALIPAY_PRIVATE_KEY、ALIPAY_PUBLIC_KEY");
@@ -127,20 +129,26 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     }
     const order = await createPending(input, origin);
     const notifyUrl = String(process.env.ALIPAY_NOTIFY_URL || "").trim();
+    const useMobileWap = mobile && process.env.ALIPAY_MOBILE_WAP_ENABLED === "true";
     const request = {
       returnUrl: order.returnUrl,
       bizContent: {
         out_trade_no: order.orderId,
         total_amount: order.amount,
         subject: order.subject,
-        product_code: PRODUCT_CODE
+        product_code: useMobileWap ? "QUICK_WAP_WAP_PAY" : PRODUCT_CODE
       }
     };
+    if (useMobileWap) request.bizContent.quit_url = `${origin}/`;
     if (notifyUrl) request.notifyUrl = notifyUrl;
     return {
       order,
       environment: config.environment,
-      paymentHtml: sdk.pageExec(PAYMENT_METHOD, "POST", request)
+      paymentHtml: sdk.pageExec(
+        useMobileWap ? MOBILE_PAYMENT_METHOD : DESKTOP_PAYMENT_METHOD,
+        "POST",
+        request
+      )
     };
   }
 
@@ -185,6 +193,28 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     return { ...(await getOrder(orderId)), alipay: { code: result.code, msg: result.msg, tradeStatus: status } };
   }
 
+  async function fulfillOrder(orderId) {
+    const order = await getOrder(orderId);
+    if (!order || !["TRADE_SUCCESS", "TRADE_FINISHED"].includes(order.status)) return null;
+    if (order.fulfilledAt && order.accessToken) return order;
+    await updateOrders((orders) => {
+      const current = orders[orderId];
+      if (!current) return;
+      current.fulfilledAt = current.fulfilledAt || new Date().toISOString();
+      current.accessToken = current.accessToken || randomBytes(24).toString("hex");
+    });
+    return getOrder(orderId);
+  }
+
+  async function getFulfilledOrder(orderId, accessToken) {
+    const order = await getOrder(orderId);
+    if (!order || !order.fulfilledAt || !order.accessToken || !accessToken) return null;
+    const expected = Buffer.from(order.accessToken);
+    const actual = Buffer.from(String(accessToken));
+    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
+    return order;
+  }
+
   async function verifyNotification(params) {
     const { config, sdk } = await sdkOrNull();
     if (!sdk || !sdk.checkNotifySignV2(params)) return { ok: false, reason: "签名校验失败" };
@@ -203,7 +233,7 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
         current.paidAt = new Date().toISOString();
       }
     });
-    return { ok: true, order: await getOrder(order.orderId) };
+    return { ok: true, order: await fulfillOrder(order.orderId) };
   }
 
   async function executeTradeOperation(orderId, operation, bizContent) {
@@ -219,6 +249,8 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     buildPaymentForm,
     getOrder,
     listOrders,
+    fulfillOrder,
+    getFulfilledOrder,
     queryTrade,
     verifyNotification,
     query: (orderId) => executeTradeOperation(orderId, "alipay.trade.query", { out_trade_no: orderId }),

@@ -30,11 +30,11 @@ export class ArkClient {
   }
 
   async generateJson(system, user) {
+    const planningModel = this.config.planningModel || this.config.textModel;
     const payload = await this.request("/chat/completions", {
       method: "POST",
       body: JSON.stringify({
-        model: requireValue(this.config.textModel, "ARK_TEXT_MODEL"),
-        response_format: { type: "json_object" },
+        model: requireValue(planningModel, "ARK_PLANNING_MODEL"),
         messages: [
           { role: "system", content: system },
           { role: "user", content: user }

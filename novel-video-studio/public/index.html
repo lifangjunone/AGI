@@ -34,11 +34,14 @@
 
     <aside class="sidebar">
       <nav aria-label="主导航">
-        <button class="nav-item active" data-view="overview"><i data-lucide="clapperboard"></i><span>生产总览</span></button>
+        <span class="nav-section-label">全局</span>
+        <button class="nav-item active" data-view="projects"><i data-lucide="folders"></i><span>项目中心</span></button>
         <button class="nav-item" data-view="tasks"><i data-lucide="list-video"></i><span>任务中心</span></button>
-        <button class="nav-item" data-view="sources"><i data-lucide="library-big"></i><span>小说源库</span></button>
-        <button class="nav-item" data-view="assets"><i data-lucide="users"></i><span>角色资产</span></button>
-        <button class="nav-item" data-view="episodes"><i data-lucide="film"></i><span>分集队列</span></button>
+        <span class="nav-section-label project-nav-label">当前项目</span>
+        <button class="nav-item project-nav" data-view="overview" disabled><i data-lucide="workflow"></i><span>生产流水线</span></button>
+        <button class="nav-item project-nav" data-view="sources" disabled><i data-lucide="library-big"></i><span>小说源库</span></button>
+        <button class="nav-item project-nav" data-view="assets" disabled><i data-lucide="users"></i><span>角色资产</span></button>
+        <button class="nav-item project-nav" data-view="episodes" disabled><i data-lucide="film"></i><span>分集队列</span></button>
       </nav>
       <div class="sidebar-foot">
         <span>今日目标</span>
@@ -48,37 +51,56 @@
     </aside>
 
     <main>
-      <section class="command-band">
-        <div>
-          <p class="eyebrow">AUTO PRODUCTION LINE 01</p>
-          <h1>输入书名，启动整条制片线</h1>
-        </div>
-        <form id="launchForm" class="launch-form">
-          <label for="novelName">小说名称</label>
-          <div class="search-box">
-            <i data-lucide="search"></i>
-            <input id="novelName" name="novelName" value="西游记" minlength="2" maxlength="100" required autocomplete="off" placeholder="输入小说名">
-            <button type="submit"><i data-lucide="play"></i><span>开始生产</span></button>
+      <section class="projects-home page-view" data-page-view="projects">
+        <header class="projects-hero">
+          <div>
+            <p class="eyebrow">PRODUCTION PORTFOLIO</p>
+            <h1>项目工作台</h1>
+            <p>统一管理小说项目、生产状态和待处理事项，进入项目后再处理具体流水线。</p>
           </div>
-          <p id="formHint">自动检索公版或已授权来源，生成 15 分钟分集。</p>
-        </form>
+          <button class="primary-command" id="newProjectButton" aria-label="创建项目"><i data-lucide="plus"></i><span>创建项目</span></button>
+        </header>
+
+        <section class="metrics-strip" aria-label="生产指标">
+          <article><span>全部项目</span><strong id="metricProjectCount">0</strong><small>个项目</small></article>
+          <article><span>运行项目</span><strong id="metricActiveProjects">0</strong><small id="metricProjectSlots">/ 2 槽</small></article>
+          <article><span>等待队列</span><strong id="metricQueuedProjects">0</strong><small>个项目</small></article>
+          <article><span>待你处理</span><strong id="metricReviewProjects">0</strong><small>个项目</small></article>
+          <article><span>分集规格</span><strong id="metricMinutes">15</strong><small>分钟 / 集</small></article>
+          <article class="budget"><span>日预算上限</span><strong id="metricBudget">¥200</strong><small>硬门禁</small></article>
+        </section>
+
+        <section class="project-catalog">
+          <header class="project-catalog-head">
+            <div><h2>全部项目</h2><span id="projectCatalogCount">0 个项目</span></div>
+            <div class="project-catalog-tools">
+              <div class="segmented-control" id="projectFilters" role="group" aria-label="项目状态筛选">
+                <button class="active" data-project-filter="all">全部</button>
+                <button data-project-filter="active">进行中</button>
+                <button data-project-filter="review">待处理</button>
+                <button data-project-filter="completed">已完成</button>
+              </div>
+              <label class="project-search" aria-label="搜索项目"><i data-lucide="search"></i><input id="projectSearch" placeholder="搜索项目"></label>
+            </div>
+          </header>
+          <div class="project-grid" id="projectGrid">
+            <div class="view-empty"><i data-lucide="folders"></i><p>还没有项目，创建第一个小说制片项目。</p></div>
+          </div>
+        </section>
       </section>
 
-      <section class="metrics-strip" aria-label="生产指标">
-        <article><span>目标产能</span><strong id="metricHours">72</strong><small>小时 / 日</small></article>
-        <article><span>运行项目</span><strong id="metricActiveProjects">0</strong><small id="metricProjectSlots">/ 2 槽</small></article>
-        <article><span>等待队列</span><strong id="metricQueuedProjects">0</strong><small>个项目</small></article>
-        <article><span>分集规格</span><strong id="metricMinutes">15</strong><small>分钟 / 集</small></article>
-        <article><span>镜头并发</span><strong id="metricConcurrency">4</strong><small>路渲染</small></article>
-        <article class="budget"><span>日预算上限</span><strong id="metricBudget">¥200</strong><small>硬门禁</small></article>
-      </section>
+      <header class="project-context hidden" id="projectContext">
+        <button class="icon-button" id="backToProjectsButton" title="返回项目中心" aria-label="返回项目中心"><i data-lucide="arrow-left"></i></button>
+        <div><span class="micro-label">CURRENT PROJECT</span><h1 id="contextProjectTitle">未选择项目</h1></div>
+        <div class="project-context-meta"><span id="contextProjectId"></span><span class="state-badge" id="contextProjectStatus"></span></div>
+      </header>
 
       <section class="workspace page-view" data-page-view="overview">
         <div class="production-panel">
           <div class="panel-heading">
             <div>
               <p class="eyebrow">ACTIVE PRODUCTION</p>
-              <h2 id="projectTitle">等待生产任务</h2>
+              <h2 id="productionProjectTitle">等待生产任务</h2>
             </div>
             <span class="state-badge" id="projectStatus">IDLE</span>
           </div>
@@ -215,12 +237,36 @@
   </div>
 
   <nav class="mobile-tabs" aria-label="手机端导航">
-    <button class="active" data-view="overview"><i data-lucide="clapperboard"></i><span>生产</span></button>
+    <button class="active" data-view="projects"><i data-lucide="folders"></i><span>项目</span></button>
     <button data-view="tasks"><i data-lucide="list-video"></i><span>任务</span></button>
-    <button data-view="sources"><i data-lucide="library-big"></i><span>来源</span></button>
-    <button data-view="episodes"><i data-lucide="film"></i><span>分集</span></button>
-    <button data-view="assets"><i data-lucide="users"></i><span>资产</span></button>
+    <button class="project-nav" data-view="overview" disabled><i data-lucide="workflow"></i><span>流水线</span></button>
+    <button class="project-nav" data-view="sources" disabled><i data-lucide="library-big"></i><span>来源</span></button>
+    <button class="project-nav" data-view="episodes" disabled><i data-lucide="film"></i><span>分集</span></button>
+    <button class="project-nav" data-view="assets" disabled><i data-lucide="users"></i><span>资产</span></button>
   </nav>
+  <dialog class="create-project-dialog" id="createProjectDialog">
+    <header>
+      <div><span class="micro-label">NEW PRODUCTION</span><h2>创建小说项目</h2></div>
+      <button class="dialog-close" id="createProjectDialogClose" aria-label="关闭创建项目"><i data-lucide="x"></i></button>
+    </header>
+    <form id="launchForm" class="launch-form">
+      <label for="novelName">小说名称</label>
+      <div class="search-box">
+        <i data-lucide="search"></i>
+        <input id="novelName" name="novelName" value="" minlength="2" maxlength="100" required autocomplete="off" placeholder="例如：西游记">
+      </div>
+      <div class="create-project-spec">
+        <span><i data-lucide="git-branch"></i><strong>固定六节点</strong><small>检索到成片全程可审计</small></span>
+        <span><i data-lucide="clock-3"></i><strong>15 分钟 / 集</strong><small>30 个连续镜头任务</small></span>
+        <span><i data-lucide="shield-check"></i><strong>来源确认门禁</strong><small>确认版本后才继续生产</small></span>
+      </div>
+      <p id="formHint">创建后先检索候选来源，确认作品、作者和版本后继续。</p>
+      <footer>
+        <button type="button" class="command-button" id="cancelCreateProjectButton">取消</button>
+        <button type="submit" class="primary-command"><i data-lucide="play"></i><span>创建并启动</span></button>
+      </footer>
+    </form>
+  </dialog>
   <dialog class="asset-dialog" id="assetDialog">
     <button class="dialog-close" id="assetDialogClose" aria-label="关闭资产详情"><i data-lucide="x"></i></button>
     <img id="assetDialogImage" alt="">
@@ -235,8 +281,8 @@
       <span class="state-badge" id="nodeDialogStatus"></span>
       <span id="nodeDialogTiming"></span>
     </div>
-    <section><h3>节点输入</h3><pre id="nodeDialogInput"></pre></section>
-    <section><h3>节点产物</h3><pre id="nodeDialogOutput"></pre></section>
+    <section><h3>节点输入</h3><pre id="nodeDialogInput" tabindex="0"></pre></section>
+    <section><h3>节点产物</h3><pre id="nodeDialogOutput" tabindex="0"></pre></section>
     <p class="node-error hidden" id="nodeDialogError"></p>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

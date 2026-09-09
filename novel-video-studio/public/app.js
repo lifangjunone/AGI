@@ -19,7 +19,8 @@ const STATUS_LABELS = {
 };
 const ASSET_TYPES = { character: "角色", weapon: "武器", location: "场景" };
 const NODE_STATUS_LABELS = { pending: "未开始", running: "处理中", completed: "已完成", failed: "失败", paused: "已暂停" };
-const VALID_VIEWS = new Set(["overview", "tasks", "sources", "assets", "episodes"]);
+const VALID_VIEWS = new Set(["projects", "overview", "tasks", "sources", "assets", "episodes"]);
+const PROJECT_VIEWS = new Set(["overview", "sources", "assets", "episodes"]);
 const pathname = window.location.pathname;
 const platform = pathname.startsWith("/mobile")
   ? "mobile"
@@ -34,10 +35,12 @@ let activeAssetFilter = "all";
 let allProjects = [];
 let queueState = null;
 let taskFilter = "all";
-let activeView = "overview";
+let activeView = "projects";
 let taskQuery = "";
 let taskDisplayLimit = 50;
 let selectedSourceId = null;
+let projectFilter = "all";
+let projectQuery = "";
 
 document.documentElement.dataset.platform = platform;
 
@@ -83,9 +86,7 @@ function renderStatus(status) {
     : `${PLATFORM_LABELS[platform]} · 演示生产模式 · 不产生模型费用${queueSuffix}`;
   $("#dailyTarget").textContent = `${status.production.dailyHours}h`;
   $("#dailyEpisodes").textContent = `${status.production.episodesPerDay} 集 / 日`;
-  $("#metricHours").textContent = status.production.dailyHours;
   $("#metricMinutes").textContent = status.production.episodeMinutes;
-  $("#metricConcurrency").textContent = status.production.maxVideoConcurrency;
   $("#metricBudget").textContent = `¥${status.production.dailyBudgetCny}`;
   $("#metricActiveProjects").textContent = status.queue?.activeCount || 0;
   $("#metricProjectSlots").textContent = `/ ${status.queue?.maxConcurrency || status.production.maxProjectConcurrency} 槽`;
@@ -235,6 +236,49 @@ function formatTaskTime(value) {
   });
 }
 
+function projectMatches(project, filter) {
+  if (filter === "all") return true;
+  if (filter === "active") return ["queued", "running", "rendering"].includes(project.status);
+  if (filter === "review") return ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status);
+  return project.status === filter;
+}
+
+function renderProjectCatalog() {
+  $("#metricProjectCount").textContent = allProjects.length;
+  $("#metricReviewProjects").textContent = allProjects.filter((project) =>
+    ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status)
+  ).length;
+  const projects = allProjects.filter((project) => {
+    const queryMatch = !projectQuery || `${project.novelName} ${project.sourceTitle || ""} ${project.id}`.toLowerCase().includes(projectQuery);
+    return projectMatches(project, projectFilter) && queryMatch;
+  });
+  $("#projectCatalogCount").textContent = `${projects.length} 个项目`;
+  $("#projectGrid").innerHTML = projects.length ? projects.map((project) => {
+    const stageIndex = Math.max(0, STAGES.findIndex(([id]) => id === project.stage));
+    const stageLabel = STAGES[stageIndex]?.[1] || "等待调度";
+    const needsAction = ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status);
+    const statusDetail = project.status === "queued"
+      ? `队列第 ${project.queuePosition || "-"} 位`
+      : needsAction ? "需要处理" : stageLabel;
+    return `<button class="project-card" data-project-id="${escapeHtml(project.id)}">
+      <span class="project-cover">
+        <img src="${escapeHtml(coverUrl(project.novelName))}" alt="${escapeHtml(project.novelName)} 项目封面" loading="lazy">
+        <span class="task-state ${escapeHtml(project.status)}">${escapeHtml(STATUS_LABELS[project.status] || project.status)}</span>
+      </span>
+      <span class="project-card-body">
+        <span class="project-card-title"><strong>${escapeHtml(project.novelName)}</strong><small>${escapeHtml(project.sourceTitle || "等待确认内容来源")}</small></span>
+        <span class="project-card-progress"><span><b style="width:${Number(project.progress || 0)}%"></b></span><strong>${Number(project.progress || 0)}%</strong></span>
+        <span class="project-stage-rail" aria-label="六节点进度">${STAGES.map((_, index) =>
+          `<i class="${index < stageIndex || project.status === "completed" ? "done" : index === stageIndex ? "current" : ""}"></i>`
+        ).join("")}</span>
+        <span class="project-card-meta"><small>${escapeHtml(statusDetail)}</small><small>${project.episodeCount || 0} 集 · ${project.completedShots || 0}/${project.shotCount || 0} 镜头</small></span>
+        <span class="project-card-footer"><time>${formatTaskTime(project.updatedAt || project.createdAt)}</time><span>进入项目 <i data-lucide="arrow-right"></i></span></span>
+      </span>
+    </button>`;
+  }).join("") : `<div class="view-empty"><i data-lucide="folders"></i><p>${allProjects.length ? "当前筛选下没有项目。" : "还没有项目，创建第一个小说制片项目。"}</p></div>`;
+  icons();
+}
+
 function derivedNode(project, id) {
   if (project.nodes?.[id]) return project.nodes[id];
   const activeIndex = STAGES.findIndex(([stageId]) => stageId === project.stage);
@@ -351,23 +395,54 @@ function renderTaskCenter() {
   icons();
 }
 
+function setProjectNavigation(enabled) {
+  document.querySelectorAll(".project-nav").forEach((button) => {
+    button.disabled = !enabled;
+  });
+  $(".project-nav-label")?.classList.toggle("muted", !enabled);
+}
+
+function closeProject() {
+  activeProject = null;
+  activeProjectId = null;
+  selectedSourceId = null;
+  setProjectNavigation(false);
+  $("#projectContext").classList.add("hidden");
+  showView("projects");
+}
+
+async function openProject(projectId, preferredView) {
+  const { project } = await api(`/api/projects/${projectId}`);
+  renderProject(project);
+  const target = preferredView
+    || (["source-review", "rights-review"].includes(project.status) ? "sources" : "overview");
+  showView(target);
+}
+
 function showView(name) {
-  if (!VALID_VIEWS.has(name)) name = "overview";
+  if (!VALID_VIEWS.has(name)) name = "projects";
+  if (PROJECT_VIEWS.has(name) && !activeProject) {
+    name = "projects";
+  }
   activeView = name;
   document.querySelectorAll("[data-page-view]").forEach((view) => view.classList.toggle("hidden", view.dataset.pageView !== name));
+  $("#projectContext").classList.toggle("hidden", !PROJECT_VIEWS.has(name) || !activeProject);
   document.querySelectorAll("[data-view]").forEach((button) => {
     const active = button.dataset.view === name;
     button.classList.toggle("active", active);
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
+  if (name === "projects") renderProjectCatalog();
   if (name === "tasks") renderTaskCenter();
   if (name === "sources") renderSourceLibrary(activeProject);
   if (name === "assets") renderAssetGallery(activeProject);
   if (name === "episodes") renderEpisodeQueue(activeProject);
   const url = new URL(window.location.href);
-  if (name === "overview") url.searchParams.delete("view");
+  if (name === "projects") url.searchParams.delete("view");
   else url.searchParams.set("view", name);
+  if (activeProjectId && PROJECT_VIEWS.has(name)) url.searchParams.set("project", activeProjectId);
+  else url.searchParams.delete("project");
   window.history.replaceState(null, "", url);
   window.scrollTo({ top: 0, behavior: "smooth" });
   icons();
@@ -409,14 +484,15 @@ function openAsset(assetId) {
 function renderProject(project) {
   activeProject = project;
   activeProjectId = project.id;
-  const novelInput = $("#novelName");
-  if (!novelInput.dataset.syncedProject || (document.activeElement !== novelInput && novelInput.dataset.syncedProject !== project.id)) {
-    novelInput.value = project.novelName;
-    novelInput.dataset.syncedProject = project.id;
-  }
+  setProjectNavigation(true);
   $("#emptyState").classList.add("hidden");
   $("#projectView").classList.remove("hidden");
-  $("#projectTitle").textContent = project.novelName;
+  $("#productionProjectTitle").textContent = project.novelName;
+  $("#contextProjectTitle").textContent = project.novelName;
+  $("#contextProjectId").textContent = `ID ${project.id.slice(0, 8)} · 更新 ${formatTaskTime(project.updatedAt)}`;
+  const contextBadge = $("#contextProjectStatus");
+  contextBadge.textContent = STATUS_LABELS[project.status] || project.status;
+  contextBadge.className = `state-badge ${project.status}`;
   const badge = $("#projectStatus");
   badge.textContent = STATUS_LABELS[project.status] || project.status;
   badge.className = `state-badge ${project.status}`;
@@ -445,14 +521,6 @@ function renderProject(project) {
   renderSourceLibrary(project);
   renderAssetGallery(project);
   renderEpisodeQueue(project);
-  const errorVisible = ["failed", "rights-review", "budget-gate"].includes(project.status);
-  $("#formHint").textContent = errorVisible && project.error
-    ? project.error
-    : project.status === "queued"
-      ? `排队第 ${project.queuePosition || "-"}/${queueState?.queuedCount || "-"} 位，预计等待 ${project.estimatedWaitMinutes || queueState?.averageDurationMinutes || 15} 分钟`
-      : project.status === "source-review"
-        ? `已找到 ${project.sources?.length || 0} 个候选来源，请确认作品、作者和版本`
-      : `当前阶段：${STAGES.find(([id]) => id === project.stage)?.[1] || project.stage}`;
   icons();
 }
 
@@ -470,18 +538,21 @@ async function refreshAll({ notify = false } = {}) {
     const [status, projectsPayload] = await Promise.all([api("/api/status"), api("/api/projects")]);
     renderStatus(status);
     allProjects = projectsPayload.projects;
-    if (allProjects[0]) {
-      const selected = allProjects.find((project) => project.id === activeProjectId) || allProjects[0];
-      const { project } = await api(`/api/projects/${selected.id}`);
+    renderProjectCatalog();
+    if (activeProjectId && allProjects.some((project) => project.id === activeProjectId)) {
+      const { project } = await api(`/api/projects/${activeProjectId}`);
       renderProject(project);
       if (["source-review", "rights-review"].includes(project.status) && activeView === "overview") showView("sources");
     } else {
       activeProject = null;
       activeProjectId = null;
+      setProjectNavigation(false);
+      $("#projectContext").classList.add("hidden");
       renderStages({ stage: "", status: "idle" });
       renderSourceLibrary(null);
       renderAssetGallery(null);
       renderEpisodeQueue(null);
+      if (PROJECT_VIEWS.has(activeView)) showView("projects");
     }
     renderTaskCenter();
     syncPolling();
@@ -500,9 +571,12 @@ $("#launchForm").addEventListener("submit", async (event) => {
       method: "POST",
       body: JSON.stringify({ novelName: $("#novelName").value })
     });
+    $("#createProjectDialog").close();
+    $("#launchForm").reset();
     renderProject(project);
+    showView("overview");
     await refreshAll();
-    showToast("生产任务已进入队列");
+    showToast("项目已创建，来源检索任务已启动");
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -518,11 +592,15 @@ $("#themeButton").addEventListener("click", () => {
 
 document.querySelector(".brand").addEventListener("click", (event) => {
   event.preventDefault();
-  showView("overview");
+  closeProject();
 });
 
 document.querySelectorAll(".nav-item").forEach((button) => {
-  button.addEventListener("click", () => showView(button.dataset.view));
+  button.addEventListener("click", () => {
+    if (button.disabled) return;
+    if (button.dataset.view === "projects") closeProject();
+    else showView(button.dataset.view);
+  });
 });
 
 document.querySelectorAll(".inspector-tabs button").forEach((button) => {
@@ -538,8 +616,25 @@ document.querySelectorAll(".inspector-tabs button").forEach((button) => {
 });
 
 document.querySelectorAll(".mobile-tabs button").forEach((button) => {
-  button.addEventListener("click", () => showView(button.dataset.view));
+  button.addEventListener("click", () => {
+    if (button.disabled) return;
+    if (button.dataset.view === "projects") closeProject();
+    else showView(button.dataset.view);
+  });
 });
+
+$("#newProjectButton").addEventListener("click", () => {
+  $("#launchForm").reset();
+  $("#formHint").textContent = "创建后先检索候选来源，确认作品、作者和版本后继续。";
+  $("#createProjectDialog").showModal();
+  $("#novelName").focus();
+});
+$("#createProjectDialogClose").addEventListener("click", () => $("#createProjectDialog").close());
+$("#cancelCreateProjectButton").addEventListener("click", () => $("#createProjectDialog").close());
+$("#createProjectDialog").addEventListener("click", (event) => {
+  if (event.target === $("#createProjectDialog")) $("#createProjectDialog").close();
+});
+$("#backToProjectsButton").addEventListener("click", closeProject);
 
 $("#stageTrack").addEventListener("click", (event) => {
   const button = event.target.closest("[data-node-id]");
@@ -591,6 +686,26 @@ $("#taskSearch").addEventListener("input", (event) => {
   taskDisplayLimit = 50;
   renderTaskCenter();
 });
+$("#projectFilters").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-project-filter]");
+  if (!button) return;
+  projectFilter = button.dataset.projectFilter;
+  document.querySelectorAll("#projectFilters button").forEach((item) => item.classList.toggle("active", item === button));
+  renderProjectCatalog();
+});
+$("#projectSearch").addEventListener("input", (event) => {
+  projectQuery = event.target.value.trim().toLowerCase();
+  renderProjectCatalog();
+});
+$("#projectGrid").addEventListener("click", async (event) => {
+  const card = event.target.closest("[data-project-id]");
+  if (!card) return;
+  try {
+    await openProject(card.dataset.projectId);
+  } catch (error) {
+    showToast(error.message);
+  }
+});
 $("#loadMoreTasks").addEventListener("click", () => {
   taskDisplayLimit += 50;
   renderTaskCenter();
@@ -599,9 +714,7 @@ $("#taskList").addEventListener("click", async (event) => {
   const row = event.target.closest("[data-project-id]");
   if (!row) return;
   try {
-    const { project } = await api(`/api/projects/${row.dataset.projectId}`);
-    renderProject(project);
-    showView(["source-review", "rights-review"].includes(project.status) ? "sources" : "overview");
+    await openProject(row.dataset.projectId);
   } catch (error) {
     showToast(error.message);
   }
@@ -666,6 +779,10 @@ if (platform === "mobile" && "serviceWorker" in navigator) {
 }
 
 if (localStorage.getItem("novel-studio-theme") === "light") document.documentElement.classList.add("light");
+const initialParams = new URLSearchParams(window.location.search);
+const requestedView = initialParams.get("view") || "projects";
+activeProjectId = initialParams.get("project");
 icons();
-showView(new URLSearchParams(window.location.search).get("view") || "overview");
-refreshAll();
+showView(activeProjectId ? "projects" : requestedView);
+await refreshAll();
+if (activeProject && PROJECT_VIEWS.has(requestedView)) showView(requestedView);

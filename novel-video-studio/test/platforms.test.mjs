@@ -25,8 +25,19 @@ test("web, mobile and desktop entrypoints share the production UI", async () => 
   for (const entry of ["/web/", "/mobile/", "/desktop/"]) {
     const response = await fetch(`${origin}${entry}`);
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /长卷制片厂/);
+    const html = await response.text();
+    assert.match(html, /长卷制片厂/);
+    assert.match(html, /项目工作台/);
+    assert.match(html, /创建小说项目/);
   }
+});
+
+test("project center is the default entry before project-scoped tools", async () => {
+  const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  assert.match(source, /let activeView = "projects"/);
+  assert.match(source, /PROJECT_VIEWS\.has\(name\) && !activeProject/);
+  assert.match(source, /async function openProject/);
+  assert.match(source, /setProjectNavigation\(false\)/);
 });
 
 test("task history and queue telemetry are exposed as lightweight summaries", async () => {
@@ -39,6 +50,8 @@ test("task history and queue telemetry are exposed as lightweight summaries", as
   const projects = await projectsResponse.json();
   const queue = await queueResponse.json();
   assert.equal(status.queue.maxConcurrency, 2);
+  assert.equal(status.models.planning, "glm-5-2-260617");
+  assert.equal(status.models.video, "doubao-seedance-2-5-260628");
   assert.equal(queue.queue.queuedCount, 0);
   assert.equal(projects.projects[0].novelName, "西游记");
   assert.equal("assets" in projects.projects[0], false);
@@ -53,7 +66,7 @@ test("mobile PWA assets are valid and served with correct types", async () => {
 
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
-  assert.match(await workerResponse.text(), /novel-picture-works-v5/);
+  assert.match(await workerResponse.text(), /novel-picture-works-v6/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {

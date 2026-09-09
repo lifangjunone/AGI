@@ -34,12 +34,45 @@
 - Verified FIFO positions `1/2` and `2/2`, wait estimates, and automatic promotion when a slot became available.
 - Verified restart recovery for interrupted, queued, and remotely rendering projects.
 - Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
-- Verified desktop and 390×844 mobile layouts with five working mobile destinations.
-- Automated suite: 17 passing tests.
+- Verified desktop and 390×844 mobile layouts with six working mobile destinations.
+- Automated suite: 22 passing tests.
 
 ![Task center desktop](screenshots/task-center-desktop.png)
 
 ![Task center mobile](screenshots/task-center-mobile.png)
+
+## Project Center Acceptance
+
+- Verified the app opens at the project center without implicitly entering the latest project.
+- Verified create-project modal, project search/status filters, visual project cards, six-node progress rails, queue/status metrics, and project entry.
+- Verified project-scoped navigation is disabled before selection, enabled after entering a project, and disabled again after returning to the project center.
+- Verified project deep links preserve project ID and detail view in the URL.
+- Desktop 1120×720 and mobile 390×844 audits report 0 WCAG 2 A/AA violations and no horizontal overflow.
+
+![Project center desktop](screenshots/project-center-desktop.png)
+
+![Project center mobile](screenshots/project-center-mobile.png)
+
+![Create project mobile](screenshots/create-project-mobile.png)
+
+![Project detail mobile](screenshots/project-detail-mobile.png)
+
+## Source Confirmation and Pipeline Acceptance
+
+- Submitted `西游记` in both the final Electron package and the 390×844 mobile PWA.
+- Verified discovery pauses at `source-review`; no source is committed and no downstream node runs before confirmation.
+- Verified the candidate view exposes title, author, content level, provider, rights status, match score, and the original-source link.
+- Confirmed the selected source and observed all six fixed nodes complete: discovery, ingestion, adaptation, visual design, shot rendering, and assembly.
+- Opened node 03 in the final Electron and mobile builds and verified persisted input, output, status, timestamp, duration, and long-output scrolling.
+- Final WCAG 2 A/AA audits report 0 violations on the source-review page and node dialog. The dialog audit has one inconclusive contrast check because axe cannot resolve the partially overlapped code-block background.
+
+![Source review desktop](screenshots/source-review-desktop.png)
+
+![Node detail desktop](screenshots/node-detail-desktop.png)
+
+![Source review mobile](screenshots/source-review-mobile.png)
+
+![Node detail mobile](screenshots/node-detail-mobile.png)
 
 ## Issues
 

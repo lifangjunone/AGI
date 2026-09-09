@@ -24,6 +24,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
 | [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台和 Taro 小程序 | Node.js、FFmpeg、PWA、Electron、Taro |
 | [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从合法小说来源自动生成 15 分钟分集，支持三端、历史任务、并行生产与持久化排队 | Node.js、Electron、PWA、火山方舟、FFmpeg |
+| [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
 
 ## 产品协作链路
 
@@ -58,6 +59,7 @@ cd ../agent-workforce-console && npm install && npm run dev
 cd ../hover-translator && npm install && npm run dev
 cd ../short-video-studio && npm install && npm run web
 cd ../novel-video-studio && npm start
+cd ../model-operations-studio && npm install && npm run dev
 ```
 
 平台服务运行：
@@ -130,7 +132,11 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `short-video-studio` 新增“智助乖乖”共享 Web 工作台 `/zhizhu/`，接入商品内容包、公众号文章助手、朋友圈与社群助手三类本地模板预览；当前支付按钮保持验证版禁用态，等待小程序虚拟支付和小程序源码接入。
 - `short-video-studio` 新增 `apps/miniapp/` Taro 小程序，和 Web、Mobile、Desktop 入口并列，包含工作台、生成记录、我的三 Tab，并通过 HTTPS 复用共享生成接口；当前保留微信虚拟支付接入位，模板 AppID 仍需替换为用户真实 AppID。
 - `short-video-studio` 新增 `/video/admin/` 后台管理，使用账号密码和 HttpOnly 会话保护，可动态修改三类内容工具价格，并查看支付宝订单状态；生产账号通过服务器受限环境文件注入。
-- `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；输入小说名后可检索公版/授权来源，生成剧本、角色、武器、场景和 30 个镜头任务，并通过方舟异步视频 API 与 FFmpeg 装配 15 分钟分集。任务中心支持历史搜索、状态筛选、项目切换、并发槽、排队位次和预计等待；超限任务持久化并可在服务重启后恢复。
+- `short-video-studio` 支付回跳已补齐履约：支付宝异步通知或交易查询确认成功后，订单幂等标记为已履约，回跳页直接展示已购买的完整商品内容包。
+- `short-video-studio` 移动端支付改为支付宝手机网站支付接口，优先唤起支付宝 App；支付结果页增加异步状态轮询和返回商品页面入口，后台仍提供退出登录。
+- 真实移动端测试发现支付宝应用尚未授权 `alipay.trade.wap.pay`，已增加生产安全回退：默认使用已可用的网页支付接口，待支付宝开通权限后再通过 `ALIPAY_MOBILE_WAP_ENABLED=true` 启用 App 直达。
+- `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；默认从项目工作台创建、筛选和打开小说项目，进入具体项目后再管理来源、六节点、资产与分集。任务规划使用 `glm-5-2-260617`，视频生成使用 Seedance 2.5；全局任务中心支持历史搜索、并发排队和恢复。
+- `model-operations-studio`：新增跨平台本地 MaaS 控制面，支持模型注册、校验下载、启动停止、健康探测、系统资源监控、日志和推理测试；首批配方为 Wan2.2-TI2V-5B FP16 与 Qwen3.5-9B Q4_K_M，并内置 M5 Pro 的 Euler、tiled VAE 和自动降级基准策略。
 
 ## 远端仓库
 

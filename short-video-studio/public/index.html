@@ -8,15 +8,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>FRAME/60 · 商品内容包</title>
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/frame60-icon.svg" type="image/svg+xml" />
+    <script>
+      window.frame60AssetBase = location.pathname.startsWith("/video/") ? "/video/" : "/";
+      document.write(`<link rel="manifest" href="${window.frame60AssetBase}manifest.webmanifest" />`);
+      document.write(`<link rel="icon" href="${window.frame60AssetBase}frame60-icon.svg" type="image/svg+xml" />`);
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=20260909-ui-redesign" />
+    <script>
+      document.write(`<link rel="stylesheet" href="${window.frame60AssetBase}styles.css?v=20260909-price-sync" />`);
+    </script>
   </head>
   <body>
     <div class="app-shell">
@@ -258,6 +263,8 @@
     </div>
 
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-    <script type="module" src="/app.js"></script>
+    <script>
+      document.write(`<script type="module" src="${window.frame60AssetBase}app.js?v=20260909-price-sync"><\/script>`);
+    </script>
   </body>
 </html>

@@ -164,9 +164,14 @@ export const server = createServer(async (request, response) => {
         mode: config.mode,
         arkConfigured: Boolean(config.ark.apiKey),
         modelsConfigured: {
-          text: Boolean(config.ark.textModel),
+          text: Boolean(config.ark.planningModel || config.ark.textModel),
           image: Boolean(config.ark.imageModel),
           video: Boolean(config.ark.videoModel)
+        },
+        models: {
+          planning: config.ark.planningModel || config.ark.textModel,
+          image: config.ark.imageModel,
+          video: config.ark.videoModel
         },
         ffmpegReady: ffmpegReady && ffprobeReady,
         production: config.production,

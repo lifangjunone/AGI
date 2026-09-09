@@ -4,6 +4,12 @@
 
 ### feat
 
+- Reworked `novel-video-studio` into a two-level multi-project workspace: the default project center supports creation, search, status filtering, visual progress cards, and explicit project entry; source, pipeline, asset, and episode tools are available only inside a selected project, while execution history remains in the global task center.
+- Configured `novel-video-studio` task planning to use `glm-5-2-260617` through Ark Chat Completions and video rendering to use Seedance 2.5 (`doubao-seedance-2-5-260628`) by default, with legacy `ARK_TEXT_MODEL` compatibility and model IDs exposed in node/API telemetry.
+- Added `model-operations-studio`, a cross-platform local MaaS control plane with model registry, checksum-verified downloads, process lifecycle management, health checks, host telemetry, logs, inference playgrounds, and Electron packaging for macOS, Windows, and Linux.
+- Added reproducible Wan2.2-TI2V-5B FP16 and Qwen3.5-9B Q4_K_M deployment recipes, including an MPS-safe Euler/tiled-VAE workflow and a benchmark runner with memory, timing, black-frame, decode-error, and fallback reporting.
+- Added an explicit novel-source confirmation gate to `novel-video-studio`: search results now expose title, author, year, language, provider, match score, rights status, and original source link, and no downstream processing starts until the user confirms a specific version.
+- Added a fixed six-node production inspector for discovery, ingestion, adaptation, visual design, shot rendering, and assembly; every node persists and exposes its input, output, status, timing, and error details across current and historical projects.
 - Added a password-protected `/admin/` operations console for `short-video-studio`: HttpOnly session login, dynamic prices for product/article/social tools, persisted server-side settings, and read-only Alipay order overview.
 - Added a password-protected `/admin/` operations console for `short-video-studio`: HttpOnly session login, dynamic prices for product/article/social tools, persisted server-side settings, and read-only Alipay order overview.
 - Added a persistent two-level scheduler to `novel-video-studio`: configurable concurrent novel projects, per-project video-shot slots, FIFO queue positions, wait estimates, restart recovery, and queue telemetry APIs.
@@ -29,6 +35,10 @@
 
 ### verify
 
+- Verified the project-center, create-modal, enter/return, navigation-gating, filtering, and deep-link flows at 1120×720 and 390×844; both layouts report zero WCAG 2 A/AA violations and the Novel Video Studio suite passes 22 tests.
+- Verified the configured Ark request routes, model IDs, and 30-second Seedance task payload without issuing a billable production request; the Novel Video Studio suite now passes 21 automated tests.
+- Verified the Model Operations Studio production build, lint gate, model/workflow policy tests, and live control-plane host/model-state endpoint; full Wan video quality verification remains gated on completion of the 21.2 GiB model download and render.
+- Verified the source-review pause/resume flow, explicit non-default candidate selection, all six persisted node artifacts, historical-node fallback, and responsive source controls; the Novel Video Studio suite now passes 19 automated tests.
 - Verified production `/video/admin/`: unauthenticated API returns 401, login returns an HttpOnly session, price update persists, order overview loads, and browser verification reached the live Alipay cashier with a `¥9.90` order.
 - Verified project concurrency with a real three-project submission against one slot (`1 running / 2 queued`), automatic queue advancement, restart recovery, mobile/desktop task-center layouts, filtering, search, and historical task restoration; 17 automated tests pass.
 
@@ -47,6 +57,11 @@
 
 ### fix
 
+- Added a production-safe fallback for Alipay mobile checkout: when `alipay.trade.wap.pay` is not authorized (`insufficient-isv-permissions`), mobile orders use the working page-payment flow instead of sending customers to an Alipay error page.
+- Switched mobile checkout to Alipay `alipay.trade.wap.pay` with `QUICK_WAP_WAP_PAY`, added return-page status polling and a clear return-to-product action; desktop checkout remains on `alipay.trade.page.pay`.
+- Added idempotent paid-order fulfillment: Alipay return handling and async notifications now mark successful orders as fulfilled, and the payment return page directly renders the purchased content pack.
+- Made scrollable node input/output inspectors keyboard-focusable with a visible focus state; final Electron and mobile WCAG 2 A/AA audits report zero violations.
+- Fixed the production content-pack page to load the persisted admin price through `/api/status`; the header and unlock button now reflect the configured `¥0.90` instead of the former hardcoded `¥9.90`.
 - Fixed inactive Novel Video Studio navigation controls by implementing source-library, continuity-asset, and episode-queue views, plus asset filtering/detail, manifest download, retry, and refresh actions.
 - Fixed public-domain discovery false negatives by extending provider timeouts and retrying Gutenberg, cleared stale errors after successful retries, synchronized the title field with restored projects, and added a restricted server-side image refresh proxy.
 - Added complete ARIA list, tab, tabpanel, current-page, and control-group semantics; the final desktop WCAG 2 A/AA audit reports zero violations, with only contrast checks on partially obscured scroll rows left inconclusive.

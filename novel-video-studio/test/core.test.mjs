@@ -3,7 +3,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { makeConfig } from "../lib/config.mjs";
+import { ArkClient } from "../lib/ark-client.mjs";
+import { DEFAULT_ARK_MODELS, makeConfig } from "../lib/config.mjs";
 import { buildDemoBible, makeShots, ProductionPipeline } from "../lib/pipeline.mjs";
 import { titleScore } from "../lib/novel-search.mjs";
 import { ProjectStore } from "../lib/store.mjs";
@@ -40,6 +41,54 @@ test("production capacity derives 15-minute episodes and 30-second shots", () =>
     const envKey = { hours: "DAILY_OUTPUT_HOURS", minutes: "EPISODE_DURATION_MINUTES", seconds: "SHOT_DURATION_SECONDS" }[key];
     if (value === undefined) delete process.env[envKey];
     else process.env[envKey] = value;
+  }
+});
+
+test("Ark defaults use GLM planning and Seedance 2.5 video models", () => {
+  const keys = ["ARK_PLANNING_MODEL", "ARK_TEXT_MODEL", "ARK_VIDEO_MODEL"];
+  const previous = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
+  try {
+    for (const key of keys) delete process.env[key];
+    const config = makeConfig("/tmp/novel-video-studio");
+    assert.equal(config.ark.planningModel, DEFAULT_ARK_MODELS.planning);
+    assert.equal(config.ark.textModel, DEFAULT_ARK_MODELS.planning);
+    assert.equal(config.ark.videoModel, DEFAULT_ARK_MODELS.video);
+  } finally {
+    for (const key of keys) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
+  }
+});
+
+test("Ark client sends planning and video requests to the configured models", async () => {
+  const requests = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, body: JSON.parse(options.body) });
+    return {
+      ok: true,
+      json: async () => requests.length === 1
+        ? { choices: [{ message: { content: "{\"episodes\":[]}" } }] }
+        : { id: "video-task" }
+    };
+  };
+  try {
+    const client = new ArkClient({
+      apiKey: "test-key",
+      baseUrl: "https://ark.cn-beijing.volces.com/api/v3",
+      planningModel: DEFAULT_ARK_MODELS.planning,
+      videoModel: DEFAULT_ARK_MODELS.video
+    });
+    await client.generateJson("system", "user");
+    await client.createVideo({ prompt: "shot", duration: 30 });
+    assert.equal(requests[0].url, "https://ark.cn-beijing.volces.com/api/v3/chat/completions");
+    assert.equal(requests[0].body.model, "glm-5-2-260617");
+    assert.equal(requests[1].url, "https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks");
+    assert.equal(requests[1].body.model, "doubao-seedance-2-5-260628");
+    assert.equal(requests[1].body.duration, 30);
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 });
 

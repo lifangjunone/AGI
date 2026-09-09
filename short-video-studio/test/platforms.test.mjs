@@ -3,6 +3,7 @@ import test from "node:test";
 
 process.env.ADMIN_USERNAME = "test-admin";
 process.env.ADMIN_PASSWORD = "test-password";
+process.env.ALIPAY_MOBILE_WAP_ENABLED = "true";
 const { startServer } = await import("../server.mjs");
 
 test("serves the web, mobile, and desktop entrypoints", async (t) => {
@@ -78,6 +79,28 @@ test("builds an Alipay web payment form without trusting a browser result", asyn
   assert.match(result.paymentHtml, /FAST_INSTANT_TRADE_PAY/);
   assert.match(result.paymentHtml, /return_url=https%3A%2F%2Flifeyoume\.icu/);
   assert.match(result.orderId, /^FRAME60_/);
+});
+
+test("uses mobile website payment to launch the Alipay app flow", async (t) => {
+  const instance = await startServer({ host: "127.0.0.1", port: 0, quiet: true });
+  t.after(() => new Promise((resolve) => instance.server.close(resolve)));
+
+  const response = await fetch(`http://127.0.0.1:${instance.port}/api/content-pack/checkout`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "user-agent": "Mozilla/5.0 (Linux; Android 14; Mobile)"
+    },
+    body: JSON.stringify({
+      productName: "手机支付测试商品",
+      audience: "移动端用户",
+      sellingPoints: "轻便好用，适合移动端支付流程验证"
+    })
+  });
+  assert.equal(response.status, 201);
+  const result = await response.json();
+  assert.match(result.paymentHtml, /alipay\.trade\.wap\.pay/);
+  assert.match(result.paymentHtml, /QUICK_WAP_WAP_PAY/);
 });
 
 test("serves the Zhizhu assistant workspace and generates all three previews", async (t) => {

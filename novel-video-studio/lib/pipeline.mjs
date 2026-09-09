@@ -309,7 +309,14 @@ export class ProductionPipeline {
         message: "正文与梗概已进入改编引擎"
       });
       await this.updateNode(project, "adapt", "running", {
-        input: { sourceCharacters: sourceText.length, mode: this.config.mode, targetMinutes: this.config.production.episodeMinutes }
+        input: {
+          sourceCharacters: sourceText.length,
+          mode: this.config.mode,
+          targetMinutes: this.config.production.episodeMinutes,
+          model: this.config.mode === "live"
+            ? this.config.ark.planningModel || this.config.ark.textModel
+            : "demo"
+        }
       });
       let bible;
       if (this.config.mode === "live") {

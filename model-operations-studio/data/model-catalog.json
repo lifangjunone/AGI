@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "models": [
+    {
+      "id": "wan22-ti2v-5b-fp16",
+      "name": "Wan2.2 TI2V 5B",
+      "kind": "video",
+      "runtime": "comfyui",
+      "version": "2.2-fp16",
+      "license": "Apache-2.0",
+      "capabilities": ["text-to-video", "image-to-video", "chinese-prompt"],
+      "hardware": ["apple-mps", "nvidia-cuda", "cpu"],
+      "recommendedMemoryGb": 32,
+      "estimatedDiskBytes": 22775459193,
+      "files": [
+        {
+          "name": "wan2.2_ti2v_5B_fp16.safetensors",
+          "size": 9999658848,
+          "sha256": "456f901338bd9eadbded3828b819109a9b68e8a525ca5cf8d0049a69fcfeca1e",
+          "url": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
+          "target": "models/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors"
+        },
+        {
+          "name": "umt5_xxl_fp16.safetensors",
+          "size": 11366399385,
+          "sha256": "7b8850f1961e1cf8a77cca4c964a358d303f490833c6c087d0cff4b2f99db2af",
+          "url": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp16.safetensors",
+          "target": "models/text_encoders/umt5_xxl_fp16.safetensors"
+        },
+        {
+          "name": "wan2.2_vae.safetensors",
+          "size": 1409400960,
+          "sha256": "e40321bd36b9709991dae2530eb4ac303dd168276980d3e9bc4b6e2b75fed156",
+          "url": "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/vae/wan2.2_vae.safetensors",
+          "target": "models/vae/wan2.2_vae.safetensors"
+        }
+      ],
+      "defaults": {
+        "width": 832,
+        "height": 480,
+        "frames": 49,
+        "fps": 16,
+        "steps": 20,
+        "sampler": "euler",
+        "scheduler": "simple",
+        "cfg": 5,
+        "vaeDecode": "tiled"
+      }
+    },
+    {
+      "id": "qwen35-9b-q4",
+      "name": "Qwen3.5 9B",
+      "kind": "text",
+      "runtime": "llama.cpp",
+      "version": "Q4_K_M",
+      "license": "Apache-2.0",
+      "capabilities": ["text-generation", "chinese", "openai-api"],
+      "hardware": ["apple-metal", "nvidia-cuda", "cpu"],
+      "recommendedMemoryGb": 16,
+      "estimatedDiskBytes": 5680522464,
+      "files": [
+        {
+          "name": "Qwen3.5-9B-Q4_K_M.gguf",
+          "size": 5680522464,
+          "sha256": "03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8",
+          "url": "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/main/Qwen3.5-9B-Q4_K_M.gguf",
+          "target": "models/Qwen3.5-9B-Q4_K_M.gguf"
+        }
+      ],
+      "defaults": {
+        "context": 32768,
+        "gpuLayers": 999,
+        "temperature": 0.7,
+        "port": 8131
+      }
+    }
+  ]
+}

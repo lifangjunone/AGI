@@ -1,0 +1,13 @@
+:root {
+  font-family: "Avenir Next", "PingFang SC", sans-serif;
+  color: #e8ece8;
+  background: #111512;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: .55; }

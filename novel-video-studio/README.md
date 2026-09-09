@@ -13,10 +13,12 @@
 - 本地 JSON 持久化生产状态；服务重启后仍可继续轮询渲染中的任务。
 - 设有生产/演示模式、付费调用总开关、日预算展示和并发上限。
 - 同时提供 Web、可安装手机 PWA 和 Electron 桌面 App；三端共享生产 API 与数据结构。
-- 四个主视图均可操作：生产总览、小说源库、角色与视觉资产、分集队列。
+- 默认入口为项目工作台，支持创建、搜索、状态筛选和打开多个小说项目；进入具体项目后才显示生产流水线、小说源库、角色资产与分集队列。
 - 支持资产类型筛选与大图详情、生产日志、失败任务重试、视觉结果刷新和生产清单下载。
-- 任务中心提供完整历史、状态筛选、关键词搜索、项目切换、队列位次、预计等待和分批加载。
+- 全局任务中心提供完整执行历史、状态筛选、关键词搜索、项目切换、队列位次、预计等待和分批加载。
 - 两级并发调度默认同时运行 2 个小说项目、每项目 4 个镜头；超限任务持久化排队并在重启后自动恢复。
+- 小说检索完成后进入来源确认门禁，可按作品名、作者、年份、语言、来源、匹配度和版权状态核对版本；确认前不会处理正文。
+- 固定六节点均可点击查看结构化输入、完整产物摘要、起止时间和错误，历史任务同样支持回看。
 
 默认是 `demo` 模式：可以完整体验界面和流水线，不会产生模型费用。演示成片状态是流程模拟，不包含真实 MP4。
 
@@ -69,14 +71,16 @@ npm run desktop:pack
 
 ```bash
 ARK_API_KEY=your-rotated-key
-ARK_TEXT_MODEL=your-text-model-id
+ARK_PLANNING_MODEL=glm-5-2-260617
 ARK_IMAGE_MODEL=your-seedream-model-id
-ARK_VIDEO_MODEL=your-seedance-model-id
+ARK_VIDEO_MODEL=doubao-seedance-2-5-260628
 PRODUCTION_MODE=live
 ALLOW_BILLABLE_GENERATION=false
 MAX_PROJECT_CONCURRENCY=2
 MAX_VIDEO_CONCURRENCY=4
 ```
+
+任务规划默认调用方舟 Chat Completions 的 `glm-5-2-260617`；视频镜头默认调用 Seedance 2.5 的 `doubao-seedance-2-5-260628`。旧配置项 `ARK_TEXT_MODEL` 仍可作为规划模型的兼容回退。
 
 先保持 `ALLOW_BILLABLE_GENERATION=false` 验证文本和图片结果。确认账户额度、模型单价、并发配额及日预算后，再改为 `true` 提交批量视频任务。
 
@@ -121,6 +125,7 @@ npm test
 当前自动化测试覆盖三端入口、PWA、桌面安全配置、输入约束、任务重试、清单下载和媒体 Range 请求。完整交互测试记录见 [`dogfood-output/report.md`](dogfood-output/report.md)。
 
 任务状态机和并发策略见 [`docs/TASK_CENTER.md`](docs/TASK_CENTER.md)。
+来源确认与节点数据契约见 [`docs/PIPELINE_NODES.md`](docs/PIPELINE_NODES.md)。
 
 方舟视频接口参考：
 

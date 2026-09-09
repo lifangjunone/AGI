@@ -109,6 +109,10 @@ function isSecureRequest(request) {
   return forwardedProto === "https" || process.env.NODE_ENV === "production";
 }
 
+function isMobileRequest(request) {
+  return /android|iphone|ipad|ipod|mobile/i.test(String(request.headers["user-agent"] || ""));
+}
+
 function adminAuthorized(request) {
   const cookies = parseCookies(request.headers.cookie || "");
   return adminStore.authorize(cookies.frame60_admin);
@@ -178,6 +182,24 @@ function makeContentPack(input) {
       { day: "Day 7", angle: "一周总结", format: "合集" }
     ]
   };
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
+function renderPaidContent(pack, order) {
+  const titles = pack.titles.map((title, index) => `<li><b>${String(index + 1).padStart(2, "0")}</b>${escapeHtml(title)}</li>`).join("");
+  const scripts = pack.scripts.map((script) => `<article><h3>${escapeHtml(script.title)}</h3><p>${escapeHtml(script.voiceover)}</p><small>${script.shots.map(escapeHtml).join(" · ")}</small></article>`).join("");
+  const calendar = pack.calendar.map((item) => `<li><b>${escapeHtml(item.day)}</b><span>${escapeHtml(item.angle)} · ${escapeHtml(item.format)}</span></li>`).join("");
+  return `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>内容包已交付</title><style>
+  :root{color-scheme:dark}body{margin:0;background:#101110;color:#f1f0e8;font:15px system-ui,-apple-system,sans-serif}main{max-width:900px;margin:0 auto;padding:42px 20px 70px}header{padding-bottom:24px;border-bottom:1px solid #343833}h1{margin:8px 0;font-size:32px}h2{margin:30px 0 14px;font-size:20px}h3{margin:0 0 10px;color:#f4d35e;font-size:15px}p,small{color:#b0b6ae;line-height:1.8}.badge{color:#73e6ba;font-size:12px}.order{margin-top:10px;color:#8f988f;font-size:12px}.back{display:inline-block;margin-top:18px;padding:10px 13px;border:1px solid #4a5049;border-radius:4px;color:#f1f0e8;text-decoration:none;font-size:12px}.titles{display:grid;gap:8px;padding:0;list-style:none}.titles li,.calendar li,article{padding:14px;border:1px solid #292d29;border-radius:5px;background:#191b19}.titles b,.calendar b{display:inline-block;width:34px;color:#f4d35e}.scripts{display:grid;gap:10px}.calendar{display:grid;gap:8px;padding:0;list-style:none}.calendar li{display:flex;gap:14px}.calendar span{color:#d5dad2}</style><main><header><span class="badge">PAYMENT CONFIRMED / 已支付</span><h1>${escapeHtml(pack.product)} · 内容包</h1><div class="order">订单 ${escapeHtml(order.orderId)} · ¥${escapeHtml(order.amount)}</div><a class="back" href="${publicBasePath}/">返回商品页面</a></header><h2>10 个短视频标题</h2><ol class="titles">${titles}</ol><h2>3 条口播与分镜</h2><section class="scripts">${scripts}</section><h2>7 天发布计划</h2><ul class="calendar">${calendar}</ul></main></html>`;
 }
 
 async function readJson(request) {
@@ -397,7 +419,8 @@ export const server = createServer(async (request, response) => {
           tone: pack.tone,
           offer: pack.offer
         },
-        origin: requestOrigin(request, url)
+        origin: requestOrigin(request, url),
+        mobile: isMobileRequest(request)
       });
       sendJson(response, 201, {
         orderId: payment.order.orderId,
@@ -411,19 +434,28 @@ export const server = createServer(async (request, response) => {
     if (request.method === "GET" && url.pathname === "/payment/return") {
       const params = Object.fromEntries(url.searchParams.entries());
       const orderId = params.out_trade_no || "";
-      let status = "正在确认支付结果";
+      let order = null;
       if (orderId) {
         const verified = await alipayWebPay.verifyNotification(params);
-        if (verified.ok) status = "支付已确认，正在准备内容包";
-        else {
+        if (verified.ok) {
+          order = verified.order;
+        } else {
           const queried = await alipayWebPay.queryTrade(orderId);
           if (queried?.status === "TRADE_SUCCESS" || queried?.status === "TRADE_FINISHED") {
-            status = "支付已确认，正在准备内容包";
+            order = await alipayWebPay.fulfillOrder(orderId);
           }
         }
       }
+      if (order?.fulfilledAt) {
+        response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        response.end(renderPaidContent(makeContentPack(order.input), order));
+        return;
+      }
+      const status = orderId ? "正在确认支付结果" : "缺少订单号";
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-      response.end(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>支付结果确认</title><style>body{margin:0;background:#101010;color:#f1efe7;font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{max-width:520px;padding:32px;border:1px solid #393936;background:#181818}h1{font-size:28px;margin:0 0 12px}p{color:#aaa89f;line-height:1.7}</style><main><h1>${status}</h1><p>最终支付状态以支付宝异步通知或交易查询为准。你可以返回内容包页面查看订单状态。</p></main></html>`);
+      const safeOrderId = JSON.stringify(orderId).replace(/</g, "\\u003c");
+      const paymentApi = `${publicBasePath}/api/payments/`;
+      response.end(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>支付结果确认</title><style>body{margin:0;background:#101010;color:#f1efe7;font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{width:min(520px,calc(100% - 32px));padding:32px;border:1px solid #393936;background:#181818}h1{font-size:28px;margin:0 0 12px}p{color:#aaa89f;line-height:1.7}a{display:inline-block;margin-top:12px;padding:12px 15px;background:#f4d35e;color:#171812;text-decoration:none;font-weight:700;border-radius:4px}</style><main><h1>${status}</h1><p id="message">支付成功后会自动确认并展示完整内容包，请保持页面打开。</p><a href="${publicBasePath}/">返回商品页面</a></main><script>const orderId=${safeOrderId};const message=document.querySelector("#message");if(orderId){let attempts=0;const timer=setInterval(async()=>{attempts+=1;try{const response=await fetch(${JSON.stringify(paymentApi)}+encodeURIComponent(orderId),{cache:"no-store"});const data=await response.json();if(["TRADE_SUCCESS","TRADE_FINISHED"].includes(data.order?.status)){clearInterval(timer);message.textContent="支付已确认，正在打开完整内容包…";location.reload();}else if(attempts>=15){clearInterval(timer);message.textContent="仍在等待支付宝确认，请稍后刷新此页面。";}}catch(error){if(attempts>=15)clearInterval(timer);}},2000);}</script></html>`);
       return;
     }
 

@@ -1,6 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+export const DEFAULT_ARK_MODELS = Object.freeze({
+  planning: "glm-5-2-260617",
+  video: "doubao-seedance-2-5-260628"
+});
+
 export async function loadEnv(root) {
   const files = [
     path.join(root, ".env"),
@@ -34,6 +39,9 @@ export function makeConfig(root) {
   const episodeMinutes = positiveNumber(process.env.EPISODE_DURATION_MINUTES, 15);
   const shotSeconds = positiveNumber(process.env.SHOT_DURATION_SECONDS, 30);
   const dailyHours = positiveNumber(process.env.DAILY_OUTPUT_HOURS, 72);
+  const planningModel = process.env.ARK_PLANNING_MODEL
+    || process.env.ARK_TEXT_MODEL
+    || DEFAULT_ARK_MODELS.planning;
 
   return Object.freeze({
     root,
@@ -43,9 +51,10 @@ export function makeConfig(root) {
     ark: {
       apiKey: process.env.ARK_API_KEY || "",
       baseUrl: process.env.ARK_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3",
-      textModel: process.env.ARK_TEXT_MODEL || "",
+      planningModel,
+      textModel: planningModel,
       imageModel: process.env.ARK_IMAGE_MODEL || "",
-      videoModel: process.env.ARK_VIDEO_MODEL || ""
+      videoModel: process.env.ARK_VIDEO_MODEL || DEFAULT_ARK_MODELS.video
     },
     search: {
       braveApiKey: process.env.BRAVE_SEARCH_API_KEY || ""
