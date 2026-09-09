@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnv, makeConfig } from "./lib/config.mjs";
 import { ProductionPipeline } from "./lib/pipeline.mjs";
-import { loadSourceRegistry, saveSourceRegistry } from "./lib/source-registry.mjs";
+import { BLOCKED_SOURCE_DOMAINS, loadSourceRegistry, saveSourceRegistry } from "./lib/source-registry.mjs";
 import { ProjectStore } from "./lib/store.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -199,7 +199,8 @@ export const server = createServer(async (request, response) => {
       sendJson(response, 200, {
         sources: await loadSourceRegistry(config.search),
         configFile: config.search.sourceConfigFile,
-        domesticWebSearch: config.search.domesticWebSearch
+        domesticWebSearch: config.search.domesticWebSearch,
+        blockedDomains: BLOCKED_SOURCE_DOMAINS
       });
       return;
     }
@@ -243,7 +244,7 @@ export const server = createServer(async (request, response) => {
       return;
     }
 
-    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|source|content|export|manifest))?$/.exec(url.pathname);
+    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|rescan|source|content|export|manifest))?$/.exec(url.pathname);
     if (request.method === "GET" && projectMatch && !projectMatch[2]) {
       const project = await store.get(projectMatch[1]);
       sendJson(response, project ? 200 : 404, project ? { project } : { error: "项目不存在" });
@@ -264,6 +265,18 @@ export const server = createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === "POST" && projectMatch?.[2] === "rescan") {
+      try {
+        sendJson(response, 202, {
+          accepted: true,
+          project: await pipeline.rescanSources(projectMatch[1])
+        });
+      } catch (error) {
+        sendJson(response, /不存在/.test(error.message) ? 404 : 409, { error: error.message });
+      }
+      return;
+    }
+
     if (request.method === "POST" && projectMatch?.[2] === "source") {
       const body = await readJson(request);
       sendJson(response, 202, {
@@ -274,7 +287,7 @@ export const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && projectMatch?.[2] === "content") {
-      const body = await readJson(request, 12 * 1024 * 1024);
+      const body = await readJson(request, 13 * 1024 * 1024);
       sendJson(response, 202, {
         accepted: true,
         project: await pipeline.importAuthorizedContent(projectMatch[1], body)

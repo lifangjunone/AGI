@@ -8,6 +8,7 @@ import { spawn, execFile } from 'node:child_process'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { fileURLToPath } from 'node:url'
+import WebSocket from 'ws'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const port = Number(process.env.MODELOPS_PORT || 4319)
@@ -19,6 +20,8 @@ const logsDir = path.join(runtimeRoot, 'logs')
 const outputDir = path.join(runtimeRoot, 'outputs')
 const processes = new Map()
 const downloads = new Map()
+const jobSockets = new Map()
+const terminalJobStates = new Set(['completed', 'failed', 'cancelled'])
 
 await Promise.all([
   fsp.mkdir(logsDir, { recursive: true }),
@@ -49,6 +52,44 @@ async function readState() {
 }
 
 let state = await readState()
+state.jobs ||= []
+
+async function hydrateLegacyOutputs() {
+  const directory = path.join(state.settings.comfyPath, 'output', 'ModelOps')
+  try {
+    const entries = await fsp.readdir(directory, { withFileTypes: true })
+    const known = new Set(state.jobs.map((job) => job.output?.filename).filter(Boolean))
+    const legacy = []
+    for (const entry of entries) {
+      if (!entry.isFile() || !/\.(webm|mp4|gif)$/i.test(entry.name) || known.has(entry.name)) continue
+      const stat = await fsp.stat(path.join(directory, entry.name))
+      legacy.push({ entry, stat })
+    }
+    legacy.sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs)
+    for (const { entry, stat } of legacy.slice(0, 8)) {
+      state.jobs.push({
+        id: `history-${entry.name}`,
+        type: 'video',
+        modelId: 'wan22-ti2v-5b-fp16',
+        title: '历史视频产物',
+        prompt: '由 Wan2.2 本地工作流生成',
+        status: 'completed',
+        progress: 100,
+        phase: '生成完成',
+        createdAt: stat.birthtime.toISOString(),
+        startedAt: stat.birthtime.toISOString(),
+        finishedAt: stat.mtime.toISOString(),
+        output: { filename: entry.name, subfolder: 'ModelOps', type: 'output' },
+        legacy: true,
+      })
+    }
+    state.jobs.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    state.jobs = state.jobs.slice(0, 100)
+  } catch {}
+}
+
+await hydrateLegacyOutputs()
+await saveState()
 
 async function saveState() {
   await fsp.writeFile(stateFile, JSON.stringify(state, null, 2))
@@ -58,6 +99,44 @@ function event(level, message, modelId) {
   state.events.unshift({ id: crypto.randomUUID(), at: new Date().toISOString(), level, message, modelId })
   state.events = state.events.slice(0, 100)
   void saveState()
+}
+
+function createJob({ type, modelId, title, prompt, request }) {
+  const job = {
+    id: crypto.randomUUID(),
+    type,
+    modelId,
+    title,
+    prompt: String(prompt || '').slice(0, 240),
+    request,
+    status: 'queued',
+    progress: 2,
+    phase: '等待调度',
+    createdAt: new Date().toISOString(),
+  }
+  state.jobs.unshift(job)
+  state.jobs = state.jobs.slice(0, 100)
+  void saveState()
+  return job
+}
+
+function updateJob(job, patch) {
+  Object.assign(job, patch, { updatedAt: new Date().toISOString() })
+  void saveState()
+  return job
+}
+
+function publicJob(job) {
+  const safe = structuredClone(job)
+  delete safe.request
+  return safe
+}
+
+function jobOutputPath(job) {
+  if (!job?.output?.filename) return null
+  const outputRoot = path.resolve(state.settings.comfyPath, 'output')
+  const candidate = path.resolve(outputRoot, job.output.subfolder || '', job.output.filename)
+  return candidate === outputRoot || candidate.startsWith(`${outputRoot}${path.sep}`) ? candidate : null
 }
 
 function json(res, status, body) {
@@ -315,10 +394,265 @@ async function readLog(modelId) {
   }
 }
 
+function findComfyOutput(history) {
+  const files = Object.values(history?.outputs || {}).flatMap((entry) => entry.videos || entry.gifs || entry.images || [])
+  const file = files[0]
+  return file ? { filename: file.filename, subfolder: file.subfolder || '', type: file.type || 'output' } : null
+}
+
+async function finalizeComfyJob(job, history) {
+  const failed = history?.status?.status_str === 'error'
+  const output = findComfyOutput(history)
+  updateJob(job, failed ? {
+    status: 'failed',
+    phase: '执行失败',
+    error: history?.status?.messages?.at(-1)?.[1]?.exception_message || 'ComfyUI execution failed',
+    finishedAt: new Date().toISOString(),
+  } : {
+    status: 'completed',
+    phase: '生成完成',
+    progress: 100,
+    output,
+    finishedAt: new Date().toISOString(),
+  })
+  jobSockets.get(job.id)?.close()
+  jobSockets.delete(job.id)
+}
+
+async function refreshJobs() {
+  const active = state.jobs.filter((job) => job.type === 'video' && job.promptId && !terminalJobStates.has(job.status))
+  if (!active.length) return
+  let queue
+  try {
+    queue = await fetch('http://127.0.0.1:8188/queue', { signal: AbortSignal.timeout(1200) }).then((response) => response.json())
+  } catch {
+    return
+  }
+  const running = new Set((queue.queue_running || []).map((item) => item[1]))
+  const pending = new Map((queue.queue_pending || []).map((item, index) => [item[1], index + 1]))
+  for (const job of active) {
+    if (running.has(job.promptId)) {
+      if (job.status !== 'running') updateJob(job, { status: 'running', phase: '模型执行中', startedAt: job.startedAt || new Date().toISOString(), progress: Math.max(8, job.progress) })
+      continue
+    }
+    if (pending.has(job.promptId)) {
+      updateJob(job, { status: 'queued', phase: `队列第 ${pending.get(job.promptId)} 位`, queuePosition: pending.get(job.promptId) })
+      continue
+    }
+    try {
+      const payload = await fetch(`http://127.0.0.1:8188/history/${job.promptId}`, { signal: AbortSignal.timeout(1200) }).then((response) => response.json())
+      const history = payload[job.promptId]
+      if (history?.status?.completed || history?.status?.status_str === 'error') await finalizeComfyJob(job, history)
+    } catch {}
+  }
+}
+
+function phaseForNode(node) {
+  return ({
+    '38': ['解析提示词', 10],
+    '37': ['加载视频模型', 16],
+    '48': ['准备采样器', 20],
+    '55': ['创建视频潜空间', 24],
+    '3': ['视频采样', 28],
+    '8': ['VAE 分块解码', 92],
+    '47': ['编码视频文件', 97],
+  })[node] || ['执行工作流', 8]
+}
+
+async function openComfyProgress(job, clientId) {
+  const socket = new WebSocket(`ws://127.0.0.1:8188/ws?clientId=${clientId}`)
+  jobSockets.set(job.id, socket)
+  socket.on('message', async (raw) => {
+    try {
+      const message = JSON.parse(raw.toString())
+      const data = message.data || {}
+      if (data.prompt_id && job.promptId && data.prompt_id !== job.promptId) return
+      if (message.type === 'execution_start') {
+        updateJob(job, { status: 'running', phase: '启动工作流', progress: 6, startedAt: job.startedAt || new Date().toISOString() })
+      } else if (message.type === 'executing' && data.node) {
+        const [phase, progress] = phaseForNode(String(data.node))
+        updateJob(job, { status: 'running', phase, progress: Math.max(job.progress, progress), currentNode: String(data.node) })
+      } else if (message.type === 'progress' && data.max) {
+        const progress = Math.min(90, 28 + Math.round((Number(data.value) / Number(data.max)) * 62))
+        updateJob(job, { status: 'running', phase: `视频采样 ${data.value}/${data.max}`, progress: Math.max(job.progress, progress), currentStep: Number(data.value), totalSteps: Number(data.max) })
+      } else if (message.type === 'execution_error') {
+        updateJob(job, { status: 'failed', phase: '执行失败', error: data.exception_message || 'ComfyUI execution failed', finishedAt: new Date().toISOString() })
+      } else if (message.type === 'execution_success') {
+        const payload = await fetch(`http://127.0.0.1:8188/history/${job.promptId}`).then((response) => response.json())
+        await finalizeComfyJob(job, payload[job.promptId])
+      }
+    } catch {}
+  })
+  socket.on('close', () => jobSockets.delete(job.id))
+  await new Promise((resolve) => {
+    const timer = setTimeout(resolve, 1500)
+    socket.once('open', () => {
+      clearTimeout(timer)
+      resolve()
+    })
+    socket.once('error', () => {
+      clearTimeout(timer)
+      resolve()
+    })
+  })
+  return socket
+}
+
+async function runTextJob(input, job = createJob({
+  type: 'text',
+  modelId: 'qwen35-9b-q4',
+  title: '文本生成',
+  prompt: input.prompt,
+  request: { prompt: String(input.prompt || '').slice(0, 4000) },
+})) {
+  const endpoint = state.deployments['qwen35-9b-q4'].endpoint
+  updateJob(job, { status: 'running', phase: '模型推理', progress: 35, startedAt: new Date().toISOString() })
+  try {
+    const response = await fetch(`${endpoint}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'qwen-local', messages: [{ role: 'user', content: String(input.prompt || '') }], max_tokens: 512, temperature: 0.7 }),
+      signal: AbortSignal.timeout(120000),
+    })
+    const payload = await response.json()
+    if (!response.ok) throw new Error(payload.error?.message || payload.error || `Text runtime returned ${response.status}`)
+    const content = payload.choices?.[0]?.message?.content || ''
+    updateJob(job, {
+      status: 'completed',
+      phase: '生成完成',
+      progress: 100,
+      result: content.slice(0, 6000),
+      metrics: payload.timings || null,
+      finishedAt: new Date().toISOString(),
+    })
+    return { status: response.status, payload, job }
+  } catch (error) {
+    updateJob(job, { status: 'failed', phase: '执行失败', error: error.message, finishedAt: new Date().toISOString() })
+    return { status: 503, payload: { error: `Text runtime unavailable: ${error.message}` }, job }
+  }
+}
+
+async function submitVideoJob(input, sourceJob) {
+  const clamp = (value, fallback, min, max) => Math.min(max, Math.max(min, Number(value) || fallback))
+  const request = {
+    prompt: String(input.prompt || '').slice(0, 4000),
+    width: Math.round(clamp(input.width, 832, 256, 1280) / 32) * 32,
+    height: Math.round(clamp(input.height, 480, 256, 704) / 32) * 32,
+    frames: Math.round((clamp(input.frames, 49, 9, 121) - 1) / 4) * 4 + 1,
+    seed: Number(input.seed || Math.floor(Math.random() * 2 ** 32)),
+    steps: clamp(input.steps, 20, 4, 50),
+    cfg: clamp(input.cfg, 5, 1, 10),
+    fps: clamp(input.fps, 16, 8, 30),
+    imageName: input.imageName,
+  }
+  if (input.imageBase64) {
+    const match = String(input.imageBase64).match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/)
+    if (!match) throw Object.assign(new Error('Reference image must be PNG, JPEG or WebP'), { status: 400 })
+    const image = Buffer.from(match[2], 'base64')
+    if (image.length > 7_000_000) throw Object.assign(new Error('Reference image exceeds 7 MB'), { status: 400 })
+    const extension = match[1] === 'jpeg' ? 'jpg' : match[1]
+    request.imageName = `modelops-${crypto.randomUUID()}.${extension}`
+    await fsp.writeFile(path.join(state.settings.comfyPath, 'input', request.imageName), image)
+  }
+  const job = sourceJob || createJob({
+    type: 'video',
+    modelId: 'wan22-ti2v-5b-fp16',
+    title: request.imageName ? '图生视频' : '文生视频',
+    prompt: request.prompt,
+    request,
+  })
+  job.request = request
+  updateJob(job, { phase: '提交到 ComfyUI', progress: 4 })
+  const workflow = JSON.parse(await fsp.readFile(path.join(root, 'workflows/wan22-mps-api.json'), 'utf8'))
+  workflow['6'].inputs.text = request.prompt
+  workflow['55'].inputs.width = request.width
+  workflow['55'].inputs.height = request.height
+  workflow['55'].inputs.length = request.frames
+  workflow['3'].inputs.seed = request.seed
+  workflow['3'].inputs.steps = request.steps
+  workflow['3'].inputs.cfg = request.cfg
+  workflow['47'].inputs.fps = request.fps
+  if (request.imageName) {
+    workflow['9'] = { class_type: 'LoadImage', inputs: { image: request.imageName } }
+    workflow['55'].inputs.start_image = ['9', 0]
+  }
+  const clientId = crypto.randomUUID()
+  await openComfyProgress(job, clientId)
+  try {
+    const response = await fetch('http://127.0.0.1:8188/prompt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: workflow, client_id: clientId }),
+      signal: AbortSignal.timeout(10000),
+    })
+    const payload = await response.json()
+    if (!response.ok || !payload.prompt_id) throw new Error(payload.error || `ComfyUI returned ${response.status}`)
+    updateJob(job, { promptId: payload.prompt_id, status: 'queued', phase: '已进入生成队列', progress: 5 })
+    return { status: response.status, payload: { ...payload, job: publicJob(job) }, job }
+  } catch (error) {
+    jobSockets.get(job.id)?.close()
+    updateJob(job, { status: 'failed', phase: '提交失败', error: error.message, finishedAt: new Date().toISOString() })
+    return { status: 503, payload: { error: `Video runtime unavailable: ${error.message}`, job: publicJob(job) }, job }
+  }
+}
+
 async function routeApi(req, res, url) {
   if (req.method === 'GET' && url.pathname === '/api/state') {
     await refreshHealth()
+    await refreshJobs()
+    state.jobs.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
     return json(res, 200, { system: await systemSnapshot(), models: catalog.models.map(modelInstallState), state })
+  }
+  const jobMatch = url.pathname.match(/^\/api\/jobs\/([^/]+)\/(cancel|retry|output)$/)
+  if (jobMatch) {
+    const [, id, action] = jobMatch
+    const job = state.jobs.find((item) => item.id === id)
+    if (!job) return json(res, 404, { error: 'Unknown job' })
+    if (action === 'output') {
+      const file = jobOutputPath(job)
+      if (!file || !fs.existsSync(file)) return json(res, 404, { error: 'Output not found' })
+      const extension = path.extname(file).toLowerCase()
+      const types = { '.webm': 'video/webm', '.mp4': 'video/mp4', '.gif': 'image/gif', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg' }
+      res.writeHead(200, { 'Content-Type': types[extension] || 'application/octet-stream', 'Content-Length': fs.statSync(file).size })
+      fs.createReadStream(file).pipe(res)
+      return
+    }
+    if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' })
+    if (action === 'cancel') {
+      if (terminalJobStates.has(job.status)) return json(res, 409, { error: 'Job is already finished' })
+      try {
+        if (job.type === 'video' && job.promptId) {
+          await fetch('http://127.0.0.1:8188/queue', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ delete: [job.promptId] }),
+            signal: AbortSignal.timeout(1500),
+          })
+          if (job.status === 'running') await fetch('http://127.0.0.1:8188/interrupt', { method: 'POST', signal: AbortSignal.timeout(1500) })
+        }
+      } catch {}
+      jobSockets.get(job.id)?.close()
+      updateJob(job, { status: 'cancelled', phase: '已取消', finishedAt: new Date().toISOString() })
+      event('info', `Cancelled ${job.title} job`, job.modelId)
+      return json(res, 200, publicJob(job))
+    }
+    if (action === 'retry') {
+      if (!terminalJobStates.has(job.status)) return json(res, 409, { error: 'Only finished jobs can be retried' })
+      if (!job.request) return json(res, 409, { error: 'Original task parameters are unavailable' })
+      if (job.type === 'video') {
+        const result = await submitVideoJob(job.request || {})
+        return json(res, result.status, result.payload)
+      }
+      const retry = createJob({
+        type: 'text',
+        modelId: 'qwen35-9b-q4',
+        title: '文本生成（重试）',
+        prompt: job.prompt,
+        request: job.request || { prompt: job.prompt },
+      })
+      void runTextJob(retry.request, retry)
+      return json(res, 202, { job: publicJob(retry) })
+    }
   }
   if (req.method === 'POST' && url.pathname === '/api/settings') {
     const input = await body(req)
@@ -367,52 +701,16 @@ async function routeApi(req, res, url) {
   }
   if (req.method === 'POST' && url.pathname === '/api/generate/text') {
     const input = await body(req)
-    const endpoint = state.deployments['qwen35-9b-q4'].endpoint
-    try {
-      const response = await fetch(`${endpoint}/v1/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'qwen-local', messages: [{ role: 'user', content: String(input.prompt || '') }], max_tokens: 512, temperature: 0.7 }),
-        signal: AbortSignal.timeout(120000),
-      })
-      return json(res, response.status, await response.json())
-    } catch (error) {
-      return json(res, 503, { error: `Text runtime unavailable: ${error.message}` })
-    }
+    const result = await runTextJob(input)
+    return json(res, result.status, { ...result.payload, job: publicJob(result.job) })
   }
   if (req.method === 'POST' && url.pathname === '/api/generate/video') {
     const input = await body(req)
-    const clamp = (value, fallback, min, max) => Math.min(max, Math.max(min, Number(value) || fallback))
-    const workflow = JSON.parse(await fsp.readFile(path.join(root, 'workflows/wan22-mps-api.json'), 'utf8'))
-    workflow['6'].inputs.text = String(input.prompt || '').slice(0, 4000)
-    workflow['55'].inputs.width = Math.round(clamp(input.width, 832, 256, 1280) / 32) * 32
-    workflow['55'].inputs.height = Math.round(clamp(input.height, 480, 256, 704) / 32) * 32
-    workflow['55'].inputs.length = Math.round((clamp(input.frames, 49, 9, 121) - 1) / 4) * 4 + 1
-    workflow['3'].inputs.seed = Number(input.seed || Math.floor(Math.random() * 2 ** 32))
-    workflow['3'].inputs.steps = clamp(input.steps, 20, 4, 50)
-    workflow['3'].inputs.cfg = clamp(input.cfg, 5, 1, 10)
-    workflow['47'].inputs.fps = clamp(input.fps, 16, 8, 30)
-    if (input.imageBase64) {
-      const match = String(input.imageBase64).match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/)
-      if (!match) return json(res, 400, { error: 'Reference image must be PNG, JPEG or WebP' })
-      const image = Buffer.from(match[2], 'base64')
-      if (image.length > 7_000_000) return json(res, 400, { error: 'Reference image exceeds 7 MB' })
-      const extension = match[1] === 'jpeg' ? 'jpg' : match[1]
-      const filename = `modelops-${crypto.randomUUID()}.${extension}`
-      await fsp.writeFile(path.join(state.settings.comfyPath, 'input', filename), image)
-      workflow['9'] = { class_type: 'LoadImage', inputs: { image: filename } }
-      workflow['55'].inputs.start_image = ['9', 0]
-    }
     try {
-      const response = await fetch('http://127.0.0.1:8188/prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: workflow, client_id: crypto.randomUUID() }),
-        signal: AbortSignal.timeout(10000),
-      })
-      return json(res, response.status, await response.json())
+      const result = await submitVideoJob(input)
+      return json(res, result.status, result.payload)
     } catch (error) {
-      return json(res, 503, { error: `Video runtime unavailable: ${error.message}` })
+      return json(res, error.status || 503, { error: error.message })
     }
   }
   return json(res, 404, { error: 'Not found' })

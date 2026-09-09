@@ -23,7 +23,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
 | [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台和 Taro 小程序 | Node.js、FFmpeg、PWA、Electron、Taro |
-| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从合法小说来源自动生成 15 分钟分集，支持三端、历史任务、并行生产与持久化排队 | Node.js、Electron、PWA、火山方舟、FFmpeg |
+| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验正版、公版、原创及图书馆来源发现作品，经版权门禁后生成 15 分钟分集，支持三端、历史任务与持久化排队 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
 
 ## 产品协作链路
@@ -138,9 +138,11 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - 支付宝手机网站支付现已审核通过，生产服务已启用 `alipay.trade.wap.pay`；移动端新订单已验证使用 `QUICK_WAP_WAP_PAY`，并保留未授权或异常时的网页支付回退。
 - `short-video-studio` 视频生成已改为可恢复的后台任务：用户支付/提交后不需要停留等待，页面显示任务进度，关闭后再次进入会继续查询任务状态。
 - 当前生产视频接口仍要求配置视频模型服务；未配置时返回明确 `503`，不会创建假任务或误报生成成功。
+- 生产环境已配置火山方舟 Seedance 2.5（`doubao-seedance-2-5-260628`），真实 5 秒 16:9 任务已完成并返回可访问 MP4。
+- 已完成小程序订阅消息与公众号模板消息的服务端接入和任务完成触发；微信凭证、模板 ID 与用户授权仍需按平台要求配置，未配置时系统明确跳过通知。
 - `short-video-studio` 已开始打通“智助乖乖”公众号和小程序入口：共享配置接口统一下发价格与渠道链接，小程序提供公众号文章助手 WebView 入口，公众号菜单可按工具参数直达共享工作台。
-- `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；默认从项目工作台创建、筛选和打开小说项目，进入具体项目后再管理来源、六节点、资产与分集。小说检索支持 360 国内全网、9 个可配置站点、国际目录和逐源 URL/状态/耗时审计；任务规划使用 `glm-5-2-260617`，视频生成使用 Seedance 2.5。
-- `model-operations-studio`：新增跨平台本地 MaaS 控制面，支持模型注册、校验下载、启动停止、健康探测、系统资源监控、日志和推理测试；Wan2.2-TI2V-5B FP16 与 Qwen3.5-9B Q4_K_M 已在 M5 Pro 上真实部署，视频基线 832×480/49 帧冷启动 217.49 秒、热运行 154.57 秒，内置 Euler、tiled VAE、质量检测和自动降级策略。
+- `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；默认从项目工作台创建、筛选和打开小说项目，进入具体项目后再管理来源、六节点、资产与分集。小说检索支持 360 国内全网、9 个可配置站点和逐源审计；商业作品支持导入已授权 TXT/Markdown 全文、内容指纹与预览，任务规划使用 `glm-5-2-260617`，视频生成使用 Seedance 2.5。
+- `model-operations-studio`：新增任务中心优先的跨平台本地 MaaS 控制面，支持持久化生成队列、ComfyUI WebSocket 实时阶段/采样进度、取消、失败重试、重启恢复和历史产物访问；Wan2.2-TI2V-5B FP16 与 Qwen3.5-9B Q4_K_M 已在 M5 Pro 上真实部署。
 
 ## 远端仓库
 

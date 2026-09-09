@@ -5,8 +5,9 @@
 ## 当前能力
 
 - 同时执行 360 国内全网、已配置小说站点、Project Gutenberg、Open Library、Google Books，以及可选 Brave Search；每次检索记录实际查询地址、状态、命中数、耗时与错误。
-- 默认配置起点、和图书、QQ 阅读、纵横、17K、番茄、七猫、晋江和中文维基文库，并可在“来源配置”中增删或停用站点。
-- 自动优先选择公版正文；只找到元数据或普通网页时停在版权门禁，不抓取盗版正文。
+- 默认配置 23 个已核验来源，覆盖中文网文、公版名著、海外原创和数字图书馆；每项记录免费模式、注册要求、下载格式、广告、版权边界和当前可用性。
+- 自动读取公版正文；商业作品可导入已获授权的 TXT/Markdown 全文，系统持久化原文件、SHA-256、字数和预览后自动继续流水线。
+- 只找到作品信息或普通网页时停在版权门禁，不绕过 WAF、登录、付费机制或抓取未授权正文。
 - 生成故事圣经、角色连续性 ID、武器道具、地点设定和第一集脚本。
 - 每集默认严格拆为 `30 × 30 秒 = 15 分钟`，并保留每个镜头的状态和远端任务 ID。
 - 对接火山方舟 Chat Completions、Seedream 图片生成和 Seedance 异步视频生成 API。
@@ -89,13 +90,14 @@ API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` �
 
 ## 小说来源配置
 
-默认来源位于 `config/novel-sources.json`。应用内“小说源库 → 配置来源”可维护来源名称、域名、启停状态和版权策略，修改结果保存在数据目录的 `search-sources.json`；也可通过 `NOVEL_SOURCE_CONFIG` 指定其他配置文件。设置 `DOMESTIC_WEB_SEARCH=false` 可关闭国内全网检索。
+默认来源位于 `config/novel-sources.json`。应用内“小说源库 → 配置来源”可维护来源名称、域名、启停状态和版权策略，修改结果保存在数据目录的 `search-sources.json`；也可通过 `NOVEL_SOURCE_CONFIG` 指定其他配置文件。设置 `DOMESTIC_WEB_SEARCH=false` 可关闭国内全网检索。完整核验表见 [`docs/FREE_NOVEL_SOURCES.md`](docs/FREE_NOVEL_SOURCES.md)。
 
-商业小说站点和未知网页只参与书名、作者、版本及原始地址核验，统一进入版权门禁，不会自动下载正文。`求魔`已内置以下精确候选：
+商业小说站点和未知网页只参与书名、作者、版本及原始地址核验，统一进入版权门禁，不会自动下载正文。公版来源也必须完成单书和使用地区核验。`求魔`已内置以下正版精确候选：
 
 - 起点中文网：`https://www.qidian.com/book/2070910/`
-- 和图书：`https://www.hetushu.com/book/37/index.html`
 - QQ 阅读：`https://book.qq.com/book-detail/481326`
+
+`cn-qidianzww.com.cn` 已识别为非起点官方域名；它和未通过正版来源核验的 `hetushu.com` 均在服务端拒绝名单中，不能通过配置界面重新加入。
 
 ## 产能解释
 
@@ -113,6 +115,7 @@ API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` �
 data/
 ├── state.json              # 项目与任务状态
 ├── search-sources.json     # 用户维护的小说检索源
+├── imports/<project-id>/   # 用户导入的已授权小说正文
 ├── assets/<project-id>/    # 已落盘概念图
 ├── clips/<project-id>/     # 已落盘镜头
 ├── output/<project-id>/    # 15 分钟成片
@@ -127,6 +130,9 @@ data/
 - `PUT /api/search-sources`：校验并保存小说检索源
 - `POST /api/projects`：创建全自动任务，正文为 `{ "novelName": "西游记" }`
 - `GET /api/projects/:id`：生产状态
+- `POST /api/projects/:id/rescan`：按最新版来源注册表重新执行发现节点
+- `POST /api/projects/:id/source`：确认具体作品版本并继续
+- `POST /api/projects/:id/content`：导入已授权正文并继续流水线
 - `POST /api/projects/:id/retry`：重试暂停或失败任务
 - `POST /api/projects/:id/export`：导出生产清单
 

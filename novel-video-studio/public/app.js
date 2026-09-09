@@ -165,6 +165,7 @@ function renderSourceLibrary(project) {
   }
   $("#sourceResultCount").textContent = `${sources.length} 个来源`;
   $("#sourceReviewNotice").classList.toggle("hidden", !requiresConfirmation);
+  $("#rescanSourcesButton").classList.toggle("hidden", !requiresConfirmation);
   $("#confirmSourceButton").classList.toggle("hidden", !requiresConfirmation);
   $("#confirmSourceButton").disabled = !selectedSourceId;
   $("#sourceTable").innerHTML = sources.length ? sources.map((source) => {
@@ -267,7 +268,10 @@ function renderSourceRegistry() {
   $("#sourceConfigList").innerHTML = sourceRegistry.map((source, index) => `
     <article class="source-config-row" data-source-index="${index}">
       <label class="source-switch"><input type="checkbox" aria-label="${escapeHtml(source.name)}检索源" ${source.enabled ? "checked" : ""}><span></span></label>
-      <div><strong>${escapeHtml(source.name)}</strong><small>${escapeHtml(source.domains.join("、"))}</small></div>
+      <div>
+        <strong>${escapeHtml(source.name)}</strong>
+        <small title="${escapeHtml(source.domains.join("、"))}">${escapeHtml(source.category || "其他")} · ${escapeHtml(source.freeMode || "免费模式待核验")}</small>
+      </div>
       <span>${source.rights === "metadata-only" ? "作品信息（需正文）" : source.rights === "public-domain-candidate" ? "公版候选" : "需授权核验"}</span>
       <button class="icon-button" data-remove-source="${index}" aria-label="删除 ${escapeHtml(source.name)}"><i data-lucide="trash-2"></i></button>
     </article>
@@ -866,6 +870,25 @@ $("#confirmSourceButton").addEventListener("click", async () => {
     showToast("来源已确认，流水线继续执行");
   } catch (error) {
     showToast(error.message);
+    button.disabled = false;
+  }
+});
+
+$("#rescanSourcesButton").addEventListener("click", async () => {
+  if (!activeProjectId) return;
+  const button = $("#rescanSourcesButton");
+  button.disabled = true;
+  try {
+    const { project } = await api(`/api/projects/${activeProjectId}/rescan`, {
+      method: "POST",
+      body: "{}"
+    });
+    renderProject(project);
+    await refreshAll();
+    showToast("已按最新来源策略重新检索");
+  } catch (error) {
+    showToast(error.message);
+  } finally {
     button.disabled = false;
   }
 });

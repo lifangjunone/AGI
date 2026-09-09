@@ -72,6 +72,78 @@ export function extractVideoBuffer(payload) {
   return buffer;
 }
 
+async function extractArkVideoBuffer(payload, signal) {
+  const videoUrl = payload?.content?.video_url;
+  if (typeof videoUrl !== "string" || !videoUrl.startsWith("http")) {
+    return extractVideoBuffer(payload);
+  }
+  const response = await fetch(videoUrl, { signal });
+  if (!response.ok) {
+    throw new Error(`模型视频下载失败 ${response.status}`);
+  }
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.length < 12 || buffer.subarray(4, 8).toString("ascii") !== "ftyp") {
+    throw new Error("模型返回的数据不是有效的 MP4 文件");
+  }
+  return buffer;
+}
+
+function sleep(milliseconds, signal) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, milliseconds);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(signal.reason || new Error("模型任务已取消"));
+    }, { once: true });
+  });
+}
+
+async function requestArkVideo({ apiUrl, apiKey, modelId, prompt, duration, ratio, signal }) {
+  const taskPath = "/contents/generations/tasks";
+  const createUrl = apiUrl.includes(taskPath)
+    ? apiUrl
+    : `${apiUrl.replace(/\/+$/, "")}${taskPath}`;
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey}`
+  };
+  const createResponse = await fetch(createUrl, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      model: modelId,
+      content: [{ type: "text", text: prompt }],
+      generate_audio: true,
+      ratio,
+      duration,
+      watermark: false
+    }),
+    signal
+  });
+  if (!createResponse.ok) {
+    const detail = (await createResponse.text()).slice(0, 800);
+    throw new Error(`Seedance 任务创建失败 ${createResponse.status}: ${detail || createResponse.statusText}`);
+  }
+  const created = await createResponse.json();
+  if (!created.id) throw new Error("Seedance 没有返回任务 ID");
+
+  const statusUrl = `${createUrl.replace(/\/+$/, "")}/${encodeURIComponent(created.id)}`;
+  for (let attempt = 0; attempt < 240; attempt += 1) {
+    const statusResponse = await fetch(statusUrl, { headers, signal });
+    if (!statusResponse.ok) {
+      const detail = (await statusResponse.text()).slice(0, 800);
+      throw new Error(`Seedance 任务查询失败 ${statusResponse.status}: ${detail || statusResponse.statusText}`);
+    }
+    const task = await statusResponse.json();
+    if (task.status === "succeeded") return task;
+    if (["failed", "expired", "cancelled"].includes(task.status)) {
+      throw new Error(task.error?.message || `Seedance 任务${task.status}`);
+    }
+    await sleep(5000, signal);
+  }
+  throw new Error("Seedance 任务超过等待时间");
+}
+
 function run(command, args) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
@@ -154,7 +226,10 @@ export async function normalizeDuration({
   return sourceDuration < targetDuration ? "looped" : "trimmed";
 }
 
-async function requestVideo({ apiUrl, apiKey, modelId, prompt, signal }) {
+async function requestVideo({ apiUrl, apiKey, modelId, prompt, duration, ratio, signal }) {
+  if (apiUrl.includes("/contents/generations/tasks")) {
+    return requestArkVideo({ apiUrl, apiKey, modelId, prompt, duration, ratio, signal });
+  }
   const response = await fetch(apiUrl, {
     method: "POST",
     headers: {
@@ -203,9 +278,11 @@ export async function generateVideo({
     const payload = await requestVideo({
       ...config,
       prompt: modelPrompt,
+      duration: validated.duration,
+      ratio: validated.ratio,
       signal
     });
-    const sourceBuffer = extractVideoBuffer(payload);
+    const sourceBuffer = await extractArkVideoBuffer(payload, signal);
     await writeFile(sourcePath, sourceBuffer);
     const sourceDuration = await probeDuration(sourcePath, ffprobe);
     const normalization = await normalizeDuration({

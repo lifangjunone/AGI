@@ -224,6 +224,28 @@ export class ProductionPipeline {
     return this.scheduler.enqueue(id, { message: "来源确认完成，任务重新进入生产队列" });
   }
 
+  async rescanSources(id) {
+    const project = await this.store.get(id);
+    if (!project) throw new Error("项目不存在");
+    if (!["source-review", "rights-review", "failed"].includes(project.status)) {
+      throw new Error("当前任务不能重新检索来源");
+    }
+    await this.update(project, {
+      sources: [],
+      searchRuns: [],
+      configuredSources: [],
+      source: null,
+      sourceConfirmed: false,
+      suggestedSourceId: null,
+      nodes: createPipelineNodes(project.novelName),
+      status: "queued",
+      stage: "discover",
+      progress: 0,
+      error: null
+    }, "已按最新来源策略重新发起检索");
+    return this.scheduler.enqueue(id, { message: "来源重新检索任务已进入队列" });
+  }
+
   async importAuthorizedContent(id, { sourceId, content, fileName, rightsConfirmed }) {
     const project = await this.store.get(id);
     if (!project) throw new Error("项目不存在");

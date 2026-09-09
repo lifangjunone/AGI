@@ -4,11 +4,17 @@
 
 ### feat
 
-- Added auditable domestic novel discovery to `novel-video-studio`: 360 web search, per-domain searches across nine configurable Chinese fiction sources, persisted query URLs/status/hit counts/timings, and an in-app source registry with validated domain-only additions.
-- Added exact `求魔` candidates for Qidian (`2070910`), Hetushu (`book/37`), and QQ Reading; upstream WAF or search failures now fall back to configured candidates while preserving a degraded-run record.
+- Rebuilt the Model Operations Studio home screen around generation work: persisted text/video jobs, live ComfyUI workflow and sampling progress, queue filtering, elapsed time, cancellation, retry, restart recovery, recent output discovery, and direct artifact access now replace the previous host-metrics-first dashboard.
+- Expanded `novel-video-studio` to 23 verified sources across Chinese web fiction, public-domain classics, overseas originals, and digital libraries; each source now records its official URL, free mode, registration, Web/download support, advertising, copyright boundary, automation policy, and 2026 availability.
+- Added exact licensed-platform `求魔` candidates for Qidian (`2070910`) and QQ Reading, removed Hetushu after it failed the authorized-source review, and blocked `cn-qidianzww.com.cn`, `hetushu.com`, and `www.hetushu.com` from being re-added through configuration.
+- Added a maintained free-reading comparison covering all accepted sources, official evidence, current reachability, download formats, exclusions, and recommendations for Chinese web fiction, ad-free reading, classics, and English fiction.
+- Added project-level source rescanning so historical projects can apply the latest registry and rejection rules without silently rewriting their prior discovery records.
+- Added a production-grade authorized-content ingestion path for commercial novels: TXT/Markdown import, explicit rights declaration, 12 MB validation, isolated full-text persistence, SHA-256 fingerprinting, a 2,000-character preview, and automatic pipeline resume.
 - Enabled the approved Alipay mobile website payment capability in production: mobile orders now use `alipay.trade.wap.pay` / `QUICK_WAP_WAP_PAY`, with the existing page-payment fallback retained.
 - Added resumable background video jobs: `/api/generate?async=1` returns a persisted job ID, `/api/generate/jobs/:id` exposes progress, and the Web/PWA client resumes polling after users leave the page.
 - Production verification confirms the background-job endpoint is deployed, while video rendering remains gated by the missing production model configuration and currently returns an explicit `503` instead of accepting an unusable job.
+- Replaced the unavailable legacy model endpoint with Ark Seedance 2.5 asynchronous task creation/polling and MP4 download; production readiness is now true and a real 5-second 16:9 task completed successfully.
+- Added WeChat notification integration: miniapp subscription authorization/login binding, official-account OAuth binding, access-token caching, template payload rendering, and completion-triggered sends with explicit configuration-gated fallback.
 - Connected the Zhizhu miniapp and official-account entry points to shared assistant configuration: dynamic prices, tool-specific official-account URLs, a miniapp WebView bridge to the article assistant, and live config loading from `/api/assistant/config`.
 - Reworked `novel-video-studio` into a two-level multi-project workspace: the default project center supports creation, search, status filtering, visual progress cards, and explicit project entry; source, pipeline, asset, and episode tools are available only inside a selected project, while execution history remains in the global task center.
 - Configured `novel-video-studio` task planning to use `glm-5-2-260617` through Ark Chat Completions and video rendering to use Seedance 2.5 (`doubao-seedance-2-5-260628`) by default, with legacy `ARK_TEXT_MODEL` compatibility and model IDs exposed in node/API telemetry.
@@ -41,7 +47,10 @@
 
 ### verify
 
-- Retried the formerly failed `求魔` project and verified three exact candidates plus 14 source-level traces; source-registry persistence, upstream-block fallback, desktop/mobile trace views, and WCAG checks pass, with the Novel Video Studio suite at 25 tests.
+- Verified the task center against real Wan2.2 runs: live progress advanced through prompt parsing, model loading, `3/20` sampling, tiled VAE decode and completion; a running task cancelled cleanly with an empty downstream ComfyUI queue, and a failed task retried to a valid WebM output.
+- Rechecked 23 accepted official source domains on 2026-09-09, including redirects and bot protection; the source registry, rejection rules, fallback candidates, rescan endpoint, and platform APIs pass all 28 Novel Video Studio tests.
+- Retried the formerly failed `求魔` project and verified two official exact candidates plus 26 source-level traces; source-registry persistence, upstream-block fallback, desktop/mobile trace views, and WCAG checks pass.
+- Verified authorized-content file selection, preview and rights gating in the browser, plus full persistence and automatic pipeline continuation in tests; the Novel Video Studio suite now passes 27 tests.
 - Verified the project-center, create-modal, enter/return, navigation-gating, filtering, and deep-link flows at 1120×720 and 390×844; both layouts report zero WCAG 2 A/AA violations and the Novel Video Studio suite passes 22 tests.
 - Verified the configured Ark request routes, model IDs, and 30-second Seedance task payload without issuing a billable production request; the Novel Video Studio suite now passes 21 automated tests.
 - Verified Model Operations Studio with a production build, zero-warning lint, 3 passing tests, macOS arm64 Electron packaging, responsive screenshots, a Qwen3.5 response at 42.71 token/s, a Wan2.2 832x480/49-frame render in 217.49 seconds cold and 154.57 seconds warm with no black frames, decode errors, progressive banding, or saturation growth, and a 41.44-second image-to-video API smoke test.

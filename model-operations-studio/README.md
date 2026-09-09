@@ -7,6 +7,8 @@
 - 实时读取 CPU、内存压力、磁盘和运行时状态。
 - 固定版本模型清单、精确文件大小、SHA-256 校验、断点续传和安装状态。
 - 模型进程启动/停止、健康探测、日志和本地推理工作台。
+- 任务中心首页：持久化视频/文本任务，展示队列位置、当前工作流节点、采样步数、实时百分比、耗时和结果。
+- 支持任务取消、失败重试、重启恢复、历史产物导入和浏览器直接打开视频。
 - Electron 打包配置，目标为 macOS、Windows 和 Linux。
 
 ## 快速开始
@@ -38,6 +40,24 @@ curl -X POST http://127.0.0.1:4319/api/models/qwen35-9b-q4/start
 curl -X POST http://127.0.0.1:4319/api/models/wan22-ti2v-5b-fp16/install
 curl -X POST http://127.0.0.1:4319/api/models/wan22-ti2v-5b-fp16/start
 ```
+
+## 任务中心
+
+生成请求会写入 `runtime/state.json`，首页每 1.5 秒同步一次状态。视频任务通过 ComfyUI WebSocket 接收实时节点与采样进度：
+
+```text
+等待调度 -> 提示词解析 -> 模型加载 -> 视频采样 3/20 -> VAE 分块解码 -> 视频编码 -> 生成完成
+```
+
+任务操作 API：
+
+```bash
+curl -X POST http://127.0.0.1:4319/api/jobs/<job-id>/cancel
+curl -X POST http://127.0.0.1:4319/api/jobs/<job-id>/retry
+open http://127.0.0.1:4319/api/jobs/<job-id>/output
+```
+
+控制面重启后会从 ComfyUI 队列和历史记录恢复未结束任务，并将已有 `ModelOps` 视频作为历史产物纳入首页。
 
 ### Wan2.2 文件
 

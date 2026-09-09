@@ -2,6 +2,12 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const RIGHTS = new Set(["metadata-only", "rights-review-required", "public-domain-candidate"]);
+const DOWNLOAD_FORMATS = new Set(["EPUB", "TXT", "PDF", "HTML"]);
+export const BLOCKED_SOURCE_DOMAINS = Object.freeze([
+  "cn-qidianzww.com.cn",
+  "hetushu.com",
+  "www.hetushu.com"
+]);
 
 function normalizeDomain(value) {
   return String(value || "")
@@ -19,6 +25,21 @@ function safeId(value, fallback) {
     .replace(/[^a-z0-9-]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return normalized || fallback;
+}
+
+function compactText(value, limit = 240) {
+  return String(value || "").trim().slice(0, limit);
+}
+
+function officialUrl(value, domains) {
+  try {
+    const url = new URL(String(value || `https://${domains[0]}/`));
+    if (!["http:", "https:"].includes(url.protocol)) throw new Error();
+    if (!domains.some((domain) => url.hostname === domain || url.hostname.endsWith(`.${domain}`))) throw new Error();
+    return url.href;
+  } catch {
+    return `https://${domains[0]}/`;
+  }
 }
 
 function sanitizeBook(book, domains) {
@@ -47,6 +68,9 @@ export function sanitizeSources(input) {
     )].slice(0, 5);
     const name = String(source?.name || "").trim().slice(0, 40);
     if (!name || domains.length === 0) throw new Error(`第 ${index + 1} 个来源缺少有效名称或域名`);
+    if (domains.some((domain) => BLOCKED_SOURCE_DOMAINS.includes(domain))) {
+      throw new Error(`域名 ${domains.find((domain) => BLOCKED_SOURCE_DOMAINS.includes(domain))} 已列入安全与版权拒绝名单`);
+    }
     const id = safeId(source?.id, `source-${index + 1}`);
     const rights = RIGHTS.has(source?.rights) ? source.rights : "rights-review-required";
     return {
@@ -55,6 +79,23 @@ export function sanitizeSources(input) {
       domains,
       rights,
       enabled: source?.enabled !== false,
+      category: compactText(source?.category, 40) || "其他",
+      officialUrl: officialUrl(source?.officialUrl, domains),
+      freeMode: compactText(source?.freeMode, 60) || "以站点当前页面为准",
+      topics: (source?.topics || []).map((item) => compactText(item, 30)).filter(Boolean).slice(0, 12),
+      registration: compactText(source?.registration, 40) || "可选",
+      webReading: source?.webReading !== false,
+      downloads: [...new Set((source?.downloads || []).map((item) => String(item).toUpperCase()).filter((item) => DOWNLOAD_FORMATS.has(item)))],
+      ads: compactText(source?.ads, 60) || "未核验",
+      copyrightNote: compactText(source?.copyrightNote, 500),
+      safetyNote: compactText(source?.safetyNote, 300),
+      automation: compactText(source?.automation, 60) || "discovery-only",
+      availability: {
+        checkedAt: compactText(source?.availability?.checkedAt, 20),
+        status: compactText(source?.availability?.status, 30) || "unknown",
+        httpStatus: Number(source?.availability?.httpStatus || 0) || null,
+        note: compactText(source?.availability?.note, 160)
+      },
       knownBooks: (source?.knownBooks || [])
         .map((book) => sanitizeBook(book, domains))
         .filter(Boolean)

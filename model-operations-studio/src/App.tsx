@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Activity, Boxes, ChevronRight, CircleStop, Cpu, Database, Download,
-  Gauge, HardDrive, LayoutDashboard, MemoryStick, MessageSquareText,
-  ImagePlus, Play, RefreshCw, Rocket, ServerCog, Settings, Sparkles, TerminalSquare,
-  Video, Workflow, X,
+  Boxes, CheckCircle2, CircleStop, Clock3, Copy,
+  Cpu, Database, Download, ExternalLink, Film, ImagePlus, Layers3, ListTodo,
+  MemoryStick, MessageSquareText, Play, RefreshCw, RotateCcw, Rocket, Settings,
+  Sparkles, Square, TerminalSquare, Timer, Video, Workflow, X,
 } from 'lucide-react'
 import './App.css'
 
@@ -21,6 +21,26 @@ type Model = {
   files: ModelFile[]
   download?: { status: string; completed: number; total: number; current?: string }
 }
+type Job = {
+  id: string
+  type: 'video' | 'text'
+  modelId: string
+  title: string
+  prompt: string
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+  progress: number
+  phase: string
+  createdAt: string
+  startedAt?: string
+  finishedAt?: string
+  error?: string
+  result?: string
+  currentStep?: number
+  totalSteps?: number
+  legacy?: boolean
+  output?: { filename: string; subfolder: string; type: string }
+  request?: { width?: number; height?: number; frames?: number; fps?: number; steps?: number; cfg?: number }
+}
 type AppState = {
   system: {
     platform: string
@@ -36,6 +56,7 @@ type AppState = {
   state: {
     deployments: Record<string, { status: string; endpoint: string; pid?: number }>
     events: Array<{ id: string; at: string; level: string; message: string; modelId?: string }>
+    jobs: Job[]
     settings: { comfyPath: string; modelsPath: string; maxMemoryGb: number }
   }
 }
@@ -48,13 +69,13 @@ const demoState: AppState = {
     runtimes: { git: true, ffmpeg: true, 'llama-server': false, python3: true },
   },
   models: [],
-  state: { deployments: {}, events: [], settings: { comfyPath: 'runtime/ComfyUI', modelsPath: 'runtime/models', maxMemoryGb: 40 } },
+  state: { deployments: {}, events: [], jobs: [], settings: { comfyPath: 'runtime/ComfyUI', modelsPath: 'runtime/models', maxMemoryGb: 40 } },
 }
 
 const nav = [
-  { id: 'overview', label: '总览', icon: LayoutDashboard },
+  { id: 'overview', label: '任务中心', icon: ListTodo },
   { id: 'models', label: '模型仓库', icon: Boxes },
-  { id: 'deploy', label: '部署', icon: Rocket },
+  { id: 'deploy', label: '服务部署', icon: Rocket },
   { id: 'playground', label: '在线测试', icon: Sparkles },
   { id: 'settings', label: '系统配置', icon: Settings },
 ]
@@ -64,14 +85,16 @@ const statusLabel: Record<string, string> = {
   running: '运行中', starting: '启动中', installed: '已安装', stopped: '已停止',
   'not-installed': '未安装', degraded: '异常', failed: '失败',
 }
-
-function Metric({ label, value, note, icon: Icon, tone = 'mint' }: {
-  label: string; value: string; note: string; icon: typeof Cpu; tone?: string
-}) {
-  return <section className={`metric ${tone}`}>
-    <div className="metric-head"><span>{label}</span><Icon size={17} /></div>
-    <strong>{value}</strong><small>{note}</small>
-  </section>
+const jobStatusLabel: Record<Job['status'], string> = {
+  queued: '排队中', running: '生成中', completed: '已完成', failed: '失败', cancelled: '已取消',
+}
+const terminalJobs = new Set<Job['status']>(['completed', 'failed', 'cancelled'])
+const formatClock = (value?: string) => value ? new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--:--'
+const formatElapsed = (job: Job) => {
+  const start = Date.parse(job.startedAt || job.createdAt)
+  const end = job.finishedAt ? Date.parse(job.finishedAt) : Date.now()
+  const seconds = Math.max(0, Math.round((end - start) / 1000))
+  return seconds < 60 ? `${seconds} 秒` : `${Math.floor(seconds / 60)}分${seconds % 60}秒`
 }
 
 function App() {
@@ -86,6 +109,7 @@ function App() {
   const [referenceImage, setReferenceImage] = useState('')
   const [memoryLimit, setMemoryLimit] = useState(40)
   const [result, setResult] = useState('')
+  const [jobFilter, setJobFilter] = useState<'all' | 'active' | 'completed' | 'failed'>('all')
 
   const refresh = async () => {
     try {
@@ -102,7 +126,7 @@ function App() {
 
   useEffect(() => {
     const initial = window.setTimeout(refresh, 0)
-    const timer = window.setInterval(refresh, 4000)
+    const timer = window.setInterval(refresh, 1500)
     return () => {
       window.clearTimeout(initial)
       window.clearInterval(timer)
@@ -113,6 +137,24 @@ function App() {
     () => Object.values(data.state.deployments).filter((item) => item.status === 'running').length,
     [data],
   )
+  const jobs = data.state.jobs || []
+  const activeJobs = jobs.filter((job) => job.status === 'running' || job.status === 'queued')
+  const completedToday = jobs.filter((job) => {
+    if (job.status !== 'completed' || !job.finishedAt) return false
+    return new Date(job.finishedAt).toDateString() === new Date().toDateString()
+  })
+  const queuedJobs = jobs.filter((job) => job.status === 'queued')
+  const finishedJobs = jobs.filter((job) => job.status === 'completed' || job.status === 'failed')
+  const successRate = finishedJobs.length ? Math.round((jobs.filter((job) => job.status === 'completed').length / finishedJobs.length) * 100) : 100
+  const focusJob = activeJobs[0] || jobs.find((job) => job.status === 'completed') || jobs[0]
+  const recentOutputs = jobs.filter((job) => job.status === 'completed' && job.output).slice(0, 4)
+  const filteredJobs = jobs.filter((job) => {
+    if (jobFilter === 'active') return job.status === 'running' || job.status === 'queued'
+    if (jobFilter === 'completed') return job.status === 'completed'
+    if (jobFilter === 'failed') return job.status === 'failed'
+    return true
+  }).slice(0, 10)
+  const modelDisk = data.models.reduce((sum, model) => sum + (model.installed ? model.estimatedDiskBytes : 0), 0)
 
   const action = async (model: Model, command: 'install' | 'start' | 'stop') => {
     setBusy(`${model.id}:${command}`)
@@ -134,6 +176,20 @@ function App() {
     setBusy('')
   }
 
+  const jobAction = async (job: Job, command: 'cancel' | 'retry') => {
+    setBusy(`${job.id}:${command}`)
+    const response = await fetch(`/api/jobs/${job.id}/${command}`, { method: 'POST' })
+    const payload = await response.json()
+    if (!response.ok) setResult(payload.error || '任务操作失败')
+    await refresh()
+    setBusy('')
+  }
+
+  const copyEndpoint = async (endpoint: string) => {
+    await navigator.clipboard.writeText(endpoint)
+    setResult(`已复制端点：${endpoint}`)
+  }
+
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="brand">
@@ -143,7 +199,7 @@ function App() {
       <nav aria-label="主导航">
         {nav.map(({ id, label, icon: Icon }) =>
           <button key={id} className={active === id ? 'active' : ''} onClick={() => setActive(id)}>
-            <Icon size={17} /><span>{label}</span>{id === 'models' && <i>{data.models.length}</i>}
+            <Icon size={17} /><span>{label}</span>{id === 'overview' && activeJobs.length > 0 && <i>{activeJobs.length}</i>}
           </button>,
         )}
       </nav>
@@ -158,52 +214,87 @@ function App() {
 
     <main>
       <header>
-        <div><span className="eyebrow">CONTROL PLANE / {active.toUpperCase()}</span><h1>{nav.find((item) => item.id === active)?.label}</h1></div>
+        <div><span className="eyebrow">CONTROL PLANE / {active === 'overview' ? 'TASKS' : active.toUpperCase()}</span><h1>{nav.find((item) => item.id === active)?.label}</h1></div>
         <div className="header-actions">
           <span className="platform">{data.system.platform} · {data.system.arch}</span>
           <button className="icon-btn" title="刷新状态" onClick={refresh}><RefreshCw size={17} /></button>
-          <button className="primary" onClick={() => setActive('deploy')}><Rocket size={16} /> 部署模型</button>
+          <button className="primary" onClick={() => setActive('playground')}><Sparkles size={16} /> 新建生成任务</button>
         </div>
       </header>
 
-      {active === 'overview' && <div className="page">
-        <div className="metrics">
-          <Metric label="活跃服务" value={`${running} / ${data.models.length || 2}`} note="本地推理端点" icon={ServerCog} />
-          <Metric label="统一内存" value={`${data.system.memory.usedPercent}%`} note={`${formatBytes(data.system.memory.used)} / ${formatBytes(data.system.memory.total)}`} icon={MemoryStick} tone="amber" />
-          <Metric label="系统负载" value={`${data.system.cpuLoadPercent}%`} note={`${data.system.cpuCores} 核可用`} icon={Gauge} tone="blue" />
-          <Metric label="模型空间" value={formatBytes((data.system.disk?.total || 0) - (data.system.disk?.free || 0))} note={`${formatBytes(data.system.disk?.free)} 可用`} icon={HardDrive} tone="rose" />
-        </div>
-        <div className="split">
-          <section className="panel deployments">
-            <div className="panel-title"><div><span className="eyebrow">DEPLOYMENTS</span><h2>模型服务</h2></div><button className="text-btn" onClick={() => setActive('models')}>查看全部 <ChevronRight size={15} /></button></div>
-            {(data.models.length ? data.models : [
-              { id: 'wan22-ti2v-5b-fp16', name: 'Wan2.2 TI2V 5B', kind: 'video', runtime: 'ComfyUI', version: 'FP16', installed: false, capabilities: [], files: [], estimatedDiskBytes: 22_775_459_193, license: 'Apache-2.0' },
-              { id: 'qwen35-9b-q4', name: 'Qwen3.5 9B', kind: 'text', runtime: 'llama.cpp', version: 'Q4_K_M', installed: false, capabilities: [], files: [], estimatedDiskBytes: 5_680_522_464, license: 'Apache-2.0' },
-            ] as Model[]).map((model) => {
-              const deploy = data.state.deployments[model.id] || { status: 'not-installed', endpoint: '未分配' }
-              return <article className="deployment-row" key={model.id} onClick={() => setSelected(model)}>
-                <div className={`model-icon ${model.kind}`}>{model.kind === 'video' ? <Video size={20} /> : <MessageSquareText size={20} />}</div>
-                <div className="model-main"><b>{model.name}</b><span>{model.runtime} · {model.version}</span></div>
-                <div className="endpoint"><span>端点</span><code>{deploy.endpoint}</code></div>
-                <div className={`status ${deploy.status}`}><i />{statusLabel[deploy.status] || deploy.status}</div>
-                <button className="icon-btn" title="查看模型"><ChevronRight size={17} /></button>
-              </article>
-            })}
-          </section>
-          <section className="panel events">
-            <div className="panel-title"><div><span className="eyebrow">ACTIVITY</span><h2>运行事件</h2></div><Activity size={18} /></div>
-            {(data.state.events.length ? data.state.events : [
-              { id: '1', level: 'info', message: '控制面已就绪，等待部署首个模型', at: new Date().toISOString() },
-              { id: '2', level: 'success', message: 'Apple Metal 运行环境可用', at: new Date().toISOString() },
-            ]).slice(0, 6).map((item) => <div className="event" key={item.id}>
-              <i className={item.level} /><div><p>{item.message}</p><time>{new Date(item.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</time></div>
-            </div>)}
-          </section>
-        </div>
-        <section className="panel runtime-strip">
-          <div><span className="eyebrow">RUNTIME READINESS</span><h2>运行时检查</h2></div>
-          {Object.entries(data.system.runtimes).map(([name, ok]) => <div className="runtime" key={name}><i className={ok ? 'ok' : ''} /><span>{name}</span><b>{ok ? '就绪' : '待安装'}</b></div>)}
+      {active === 'overview' && <div className="page task-center">
+        <section className="task-summary" aria-label="任务摘要">
+          <div className="summary-lead"><span className={`live-dot ${activeJobs.length ? 'busy' : ''}`} /><div><b>{activeJobs.length ? '生成引擎工作中' : '生成引擎空闲'}</b><small>{activeJobs.length ? `${activeJobs.length} 个任务占用执行资源` : '可以提交新的生成任务'}</small></div></div>
+          <div className="summary-item"><Layers3 size={16} /><span><b>{queuedJobs.length}</b><small>等待队列</small></span></div>
+          <div className="summary-item"><CheckCircle2 size={16} /><span><b>{completedToday.length}</b><small>今日完成</small></span></div>
+          <div className="summary-item"><Timer size={16} /><span><b>{successRate}%</b><small>任务成功率</small></span></div>
+          <button className="primary" onClick={() => setActive('playground')}><Sparkles size={16} />创建任务</button>
         </section>
+
+        <div className="task-layout">
+          <section className="panel queue-panel">
+            <div className="queue-heading">
+              <div><span className="eyebrow">WORKLOAD QUEUE</span><h2>生成任务队列</h2></div>
+              <div className="segmented" aria-label="任务筛选">
+                {([['all', '全部'], ['active', '执行中'], ['completed', '已完成'], ['failed', '失败']] as const).map(([id, label]) =>
+                  <button key={id} className={jobFilter === id ? 'active' : ''} onClick={() => setJobFilter(id)}>{label}</button>,
+                )}
+              </div>
+            </div>
+            <div className="queue-columns"><span>任务</span><span>配置</span><span>进度</span><span>状态</span><span /></div>
+            <div className="job-list">
+              {filteredJobs.length ? filteredJobs.map((job, index) => <article className={`job-row ${job.status}`} key={job.id}>
+                <span className="job-index">{String(index + 1).padStart(2, '0')}</span>
+                <div className={`job-kind ${job.type}`}>{job.type === 'video' ? <Video size={17} /> : <MessageSquareText size={17} />}</div>
+                <div className="job-copy"><b>{job.title}</b><p>{job.prompt || '未记录提示词'}</p><small>{formatClock(job.createdAt)} · {job.modelId.includes('wan') ? 'Wan2.2 5B' : 'Qwen3.5 9B'}</small></div>
+                <div className="job-config">{job.type === 'video' ? <><b>{job.request?.width || 832}×{job.request?.height || 480}</b><small>{job.request?.frames || 49} 帧 · {job.request?.steps || 20} steps</small></> : <><b>TEXT</b><small>本地推理</small></>}</div>
+                <div className="job-progress"><div><span>{job.phase}</span><b>{Math.round(job.progress || 0)}%</b></div><div className="job-progress-track"><i style={{ width: `${job.progress || 0}%` }} /></div><small>{job.status === 'running' ? `已运行 ${formatElapsed(job)}` : job.finishedAt ? `耗时 ${formatElapsed(job)}` : '等待执行'}</small></div>
+                <span className={`job-status ${job.status}`}><i />{jobStatusLabel[job.status]}</span>
+                <div className="job-actions">
+                  {!terminalJobs.has(job.status) && <button className="icon-btn" title="取消任务" disabled={busy.startsWith(job.id)} onClick={() => jobAction(job, 'cancel')}><Square size={14} /></button>}
+                  {job.status === 'completed' && job.output && <button className="icon-btn" title="打开产物" onClick={() => window.open(`/api/jobs/${job.id}/output`, '_blank')}><ExternalLink size={15} /></button>}
+                  {terminalJobs.has(job.status) && !job.legacy && <button className="icon-btn" title="重新运行" disabled={busy.startsWith(job.id)} onClick={() => jobAction(job, 'retry')}><RotateCcw size={14} /></button>}
+                </div>
+              </article>) : <div className="empty-queue"><ListTodo size={28} /><b>当前没有生成任务</b><p>从在线测试创建第一条文本或视频任务。</p><button onClick={() => setActive('playground')}><Sparkles size={15} />创建任务</button></div>}
+            </div>
+          </section>
+
+          <aside className="task-rail">
+            <section className={`panel focus-job ${focusJob?.status || 'idle'}`}>
+              <div className="focus-top"><span className="eyebrow">NOW PROCESSING</span>{focusJob && <span className={`job-status ${focusJob.status}`}><i />{jobStatusLabel[focusJob.status]}</span>}</div>
+              {focusJob ? <>
+                <div className={`focus-icon ${focusJob.type}`}>{focusJob.type === 'video' ? <Film size={22} /> : <MessageSquareText size={22} />}</div>
+                <h2>{focusJob.title}</h2><p className="focus-prompt">{focusJob.type === 'text' && focusJob.result ? focusJob.result : focusJob.prompt}</p>
+                <div className="focus-number"><strong>{Math.round(focusJob.progress || 0)}</strong><span>%</span></div>
+                <div className="focus-track"><i style={{ width: `${focusJob.progress || 0}%` }} /></div>
+                <div className="pipeline-stages">
+                  {['准备', '模型执行', '解码', '交付'].map((stage, index) => <span className={(focusJob.progress || 0) >= [5, 20, 92, 100][index] ? 'done' : ''} key={stage}><i />{stage}</span>)}
+                </div>
+                <div className="focus-meta"><span><Clock3 size={13} />{formatElapsed(focusJob)}</span><span>{focusJob.phase}</span></div>
+                <div className="focus-actions">
+                  {!terminalJobs.has(focusJob.status) && <button onClick={() => jobAction(focusJob, 'cancel')}><Square size={14} />取消任务</button>}
+                  {focusJob.status === 'completed' && focusJob.output && <button className="primary" onClick={() => window.open(`/api/jobs/${focusJob.id}/output`, '_blank')}><ExternalLink size={15} />打开产物</button>}
+                  {terminalJobs.has(focusJob.status) && !focusJob.legacy && <button onClick={() => jobAction(focusJob, 'retry')}><RotateCcw size={14} />再次运行</button>}
+                </div>
+              </> : <div className="focus-empty"><Film size={28} /><h2>等待新任务</h2><p>生成任务会在这里显示实时阶段和采样进度。</p></div>}
+            </section>
+
+            <section className="panel resource-panel">
+              <div className="resource-title"><div><span className="eyebrow">LOCAL NODE</span><h3>{data.system.cpu.replace(/^Apple /, '')}</h3></div><span className={`status ${running ? 'running' : 'stopped'}`}><i />{running}/{data.models.length} 服务</span></div>
+              <div className="resource-row"><span><MemoryStick size={14} />统一内存</span><b>{data.system.memory.usedPercent}%</b></div><div className="resource-track"><i style={{ width: `${data.system.memory.usedPercent}%` }} /></div>
+              <div className="resource-row"><span><Database size={14} />模型占用</span><b>{formatBytes(modelDisk)}</b></div>
+              {Object.entries(data.state.deployments).map(([id, deployment]) => <div className="service-line" key={id}><span className={`service-dot ${deployment.status}`} /><div><b>{id.includes('wan') ? 'Wan2.2 Video' : 'Qwen3.5 Text'}</b><small>{deployment.endpoint}</small></div><button className="icon-btn" title="复制服务端点" onClick={() => copyEndpoint(deployment.endpoint)}><Copy size={13} /></button></div>)}
+            </section>
+          </aside>
+        </div>
+
+        {recentOutputs.length > 0 && <section className="recent-section">
+          <div className="recent-heading"><div><span className="eyebrow">RECENT OUTPUTS</span><h2>最近产物</h2></div><span>{recentOutputs.length} 个可用文件</span></div>
+          <div className="output-grid">{recentOutputs.map((job) => <article key={job.id}>
+            <div className="output-mark"><Film size={18} /><span>WEBM</span></div><div><b>{job.output?.filename}</b><p>{job.prompt}</p><small>{formatClock(job.finishedAt)} · {formatElapsed(job)}</small></div>
+            <button className="icon-btn" title="打开产物" onClick={() => window.open(`/api/jobs/${job.id}/output`, '_blank')}><ExternalLink size={15} /></button>
+          </article>)}</div>
+        </section>}
       </div>}
 
       {active === 'models' && <div className="page">
@@ -267,8 +358,14 @@ function App() {
           <button onClick={async () => {
             setBusy('generate-video')
             const response = await fetch('/api/generate/video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: videoPrompt, imageBase64: referenceImage || undefined, ...videoConfig }) })
-            const payload = await response.json(); setResult(payload.prompt_id ? `任务已入队：${payload.prompt_id}` : payload.error); setBusy('')
-          }}><Play size={16} />提交基准任务</button>
+            const payload = await response.json()
+            setResult(payload.prompt_id ? `任务已入队：${payload.prompt_id}` : payload.error)
+            if (payload.prompt_id) {
+              await refresh()
+              setActive('overview')
+            }
+            setBusy('')
+          }}><Play size={16} />提交生成任务</button>
         </section>
         <section className="panel output"><TerminalSquare size={18} /><pre>{result || '推理结果和错误信息会显示在这里。'}</pre></section>
       </div>}

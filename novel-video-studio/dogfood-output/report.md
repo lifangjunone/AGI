@@ -35,7 +35,7 @@
 - Verified restart recovery for interrupted, queued, and remotely rendering projects.
 - Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
 - Verified desktop and 390×844 mobile layouts with six working mobile destinations.
-- Automated suite: 25 passing tests.
+- Automated suite: 28 passing tests.
 
 ![Task center desktop](screenshots/task-center-desktop.png)
 
@@ -76,18 +76,32 @@
 
 ## Domestic Search and Source Registry Acceptance
 
-- Retried the previously failed `求魔` project and verified it now stops at source review with exact candidates from 起点中文网、和图书 and QQ 阅读.
-- Verified the exact user-provided URLs: `https://www.qidian.com/book/2070910/` and `https://www.hetushu.com/book/37/index.html`.
-- Verified 14 auditable search runs covering 360 domestic web search, nine configured sites, three international catalogs, and optional Brave Search.
+- Rechecked 23 accepted official sources across Chinese web fiction, public-domain classics, overseas originals, and digital libraries on 2026-09-09.
+- Retried `求魔` and verified two exact official candidates: Qidian `https://www.qidian.com/book/2070910/` and QQ Reading `https://book.qq.com/book-detail/481326`.
+- Verified 26 auditable search runs covering 360 domestic web search, configured site queries, international catalogs, and optional Brave Search.
 - Each run exposes its query URL, completion/degraded/failure state, hit count, elapsed time, and error.
-- Verified the source registry supports listing, enabling, disabling, adding, deleting, validation, and persistence without accepting arbitrary server fetch URLs.
+- Verified the source registry preserves category, free mode, registration, Web/download support, advertising, copyright notes, automation policy, and availability.
+- Verified `cn-qidianzww.com.cn`, `hetushu.com`, and `www.hetushu.com` cannot be restored through the configuration API.
+- Verified historical projects can explicitly rerun discovery with the current registry instead of silently rewriting stored traces.
 - Desktop 1120×720 and mobile 390×844 trace views, plus the source configuration dialog, report 0 WCAG 2 A/AA violations.
 
 ![Search trace desktop](screenshots/search-trace-desktop.png)
 
 ![Search trace mobile](screenshots/search-trace-mobile.png)
 
-![Source configuration desktop](screenshots/source-config-desktop.png)
+![Audited free-source registry](screenshots/free-source-registry-desktop.png)
+
+## Authorized Full-Text Import Acceptance
+
+- Verified commercial-source candidates expose an authorized TXT/Markdown import workflow instead of attempting to bypass WAF, login, or payment controls.
+- Verified 12 MB file-size enforcement, 500-character minimum, explicit rights confirmation, and disabled submission until both content and confirmation are present.
+- Verified the UI reads the selected local file, displays filename, character count and the first 2,000 characters without submitting the test file.
+- Backend tests verify complete text persistence outside project JSON, SHA-256 recording, path confinement, ingestion metadata, and automatic pipeline resume.
+- Desktop preview reports 0 WCAG 2 A/AA violations.
+
+![Authorized content preview](screenshots/authorized-content-preview-desktop.png)
+
+![Authorized content preview mobile](screenshots/authorized-content-preview-mobile.png)
 
 ## Issues
 

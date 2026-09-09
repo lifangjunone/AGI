@@ -135,6 +135,19 @@ function domesticSearchUrl(title, domain) {
   return `https://www.so.com/s?q=${encodeURIComponent(query)}`;
 }
 
+async function mapWithConcurrency(items, limit, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  async function run() {
+    while (cursor < items.length) {
+      const index = cursor++;
+      results[index] = await worker(items[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+  return results;
+}
+
 async function searchConfiguredSource(title, source) {
   const queryUrl = domesticSearchUrl(title, source.domains[0]);
   const knownCandidates = (source.knownBooks || [])
@@ -324,15 +337,21 @@ function builtinClassic(title) {
 
 export async function searchNovel(title, options = {}) {
   const configuredSources = await loadSourceRegistry(options);
-  const tasks = [
+  const [baseResults, configuredResults] = await Promise.all([
+    Promise.all([
     searchDomesticWeb(title, options.domesticWebSearch !== false),
-    ...configuredSources.map((source) => searchConfiguredSource(title, source)),
     searchGutendex(title),
     searchOpenLibrary(title),
     searchGoogleBooks(title),
     searchBrave(title, options.braveApiKey)
-  ];
-  const settled = await Promise.all(tasks);
+    ]),
+    mapWithConcurrency(
+      configuredSources.filter((source) => !["gutenberg", "open-library"].includes(source.id)),
+      6,
+      (source) => searchConfiguredSource(title, source)
+    )
+  ]);
+  const settled = [...baseResults, ...configuredResults];
   const classic = builtinClassic(title);
   if (classic.run) settled.push(classic);
   const candidates = settled.flatMap((result) => result.candidates)

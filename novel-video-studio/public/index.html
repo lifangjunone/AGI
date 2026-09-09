@@ -195,6 +195,7 @@
           <div class="source-actions">
             <span id="sourceResultCount">0 个来源</span>
             <button class="command-button" id="manageSourcesButton"><i data-lucide="settings-2"></i><span>配置来源</span></button>
+            <button class="command-button hidden" id="rescanSourcesButton"><i data-lucide="refresh-cw"></i><span>重新检索</span></button>
             <button class="command-button hidden" id="confirmSourceButton" disabled><i data-lucide="check"></i><span>确认来源并继续</span></button>
           </div>
         </header>
@@ -294,7 +295,7 @@
       <button class="dialog-close" id="sourceConfigDialogClose" aria-label="关闭检索源配置"><i data-lucide="x"></i></button>
     </header>
     <div class="source-config-body">
-      <p class="source-config-note">系统通过国内全网搜索执行站内查询。商业站点仅用于作品与版本核验，不会自动抓取未授权正文。</p>
+      <p class="source-config-note">已核验的正版、公版、原创与图书馆来源按类别展示。免费阅读不等于开放改编；仿冒域名 cn-qidianzww.com.cn 已永久拒绝。</p>
       <div class="source-config-list" id="sourceConfigList"></div>
       <form class="source-config-form" id="sourceConfigForm">
         <label>来源名称<input id="sourceConfigName" maxlength="40" required placeholder="例如：豆瓣阅读"></label>

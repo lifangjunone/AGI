@@ -7,7 +7,7 @@ import { ArkClient } from "../lib/ark-client.mjs";
 import { DEFAULT_ARK_MODELS, makeConfig } from "../lib/config.mjs";
 import { buildDemoBible, makeShots, ProductionPipeline } from "../lib/pipeline.mjs";
 import { searchNovel, titleScore } from "../lib/novel-search.mjs";
-import { loadSourceRegistry, sanitizeSources } from "../lib/source-registry.mjs";
+import { BLOCKED_SOURCE_DOMAINS, loadSourceRegistry, sanitizeSources } from "../lib/source-registry.mjs";
 import { ProjectStore } from "../lib/store.mjs";
 
 const waitFor = async (predicate, timeout = 3000) => {
@@ -24,14 +24,22 @@ test("title matching tolerates book-title punctuation", () => {
   assert.equal(titleScore("", "西游记"), 0);
 });
 
-test("default source registry includes exact Qiu Mo candidates and validates custom domains", async () => {
+test("default source registry includes audited free sources and blocks unsafe domains", async () => {
   const config = makeConfig(process.cwd());
   const sources = await loadSourceRegistry(config.search);
   const qidian = sources.find((source) => source.id === "qidian");
-  const hetushu = sources.find((source) => source.id === "hetushu");
+  const qqReading = sources.find((source) => source.id === "qq-reading");
+  assert.equal(sources.length, 23);
   assert.equal(qidian.knownBooks[0].url, "https://www.qidian.com/book/2070910/");
-  assert.equal(hetushu.knownBooks[0].url, "https://www.hetushu.com/book/37/index.html");
+  assert.equal(qqReading.knownBooks[0].url, "https://book.qq.com/book-detail/481326");
+  assert.equal(sources.some((source) => source.id === "hetushu"), false);
+  assert.equal(sources.find((source) => source.id === "gutenberg").automation, "public-domain-verify");
+  assert.ok(BLOCKED_SOURCE_DOMAINS.includes("cn-qidianzww.com.cn"));
   assert.throws(() => sanitizeSources([{ name: "Invalid", domain: "localhost" }]), /有效名称或域名/);
+  assert.throws(
+    () => sanitizeSources([{ name: "Fake Qidian", domains: ["cn-qidianzww.com.cn"] }]),
+    /拒绝名单/
+  );
 });
 
 test("known Qiu Mo sources survive upstream search blocking", async () => {
@@ -42,8 +50,9 @@ test("known Qiu Mo sources survive upstream search blocking", async () => {
   try {
     const result = await searchNovel("求魔", makeConfig(process.cwd()).search);
     assert.ok(result.candidates.some((candidate) => candidate.sourceUrl === "https://www.qidian.com/book/2070910/"));
-    assert.ok(result.candidates.some((candidate) => candidate.sourceUrl === "https://www.hetushu.com/book/37/index.html"));
-    assert.equal(result.searches.find((run) => run.provider === "起点中文网").status, "degraded");
+    assert.ok(result.candidates.some((candidate) => candidate.sourceUrl === "https://book.qq.com/book-detail/481326"));
+    assert.equal(result.candidates.some((candidate) => candidate.sourceUrl.includes("hetushu.com")), false);
+    assert.equal(result.searches.find((run) => run.provider === "起点免费频道").status, "degraded");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -283,6 +292,15 @@ test("authorized full-text import persists content and resumes the pipeline", as
     const created = await pipeline.create("求魔");
     await waitFor(async () => (await store.get(created.id)).status === "source-review");
     const content = "这是已获授权的小说正文内容。".repeat(80);
+    await assert.rejects(
+      pipeline.importAuthorizedContent(created.id, {
+        sourceId: source.id,
+        content,
+        fileName: "求魔-授权正文.txt",
+        rightsConfirmed: false
+      }),
+      /必须确认/
+    );
     await pipeline.importAuthorizedContent(created.id, {
       sourceId: source.id,
       content,

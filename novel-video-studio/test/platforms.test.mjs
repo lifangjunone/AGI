@@ -46,6 +46,9 @@ test("search-source registry is exposed and safely persisted", async () => {
   assert.equal(response.status, 200);
   const initial = await response.json();
   assert.ok(initial.sources.some((source) => source.id === "qidian"));
+  assert.equal(initial.sources.length, 23);
+  assert.ok(initial.blockedDomains.includes("cn-qidianzww.com.cn"));
+  assert.ok(initial.blockedDomains.includes("hetushu.com"));
   const custom = {
     id: "custom-reading",
     name: "自定义阅读站",
@@ -92,7 +95,7 @@ test("mobile PWA assets are valid and served with correct types", async () => {
 
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
-  assert.match(await workerResponse.text(), /novel-picture-works-v7/);
+  assert.match(await workerResponse.text(), /novel-picture-works-v9/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {
@@ -132,6 +135,15 @@ test("source confirmation endpoint rejects unknown projects", async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sourceId: "candidate" })
+  });
+  assert.equal(response.status, 404);
+});
+
+test("source rescan endpoint rejects unknown projects", async () => {
+  const response = await fetch(`${origin}/api/projects/missing/rescan`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}"
   });
   assert.equal(response.status, 404);
 });

@@ -16,6 +16,7 @@ import {
   assistantToolConfig,
   generateAssistantTool
 } from "./lib/assistant-tools.mjs";
+import { createWechatNotifications } from "./lib/wechat-notifications.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIRECTORY = path.join(ROOT, "public");
@@ -66,6 +67,7 @@ const alipayWebPay = createAlipayWebPay({
   price: adminStore.getPrices().product,
   getPrice: () => adminStore.getPrices().product
 });
+const wechatNotifications = createWechatNotifications({ dataDirectory: DATA_DIRECTORY });
 const generationJobsDirectory = path.join(DATA_DIRECTORY, "generation-jobs");
 
 async function writeGenerationJob(job) {
@@ -114,6 +116,18 @@ async function runGenerationJob({ id, input, config: generationConfig, ffmpegPat
       video,
       completedAt: new Date().toISOString()
     });
+    let notification = { sent: 0, skipped: true, reason: "通知发送异常" };
+    try {
+      notification = await wechatNotifications.notifyJobComplete({
+        id,
+        detail: "视频已生成",
+        video,
+        completedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("[VideoJob] notification failed", { id, error: error.message });
+    }
+    await update({ notification });
   } catch (error) {
     console.error("[VideoJob] generation failed", { id, error: error.message });
     await update({
@@ -386,6 +400,43 @@ export const server = createServer(async (request, response) => {
           }
         }
       });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/notifications/config") {
+      sendJson(response, 200, wechatNotifications.status());
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/notifications/miniapp/subscribe") {
+      const input = await readJson(request);
+      const result = await wechatNotifications.bindMiniappJob(input.jobId, input.code);
+      sendJson(response, 200, result);
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/notifications/official/start") {
+      const status = wechatNotifications.status().official;
+      const jobId = url.searchParams.get("jobId") || "";
+      if (!status.authorizeUrl) {
+        sendJson(response, 503, { error: "公众号模板消息尚未配置" });
+        return;
+      }
+      const redirect = new URL(status.authorizeUrl);
+      redirect.searchParams.set("state", `notify:${jobId}`);
+      response.writeHead(302, { Location: redirect.toString() });
+      response.end();
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/notifications/official/callback") {
+      const state = url.searchParams.get("state") || "";
+      const jobId = state.startsWith("notify:") ? state.slice("notify:".length) : "";
+      await wechatNotifications.bindOfficialCode(jobId, url.searchParams.get("code"));
+      response.writeHead(302, {
+        Location: `${publicBasePath}/?job=${encodeURIComponent(jobId)}&notification=ready`
+      });
+      response.end();
       return;
     }
 

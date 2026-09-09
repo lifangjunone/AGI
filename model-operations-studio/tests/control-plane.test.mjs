@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { test } from 'node:test'
@@ -29,12 +30,16 @@ test('Wan workflow uses FP16, Euler and tiled VAE decode', async () => {
 
 test('control plane exposes host and model state', async (context) => {
   const port = 4398
+  const runtime = await fs.mkdtemp(path.join(os.tmpdir(), 'modelops-test-'))
   const child = spawn(process.execPath, ['server/control-plane.mjs'], {
     cwd: root,
-    env: { ...process.env, MODELOPS_PORT: String(port) },
+    env: { ...process.env, MODELOPS_PORT: String(port), MODELOPS_RUNTIME_DIR: runtime },
     stdio: 'ignore',
   })
-  context.after(() => child.kill('SIGTERM'))
+  context.after(async () => {
+    child.kill('SIGTERM')
+    await fs.rm(runtime, { recursive: true, force: true })
+  })
   let response
   for (let attempt = 0; attempt < 30; attempt += 1) {
     try {
@@ -48,10 +53,22 @@ test('control plane exposes host and model state', async (context) => {
   const payload = await response.json()
   assert.equal(payload.system.arch, process.arch)
   assert.equal(payload.models.length, 2)
+  assert.deepEqual(payload.state.jobs, [])
   const invalidImage = await fetch(`http://127.0.0.1:${port}/api/generate/video`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt: 'test', imageBase64: 'not-an-image' }),
   })
   assert.equal(invalidImage.status, 400)
+
+  const textResponse = await fetch(`http://127.0.0.1:${port}/api/generate/text`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: 'task tracking test' }),
+  })
+  const textPayload = await textResponse.json()
+  assert.ok(textPayload.job?.id)
+  assert.ok(['completed', 'failed'].includes(textPayload.job.status))
+  const stateAfter = await fetch(`http://127.0.0.1:${port}/api/state`).then((result) => result.json())
+  assert.equal(stateAfter.state.jobs.some((job) => job.id === textPayload.job.id), true)
 })
