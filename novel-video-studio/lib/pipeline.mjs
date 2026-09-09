@@ -1,6 +1,6 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ArkClient } from "./ark-client.mjs";
 import { loadAuthorizedText, searchNovel } from "./novel-search.mjs";
@@ -224,6 +224,62 @@ export class ProductionPipeline {
     return this.scheduler.enqueue(id, { message: "来源确认完成，任务重新进入生产队列" });
   }
 
+  async importAuthorizedContent(id, { sourceId, content, fileName, rightsConfirmed }) {
+    const project = await this.store.get(id);
+    if (!project) throw new Error("项目不存在");
+    if (!["source-review", "rights-review"].includes(project.status)) {
+      throw new Error("当前任务不在内容导入阶段");
+    }
+    if (rightsConfirmed !== true) throw new Error("必须确认拥有该文本的处理权");
+    const source = project.sources.find((candidate) => candidate.id === sourceId);
+    if (!source) throw new Error("所选来源不在候选列表中");
+    const normalized = String(content || "").replace(/\0/g, "").trim();
+    if (normalized.length < 500) throw new Error("正文至少需要 500 个字符");
+    if (Buffer.byteLength(normalized, "utf8") > 12 * 1024 * 1024) throw new Error("正文文件不能超过 12 MB");
+    const relativeFile = path.join("imports", project.id, "authorized-source.txt");
+    const file = path.join(this.config.dataDirectory, relativeFile);
+    const directory = path.dirname(file);
+    await mkdir(directory, { recursive: true });
+    await writeFile(file, normalized, { encoding: "utf8", mode: 0o600 });
+    const sha256 = createHash("sha256").update(normalized).digest("hex");
+    const importedAt = now();
+    const authorizedSource = {
+      ...source,
+      rights: "user-provided",
+      localContentFile: relativeFile,
+      contentUrl: null
+    };
+    await this.update(project, {
+      source: authorizedSource,
+      sources: project.sources.map((candidate) => candidate.id === sourceId ? authorizedSource : candidate),
+      sourceConfirmed: true,
+      authorizedContent: {
+        fileName: path.basename(String(fileName || "authorized-source.txt")).slice(0, 160),
+        characterCount: normalized.length,
+        byteCount: Buffer.byteLength(normalized, "utf8"),
+        sha256,
+        preview: normalized.slice(0, 2000),
+        importedAt,
+        rightsBasis: "user-declared"
+      },
+      status: "queued",
+      stage: "ingest",
+      progress: 18,
+      error: null
+    }, `已导入授权正文：${normalized.length} 字符`);
+    return this.scheduler.enqueue(id, { message: "授权正文已进入内容核验队列" });
+  }
+
+  async readSourceText(source) {
+    if (source?.rights !== "user-provided" || !source.localContentFile) {
+      return this.loadAuthorizedText(source);
+    }
+    const importsRoot = path.resolve(this.config.dataDirectory, "imports");
+    const file = path.resolve(this.config.dataDirectory, source.localContentFile);
+    if (!file.startsWith(`${importsRoot}${path.sep}`)) throw new Error("授权正文路径不合法");
+    return (await readFile(file, "utf8")).slice(0, 12 * 1024 * 1024);
+  }
+
   async run(id) {
     const project = await this.store.get(id);
     if (!project || this.active.has(id)) return false;
@@ -297,7 +353,7 @@ export class ProductionPipeline {
         input: { sourceId: source.id, title: source.title, authors: source.authors, source: source.source, rights: source.rights }
       });
 
-      if (!["public-domain", "public-domain-candidate"].includes(source.rights)) {
+      if (!["public-domain", "public-domain-candidate", "user-provided"].includes(source.rights)) {
         await this.updateNode(project, "ingest", "paused", {
           input: { sourceId: source.id, title: source.title, rights: source.rights },
           error: "仅找到元数据或待授权网页，需获得作品授权后才能处理正文",
@@ -312,14 +368,16 @@ export class ProductionPipeline {
         return false;
       }
 
-      const sourceText = await this.loadAuthorizedText(source).catch(() => "");
+      const sourceText = await this.readSourceText(source).catch(() => "");
       await this.updateNode(project, "ingest", "completed", {
         output: {
           sourceId: source.id,
           contentCharacters: sourceText.length,
           contentPreview: (sourceText || source.description || "").slice(0, 1200),
           usedDescriptionFallback: sourceText.length === 0,
-          rights: source.rights
+          rights: source.rights,
+          contentSha256: project.authorizedContent?.sha256 || null,
+          importedFileName: project.authorizedContent?.fileName || null
         },
         projectPatch: { stage: "adapt", progress: 34 },
         message: "正文与梗概已进入改编引擎"

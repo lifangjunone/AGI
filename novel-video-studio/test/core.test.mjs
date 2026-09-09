@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -245,6 +245,58 @@ test("pipeline pauses for explicit source confirmation and records every node ar
     assert.equal(project.nodes.ingest.output.contentCharacters, 4);
     assert.equal(project.nodes.render.output.completedShots, 30);
     assert.equal(project.nodes.assemble.output.durationSeconds, 900);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("authorized full-text import persists content and resumes the pipeline", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "novel-authorized-content-"));
+  try {
+    const store = new ProjectStore(directory);
+    const source = {
+      id: "qidian-qiumo",
+      title: "求魔",
+      authors: "耳根",
+      source: "起点中文网",
+      rights: "metadata-only",
+      score: 100,
+      sourceUrl: "https://www.qidian.com/book/2070910/"
+    };
+    const config = {
+      mode: "demo",
+      dataDirectory: directory,
+      ark: {},
+      search: {},
+      production: {
+        episodeMinutes: 15,
+        shotsPerEpisode: 30,
+        shotSeconds: 30,
+        maxProjectConcurrency: 1,
+        maxVideoConcurrency: 4
+      }
+    };
+    const pipeline = new ProductionPipeline(config, store, {
+      search: async () => [source],
+      loadText: async () => ""
+    });
+    const created = await pipeline.create("求魔");
+    await waitFor(async () => (await store.get(created.id)).status === "source-review");
+    const content = "这是已获授权的小说正文内容。".repeat(80);
+    await pipeline.importAuthorizedContent(created.id, {
+      sourceId: source.id,
+      content,
+      fileName: "求魔-授权正文.txt",
+      rightsConfirmed: true
+    });
+    await waitFor(async () => (await store.get(created.id)).status === "completed");
+    const project = await store.get(created.id);
+    assert.equal(project.source.rights, "user-provided");
+    assert.equal(project.authorizedContent.characterCount, content.length);
+    assert.equal(project.authorizedContent.sha256.length, 64);
+    assert.equal(await readFile(project.source.localContentPath, "utf8"), content);
+    assert.equal(project.nodes.ingest.output.contentCharacters, content.length);
+    assert.equal(project.nodes.ingest.output.importedFileName, "求魔-授权正文.txt");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

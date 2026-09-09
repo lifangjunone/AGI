@@ -42,6 +42,8 @@ let selectedSourceId = null;
 let projectFilter = "all";
 let projectQuery = "";
 let sourceRegistry = [];
+let authorizedTextDraft = "";
+let authorizedFileName = "";
 
 document.documentElement.dataset.platform = platform;
 
@@ -166,10 +168,12 @@ function renderSourceLibrary(project) {
   $("#confirmSourceButton").classList.toggle("hidden", !requiresConfirmation);
   $("#confirmSourceButton").disabled = !selectedSourceId;
   $("#sourceTable").innerHTML = sources.length ? sources.map((source) => {
-    const approved = ["public-domain", "public-domain-candidate"].includes(source.rights);
+    const approved = ["public-domain", "public-domain-candidate", "user-provided"].includes(source.rights);
     const rightsText = source.rights === "public-domain"
       ? "公版"
-      : source.rights === "public-domain-candidate" ? "公版候选" : source.rights === "metadata-only" ? "仅元数据" : "待授权";
+      : source.rights === "public-domain-candidate"
+        ? "公版候选"
+        : source.rights === "user-provided" ? "已授权正文" : source.rights === "metadata-only" ? "作品信息" : "待授权";
     const link = source.sourceUrl
       ? `<a class="source-link" href="${escapeHtml(source.sourceUrl)}" target="_blank" rel="noreferrer" title="打开原始来源" aria-label="打开 ${escapeHtml(source.title)} 原始来源"><i data-lucide="external-link"></i></a>`
       : "<span></span>";
@@ -189,6 +193,47 @@ function renderSourceLibrary(project) {
       ${link}
     </article>`;
   }).join("") : `<div class="view-empty"><i data-lucide="library-big"></i><p>启动生产后，这里会列出所有检索来源及版权状态。</p></div>`;
+  renderContentImport(project, sources.find((source) => source.id === selectedSourceId));
+}
+
+function updateContentImportButton() {
+  $("#importContentButton").disabled = authorizedTextDraft.length < 500 || !$("#authorizedRightsConfirmed").checked;
+}
+
+function renderContentImport(project, source) {
+  const imported = project?.authorizedContent && project?.source?.id === source?.id;
+  const needsImport = source && !["public-domain", "public-domain-candidate", "user-provided"].includes(source.rights);
+  $("#contentImportPanel").classList.toggle("hidden", !imported && !needsImport);
+  if (!source || (!imported && !needsImport)) return;
+  const key = `${project.id}:${source.id}`;
+  if ($("#contentImportPanel").dataset.sourceKey !== key) {
+    $("#contentImportPanel").dataset.sourceKey = key;
+    authorizedTextDraft = "";
+    authorizedFileName = "";
+    $("#authorizedTextFile").value = "";
+    $("#authorizedRightsConfirmed").checked = false;
+  }
+  $("#contentImportSource").textContent = `${source.title} · ${source.authors} · ${source.source}`;
+  if (imported) {
+    $("#authorizedFileName").textContent = project.authorizedContent.fileName;
+    $("#authorizedFileStats").textContent = `${project.authorizedContent.characterCount.toLocaleString()} 字符 · SHA-256 ${project.authorizedContent.sha256.slice(0, 12)}…`;
+    $("#authorizedTextPreview").value = project.authorizedContent.preview;
+    $("#authorizedTextFile").disabled = true;
+    $("#authorizedRightsConfirmed").checked = true;
+    $("#authorizedRightsConfirmed").disabled = true;
+    $("#importContentButton").disabled = true;
+    $("#importContentButton span").textContent = "正文已安全导入";
+  } else {
+    $("#authorizedFileName").textContent = authorizedFileName || "未选择文件";
+    $("#authorizedFileStats").textContent = authorizedTextDraft
+      ? `${authorizedTextDraft.length.toLocaleString()} 字符 · 预览前 2,000 字`
+      : "支持 UTF-8，最大 12 MB";
+    $("#authorizedTextPreview").value = authorizedTextDraft.slice(0, 2000);
+    $("#authorizedTextFile").disabled = false;
+    $("#authorizedRightsConfirmed").disabled = false;
+    $("#importContentButton span").textContent = "导入并继续流水线";
+    updateContentImportButton();
+  }
 }
 
 function renderSearchTrace(project) {
@@ -223,7 +268,7 @@ function renderSourceRegistry() {
     <article class="source-config-row" data-source-index="${index}">
       <label class="source-switch"><input type="checkbox" aria-label="${escapeHtml(source.name)}检索源" ${source.enabled ? "checked" : ""}><span></span></label>
       <div><strong>${escapeHtml(source.name)}</strong><small>${escapeHtml(source.domains.join("、"))}</small></div>
-      <span>${source.rights === "metadata-only" ? "仅元数据" : source.rights === "public-domain-candidate" ? "公版候选" : "需授权核验"}</span>
+      <span>${source.rights === "metadata-only" ? "作品信息（需正文）" : source.rights === "public-domain-candidate" ? "公版候选" : "需授权核验"}</span>
       <button class="icon-button" data-remove-source="${index}" aria-label="删除 ${escapeHtml(source.name)}"><i data-lucide="trash-2"></i></button>
     </article>
   `).join("");
@@ -757,6 +802,53 @@ $("#sourceTable").addEventListener("change", (event) => {
   if (!event.target.matches("input[name=sourceCandidate]")) return;
   selectedSourceId = event.target.value;
   renderSourceLibrary(activeProject);
+});
+
+$("#authorizedTextFile").addEventListener("change", async (event) => {
+  const [file] = event.target.files;
+  if (!file) return;
+  if (file.size > 12 * 1024 * 1024) {
+    event.target.value = "";
+    showToast("正文文件不能超过 12 MB");
+    return;
+  }
+  if (!/\.(txt|md)$/i.test(file.name) && !["text/plain", "text/markdown"].includes(file.type)) {
+    event.target.value = "";
+    showToast("仅支持 TXT 或 Markdown 文件");
+    return;
+  }
+  authorizedTextDraft = (await file.text()).replace(/\0/g, "").trim();
+  authorizedFileName = file.name;
+  if (authorizedTextDraft.length < 500) {
+    showToast("正文至少需要 500 个字符");
+  }
+  renderContentImport(activeProject, activeProject?.sources?.find((source) => source.id === selectedSourceId));
+});
+$("#authorizedRightsConfirmed").addEventListener("change", updateContentImportButton);
+$("#importContentButton").addEventListener("click", async () => {
+  if (!activeProjectId || !selectedSourceId || authorizedTextDraft.length < 500) return;
+  const button = $("#importContentButton");
+  button.disabled = true;
+  try {
+    const { project } = await api(`/api/projects/${activeProjectId}/content`, {
+      method: "POST",
+      body: JSON.stringify({
+        sourceId: selectedSourceId,
+        content: authorizedTextDraft,
+        fileName: authorizedFileName,
+        rightsConfirmed: $("#authorizedRightsConfirmed").checked
+      })
+    });
+    authorizedTextDraft = "";
+    authorizedFileName = "";
+    renderProject(project);
+    showView("overview");
+    showToast("授权正文已导入，流水线继续执行");
+    await refreshAll();
+  } catch (error) {
+    button.disabled = false;
+    showToast(error.message);
+  }
 });
 
 $("#confirmSourceButton").addEventListener("click", async () => {

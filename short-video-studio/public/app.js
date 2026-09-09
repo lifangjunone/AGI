@@ -144,6 +144,47 @@ function stopRenderTimer() {
   timerHandle = null;
 }
 
+async function waitForGeneration(jobId) {
+  for (let attempt = 0; attempt < 1800; attempt += 1) {
+    const response = await fetch(apiUrl(`/api/generate/jobs/${encodeURIComponent(jobId)}`), {
+      cache: "no-store"
+    });
+    const job = await response.json();
+    if (!response.ok) throw new Error(job.error || "生成任务不存在");
+    elements.renderProgress.style.width = `${Math.max(5, Math.min(99, job.progress || 5))}%`;
+    elements.renderDetail.textContent = job.detail || "后台正在生成视频...";
+    if (job.status === "completed" && job.video) {
+      localStorage.removeItem("frame60:pending-job");
+      return job.video;
+    }
+    if (job.status === "failed") {
+      localStorage.removeItem("frame60:pending-job");
+      throw new Error(job.error || "视频生成失败");
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  throw new Error("任务仍在后台运行，可稍后从作品库查看");
+}
+
+async function resumePendingGeneration() {
+  const pending = localStorage.getItem("frame60:pending-job");
+  if (!pending) return;
+  try {
+    const job = JSON.parse(pending);
+    setRendering(true);
+    elements.renderTitle.textContent = "正在恢复后台生成任务";
+    const video = await waitForGeneration(job.jobId);
+    elements.renderProgress.style.width = "100%";
+    showVideo(video);
+    await loadLibrary();
+    showToast("后台视频已完成");
+  } catch (error) {
+    showToast(error.message || "无法恢复生成任务", true);
+  } finally {
+    setRendering(false);
+  }
+}
+
 function setRendering(rendering) {
   elements.generateButton.disabled = rendering;
   elements.renderState.hidden = !rendering;
@@ -190,16 +231,25 @@ async function generate(event) {
   setRendering(true);
   elements.renderTitle.textContent = `正在生成 ${payload.duration} 秒成片`;
   try {
-    const response = await fetch(apiUrl("/api/generate"), {
+    const response = await fetch(apiUrl("/api/generate?async=1"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "生成失败");
+    const video = result.video || await (async () => {
+      localStorage.setItem("frame60:pending-job", JSON.stringify({
+        jobId: result.jobId,
+        createdAt: new Date().toISOString(),
+        input: payload
+      }));
+      showToast("任务已进入后台，离开页面也会继续生成");
+      return waitForGeneration(result.jobId);
+    })();
     elements.renderProgress.style.width = "100%";
-    showVideo(result.video);
-    showToast(`视频已生成，成片时长 ${result.video.deliveredDuration.toFixed(2)} 秒`);
+    showVideo(video);
+    showToast(`视频已生成，成片时长 ${video.deliveredDuration.toFixed(2)} 秒`);
     await loadLibrary();
   } catch (error) {
     showToast(error.message || "视频生成失败", true);
@@ -413,3 +463,4 @@ elements.libraryView.hidden = true;
 updateControls();
 iconRefresh();
 checkStatus();
+resumePendingGeneration();

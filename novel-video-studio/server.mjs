@@ -63,12 +63,17 @@ function projectSummary(project) {
   };
 }
 
-async function readJson(request) {
+async function readJson(request, maxBytes = 128 * 1024) {
   const chunks = [];
   let size = 0;
   for await (const chunk of request) {
     size += chunk.length;
-    if (size > 128 * 1024) throw new Error("请求不能超过 128 KB");
+    if (size > maxBytes) {
+      const limit = maxBytes >= 1024 * 1024
+        ? `${Math.round(maxBytes / 1024 / 1024)} MB`
+        : `${Math.round(maxBytes / 1024)} KB`;
+      throw new Error(`请求不能超过 ${limit}`);
+    }
     chunks.push(chunk);
   }
   try {
@@ -238,7 +243,7 @@ export const server = createServer(async (request, response) => {
       return;
     }
 
-    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|source|export|manifest))?$/.exec(url.pathname);
+    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|source|content|export|manifest))?$/.exec(url.pathname);
     if (request.method === "GET" && projectMatch && !projectMatch[2]) {
       const project = await store.get(projectMatch[1]);
       sendJson(response, project ? 200 : 404, project ? { project } : { error: "项目不存在" });
@@ -264,6 +269,15 @@ export const server = createServer(async (request, response) => {
       sendJson(response, 202, {
         accepted: true,
         project: await pipeline.confirmSource(projectMatch[1], body.sourceId)
+      });
+      return;
+    }
+
+    if (request.method === "POST" && projectMatch?.[2] === "content") {
+      const body = await readJson(request, 12 * 1024 * 1024);
+      sendJson(response, 202, {
+        accepted: true,
+        project: await pipeline.importAuthorizedContent(projectMatch[1], body)
       });
       return;
     }

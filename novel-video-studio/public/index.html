@@ -208,6 +208,20 @@
         <div class="source-table" id="sourceTable">
           <div class="view-empty"><i data-lucide="library-big"></i><p>启动生产后，这里会列出所有检索来源及版权状态。</p></div>
         </div>
+        <section class="content-import hidden" id="contentImportPanel">
+          <header>
+            <div><span class="micro-label">AUTHORIZED CONTENT</span><h3>导入已授权正文</h3></div>
+            <span id="contentImportSource">尚未选择来源</span>
+          </header>
+          <div class="content-import-body">
+            <label class="file-picker" for="authorizedTextFile"><i data-lucide="file-up"></i><span>选择 TXT / Markdown</span><input id="authorizedTextFile" type="file" accept=".txt,.md,text/plain,text/markdown"></label>
+            <div class="content-file-meta"><strong id="authorizedFileName">未选择文件</strong><span id="authorizedFileStats">支持 UTF-8，最大 12 MB</span></div>
+            <label class="rights-confirm"><input id="authorizedRightsConfirmed" type="checkbox"><span>我确认拥有该文本的处理、改编和生成权利</span></label>
+            <button class="primary-command" id="importContentButton" disabled><i data-lucide="shield-check"></i><span>导入并继续流水线</span></button>
+          </div>
+          <label class="content-preview-label" for="authorizedTextPreview">正文预览</label>
+          <textarea id="authorizedTextPreview" readonly placeholder="选择文件后显示前 2,000 字预览"></textarea>
+        </section>
       </section>
 
       <section class="asset-view page-view hidden" data-page-view="assets">
@@ -285,7 +299,7 @@
       <form class="source-config-form" id="sourceConfigForm">
         <label>来源名称<input id="sourceConfigName" maxlength="40" required placeholder="例如：豆瓣阅读"></label>
         <label>站点域名<input id="sourceConfigDomain" maxlength="120" required placeholder="read.douban.com"></label>
-        <label>版权策略<select id="sourceConfigRights"><option value="metadata-only">仅元数据</option><option value="rights-review-required">需要授权核验</option><option value="public-domain-candidate">公版候选</option></select></label>
+        <label>版权策略<select id="sourceConfigRights"><option value="metadata-only">作品信息（需正文）</option><option value="rights-review-required">需要授权核验</option><option value="public-domain-candidate">公版候选</option></select></label>
         <button type="submit" class="primary-command"><i data-lucide="plus"></i><span>添加来源</span></button>
       </form>
     </div>

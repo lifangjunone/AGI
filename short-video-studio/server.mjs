@@ -597,6 +597,35 @@ export const server = createServer(async (request, response) => {
         return;
       }
       const input = await readJson(request);
+      validateGenerationInput(input);
+      if (url.searchParams.get("async") === "1") {
+        const id = randomUUID();
+        await writeGenerationJob({
+          id,
+          status: "queued",
+          progress: 5,
+          detail: "等待后台任务启动",
+          input,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        });
+        setImmediate(() => {
+          void runGenerationJob({
+            id,
+            input,
+            config,
+            ffmpegPath,
+            ffprobePath
+          });
+        });
+        sendJson(response, 202, {
+          jobId: id,
+          status: "queued",
+          progress: 5,
+          statusUrl: `${publicBasePath}/api/generate/jobs/${id}`
+        });
+        return;
+      }
       const video = await generateVideo({
         input,
         config,
@@ -606,6 +635,27 @@ export const server = createServer(async (request, response) => {
         signal: AbortSignal.timeout(20 * 60 * 1000)
       });
       sendJson(response, 201, { video });
+      return;
+    }
+
+    const generationJobMatch = url.pathname.match(/^\/api\/generate\/jobs\/([a-f0-9-]+)$/);
+    if (request.method === "GET" && generationJobMatch) {
+      const job = await getGenerationJob(generationJobMatch[1]);
+      if (!job) {
+        sendJson(response, 404, { error: "任务不存在" });
+        return;
+      }
+      sendJson(response, 200, {
+        jobId: job.id,
+        status: job.status,
+        progress: job.progress,
+        detail: job.detail,
+        video: job.video || null,
+        error: job.error || null,
+        createdAt: job.createdAt,
+        updatedAt: job.updatedAt,
+        completedAt: job.completedAt || null
+      });
       return;
     }
 

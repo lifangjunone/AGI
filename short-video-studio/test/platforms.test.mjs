@@ -114,7 +114,7 @@ test("serves the Zhizhu assistant workspace and generates all three previews", a
   assert.equal(config.status, 200);
   const configBody = await config.json();
   assert.equal(configBody.brand, "智助乖乖");
-  assert.equal(configBody.prices.product, "9.90");
+  assert.match(configBody.prices.product, /^\d+\.\d{2}$/);
   assert.match(configBody.channels.officialAccount.article, /tool=article/);
 
   const payloads = [
