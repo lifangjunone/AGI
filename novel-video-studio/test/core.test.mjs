@@ -294,7 +294,7 @@ test("authorized full-text import persists content and resumes the pipeline", as
     assert.equal(project.source.rights, "user-provided");
     assert.equal(project.authorizedContent.characterCount, content.length);
     assert.equal(project.authorizedContent.sha256.length, 64);
-    assert.equal(await readFile(project.source.localContentPath, "utf8"), content);
+    assert.equal(await readFile(path.join(directory, project.source.localContentFile), "utf8"), content);
     assert.equal(project.nodes.ingest.output.contentCharacters, content.length);
     assert.equal(project.nodes.ingest.output.importedFileName, "求魔-授权正文.txt");
   } finally {

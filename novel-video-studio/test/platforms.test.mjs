@@ -29,6 +29,7 @@ test("web, mobile and desktop entrypoints share the production UI", async () => 
     assert.match(html, /长卷制片厂/);
     assert.match(html, /项目工作台/);
     assert.match(html, /创建小说项目/);
+    assert.match(html, /导入已授权正文/);
   }
 });
 
@@ -131,6 +132,20 @@ test("source confirmation endpoint rejects unknown projects", async () => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sourceId: "candidate" })
+  });
+  assert.equal(response.status, 404);
+});
+
+test("authorized content endpoint rejects unknown projects", async () => {
+  const response = await fetch(`${origin}/api/projects/missing/content`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sourceId: "candidate",
+      content: "authorized".repeat(100),
+      fileName: "novel.txt",
+      rightsConfirmed: true
+    })
   });
   assert.equal(response.status, 404);
 });
