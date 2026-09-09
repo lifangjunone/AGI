@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10110f">
+  <title>长卷制片厂</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="长卷制片厂首页">
+        <span class="brand-mark">卷</span>
+        <span><strong>长卷制片厂</strong><small>NOVEL PICTURE WORKS</small></span>
+      </a>
+      <div class="topbar-status">
+        <span class="status-dot"></span>
+        <span id="modeLabel">正在连接生产引擎</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-button" id="refreshButton" title="刷新生产状态" aria-label="刷新生产状态"><i data-lucide="refresh-cw"></i></button>
+        <button class="icon-button" id="themeButton" title="切换明暗主题" aria-label="切换明暗主题"><i data-lucide="sun"></i></button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <nav aria-label="主导航">
+        <button class="nav-item active"><i data-lucide="clapperboard"></i><span>生产总览</span></button>
+        <button class="nav-item"><i data-lucide="library-big"></i><span>小说源库</span></button>
+        <button class="nav-item"><i data-lucide="users"></i><span>角色资产</span></button>
+        <button class="nav-item"><i data-lucide="film"></i><span>分集队列</span></button>
+      </nav>
+      <div class="sidebar-foot">
+        <span>今日目标</span>
+        <strong id="dailyTarget">72h</strong>
+        <small id="dailyEpisodes">288 集 / 日</small>
+      </div>
+    </aside>
+
+    <main>
+      <section class="command-band">
+        <div>
+          <p class="eyebrow">AUTO PRODUCTION LINE 01</p>
+          <h1>输入书名，启动整条制片线</h1>
+        </div>
+        <form id="launchForm" class="launch-form">
+          <label for="novelName">小说名称</label>
+          <div class="search-box">
+            <i data-lucide="search"></i>
+            <input id="novelName" name="novelName" value="西游记" maxlength="100" autocomplete="off" placeholder="输入小说名">
+            <button type="submit"><i data-lucide="play"></i><span>开始生产</span></button>
+          </div>
+          <p id="formHint">自动检索公版或已授权来源，生成 15 分钟分集。</p>
+        </form>
+      </section>
+
+      <section class="metrics-strip" aria-label="生产指标">
+        <article><span>目标产能</span><strong id="metricHours">72</strong><small>小时 / 日</small></article>
+        <article><span>分集规格</span><strong id="metricMinutes">15</strong><small>分钟 / 集</small></article>
+        <article><span>镜头任务</span><strong id="metricShots">8,640</strong><small>条 / 日</small></article>
+        <article><span>并发通道</span><strong id="metricConcurrency">4</strong><small>路渲染</small></article>
+        <article class="budget"><span>日预算上限</span><strong id="metricBudget">¥200</strong><small>硬门禁</small></article>
+      </section>
+
+      <section class="workspace">
+        <div class="production-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">ACTIVE PRODUCTION</p>
+              <h2 id="projectTitle">等待生产任务</h2>
+            </div>
+            <span class="state-badge" id="projectStatus">IDLE</span>
+          </div>
+
+          <div class="stage-track" id="stageTrack" aria-label="生产阶段"></div>
+
+          <div class="production-body" id="emptyState">
+            <div class="empty-copy">
+              <span class="reel"><i data-lucide="aperture"></i></span>
+              <h3>制片线已待命</h3>
+              <p>提交书名后，系统将自动完成来源核验、剧本改编、视觉设定、镜头渲染与成片装配。</p>
+            </div>
+          </div>
+
+          <div class="production-body hidden" id="projectView">
+            <div class="source-block">
+              <div class="cover-frame">
+                <img id="projectCover" alt="小说改编视觉概念图">
+                <span id="coverProgress">0%</span>
+              </div>
+              <div class="source-copy">
+                <span class="micro-label">CONTENT SOURCE</span>
+                <h3 id="sourceTitle">检索中</h3>
+                <p id="sourceMeta">正在校验来源与版权状态</p>
+                <div class="rights-line"><i data-lucide="shield-check"></i><span id="rightsText">校验中</span></div>
+              </div>
+            </div>
+
+            <div class="episode-block">
+              <div class="subheading"><span>第 01 集</span><strong id="episodeTitle">脚本生成中</strong><small>15:00</small></div>
+              <div class="shot-grid" id="shotGrid"></div>
+              <div class="episode-progress"><span id="episodeProgressBar"></span></div>
+              <div class="episode-meta"><span id="episodeMeta">等待镜头拆解</span><span id="episodePercent">0%</span></div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="inspector">
+          <div class="inspector-tabs" role="tablist">
+            <button class="active" data-tab="assets">资产</button>
+            <button data-tab="activity">日志</button>
+          </div>
+          <div id="assetsPanel" class="inspector-content">
+            <div class="asset-summary">
+              <span><strong id="characterCount">0</strong>角色</span>
+              <span><strong id="weaponCount">0</strong>武器</span>
+              <span><strong id="locationCount">0</strong>场景</span>
+            </div>
+            <div class="asset-list" id="assetList"></div>
+          </div>
+          <div id="activityPanel" class="inspector-content hidden">
+            <ol class="activity-list" id="activityList"></ol>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

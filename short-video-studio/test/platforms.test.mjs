@@ -9,7 +9,10 @@ test("serves the web, mobile, and desktop entrypoints", async (t) => {
   for (const platform of ["web", "mobile", "desktop"]) {
     const response = await fetch(`http://127.0.0.1:${instance.port}/${platform}/`);
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /FRAME\/60/);
+    const html = await response.text();
+    assert.match(html, /FRAME\/60/);
+    assert.match(html, /content-pack-form/);
+    assert.match(html, /解锁完整内容包/);
   }
 
   const response = await fetch(`http://127.0.0.1:${instance.port}/manifest.webmanifest`);
@@ -39,6 +42,7 @@ test("generates a preview content pack without charging", async (t) => {
   assert.equal(response.status, 201);
   const result = await response.json();
   assert.equal(result.pack.source, "local-template");
+  assert.equal(result.pack.sellingPoints, "轻薄透气，UPF50+，可收纳，通勤穿着不闷热");
   assert.equal(result.pack.titles.length, 10);
   assert.equal(result.pack.scripts.length, 3);
   assert.equal(result.pack.calendar.length, 7);

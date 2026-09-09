@@ -4,13 +4,17 @@
 
 ### feat
 
+- Added `novel-video-studio`, an automated novel-to-episode production control room with public-domain source discovery, rights gating, story/character/prop/location planning, Ark image and asynchronous video integrations, persistent shot queues, and FFmpeg assembly for 15-minute episodes.
 - Added Alipay web payment integration to `short-video-studio`: server-side `pageExec` checkout form, persistent pending orders, signed notification verification, trade query, refund, refund query, close, and neutral return page.
 - Added the C-end product content-pack MVP to `short-video-studio`: users can enter a product, audience, selling points, platform, tone, and offer to receive a free title preview plus locally generated titles, scripts, shot lists, hashtags, and a seven-day publishing plan.
+- Unified the content-pack experience across the desktop Electron app, mobile PWA, and Web entrypoints, and fixed checkout order persistence to retain the submitted selling points.
 - Configured seller ID `2088122111133366` for Alipay service `API_4BAB0CE91B3743BE`; the production Pay Skill now listens on port `8788`.
 
 ### verify
 
+- Verified `novel-video-studio` with 5 passing unit tests, an end-to-end 30-shot/900-second demo project, and responsive browser screenshots at 1120×720 and 390×844.
 - Verified the checkout button opens the real Alipay sandbox cashier with the `¥9.90` product and price. The sandbox payment itself was not completed.
+- Verified all three entrypoints expose the same content-pack form and unlock flow.
 - Verified the return page responds with a neutral payment-confirmation state. Production web-payment signing remains blocked by an authorization mismatch, and a public HTTPS `notify_url` is still required before production readiness.
 - Verified the new `/api/content-pack` endpoint, browser form submission, preview rendering, and the checkout handoff into the Alipay sandbox cashier.
 - Verified the public Pay Skill endpoint returns the expected pre-payment `400 INVALID_REQUEST` response for invalid input without creating an order or charging money.

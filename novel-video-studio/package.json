@@ -1,0 +1,15 @@
+{
+  "name": "novel-video-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Automated novel-to-episode production control room.",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

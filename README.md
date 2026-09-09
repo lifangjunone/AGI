@@ -23,6 +23,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
 | [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 Short Video Studio | 生成 5–60 秒精确时长的 AI 短视频，提供移动 PWA、Electron 桌面端和 Web 端 | Node.js、FFmpeg、PWA、Electron |
+| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从合法小说来源自动生成剧本、连续性资产、镜头任务与 15 分钟分集 | Node.js、火山方舟、Seedream、Seedance、FFmpeg |
 
 ## 产品协作链路
 
@@ -56,6 +57,7 @@ cd ../fde-playbook && npm install && npm run dev
 cd ../agent-workforce-console && npm install && npm run dev
 cd ../hover-translator && npm install && npm run dev
 cd ../short-video-studio && npm install && npm run web
+cd ../novel-video-studio && npm start
 ```
 
 平台服务运行：
@@ -116,7 +118,8 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `opportunity-factory`：修复支付宝 discovery 并发调用 `alipay-cli` 导致本地凭据状态竞争、间歇返回 `Not logged in` 的问题；签约、服务和应用查询现按串行顺序执行。
 - `opportunity-factory`：支付宝生产签约已提交，AI 按量付费服务 `API_4BAB0CE91B3743BE` 已为 `ACTIVE`，应用 `2021006197631772` 已为 `ON_LINE`；生产服务器已部署 Pay Skill 代码、代理路由及受限密钥文件，当前仅等待卖家 ID 注入后启动真实生产支付服务。
 - `short-video-studio`：FRAME/60 扩展为同目录三端产品，包含可安装移动 PWA、Electron 桌面应用和 Web 工作台；三端共享模型代理、作品库及 FFmpeg 精确时长与画幅交付。
-- `short-video-studio`：新增“商品短视频内容包”C 端验证入口，支持免费标题预览、本地模板生成 10 个标题/3 条口播/3 套分镜/7 天计划；完整包定价 ¥9.90，已接入支付宝网页收款下单、回跳、异步通知、查询、退款、退款查询和关单代码。生产签约、公网 notify_url 和真实付款仍待验证。
+- `short-video-studio`：新增“商品短视频内容包”C 端验证入口，桌面 App、手机端 PWA、Web 共用生成与订单服务；支持免费标题预览、本地模板生成 10 个标题/3 条口播/3 套分镜/7 天计划；完整包定价 ¥9.90，已接入支付宝网页收款下单、回跳、异步通知、查询、退款、退款查询和关单代码。生产签约、公网 notify_url 和真实付款仍待验证。
+- `novel-video-studio`：新增“长卷制片厂”自动生产控制台；输入小说名后可检索公版/授权来源，生成剧本、角色、武器、场景和 30 个镜头任务，并通过方舟异步视频 API 与 FFmpeg 装配 15 分钟分集。默认演示模式不产生模型费用，真实批量生成受显式计费开关和预算门禁保护。
 
 ## 远端仓库
 

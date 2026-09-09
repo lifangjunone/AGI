@@ -113,6 +113,7 @@ function makeContentPack(input) {
   return {
     product,
     audience,
+    sellingPoints,
     platform,
     tone,
     sellingPoints,

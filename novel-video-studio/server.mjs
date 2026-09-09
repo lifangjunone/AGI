@@ -1,0 +1,195 @@
+import { createReadStream } from "node:fs";
+import { access, readFile, stat } from "node:fs/promises";
+import { createServer } from "node:http";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadEnv, makeConfig } from "./lib/config.mjs";
+import { ProductionPipeline } from "./lib/pipeline.mjs";
+import { ProjectStore } from "./lib/store.mjs";
+
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
+await loadEnv(ROOT);
+const config = makeConfig(ROOT);
+const store = new ProjectStore(config.dataDirectory);
+const pipeline = new ProductionPipeline(config, store);
+const PUBLIC = path.join(ROOT, "public");
+
+const MIME_TYPES = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".svg": "image/svg+xml"
+};
+
+function sendJson(response, status, payload) {
+  response.writeHead(status, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff"
+  });
+  response.end(JSON.stringify(payload));
+}
+
+async function readJson(request) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > 128 * 1024) throw new Error("请求不能超过 128 KB");
+    chunks.push(chunk);
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}");
+  } catch {
+    throw new Error("请求不是有效 JSON");
+  }
+}
+
+async function commandExists(command) {
+  const candidates = [
+    command,
+    ...(process.env.PATH || "").split(path.delimiter).map((directory) => path.join(directory, command)),
+    `/opt/homebrew/bin/${command}`,
+    `/usr/local/bin/${command}`,
+    `/Users/bytedance/Desktop/projects/.tools/homebrew/bin/${command}`
+  ];
+  for (const candidate of candidates) {
+    try {
+      await access(candidate);
+      return true;
+    } catch {
+      // Try next path.
+    }
+  }
+  return false;
+}
+
+async function serveStatic(response, pathname) {
+  const requested = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  const file = path.resolve(PUBLIC, requested);
+  if (!file.startsWith(`${PUBLIC}${path.sep}`) && file !== path.join(PUBLIC, "index.html")) return false;
+  try {
+    const fileStat = await stat(file);
+    if (!fileStat.isFile()) return false;
+    response.writeHead(200, {
+      "Content-Type": MIME_TYPES[path.extname(file)] || "application/octet-stream",
+      "Content-Length": fileStat.size,
+      "Cache-Control": "no-cache",
+      "X-Content-Type-Options": "nosniff"
+    });
+    createReadStream(file).pipe(response);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function serveMedia(request, response, pathname) {
+  const relative = pathname.replace(/^\/media\/+/, "");
+  const file = path.resolve(config.dataDirectory, relative);
+  if (!file.startsWith(`${path.resolve(config.dataDirectory)}${path.sep}`)) return false;
+  try {
+    const fileStat = await stat(file);
+    if (!fileStat.isFile()) return false;
+    const range = request.headers.range;
+    if (range) {
+      const match = /^bytes=(\d*)-(\d*)$/.exec(range);
+      if (!match) return false;
+      const start = match[1] ? Number(match[1]) : 0;
+      const end = match[2] ? Math.min(Number(match[2]), fileStat.size - 1) : fileStat.size - 1;
+      response.writeHead(206, {
+        "Accept-Ranges": "bytes",
+        "Content-Length": end - start + 1,
+        "Content-Range": `bytes ${start}-${end}/${fileStat.size}`,
+        "Content-Type": MIME_TYPES[path.extname(file)] || "video/mp4"
+      });
+      createReadStream(file, { start, end }).pipe(response);
+      return true;
+    }
+    response.writeHead(200, {
+      "Content-Type": MIME_TYPES[path.extname(file)] || "application/octet-stream",
+      "Content-Length": fileStat.size,
+      "Cache-Control": "private, max-age=3600"
+    });
+    createReadStream(file).pipe(response);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export const server = createServer(async (request, response) => {
+  const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
+  try {
+    if (request.method === "GET" && url.pathname === "/api/status") {
+      const [ffmpegReady, ffprobeReady] = await Promise.all([
+        commandExists(config.ffmpeg),
+        commandExists(config.ffprobe)
+      ]);
+      sendJson(response, 200, {
+        mode: config.mode,
+        arkConfigured: Boolean(config.ark.apiKey),
+        modelsConfigured: {
+          text: Boolean(config.ark.textModel),
+          image: Boolean(config.ark.imageModel),
+          video: Boolean(config.ark.videoModel)
+        },
+        ffmpegReady: ffmpegReady && ffprobeReady,
+        production: config.production,
+        billableGenerationEnabled: process.env.ALLOW_BILLABLE_GENERATION === "true"
+      });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/projects") {
+      sendJson(response, 200, { projects: await store.list() });
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/projects") {
+      const body = await readJson(request);
+      sendJson(response, 202, { project: await pipeline.create(body.novelName) });
+      return;
+    }
+
+    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|export))?$/.exec(url.pathname);
+    if (request.method === "GET" && projectMatch && !projectMatch[2]) {
+      const project = await store.get(projectMatch[1]);
+      sendJson(response, project ? 200 : 404, project ? { project } : { error: "项目不存在" });
+      return;
+    }
+
+    if (request.method === "POST" && projectMatch?.[2] === "retry") {
+      queueMicrotask(() => pipeline.run(projectMatch[1]));
+      sendJson(response, 202, { accepted: true });
+      return;
+    }
+
+    if (request.method === "POST" && projectMatch?.[2] === "export") {
+      sendJson(response, 200, { file: await pipeline.exportManifest(projectMatch[1]) });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname.startsWith("/media/") && await serveMedia(request, response, url.pathname)) return;
+    if (request.method === "GET" && await serveStatic(response, url.pathname)) return;
+    sendJson(response, 404, { error: "资源不存在" });
+  } catch (error) {
+    sendJson(response, /不存在/.test(error.message) ? 404 : 400, { error: error.message });
+  }
+});
+
+const reconciliationTimer = setInterval(async () => {
+  if (config.mode !== "live") return;
+  const rendering = (await store.list()).filter((project) => project.status === "rendering");
+  await Promise.all(rendering.map((project) => pipeline.reconcile(project.id)));
+}, 15000);
+reconciliationTimer.unref();
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  server.listen(config.port, "127.0.0.1", () => {
+    process.stdout.write(`Novel Video Studio running at http://127.0.0.1:${config.port}\n`);
+  });
+}

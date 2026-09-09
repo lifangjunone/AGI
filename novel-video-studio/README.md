@@ -1,0 +1,87 @@
+# 长卷制片厂 / Novel Video Studio
+
+输入小说名后，自动完成合法内容源检索、影视化改编、角色/武器/场景设定、镜头视频生成和 15 分钟分集装配的本地生产控制台。
+
+## 当前能力
+
+- 同时检索 Project Gutenberg、Open Library、Google Books，以及可选 Brave Search。
+- 自动优先选择公版正文；只找到元数据或普通网页时停在版权门禁，不抓取盗版正文。
+- 生成故事圣经、角色连续性 ID、武器道具、地点设定和第一集脚本。
+- 每集默认严格拆为 `30 × 30 秒 = 15 分钟`，并保留每个镜头的状态和远端任务 ID。
+- 对接火山方舟 Chat Completions、Seedream 图片生成和 Seedance 异步视频生成 API。
+- 自动轮询视频任务，在方舟 24 小时临时 URL 失效前下载镜头，再使用 FFmpeg 装配 MP4。
+- 本地 JSON 持久化生产状态；服务重启后仍可继续轮询渲染中的任务。
+- 设有生产/演示模式、付费调用总开关、日预算展示和并发上限。
+
+默认是 `demo` 模式：可以完整体验界面和流水线，不会产生模型费用。演示成片状态是流程模拟，不包含真实 MP4。
+
+## 启动
+
+环境要求：Node.js 20+、FFmpeg、FFprobe。
+
+```bash
+cd /Users/bytedance/Desktop/agi/novel-video-studio
+cp .env.example .env.local
+npm start
+```
+
+访问 <http://127.0.0.1:4321>。
+
+## 方舟生产配置
+
+在 `.env.local` 中配置：
+
+```bash
+ARK_API_KEY=your-rotated-key
+ARK_TEXT_MODEL=your-text-model-id
+ARK_IMAGE_MODEL=your-seedream-model-id
+ARK_VIDEO_MODEL=your-seedance-model-id
+PRODUCTION_MODE=live
+ALLOW_BILLABLE_GENERATION=false
+```
+
+先保持 `ALLOW_BILLABLE_GENERATION=false` 验证文本和图片结果。确认账户额度、模型单价、并发配额及日预算后，再改为 `true` 提交批量视频任务。
+
+API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` 已被 Git 忽略。聊天中出现过的 Key 应先在方舟控制台轮换，不建议继续使用。
+
+## 产能解释
+
+`DAILY_OUTPUT_HOURS=72` 表示每日目标交付 72 小时成片，即：
+
+- 288 集 / 日
+- 30 个镜头 / 集
+- 8,640 个 30 秒视频任务 / 日
+
+这是容量规划目标，不是单机性能承诺。实际产能取决于 Seedance 模型支持的单次时长、账户 RPM/并发、审核通过率、下载带宽和预算。生产部署应使用任务队列与多 Worker，并依据实际配额调整 `MAX_VIDEO_CONCURRENCY`。
+
+## 数据目录
+
+```text
+data/
+├── state.json              # 项目与任务状态
+├── assets/<project-id>/    # 已落盘概念图
+├── clips/<project-id>/     # 已落盘镜头
+├── output/<project-id>/    # 15 分钟成片
+└── exports/<project-id>/   # 生产清单
+```
+
+## API
+
+- `GET /api/status`：模式、模型、FFmpeg 与产能配置
+- `GET /api/projects`：项目列表
+- `POST /api/projects`：创建全自动任务，正文为 `{ "novelName": "西游记" }`
+- `GET /api/projects/:id`：生产状态
+- `POST /api/projects/:id/retry`：重试暂停或失败任务
+- `POST /api/projects/:id/export`：导出生产清单
+
+## 验证
+
+```bash
+npm test
+```
+
+方舟视频接口参考：
+
+- 创建任务：<https://www.volcengine.com/docs/82379/1520757?lang=zh>
+- 查询任务：<https://www.volcengine.com/docs/82379/1521309?lang=zh>
+- 图片生成：<https://www.volcengine.com/docs/82379/1541523?lang=zh>
