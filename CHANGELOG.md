@@ -4,6 +4,8 @@
 
 ### feat
 
+- Added `https://lifeyoume.icu/admin/` as the LifeYouMe control-plane management backend. Operators can enable or disable end-user accounts, reset passwords with immediate session/token revocation, inspect recent management actions, and dynamically turn unified login on or off for each registered product.
+- Replaced fixed Nginx SSO gates with database-backed product access policies. When login is disabled, a product homepage opens directly; when enabled, anonymous users are redirected to `auth.lifeyoume.icu`. Policy changes take effect immediately without reloading Nginx.
 - Added LifeYouMe unified end-user identity to `lifeyoume-platform`: email registration/login, PBKDF2 password hashing, SQLite users, revocable cross-subdomain HttpOnly sessions, account/logout pages, authenticated user resolution, CSRF protection, login throttling, trusted-return validation, and product-scoped device authorization for Electron, Tauri, PWA, mini-program, and native clients.
 - Connected the production entry pages for FRAME/60, 智助乖乖, 隐匣, and Opportunity Factory to the shared SSO gateway. Product APIs, Alipay notifications, Pay Skill endpoints, health checks, and public audit reports retain independent routing; authenticated upstream requests receive the stable LifeYouMe user ID.
 - Moved Opportunity Factory's canonical production ownership to `audit.lifeyoume.icu` and documented the root portal, audit compatibility routes, operations/auth/billing boundaries, and unified identity contract across all 16 project READMEs.
@@ -12,7 +14,9 @@
 
 ### verify
 
-- Verified unified identity with 13 platform tests plus a temporary production account: registration issued the shared session, `/api/v1/me` resolved the same stable user, and the session opened `/vault/`, `/video/`, and `audit.lifeyoume.icu`; the test user and cascaded sessions were removed afterward.
+- Verified the management backend and unified identity with 16 platform tests, including account enable/disable behavior, password replacement, session revocation, policy persistence, audit recording, protected admin controls, and truthful product-detail links.
+- Verified the production policy path by changing `privacy-vault` from login-required to anonymous access and back: the public response changed from `302` to `200` and returned to `302` immediately, without an Nginx reload. FRAME/60, audit entry, public reports, and payment callbacks retained their expected behavior.
+- Verified unified identity with a temporary production account: registration issued the shared session, `/api/v1/me` resolved the same stable user, and the session opened `/vault/`, `/video/`, and `audit.lifeyoume.icu`; the test user and cascaded sessions were removed afterward.
 - Verified unauthenticated product entry pages redirect to `auth.lifeyoume.icu`, while the portal, catalog, public audit reports, Alipay notification path, assistant configuration, and Pay Skill route remain reachable without an accidental SSO redirect.
 - Verified the revised workflow with 40 passing tests, including chapter extraction, different plan sizes for different source lengths, no scripts or video before season selection, contiguous range selection, full-season script completion, budget approval, and sequential video submission.
 

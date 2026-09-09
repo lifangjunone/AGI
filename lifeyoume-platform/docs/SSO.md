@@ -13,6 +13,7 @@ create parallel end-user password stores.
 | `https://auth.lifeyoume.icu/account` | Account and global logout |
 | `GET /api/v1/me` | Resolve the current browser or bearer session |
 | `GET /api/v1/session/verify` | Nginx `auth_request` verification |
+| `GET /api/v1/access/check` | Dynamic per-product login policy check |
 | `POST /api/v1/device/start` | Start desktop/mobile device authorization |
 | `POST /api/v1/device/token` | Poll and exchange an approved device code |
 | `GET/POST /device` | Browser approval page |
@@ -75,3 +76,20 @@ Every product README must identify its integration mode:
 
 Existing product-specific administrator accounts remain operator credentials,
 not end-user accounts. They must not be presented as a second customer login.
+
+## Platform administration
+
+The protected management backend is available at:
+
+```text
+https://lifeyoume.icu/admin/
+```
+
+It uses the platform operator credential rather than an end-user session.
+Administrators can enable or disable users, reset user passwords, and toggle
+whether each product requires SSO. Disabling an account or changing its
+password revokes all browser sessions and product-scoped access tokens.
+
+Login policy changes are stored in `product_auth_policies` and checked on each
+product entry request. The default is `login_required = true`. All management
+changes are recorded in `admin_audit`.

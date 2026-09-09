@@ -36,6 +36,7 @@ lifeyoume.icu/
 ├── /                         LifeYouMe 产品展厅
 ├── /products                 14 项公开产品与实验项目目录
 ├── /products/<product-id>    统一产品详情、状态和入口
+├── /admin/                   账号与子产品登录策略管理后台
 ├── /video/                   FRAME/60 / 智助乖乖
 ├── /vault/                   隐匣
 └── 历史审计兼容路径          转交 Opportunity Factory
@@ -45,6 +46,10 @@ auth.lifeyoume.icu/            统一账号、Web SSO 与设备授权
 ops.lifeyoume.icu/             受保护的平台运营控制面
 billing.lifeyoume.icu/         统一计费服务边界
 ```
+
+管理后台可启用或禁用统一账号、为账号重置密码，并按产品动态开启或关闭登录
+要求。关闭后直接进入子产品首页，开启后由统一身份服务完成登录；策略切换无需
+重新发布产品或重载代理服务。
 
 产品展厅和公开报告允许匿名浏览；进入产品工作台时统一跳转
 `auth.lifeyoume.icu`。浏览器产品使用跨子域 HttpOnly 会话，Electron、Tauri、

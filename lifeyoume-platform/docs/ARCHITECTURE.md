@@ -43,12 +43,21 @@ Future contracts must be added as versioned APIs:
 
 The operations service must never connect directly to a product database.
 
+The root-domain management backend at `/admin/` is routed to the operations
+service. It may update only the shared identity database and catalog-level
+access policies; it does not read or mutate product business tables.
+
 ## Identity plane
 
 `auth.lifeyoume.icu` owns the only end-user account database. Browser products
 use a shared, opaque, server-side session through Nginx `auth_request`.
 Electron, Tauri, native mobile, PWA, and mini-program clients use the device
 authorization endpoints and receive product-scoped bearer tokens.
+
+Nginx calls `/api/v1/access/check` with the registered product ID. The identity
+service reads `product_auth_policies`: missing rows default to login required,
+disabled policies allow anonymous access, and enabled policies require an
+active account session.
 
 The identity plane returns a stable LifeYouMe user ID. Product stores may use
 that value as an external owner key, but remain independently deployed and

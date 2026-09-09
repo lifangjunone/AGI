@@ -29,6 +29,7 @@ The portal now provides:
 - `/` - editorial product showroom with real product imagery and selected products;
 - `/products` - searchable, category-filtered catalog;
 - `/products/<id>` - standardized product detail pages;
+- `/admin/` - protected account and product access-policy administration;
 - `/api/v1/products` - public Catalog Schema v2 response without private health URLs;
 - an operations-only view that also includes internal platform components.
 
@@ -49,6 +50,21 @@ public portal.
 The identity database is stored at `/var/lib/lifeyoume-platform/auth.db`, outside
 release directories. See [docs/SSO.md](docs/SSO.md) for endpoints, storage rules,
 gateway behavior, and client integration.
+
+## Management backend
+
+`https://lifeyoume.icu/admin/` uses the existing platform operator credential
+from `OPS_ADMIN_USER` and `OPS_ADMIN_PASSWORD_HASH`. It provides:
+
+- end-user account enable and disable actions;
+- administrator password reset with immediate session and device-token revocation;
+- per-product login-required switches that take effect without an Nginx reload;
+- an audit trail for account and product-policy changes.
+
+Product access checks are performed by `GET /api/v1/access/check`. Nginx sends
+the registered product ID to this endpoint. A disabled login requirement allows
+anonymous entry; an enabled requirement returns `401` until the shared SSO
+session is valid.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for boundaries, onboarding,
 security rules, failure isolation, and compatibility behavior.
