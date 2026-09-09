@@ -4,6 +4,7 @@
 
 ### feat
 
+- Added the `short-video-studio` `/zhizhu/` workspace for the C-end “智助乖乖” funnel, with product content, public-account article, and social/community assistant previews backed by a shared `/api/assistant/generate` endpoint.
 - Expanded `novel-video-studio` into three shared-core editions: a Web control room, an installable mobile PWA with LAN access and offline shell, and a sandboxed Electron desktop app with Application Support storage.
 - Added `novel-video-studio`, an automated novel-to-episode production control room with public-domain source discovery, rights gating, story/character/prop/location planning, Ark image and asynchronous video integrations, persistent shot queues, and FFmpeg assembly for 15-minute episodes.
 - Added Alipay web payment integration to `short-video-studio`: server-side `pageExec` checkout form, persistent pending orders, signed notification verification, trade query, refund, refund query, close, and neutral return page.
@@ -14,10 +15,16 @@
 - Hid the native page scrollbar while preserving wheel, trackpad, and touch scrolling.
 - Added a stylesheet version query to force clients to load the scrollbar fix instead of stale cached CSS.
 - Reworked the desktop content-pack first viewport into a compact fixed workspace so the core input-to-preview-to-unlock flow fits without page scrolling; mobile remains naturally scrollable.
+- Tightened desktop typography, field spacing, and button sizing so the content-pack form footer is fully visible within the first viewport.
+- Improved narrow-screen flow by hiding the empty preview before generation, keeping the complete input form and preview action in the first mobile viewport.
+- Fixed CSS cascade order so the content-pack responsive layout overrides are applied after shared workbench styles.
+- Redesigned the content-pack UI as a creator workspace inspired by common Runway/CapCut/Canva patterns: compact header, explicit steps, clearer empty preview state, and stronger primary action hierarchy.
 - Configured seller ID `2088122111133366` for Alipay service `API_4BAB0CE91B3743BE`; the production Pay Skill now listens on port `8788`.
 
 ### verify
 
+- Verified the Zhizhu workspace in a real browser: tool switching, form filling, local preview generation, and the disabled/not-integrated payment state; `short-video-studio` now has 10 passing Node tests.
+- Completed a full interaction audit of Novel Video Studio across desktop and mobile, covering navigation, filters, asset details, logs, theme, refresh, validation, retry, source links, manifest export, PWA offline startup, accessibility, and media range delivery; 13 automated tests pass.
 - Verified all three Novel Video Studio entrypoints, PWA metadata and cache worker, Electron renderer isolation, and shared API behavior with 8 passing automated tests.
 - Verified `novel-video-studio` with 5 passing unit tests, an end-to-end 30-shot/900-second demo project, and responsive browser screenshots at 1120×720 and 390×844.
 - Verified the checkout button opens the real Alipay sandbox cashier with the `¥9.90` product and price. The sandbox payment itself was not completed.
@@ -30,6 +37,9 @@
 
 ### fix
 
+- Fixed inactive Novel Video Studio navigation controls by implementing source-library, continuity-asset, and episode-queue views, plus asset filtering/detail, manifest download, retry, and refresh actions.
+- Fixed public-domain discovery false negatives by extending provider timeouts and retrying Gutenberg, cleared stale errors after successful retries, synchronized the title field with restored projects, and added a restricted server-side image refresh proxy.
+- Added complete ARIA list, tab, tabpanel, current-page, and control-group semantics; the final desktop WCAG 2 A/AA audit reports zero violations, with only contrast checks on partially obscured scroll rows left inconclusive.
 - Fixed production Pay Skill activation by removing the invalid systemd environment condition, correcting service-user permissions for the payment virtual environment and Alipay key directory, and restoring the Nginx route and certificate coverage for `audit.lifeyoume.icu`.
 
 ## 2026-09-08

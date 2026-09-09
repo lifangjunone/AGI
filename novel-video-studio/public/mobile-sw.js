@@ -1,4 +1,4 @@
-const CACHE_NAME = "novel-picture-works-v2";
+const CACHE_NAME = "novel-picture-works-v4";
 const APP_SHELL = [
   "/mobile/",
   "/styles.css",
@@ -32,15 +32,14 @@ self.addEventListener("fetch", (event) => {
   ) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const network = fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
         if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
         }
         return response;
-      }).catch(() => cached);
-      return cached || network;
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });

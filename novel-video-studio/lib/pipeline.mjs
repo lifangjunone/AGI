@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ArkClient } from "./ark-client.mjs";
 import { loadAuthorizedText, searchNovel } from "./novel-search.mjs";
+import { TaskScheduler } from "./task-scheduler.mjs";
 
 const STAGES = ["discover", "ingest", "adapt", "design", "render", "assemble"];
 const DEMO_IMAGE_ENDPOINT = "https://copilot-cn.bytedance.net/api/ide/v1/text_to_image";
@@ -116,6 +117,11 @@ export class ProductionPipeline {
     this.store = store;
     this.ark = new ArkClient(config.ark);
     this.active = new Set();
+    this.scheduler = new TaskScheduler({
+      store,
+      maxConcurrency: config.production.maxProjectConcurrency,
+      worker: (id) => this.run(id)
+    });
   }
 
   async create(novelName) {
@@ -130,6 +136,11 @@ export class ProductionPipeline {
       mode: this.config.mode,
       createdAt: now(),
       updatedAt: now(),
+      queuedAt: now(),
+      startedAt: null,
+      completedAt: null,
+      queuePosition: null,
+      estimatedWaitMinutes: null,
       source: null,
       sources: [],
       bible: null,
@@ -139,8 +150,7 @@ export class ProductionPipeline {
       error: null
     };
     await this.store.save(project);
-    queueMicrotask(() => this.run(project.id));
-    return project;
+    return this.scheduler.enqueue(project.id, { message: "任务已进入生产队列" });
   }
 
   async update(project, patch, message) {
@@ -151,13 +161,22 @@ export class ProductionPipeline {
   }
 
   async run(id) {
-    if (this.active.has(id)) return;
-    this.active.add(id);
     const project = await this.store.get(id);
-    if (!project) return;
+    if (!project || this.active.has(id)) return false;
+    this.active.add(id);
+    let retainSlot = false;
 
     try {
-      await this.update(project, { status: "running", stage: "discover", progress: 8 }, "正在检索可信内容源");
+      await this.update(project, {
+        status: "running",
+        stage: "discover",
+        progress: 8,
+        error: null,
+        startedAt: now(),
+        completedAt: null,
+        queuePosition: null,
+        estimatedWaitMinutes: null
+      }, "正在检索可信内容源");
       const sources = await searchNovel(project.novelName, this.config.search);
       const source = sources.find((item) => item.rights === "public-domain") || sources[0];
       if (!source) throw new Error("未找到可识别的小说来源");
@@ -167,9 +186,10 @@ export class ProductionPipeline {
         await this.update(project, {
           status: "rights-review",
           progress: 22,
+          completedAt: now(),
           error: "仅找到元数据或待授权网页，需获得作品授权后才能处理正文"
         }, "版权门禁已暂停正文处理");
-        return;
+        return false;
       }
 
       const sourceText = await loadAuthorizedText(source).catch(() => "");
@@ -214,13 +234,15 @@ export class ProductionPipeline {
         await this.update(project, {
           status: "budget-gate",
           progress: 72,
+          completedAt: now(),
           error: "真实视频生成已停在预算门禁；设置 ALLOW_BILLABLE_GENERATION=true 后重启任务"
         }, "预算门禁阻止了批量付费调用");
-        return;
+        return false;
       }
 
       if (this.config.mode === "live") {
         await this.submitVideoBatch(project, episode);
+        retainSlot = true;
       } else {
         for (const shot of episode.shots) {
           shot.status = "succeeded";
@@ -232,14 +254,16 @@ export class ProductionPipeline {
           status: "completed",
           stage: "assemble",
           progress: 100,
+          completedAt: now(),
           episodes: [episode]
         }, "演示生产链路已完成，切换 live 可提交真实镜头");
       }
     } catch (error) {
-      await this.update(project, { status: "failed", error: error.message }, `任务失败：${error.message}`);
+      await this.update(project, { status: "failed", completedAt: now(), error: error.message }, `任务失败：${error.message}`);
     } finally {
       this.active.delete(id);
     }
+    return retainSlot;
   }
 
   async submitVideoBatch(project, episode) {
@@ -298,6 +322,8 @@ export class ProductionPipeline {
       if (project) await this.update(project, { status: "failed", error: error.message }, `生产失败：${error.message}`);
     } finally {
       this.active.delete(`reconcile:${id}`);
+      const finalProject = await this.store.get(id);
+      if (finalProject && finalProject.status !== "rendering") await this.scheduler.release(id);
     }
   }
 
@@ -322,6 +348,7 @@ export class ProductionPipeline {
       status: "completed",
       stage: "assemble",
       progress: 100,
+      completedAt: now(),
       episodes: [episode]
     }, "15 分钟成片已完成并归档");
   }
@@ -334,6 +361,18 @@ export class ProductionPipeline {
     const file = path.join(directory, "production-manifest.json");
     await writeFile(file, `${JSON.stringify(project, null, 2)}\n`);
     return file;
+  }
+
+  enqueue(id, options) {
+    return this.scheduler.enqueue(id, options);
+  }
+
+  resume() {
+    return this.scheduler.resume();
+  }
+
+  queueSnapshot() {
+    return this.scheduler.snapshot();
   }
 }
 

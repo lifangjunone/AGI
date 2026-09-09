@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101110" />
+    <title>智助乖乖 · 内容工作台</title>
+    <link rel="icon" href="/frame60-icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/zhizhu.css?v=20260909-1" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="/zhizhu/" aria-label="智助乖乖首页">
+          <span class="brand-mark"><i></i><i></i><i></i></span>
+          <span><b>智助乖乖</b><small>内容工作台</small></span>
+        </a>
+        <div class="topbar-meta">
+          <span class="channel">公众号 · 小程序 · Web</span>
+          <span class="status"><i></i>本地模板已就绪</span>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="intro">
+          <div>
+            <span class="eyebrow">CONTENT ASSISTANT / 01</span>
+            <h1>把想法变成<br /><em>能直接发布的内容。</em></h1>
+            <p>面向小商家和内容创作者的轻量工作台。先免费预览，再决定是否解锁完整内容包。</p>
+          </div>
+          <div class="intro-note">
+            <span>今日工作流</span>
+            <strong>选择工具 <b>→</b> 填写信息 <b>→</b> 预览结果</strong>
+          </div>
+        </section>
+
+        <section class="tool-tabs" aria-label="内容工具">
+          <button class="tool-tab is-active" type="button" data-tool="product">
+            <span class="tab-index">01</span>
+            <span><b>商品内容包</b><small>短视频标题、口播、分镜</small></span>
+            <strong>¥9.90</strong>
+          </button>
+          <button class="tool-tab" type="button" data-tool="article">
+            <span class="tab-index">02</span>
+            <span><b>公众号文章助手</b><small>标题、大纲、开头与结尾</small></span>
+            <strong>¥9.90</strong>
+          </button>
+          <button class="tool-tab" type="button" data-tool="social">
+            <span class="tab-index">03</span>
+            <span><b>朋友圈与社群</b><small>日常发布、公告、私聊跟进</small></span>
+            <strong>¥4.90</strong>
+          </button>
+        </section>
+
+        <section class="work-area">
+          <form class="input-panel" id="assistant-form">
+            <div class="panel-heading">
+              <div><span class="eyebrow" id="step-label">STEP 01 · 商品信息</span><h2 id="form-title">先说清楚你卖什么</h2></div>
+              <span class="panel-count">免费预览</span>
+            </div>
+            <div id="fields"></div>
+            <button class="primary-button" type="submit">
+              <span>生成免费预览</span><i data-lucide="arrow-up-right"></i>
+            </button>
+            <p class="privacy-note"><i data-lucide="shield-check"></i> 不需要注册 · 输入只用于本次生成</p>
+          </form>
+
+          <section class="result-panel" aria-live="polite">
+            <div class="result-topline"><span>PREVIEW / 预览</span><span id="result-type">等待输入</span></div>
+            <div class="result-empty" id="result-empty">
+              <div class="empty-icon"><i data-lucide="wand-sparkles"></i></div>
+              <span class="eyebrow">STEP 02 · 结果预览</span>
+              <h2>你的内容会出现在这里</h2>
+              <p>选择左侧工具，填入你的真实业务信息。</p>
+              <div class="result-hint"><span>输入信息</span><i data-lucide="arrow-right"></i><span>生成预览</span></div>
+            </div>
+            <div class="result-content" id="result-content" hidden>
+              <div class="result-heading"><div><span class="eyebrow">READY TO USE</span><h2 id="result-title"></h2></div><span class="result-badge">本地解析</span></div>
+              <p class="result-summary" id="result-summary"></p>
+              <div class="preview-list" id="preview-list"></div>
+              <div class="unlock-row">
+                <div><span>完整内容包</span><strong id="result-price">¥9.90</strong></div>
+                <button type="button" id="unlock-button" disabled><span>支付解锁</span><i data-lucide="lock-keyhole"></i></button>
+              </div>
+              <small class="payment-note">支付能力接入后将在此处完成官方收款与自动交付。</small>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="https://unpkg.com/lucide@0.468.0"></script>
+    <script type="module" src="/zhizhu.js?v=20260909-1"></script>
+  </body>
+</html>

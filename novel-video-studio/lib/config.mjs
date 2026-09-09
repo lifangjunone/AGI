@@ -57,6 +57,7 @@ export function makeConfig(root) {
       shotsPerEpisode: Math.ceil((episodeMinutes * 60) / shotSeconds),
       episodesPerDay: Math.ceil((dailyHours * 60) / episodeMinutes),
       videoTasksPerDay: Math.ceil((dailyHours * 3600) / shotSeconds),
+      maxProjectConcurrency: positiveNumber(process.env.MAX_PROJECT_CONCURRENCY, 2),
       maxVideoConcurrency: positiveNumber(process.env.MAX_VIDEO_CONCURRENCY, 4),
       dailyBudgetCny: positiveNumber(process.env.DAILY_BUDGET_CNY, 200)
     },

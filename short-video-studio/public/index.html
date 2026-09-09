@@ -16,7 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/styles.css?v=20260909-workspace" />
+    <link rel="stylesheet" href="/styles.css?v=20260909-ui-redesign" />
   </head>
   <body>
     <div class="app-shell">
@@ -45,12 +45,20 @@
       <main>
         <section class="content-pack-view" id="content-view">
           <div class="content-pack-intro">
-            <div class="eyebrow">PRODUCT CONTENT KIT / 01</div>
-            <h1>把一个商品，变成<br /><em>7 天可发布内容。</em></h1>
-            <p>输入真实卖点，生成标题、口播、分镜和发布计划。先免费预览一个标题，完整内容包定价 <b>¥9.90</b>。</p>
-            <div class="proof-strip">
+            <div class="intro-copy">
+              <div class="eyebrow">PRODUCT CONTENT KIT</div>
+              <h1>商品内容包</h1>
+              <p>把商品卖点整理成可以直接发布的短视频内容。</p>
+            </div>
+            <div class="intro-offer">
+              <span>完整内容包</span>
+              <strong>¥9.90</strong>
+              <small>先免费预览</small>
+            </div>
+            <div class="proof-strip" aria-label="内容包包含">
               <span><b>10</b> 个标题</span>
               <span><b>3</b> 条口播</span>
+              <span><b>3</b> 套分镜</span>
               <span><b>7</b> 天计划</span>
             </div>
           </div>
@@ -59,7 +67,7 @@
             <form class="pack-form" id="content-pack-form">
               <div class="pack-form-head">
                 <span class="step-number">A</span>
-                <div><span class="eyebrow">输入商品</span><h2>先说清楚你卖什么</h2></div>
+                <div><span class="eyebrow">STEP 01 · 商品信息</span><h2>先说清楚你卖什么</h2></div>
               </div>
               <label class="field-label" for="product-name">商品或服务名称</label>
               <input id="product-name" name="productName" maxlength="80" placeholder="例如：轻薄防晒外套" required />
@@ -80,9 +88,11 @@
             <section class="pack-result" id="content-pack-result" aria-live="polite">
               <div class="result-empty" id="pack-empty">
                 <span class="result-corner">PREVIEW / 预览</span>
-                <i data-lucide="sparkles"></i>
-                <h2>你的内容会出现在这里</h2>
-                <p>先生成一个免费标题，看看方向是否适合你的商品。</p>
+                <div class="empty-mark"><i data-lucide="sparkles"></i></div>
+                <span class="eyebrow">STEP 02 · 免费预览</span>
+                <h2>先生成一个标题</h2>
+                <p>确认内容方向后，再解锁完整内容包。</p>
+                <div class="preview-flow"><span>输入卖点</span><i data-lucide="arrow-right"></i><span>生成预览</span><i data-lucide="arrow-right"></i><span>解锁内容</span></div>
               </div>
               <div class="result-content" id="pack-content" hidden>
                 <div class="result-head">

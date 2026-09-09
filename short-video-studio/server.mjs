@@ -5,6 +5,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateVideo, listVideos } from "./lib/video-service.mjs";
 import { createAlipayWebPay } from "./lib/alipay-webpay.mjs";
+import {
+  assistantToolConfig,
+  generateAssistantTool
+} from "./lib/assistant-tools.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIRECTORY = path.join(ROOT, "public");
@@ -261,6 +265,27 @@ export const server = createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === "POST" && url.pathname === "/api/assistant/generate") {
+      const input = await readJson(request);
+      let result;
+      try {
+        result = generateAssistantTool(input);
+      } catch (error) {
+        sendJson(response, 400, { error: error.message || "输入内容不完整" });
+        return;
+      }
+      const tool = assistantToolConfig(result.type);
+      sendJson(response, 201, {
+        result,
+        payment: {
+          status: "not-integrated",
+          amount: tool.price,
+          product: tool.label
+        }
+      });
+      return;
+    }
+
     if (request.method === "POST" && url.pathname === "/api/content-pack/checkout") {
       const input = await readJson(request);
       const pack = makeContentPack(input);
@@ -376,8 +401,13 @@ export const server = createServer(async (request, response) => {
     }
 
     if (request.method === "GET" || request.method === "HEAD") {
-      const appEntrypoints = new Set(["/", "/web", "/web/", "/mobile", "/mobile/", "/desktop", "/desktop/"]);
-      const requestedPath = appEntrypoints.has(url.pathname) ? "index.html" : url.pathname.slice(1);
+      const appEntrypoints = new Set([
+        "/", "/web", "/web/", "/mobile", "/mobile/", "/desktop", "/desktop/",
+        "/zhizhu", "/zhizhu/"
+      ]);
+      const requestedPath = appEntrypoints.has(url.pathname)
+        ? (url.pathname.startsWith("/zhizhu") ? "zhizhu.html" : "index.html")
+        : url.pathname.slice(1);
       const filePath = path.resolve(PUBLIC_DIRECTORY, requestedPath);
       if (!filePath.startsWith(`${PUBLIC_DIRECTORY}${path.sep}`)) {
         sendJson(response, 403, { error: "禁止访问" });

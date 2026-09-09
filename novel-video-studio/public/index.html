@@ -35,6 +35,7 @@
     <aside class="sidebar">
       <nav aria-label="主导航">
         <button class="nav-item active" data-view="overview"><i data-lucide="clapperboard"></i><span>生产总览</span></button>
+        <button class="nav-item" data-view="tasks"><i data-lucide="list-video"></i><span>任务中心</span></button>
         <button class="nav-item" data-view="sources"><i data-lucide="library-big"></i><span>小说源库</span></button>
         <button class="nav-item" data-view="assets"><i data-lucide="users"></i><span>角色资产</span></button>
         <button class="nav-item" data-view="episodes"><i data-lucide="film"></i><span>分集队列</span></button>
@@ -65,9 +66,10 @@
 
       <section class="metrics-strip" aria-label="生产指标">
         <article><span>目标产能</span><strong id="metricHours">72</strong><small>小时 / 日</small></article>
+        <article><span>运行项目</span><strong id="metricActiveProjects">0</strong><small id="metricProjectSlots">/ 2 槽</small></article>
+        <article><span>等待队列</span><strong id="metricQueuedProjects">0</strong><small>个项目</small></article>
         <article><span>分集规格</span><strong id="metricMinutes">15</strong><small>分钟 / 集</small></article>
-        <article><span>镜头任务</span><strong id="metricShots">8,640</strong><small>条 / 日</small></article>
-        <article><span>并发通道</span><strong id="metricConcurrency">4</strong><small>路渲染</small></article>
+        <article><span>镜头并发</span><strong id="metricConcurrency">4</strong><small>路渲染</small></article>
         <article class="budget"><span>日预算上限</span><strong id="metricBudget">¥200</strong><small>硬门禁</small></article>
       </section>
 
@@ -81,7 +83,7 @@
             <span class="state-badge" id="projectStatus">IDLE</span>
           </div>
 
-          <div class="stage-track" id="stageTrack" aria-label="生产阶段"></div>
+          <div class="stage-track" id="stageTrack" role="list" aria-label="生产阶段"></div>
 
           <div class="production-body" id="emptyState">
             <div class="empty-copy">
@@ -116,10 +118,10 @@
 
         <aside class="inspector">
           <div class="inspector-tabs" role="tablist">
-            <button class="active" data-tab="assets">资产</button>
-            <button data-tab="activity">日志</button>
+            <button class="active" role="tab" aria-selected="true" aria-controls="assetsPanel" data-tab="assets">资产</button>
+            <button role="tab" aria-selected="false" aria-controls="activityPanel" data-tab="activity">日志</button>
           </div>
-          <div id="assetsPanel" class="inspector-content">
+          <div id="assetsPanel" class="inspector-content" role="tabpanel">
             <div class="asset-summary">
               <span><strong id="characterCount">0</strong>角色</span>
               <span><strong id="weaponCount">0</strong>武器</span>
@@ -127,10 +129,41 @@
             </div>
             <div class="asset-list" id="assetList"></div>
           </div>
-          <div id="activityPanel" class="inspector-content hidden">
+          <div id="activityPanel" class="inspector-content hidden" role="tabpanel">
             <ol class="activity-list" id="activityList"></ol>
           </div>
         </aside>
+      </section>
+
+      <section class="tasks-view page-view hidden" data-page-view="tasks">
+        <header class="section-heading task-heading">
+          <div><p class="eyebrow">PRODUCTION TASKS</p><h2>任务中心</h2></div>
+          <div class="queue-health" aria-label="队列概况">
+            <span><i class="queue-dot running"></i><strong id="taskActiveCount">0</strong> 运行</span>
+            <span><i class="queue-dot queued"></i><strong id="taskQueuedCount">0</strong> 排队</span>
+            <span><i class="queue-dot available"></i><strong id="taskAvailableSlots">2</strong> 空闲槽</span>
+          </div>
+        </header>
+        <div class="task-toolbar">
+          <div class="segmented-control" id="taskFilters" role="group" aria-label="任务状态筛选">
+            <button class="active" data-task-filter="all">全部 <span id="filterAllCount">0</span></button>
+            <button data-task-filter="active">进行中 <span id="filterActiveCount">0</span></button>
+            <button data-task-filter="queued">排队 <span id="filterQueuedCount">0</span></button>
+            <button data-task-filter="completed">已完成 <span id="filterCompletedCount">0</span></button>
+            <button data-task-filter="failed">异常 <span id="filterFailedCount">0</span></button>
+          </div>
+          <div class="task-tools">
+            <label class="task-search" aria-label="搜索历史任务"><i data-lucide="search"></i><input id="taskSearch" placeholder="搜索书名或来源"></label>
+            <span id="averageTaskDuration">预计时长正在计算</span>
+          </div>
+        </div>
+        <div class="task-table-head" aria-hidden="true">
+          <span>项目</span><span>状态</span><span>阶段与进度</span><span>时间</span><span></span>
+        </div>
+        <div class="task-list" id="taskList">
+          <div class="view-empty"><i data-lucide="list-video"></i><p>暂无历史任务。</p></div>
+        </div>
+        <button class="load-more hidden" id="loadMoreTasks"><i data-lucide="chevrons-down"></i><span>加载更多任务</span></button>
       </section>
 
       <section class="library-view page-view hidden" data-page-view="sources">
@@ -178,6 +211,7 @@
 
   <nav class="mobile-tabs" aria-label="手机端导航">
     <button class="active" data-view="overview"><i data-lucide="clapperboard"></i><span>生产</span></button>
+    <button data-view="tasks"><i data-lucide="list-video"></i><span>任务</span></button>
     <button data-view="sources"><i data-lucide="library-big"></i><span>来源</span></button>
     <button data-view="episodes"><i data-lucide="film"></i><span>分集</span></button>
     <button data-view="assets"><i data-lucide="users"></i><span>资产</span></button>

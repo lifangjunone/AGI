@@ -17,6 +17,7 @@ const STATUS_LABELS = {
   rendering: "渲染中"
 };
 const ASSET_TYPES = { character: "角色", weapon: "武器", location: "场景" };
+const VALID_VIEWS = new Set(["overview", "tasks", "sources", "assets", "episodes"]);
 const pathname = window.location.pathname;
 const platform = pathname.startsWith("/mobile")
   ? "mobile"
@@ -28,7 +29,12 @@ let toastTimer = null;
 let installPrompt = null;
 let activeProject = null;
 let activeAssetFilter = "all";
-let visualRefreshTimer = null;
+let allProjects = [];
+let queueState = null;
+let taskFilter = "all";
+let activeView = "overview";
+let taskQuery = "";
+let taskDisplayLimit = 50;
 
 document.documentElement.dataset.platform = platform;
 
@@ -65,16 +71,22 @@ async function api(path, options) {
 }
 
 function renderStatus(status) {
+  queueState = status.queue;
+  const queueSuffix = status.queue
+    ? ` · ${status.queue.activeCount}/${status.queue.maxConcurrency} 项目槽 · ${status.queue.queuedCount} 排队`
+    : "";
   $("#modeLabel").textContent = status.mode === "live"
-    ? `${PLATFORM_LABELS[platform]} · 方舟生产模式 · ${status.billableGenerationEnabled ? "计费已开启" : "预算门禁开启"}`
-    : `${PLATFORM_LABELS[platform]} · 演示生产模式 · 不产生模型费用`;
+    ? `${PLATFORM_LABELS[platform]} · 方舟生产模式 · ${status.billableGenerationEnabled ? "计费已开启" : "预算门禁开启"}${queueSuffix}`
+    : `${PLATFORM_LABELS[platform]} · 演示生产模式 · 不产生模型费用${queueSuffix}`;
   $("#dailyTarget").textContent = `${status.production.dailyHours}h`;
   $("#dailyEpisodes").textContent = `${status.production.episodesPerDay} 集 / 日`;
   $("#metricHours").textContent = status.production.dailyHours;
   $("#metricMinutes").textContent = status.production.episodeMinutes;
-  $("#metricShots").textContent = status.production.videoTasksPerDay.toLocaleString("zh-CN");
   $("#metricConcurrency").textContent = status.production.maxVideoConcurrency;
   $("#metricBudget").textContent = `¥${status.production.dailyBudgetCny}`;
+  $("#metricActiveProjects").textContent = status.queue?.activeCount || 0;
+  $("#metricProjectSlots").textContent = `/ ${status.queue?.maxConcurrency || status.production.maxProjectConcurrency} 槽`;
+  $("#metricQueuedProjects").textContent = status.queue?.queuedCount || 0;
 }
 
 function renderStages(project) {
@@ -83,7 +95,7 @@ function renderStages(project) {
     const state = index < activeIndex || project.status === "completed"
       ? "done"
       : index === activeIndex ? "active" : "";
-    return `<span class="stage ${state}" data-stage="${id}">${String(index + 1).padStart(2, "0")} ${label}</span>`;
+    return `<span class="stage ${state}" role="listitem" data-stage="${id}">${String(index + 1).padStart(2, "0")} ${label}</span>`;
   }).join("");
 }
 
@@ -178,26 +190,102 @@ function renderEpisodeQueue(project) {
   $("#retryButton").classList.toggle("hidden", !["failed", "rights-review", "budget-gate"].includes(project?.status));
 }
 
+function taskMatches(project, filter) {
+  if (filter === "all") return true;
+  if (filter === "active") return ["running", "rendering"].includes(project.status);
+  if (filter === "failed") return ["failed", "rights-review", "budget-gate"].includes(project.status);
+  return project.status === filter;
+}
+
+function formatTaskTime(value) {
+  if (!value) return "尚未开始";
+  return new Date(value).toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function renderTaskCenter() {
+  const queue = queueState || { activeCount: 0, queuedCount: 0, availableSlots: 0, averageDurationMinutes: 15 };
+  $("#taskActiveCount").textContent = queue.activeCount;
+  $("#taskQueuedCount").textContent = queue.queuedCount;
+  $("#taskAvailableSlots").textContent = queue.availableSlots;
+  $("#averageTaskDuration").textContent = `近期待完成均值约 ${queue.averageDurationMinutes} 分钟`;
+  const counts = {
+    all: allProjects.length,
+    active: allProjects.filter((project) => taskMatches(project, "active")).length,
+    queued: allProjects.filter((project) => taskMatches(project, "queued")).length,
+    completed: allProjects.filter((project) => taskMatches(project, "completed")).length,
+    failed: allProjects.filter((project) => taskMatches(project, "failed")).length
+  };
+  for (const [key, value] of Object.entries(counts)) {
+    $(`#filter${key[0].toUpperCase()}${key.slice(1)}Count`).textContent = value;
+  }
+  const matchingProjects = allProjects.filter((project) => {
+    const queryMatch = !taskQuery || `${project.novelName} ${project.sourceTitle || ""} ${project.id}`.toLowerCase().includes(taskQuery);
+    return taskMatches(project, taskFilter) && queryMatch;
+  });
+  const projects = matchingProjects.slice(0, taskDisplayLimit);
+  $("#taskList").innerHTML = projects.length ? projects.map((project) => {
+    const queued = project.status === "queued";
+    const stage = STAGES.find(([id]) => id === project.stage)?.[1] || project.stage || "等待调度";
+    const statusDetail = queued
+      ? `第 ${project.queuePosition || "-"}/${queue.queuedCount} 位 · 预计 ${project.estimatedWaitMinutes || queue.averageDurationMinutes} 分钟`
+      : `${stage} · ${project.completedShots || 0}/${project.shotCount || 0} 镜头`;
+    const timeDetail = project.completedAt
+      ? `完成 ${formatTaskTime(project.completedAt)}`
+      : project.startedAt
+        ? `启动 ${formatTaskTime(project.startedAt)}`
+        : queued ? "等待生产槽" : `更新 ${formatTaskTime(project.updatedAt)}`;
+    return `<button class="task-row ${project.id === activeProjectId ? "active-project" : ""}" data-project-id="${escapeHtml(project.id)}">
+      <span class="task-title"><strong>${escapeHtml(project.novelName)}</strong><small>${escapeHtml(project.sourceTitle || project.id.slice(0, 8))}</small></span>
+      <span class="task-state ${escapeHtml(project.status)}">${escapeHtml(STATUS_LABELS[project.status] || project.status)}</span>
+      <span class="task-stage"><strong>${escapeHtml(statusDetail)}</strong><span class="task-progress"><span style="width:${Number(project.progress || 0)}%"></span></span><small>${Number(project.progress || 0)}% 完成</small></span>
+      <span class="task-time"><time>${formatTaskTime(project.createdAt)}</time><small>${timeDetail}</small></span>
+      <i data-lucide="chevron-right"></i>
+    </button>`;
+  }).join("") : `<div class="view-empty"><i data-lucide="list-filter"></i><p>当前筛选下没有任务。</p></div>`;
+  const loadMore = $("#loadMoreTasks");
+  loadMore.classList.toggle("hidden", matchingProjects.length <= taskDisplayLimit);
+  loadMore.querySelector("span").textContent = `加载更多任务（${taskDisplayLimit}/${matchingProjects.length}）`;
+  icons();
+}
+
 function showView(name) {
+  if (!VALID_VIEWS.has(name)) name = "overview";
+  activeView = name;
   document.querySelectorAll("[data-page-view]").forEach((view) => view.classList.toggle("hidden", view.dataset.pageView !== name));
-  document.querySelectorAll("[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === name));
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    const active = button.dataset.view === name;
+    button.classList.toggle("active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  if (name === "tasks") renderTaskCenter();
   if (name === "sources") renderSourceLibrary(activeProject);
   if (name === "assets") renderAssetGallery(activeProject);
   if (name === "episodes") renderEpisodeQueue(activeProject);
+  const url = new URL(window.location.href);
+  if (name === "overview") url.searchParams.delete("view");
+  else url.searchParams.set("view", name);
+  window.history.replaceState(null, "", url);
   window.scrollTo({ top: 0, behavior: "smooth" });
   icons();
 }
 
 async function refreshGeneratedImages({ quiet = false } = {}) {
-  const images = [...document.querySelectorAll("img[data-generated-src]")];
+  const images = [...document.querySelectorAll("img[data-generated-src]")]
+    .filter((image) => image.dataset.generatedSrc.startsWith("https://copilot-cn.bytedance.net/"));
   if (!images.length) {
     if (!quiet) showToast("当前没有可刷新的视觉资产");
     return;
   }
+  if (!quiet) showToast("正在刷新视觉资产");
   const results = await Promise.allSettled(images.map(async (image) => {
     const source = image.dataset.generatedSrc;
-    if (!source.startsWith("https://copilot-cn.bytedance.net/")) return;
-    const response = await fetch(source, { cache: "reload" });
+    const response = await fetch(`/api/generated-image?source=${encodeURIComponent(source)}`, { cache: "no-store" });
     if (!response.ok) throw new Error(String(response.status));
     const previous = image.dataset.objectUrl;
     const objectUrl = URL.createObjectURL(await response.blob());
@@ -206,7 +294,7 @@ async function refreshGeneratedImages({ quiet = false } = {}) {
     if (previous) URL.revokeObjectURL(previous);
   }));
   const refreshed = results.filter((result) => result.status === "fulfilled").length;
-  if (!quiet) showToast(`已刷新 ${refreshed} 张视觉资产`);
+  if (!quiet) showToast(`已重新获取 ${refreshed} 张视觉资产，生成中图片可稍后再试`);
 }
 
 function openAsset(assetId) {
@@ -223,6 +311,11 @@ function openAsset(assetId) {
 function renderProject(project) {
   activeProject = project;
   activeProjectId = project.id;
+  const novelInput = $("#novelName");
+  if (document.activeElement !== novelInput && novelInput.dataset.syncedProject !== project.id) {
+    novelInput.value = project.novelName;
+    novelInput.dataset.syncedProject = project.id;
+  }
   $("#emptyState").classList.add("hidden");
   $("#projectView").classList.remove("hidden");
   $("#projectTitle").textContent = project.novelName;
@@ -250,40 +343,44 @@ function renderProject(project) {
   renderSourceLibrary(project);
   renderAssetGallery(project);
   renderEpisodeQueue(project);
-  $("#formHint").textContent = project.error || `当前阶段：${STAGES.find(([id]) => id === project.stage)?.[1] || project.stage}`;
-  clearTimeout(visualRefreshTimer);
-  if (project.mode === "demo" && project.status === "completed") {
-    visualRefreshTimer = setTimeout(() => refreshGeneratedImages({ quiet: true }), 6000);
-  }
+  const errorVisible = ["failed", "rights-review", "budget-gate"].includes(project.status);
+  $("#formHint").textContent = errorVisible && project.error
+    ? project.error
+    : project.status === "queued"
+      ? `排队第 ${project.queuePosition || "-"}/${queueState?.queuedCount || "-"} 位，预计等待 ${project.estimatedWaitMinutes || queueState?.averageDurationMinutes || 15} 分钟`
+      : `当前阶段：${STAGES.find(([id]) => id === project.stage)?.[1] || project.stage}`;
   icons();
 }
 
-async function refreshProject() {
-  if (!activeProjectId) return;
-  try {
-    const { project } = await api(`/api/projects/${activeProjectId}`);
-    renderProject(project);
-    if (["completed", "failed", "rights-review", "budget-gate"].includes(project.status)) {
-      clearInterval(pollTimer);
-      pollTimer = null;
-    }
-  } catch (error) {
-    showToast(error.message);
+function syncPolling() {
+  const pending = allProjects.some((project) => ["queued", "running", "rendering"].includes(project.status));
+  if (pending && !pollTimer) pollTimer = setInterval(() => refreshAll(), 1800);
+  if (!pending && pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
   }
 }
 
-async function load() {
+async function refreshAll({ notify = false } = {}) {
   try {
     const [status, projectsPayload] = await Promise.all([api("/api/status"), api("/api/projects")]);
     renderStatus(status);
-    if (projectsPayload.projects[0]) {
-      renderProject(projectsPayload.projects[0]);
-      if (!["completed", "failed", "rights-review", "budget-gate"].includes(projectsPayload.projects[0].status)) {
-        pollTimer = setInterval(refreshProject, 1800);
-      }
+    allProjects = projectsPayload.projects;
+    if (allProjects[0]) {
+      const selected = allProjects.find((project) => project.id === activeProjectId) || allProjects[0];
+      const { project } = await api(`/api/projects/${selected.id}`);
+      renderProject(project);
     } else {
+      activeProject = null;
+      activeProjectId = null;
       renderStages({ stage: "", status: "idle" });
+      renderSourceLibrary(null);
+      renderAssetGallery(null);
+      renderEpisodeQueue(null);
     }
+    renderTaskCenter();
+    syncPolling();
+    if (notify) showToast("生产状态已刷新");
   } catch (error) {
     showToast(error.message);
   }
@@ -299,8 +396,7 @@ $("#launchForm").addEventListener("submit", async (event) => {
       body: JSON.stringify({ novelName: $("#novelName").value })
     });
     renderProject(project);
-    clearInterval(pollTimer);
-    pollTimer = setInterval(refreshProject, 1800);
+    await refreshAll();
     showToast("生产任务已进入队列");
   } catch (error) {
     showToast(error.message);
@@ -309,7 +405,7 @@ $("#launchForm").addEventListener("submit", async (event) => {
   }
 });
 
-$("#refreshButton").addEventListener("click", refreshProject);
+$("#refreshButton").addEventListener("click", () => refreshAll({ notify: true }));
 $("#themeButton").addEventListener("click", () => {
   document.documentElement.classList.toggle("light");
   localStorage.setItem("novel-studio-theme", document.documentElement.classList.contains("light") ? "light" : "dark");
@@ -326,7 +422,11 @@ document.querySelectorAll(".nav-item").forEach((button) => {
 
 document.querySelectorAll(".inspector-tabs button").forEach((button) => {
   button.addEventListener("click", () => {
-    document.querySelectorAll(".inspector-tabs button").forEach((item) => item.classList.toggle("active", item === button));
+    document.querySelectorAll(".inspector-tabs button").forEach((item) => {
+      const active = item === button;
+      item.classList.toggle("active", active);
+      item.setAttribute("aria-selected", String(active));
+    });
     $("#assetsPanel").classList.toggle("hidden", button.dataset.tab !== "assets");
     $("#activityPanel").classList.toggle("hidden", button.dataset.tab !== "activity");
   });
@@ -342,6 +442,34 @@ $("#assetFilters").addEventListener("click", (event) => {
   activeAssetFilter = button.dataset.filter;
   document.querySelectorAll("#assetFilters button").forEach((item) => item.classList.toggle("active", item === button));
   renderAssetGallery(activeProject);
+});
+$("#taskFilters").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-task-filter]");
+  if (!button) return;
+  taskFilter = button.dataset.taskFilter;
+  taskDisplayLimit = 50;
+  document.querySelectorAll("#taskFilters button").forEach((item) => item.classList.toggle("active", item === button));
+  renderTaskCenter();
+});
+$("#taskSearch").addEventListener("input", (event) => {
+  taskQuery = event.target.value.trim().toLowerCase();
+  taskDisplayLimit = 50;
+  renderTaskCenter();
+});
+$("#loadMoreTasks").addEventListener("click", () => {
+  taskDisplayLimit += 50;
+  renderTaskCenter();
+});
+$("#taskList").addEventListener("click", async (event) => {
+  const row = event.target.closest("[data-project-id]");
+  if (!row) return;
+  try {
+    const { project } = await api(`/api/projects/${row.dataset.projectId}`);
+    renderProject(project);
+    showView("overview");
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 $("#refreshAssetsButton").addEventListener("click", () => refreshGeneratedImages());
 
@@ -359,11 +487,14 @@ $("#assetDialog").addEventListener("click", (event) => {
 
 $("#retryButton").addEventListener("click", async () => {
   if (!activeProjectId) return;
-  await api(`/api/projects/${activeProjectId}/retry`, { method: "POST", body: "{}" });
-  showView("overview");
-  showToast("任务已重新进入生产队列");
-  clearInterval(pollTimer);
-  pollTimer = setInterval(refreshProject, 1800);
+  try {
+    await api(`/api/projects/${activeProjectId}/retry`, { method: "POST", body: "{}" });
+    showView("overview");
+    showToast("任务已重新进入生产队列");
+    await refreshAll();
+  } catch (error) {
+    showToast(error.message);
+  }
 });
 
 $("#exportButton").addEventListener("click", async () => {
@@ -397,4 +528,5 @@ if (platform === "mobile" && "serviceWorker" in navigator) {
 
 if (localStorage.getItem("novel-studio-theme") === "light") document.documentElement.classList.add("light");
 icons();
-load();
+showView(new URLSearchParams(window.location.search).get("view") || "overview");
+refreshAll();

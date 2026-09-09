@@ -22,7 +22,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`fde-playbook/`](fde-playbook/README.md) | FDE Playbook | FDE 岗位认知、交付方法、能力地图和制造业实战 | React、TypeScript、Vite |
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
-| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 Short Video Studio | 生成 5–60 秒精确时长的 AI 短视频，提供移动 PWA、Electron 桌面端和 Web 端 | Node.js、FFmpeg、PWA、Electron |
+| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台 | Node.js、FFmpeg、PWA、Electron |
 | [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从合法小说来源自动生成剧本、连续性资产、镜头任务与 15 分钟分集，提供 Web、手机 PWA 和桌面 App | Node.js、Electron、PWA、火山方舟、FFmpeg |
 
 ## 产品协作链路
@@ -123,7 +123,12 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `short-video-studio` 页面继续支持滚轮和触摸滚动，同时隐藏原生滚动条视觉。
 - `short-video-studio` 为样式资源增加版本参数，避免公网缓存导致旧滚动条样式残留。
 - `short-video-studio` 重构桌面端内容包首屏为固定工作台，输入、预览和解锁操作无需页面滚动即可完成。
-- `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；输入小说名后可检索公版/授权来源，生成剧本、角色、武器、场景和 30 个镜头任务，并通过方舟异步视频 API 与 FFmpeg 装配 15 分钟分集。三端共享生产服务与数据结构，真实批量生成受显式计费开关和预算门禁保护。
+- `short-video-studio` 进一步压缩桌面端首屏垂直间距，补齐表单底部说明文字和卡片边界。
+- `short-video-studio` 修复窄屏端首屏堆叠问题：生成前隐藏空预览区，让移动端直接完成输入和预览操作。
+- `short-video-studio` 修复响应式 CSS 顺序问题，统一收口内容包布局覆盖规则。
+- `short-video-studio` 内容包页完成 UI 重构，参考 Runway/CapCut/Canva 的任务工作区模式，强化步骤层级、空状态和主操作。
+- `short-video-studio` 新增“智助乖乖”共享 Web 工作台 `/zhizhu/`，接入商品内容包、公众号文章助手、朋友圈与社群助手三类本地模板预览；当前支付按钮保持验证版禁用态，等待小程序虚拟支付和小程序源码接入。
+- `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；输入小说名后可检索公版/授权来源，生成剧本、角色、武器、场景和 30 个镜头任务，并通过方舟异步视频 API 与 FFmpeg 装配 15 分钟分集。生产总览、来源库、资产库和分集队列均可操作，并支持筛选、详情、重试、刷新及清单下载。
 
 ## 远端仓库
 

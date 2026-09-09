@@ -27,6 +27,7 @@ test("production capacity derives 15-minute episodes and 30-second shots", () =>
   assert.equal(config.production.episodesPerDay, 288);
   assert.equal(config.production.shotsPerEpisode, 30);
   assert.equal(config.production.videoTasksPerDay, 8640);
+  assert.equal(config.production.maxProjectConcurrency, 2);
   for (const [key, value] of Object.entries(previous)) {
     const envKey = { hours: "DAILY_OUTPUT_HOURS", minutes: "EPISODE_DURATION_MINUTES", seconds: "SHOT_DURATION_SECONDS" }[key];
     if (value === undefined) delete process.env[envKey];

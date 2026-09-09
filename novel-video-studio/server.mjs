@@ -35,6 +35,30 @@ function sendJson(response, status, payload) {
   response.end(JSON.stringify(payload));
 }
 
+function projectSummary(project) {
+  const shots = project.episodes?.flatMap((episode) => episode.shots || []) || [];
+  return {
+    id: project.id,
+    novelName: project.novelName,
+    status: project.status,
+    stage: project.stage,
+    progress: project.progress,
+    mode: project.mode,
+    queuePosition: project.queuePosition,
+    estimatedWaitMinutes: project.estimatedWaitMinutes,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
+    queuedAt: project.queuedAt,
+    startedAt: project.startedAt,
+    completedAt: project.completedAt,
+    sourceTitle: project.source?.title || null,
+    episodeCount: project.episodes?.length || 0,
+    shotCount: shots.length,
+    completedShots: shots.filter((shot) => shot.status === "succeeded").length,
+    error: project.error
+  };
+}
+
 async function readJson(request) {
   const chunks = [];
   let size = 0;
@@ -128,9 +152,10 @@ export const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || "localhost"}`);
   try {
     if (request.method === "GET" && url.pathname === "/api/status") {
-      const [ffmpegReady, ffprobeReady] = await Promise.all([
+      const [ffmpegReady, ffprobeReady, queue] = await Promise.all([
         commandExists(config.ffmpeg),
-        commandExists(config.ffprobe)
+        commandExists(config.ffprobe),
+        pipeline.queueSnapshot()
       ]);
       sendJson(response, 200, {
         mode: config.mode,
@@ -142,13 +167,42 @@ export const server = createServer(async (request, response) => {
         },
         ffmpegReady: ffmpegReady && ffprobeReady,
         production: config.production,
+        queue,
         billableGenerationEnabled: process.env.ALLOW_BILLABLE_GENERATION === "true"
       });
       return;
     }
 
     if (request.method === "GET" && url.pathname === "/api/projects") {
-      sendJson(response, 200, { projects: await store.list() });
+      const projects = await store.list();
+      sendJson(response, 200, {
+        projects: url.searchParams.get("full") === "true" ? projects : projects.map(projectSummary)
+      });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/queue") {
+      sendJson(response, 200, { queue: await pipeline.queueSnapshot() });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/generated-image") {
+      const source = new URL(url.searchParams.get("source") || "");
+      if (source.protocol !== "https:" || source.hostname !== "copilot-cn.bytedance.net") {
+        sendJson(response, 400, { error: "不允许代理该图片来源" });
+        return;
+      }
+      const upstream = await fetch(source, { signal: AbortSignal.timeout(120000) });
+      if (!upstream.ok) throw new Error(`图片服务返回 ${upstream.status}`);
+      const contentType = upstream.headers.get("content-type") || "image/jpeg";
+      if (!contentType.startsWith("image/")) throw new Error("图片服务返回了无效内容");
+      const body = Buffer.from(await upstream.arrayBuffer());
+      response.writeHead(200, {
+        "Content-Type": contentType,
+        "Content-Length": body.length,
+        "Cache-Control": "no-store"
+      });
+      response.end(body);
       return;
     }
 
@@ -166,8 +220,16 @@ export const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && projectMatch?.[2] === "retry") {
-      queueMicrotask(() => pipeline.run(projectMatch[1]));
-      sendJson(response, 202, { accepted: true });
+      const project = await store.get(projectMatch[1]);
+      if (!project) {
+        sendJson(response, 404, { error: "项目不存在" });
+        return;
+      }
+      if (!["failed", "rights-review", "budget-gate"].includes(project.status)) {
+        sendJson(response, 409, { error: "只有失败或暂停的任务可以重试" });
+        return;
+      }
+      sendJson(response, 202, { accepted: true, project: await pipeline.enqueue(projectMatch[1], { message: "任务已重新进入生产队列" }) });
       return;
     }
 
@@ -207,11 +269,12 @@ const reconciliationTimer = setInterval(async () => {
 }, 15000);
 reconciliationTimer.unref();
 
-export function startServer({
+export async function startServer({
   host = process.env.HOST || "127.0.0.1",
   port = config.port,
   quiet = false
 } = {}) {
+  await pipeline.resume();
   return new Promise((resolve, reject) => {
     const onError = (error) => {
       server.off("listening", onListening);

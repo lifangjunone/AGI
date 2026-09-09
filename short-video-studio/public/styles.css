@@ -264,7 +264,7 @@ main {
 
   .content-pack-intro h1 {
     margin: 3px 0 7px;
-    font-size: clamp(38px, 3.8vw, 56px);
+    font-size: clamp(36px, 3.4vw, 50px);
     line-height: 0.94;
   }
 
@@ -287,50 +287,50 @@ main {
   }
 
   .content-pack-grid {
-    height: calc(100% - 190px);
+    height: calc(100% - 175px);
     min-height: 0;
   }
 
   .pack-form {
-    padding: 17px 22px;
+    padding: 14px 20px;
   }
 
   .pack-form-head {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   .pack-form-head h2 {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .pack-form input,
   .pack-form select {
-    height: 38px;
+    height: 34px;
   }
 
   .pack-form input,
   .pack-form select,
   .pack-form textarea {
-    margin-bottom: 8px;
-    padding: 9px 11px;
-    font-size: 12px;
-  }
-
-  .pack-form textarea {
-    min-height: 70px;
-  }
-
-  .field-label {
+    margin-bottom: 5px;
+    padding: 7px 10px;
     font-size: 11px;
   }
 
+  .pack-form textarea {
+    min-height: 58px;
+  }
+
+  .field-label {
+    font-size: 10px;
+  }
+
   .pack-submit {
-    min-height: 42px;
+    min-height: 38px;
   }
 
   .form-note {
-    margin-top: 6px;
-    font-size: 9px;
+    margin-top: 4px;
+    font-size: 8px;
   }
 
   .pack-result,
@@ -680,7 +680,11 @@ main {
     height: auto;
     min-height: calc(100vh - 102px);
     overflow: visible;
-    padding: 34px 16px 50px;
+    padding: 18px 16px 34px;
+  }
+
+  .content-pack-intro {
+    display: none;
   }
 
   .content-pack-intro h1 {
@@ -690,6 +694,11 @@ main {
   .content-pack-grid {
     grid-template-columns: 1fr;
     height: auto;
+    margin-top: 0;
+  }
+
+  .pack-result:has(#pack-empty:not([hidden])) {
+    display: none;
   }
 
   .pack-result {
@@ -1479,5 +1488,362 @@ svg {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Content-pack flow overrides stay last so the responsive task layout wins
+   over the shared video-workbench styles above. */
+@media (min-width: 821px) {
+  .content-pack-view {
+    height: calc(100vh - 66px);
+    min-height: 0;
+    overflow: hidden;
+    padding: 20px clamp(22px, 5vw, 78px);
+  }
+
+  .content-pack-intro {
+    max-width: 1100px;
+    margin: 0 auto 14px;
+  }
+
+  .content-pack-intro h1 {
+    margin: 3px 0 7px;
+    font-size: clamp(36px, 3.4vw, 50px);
+    line-height: 0.94;
+  }
+
+  .content-pack-intro > p {
+    max-width: 680px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .proof-strip {
+    margin-top: 9px;
+  }
+
+  .proof-strip span {
+    padding: 5px 9px;
+  }
+
+  .proof-strip b {
+    font-size: 14px;
+  }
+
+  .content-pack-grid {
+    height: calc(100% - 175px);
+    min-height: 0;
+    align-items: start;
+  }
+
+  .pack-form {
+    padding: 14px 20px;
+  }
+
+  .pack-form-head {
+    margin-bottom: 8px;
+  }
+
+  .pack-form-head h2 {
+    font-size: 18px;
+  }
+
+  .pack-form input,
+  .pack-form select {
+    height: 34px;
+  }
+
+  .pack-form input,
+  .pack-form select,
+  .pack-form textarea {
+    margin-bottom: 5px;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  .pack-form textarea {
+    min-height: 58px;
+  }
+
+  .pack-form .field-label {
+    font-size: 10px;
+  }
+
+  .pack-submit {
+    min-height: 38px;
+  }
+
+  .form-note {
+    margin-top: 4px;
+    font-size: 8px;
+  }
+
+  .pack-result,
+  .result-empty {
+    min-height: 0;
+    height: 100%;
+  }
+}
+
+@media (max-width: 820px) {
+  .content-pack-view {
+    height: auto;
+    min-height: calc(100vh - 102px);
+    overflow: visible;
+    padding: 18px 16px 34px;
+  }
+
+  .content-pack-intro {
+    display: none;
+  }
+
+  .content-pack-grid {
+    display: block;
+    height: auto;
+    margin-top: 0;
+  }
+
+  .pack-result:has(#pack-empty:not([hidden])) {
+    display: none;
+  }
+
+  .pack-form {
+    padding: 20px 18px;
+  }
+}
+
+/* Product-workspace visual system: compact hierarchy, clear steps, useful
+   empty state, and a visible primary action. */
+.content-pack-intro {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px 28px;
+  align-items: end;
+  max-width: 1180px;
+  padding: 0 2px;
+}
+
+.intro-copy h1 {
+  margin: 5px 0 5px;
+  color: var(--paper);
+  font-size: clamp(30px, 3vw, 46px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.intro-copy p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.intro-offer {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  padding: 9px 0 2px 24px;
+  border-left: 1px solid var(--line);
+}
+
+.intro-offer span,
+.intro-offer small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.intro-offer strong {
+  color: var(--yellow);
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.proof-strip {
+  grid-column: 1 / -1;
+  margin-top: 0;
+  padding-top: 11px;
+  border-top: 1px solid rgba(57, 57, 54, 0.8);
+}
+
+.proof-strip span {
+  background: transparent;
+  padding: 0 14px 0 0;
+  border: 0;
+  font-size: 11px;
+}
+
+.content-pack-grid {
+  max-width: 1180px;
+  grid-template-columns: minmax(360px, 0.72fr) minmax(480px, 1.28fr);
+  gap: 16px;
+}
+
+.pack-form,
+.pack-result {
+  border-color: #333532;
+  border-radius: 8px;
+  background: rgba(22, 23, 22, 0.94);
+}
+
+.pack-form {
+  padding: 22px 24px;
+}
+
+.pack-form-head {
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(57, 57, 54, 0.8);
+}
+
+.pack-form-head h2 {
+  margin-top: 4px;
+  font-size: 20px;
+  letter-spacing: 0;
+}
+
+.step-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+}
+
+.pack-form input,
+.pack-form select,
+.pack-form textarea {
+  border-color: #454742;
+  border-radius: 6px;
+  background: #111211;
+}
+
+.pack-form input::placeholder,
+.pack-form textarea::placeholder {
+  color: #777a73;
+}
+
+.pack-form input:focus,
+.pack-form select:focus,
+.pack-form textarea:focus {
+  border-color: var(--mint);
+  box-shadow: 0 0 0 3px rgba(115, 230, 186, 0.1);
+}
+
+.pack-submit,
+.unlock-button {
+  border-radius: 6px;
+  transition: transform 140ms ease, background-color 140ms ease;
+}
+
+.pack-submit:hover,
+.unlock-button:hover {
+  transform: translateY(-1px);
+}
+
+.pack-result {
+  display: flex;
+  min-height: 520px;
+}
+
+.result-empty,
+.result-content {
+  width: 100%;
+}
+
+.result-empty {
+  min-height: 0;
+  padding: 32px;
+  align-content: center;
+  justify-items: center;
+}
+
+.result-corner {
+  top: 22px;
+  left: 26px;
+}
+
+.empty-mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(244, 211, 94, 0.45);
+  border-radius: 14px;
+  color: var(--yellow);
+  background: rgba(244, 211, 94, 0.08);
+}
+
+.empty-mark svg {
+  width: 23px;
+  height: 23px;
+}
+
+.result-empty h2 {
+  margin: 10px 0 7px;
+  font-size: 24px;
+  letter-spacing: 0;
+}
+
+.result-empty p {
+  max-width: 270px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.preview-flow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  color: #c7c9c0;
+  font-size: 10px;
+}
+
+.preview-flow svg {
+  width: 13px;
+  color: var(--signal);
+}
+
+@media (max-width: 820px) {
+  .content-pack-view {
+    padding: 18px 14px 28px;
+  }
+
+  .content-pack-intro {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 14px;
+    margin-bottom: 16px;
+  }
+
+  .intro-copy h1 {
+    font-size: 28px;
+  }
+
+  .intro-copy p {
+    font-size: 11px;
+  }
+
+  .intro-offer {
+    padding-left: 14px;
+  }
+
+  .intro-offer strong {
+    font-size: 20px;
+  }
+
+  .proof-strip {
+    display: none;
+  }
+
+  .pack-form {
+    padding: 18px 16px;
+  }
+
+  .pack-result {
+    min-height: 420px;
   }
 }
