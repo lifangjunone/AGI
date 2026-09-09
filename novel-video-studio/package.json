@@ -33,6 +33,7 @@
     "files": [
       "apps/desktop/**/*",
       "assets/**/*",
+      "config/**/*",
       "lib/**/*",
       "public/**/*",
       "server.mjs",

@@ -110,6 +110,12 @@ test("serves the Zhizhu assistant workspace and generates all three previews", a
   const page = await fetch(`http://127.0.0.1:${instance.port}/zhizhu/`);
   assert.equal(page.status, 200);
   assert.match(await page.text(), /智助乖乖/);
+  const config = await fetch(`http://127.0.0.1:${instance.port}/api/assistant/config`);
+  assert.equal(config.status, 200);
+  const configBody = await config.json();
+  assert.equal(configBody.brand, "智助乖乖");
+  assert.equal(configBody.prices.product, "9.90");
+  assert.match(configBody.channels.officialAccount.article, /tool=article/);
 
   const payloads = [
     {

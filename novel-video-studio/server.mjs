@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnv, makeConfig } from "./lib/config.mjs";
 import { ProductionPipeline } from "./lib/pipeline.mjs";
+import { loadSourceRegistry, saveSourceRegistry } from "./lib/source-registry.mjs";
 import { ProjectStore } from "./lib/store.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
@@ -185,6 +186,23 @@ export const server = createServer(async (request, response) => {
       const projects = await store.list();
       sendJson(response, 200, {
         projects: url.searchParams.get("full") === "true" ? projects : projects.map(projectSummary)
+      });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/search-sources") {
+      sendJson(response, 200, {
+        sources: await loadSourceRegistry(config.search),
+        configFile: config.search.sourceConfigFile,
+        domesticWebSearch: config.search.domesticWebSearch
+      });
+      return;
+    }
+
+    if (request.method === "PUT" && url.pathname === "/api/search-sources") {
+      const body = await readJson(request);
+      sendJson(response, 200, {
+        sources: await saveSourceRegistry(config.search, body.sources)
       });
       return;
     }

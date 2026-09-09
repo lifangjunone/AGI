@@ -36,3 +36,22 @@ export interface AssistantResponse {
 export interface AssistantRecord extends AssistantResult {
   createdAt: string;
 }
+
+export interface AssistantConfig {
+  brand: string;
+  prices: {
+    product: string;
+    article: string;
+    social: string;
+  };
+  channels: {
+    web: string;
+    miniapp: string;
+    officialAccount: {
+      home: string;
+      product: string;
+      article: string;
+      social: string;
+    };
+  };
+}

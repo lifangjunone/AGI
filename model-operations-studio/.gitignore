@@ -10,14 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 release
-runtime/*
-!runtime/.gitkeep
-!runtime/models/
-!runtime/models/.gitkeep
-!runtime/logs/
-!runtime/logs/.gitkeep
-!runtime/outputs/
-!runtime/outputs/.gitkeep
+runtime/
 dist-ssr
 *.local
 

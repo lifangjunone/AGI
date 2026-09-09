@@ -67,3 +67,15 @@ If ComfyUI reports an MPS allocation error or the output fails decoding/black-fr
 4. Do not silently switch to FP8 or `uni_pc`.
 
 Vertical banding is not reliably detectable from process exit status. The benchmark records machine-verifiable corruption and black-frame checks, but final temporal/artifact quality still requires human review before the configuration is marked production-stable.
+
+## Verified Result
+
+The baseline completed successfully on this M5 Pro:
+
+- Cold run: 217.49 seconds; warm run: 154.57 seconds.
+- 832x480, 49 frames, 16 fps, 20 steps, Euler, CFG 5.
+- No MPS exception, OOM, black frame or decode error.
+- Automated progressive banding and saturation checks passed on frames 0/16/32/48.
+- Manual contact-sheet review found coherent motion and no visible stripe corruption.
+
+This configuration is the stable default. Higher resolution and longer frame counts remain unverified and should be promoted only after separate quality checks.

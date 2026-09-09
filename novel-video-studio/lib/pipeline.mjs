@@ -244,18 +244,32 @@ export class ProductionPipeline {
       }, requiresDiscovery ? "正在检索可信内容源" : "正在读取已确认来源");
       if (requiresDiscovery) {
         await this.updateNode(project, "discover", "running", {
-          input: { novelName: project.novelName, providers: ["Project Gutenberg", "Open Library", "Google Books", "Brave Search"] }
+          input: {
+            novelName: project.novelName,
+            strategies: ["国内全网检索", "配置站点检索", "公版目录检索", "全球目录检索"],
+            sourceConfigFile: this.config.search.sourceConfigFile
+          }
         });
-        const sources = await this.searchNovel(project.novelName, this.config.search);
+        const searchResult = await this.searchNovel(project.novelName, this.config.search);
+        const sources = Array.isArray(searchResult) ? searchResult : searchResult.candidates;
+        const searches = Array.isArray(searchResult) ? [] : searchResult.searches || [];
+        const configuredSources = Array.isArray(searchResult) ? [] : searchResult.configuredSources || [];
         const suggested = sources.find((item) => item.rights === "public-domain") || sources[0];
         if (!suggested) {
-          await this.updateNode(project, "discover", "failed", { error: "未找到可识别的小说来源" });
+          await this.updateNode(project, "discover", "failed", {
+            output: { candidateCount: 0, candidates: [], searches, configuredSources },
+            projectPatch: { sources: [], searchRuns: searches, configuredSources },
+            error: "未找到可识别的小说来源"
+          });
           throw new Error("未找到可识别的小说来源");
         }
         await this.updateNode(project, "discover", "completed", {
           output: {
             candidateCount: sources.length,
             suggestedSourceId: suggested.id,
+            searchCount: searches.length,
+            searches,
+            configuredSources,
             candidates: sources.map(({ id: sourceId, title, authors, source, rights, score, year, languages, sourceUrl, contentUrl, description }) => ({
               id: sourceId, title, authors, source, rights, score, year, languages, sourceUrl,
               contentAvailable: Boolean(contentUrl),
@@ -264,6 +278,8 @@ export class ProductionPipeline {
           },
           projectPatch: {
             sources,
+            searchRuns: searches,
+            configuredSources,
             source: null,
             sourceConfirmed: false,
             suggestedSourceId: suggested.id,

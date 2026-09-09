@@ -4,7 +4,8 @@
 
 ## 当前能力
 
-- 同时检索 Project Gutenberg、Open Library、Google Books，以及可选 Brave Search。
+- 同时执行 360 国内全网、已配置小说站点、Project Gutenberg、Open Library、Google Books，以及可选 Brave Search；每次检索记录实际查询地址、状态、命中数、耗时与错误。
+- 默认配置起点、和图书、QQ 阅读、纵横、17K、番茄、七猫、晋江和中文维基文库，并可在“来源配置”中增删或停用站点。
 - 自动优先选择公版正文；只找到元数据或普通网页时停在版权门禁，不抓取盗版正文。
 - 生成故事圣经、角色连续性 ID、武器道具、地点设定和第一集脚本。
 - 每集默认严格拆为 `30 × 30 秒 = 15 分钟`，并保留每个镜头的状态和远端任务 ID。
@@ -86,6 +87,16 @@ MAX_VIDEO_CONCURRENCY=4
 
 API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` 已被 Git 忽略。聊天中出现过的 Key 应先在方舟控制台轮换，不建议继续使用。
 
+## 小说来源配置
+
+默认来源位于 `config/novel-sources.json`。应用内“小说源库 → 配置来源”可维护来源名称、域名、启停状态和版权策略，修改结果保存在数据目录的 `search-sources.json`；也可通过 `NOVEL_SOURCE_CONFIG` 指定其他配置文件。设置 `DOMESTIC_WEB_SEARCH=false` 可关闭国内全网检索。
+
+商业小说站点和未知网页只参与书名、作者、版本及原始地址核验，统一进入版权门禁，不会自动下载正文。`求魔`已内置以下精确候选：
+
+- 起点中文网：`https://www.qidian.com/book/2070910/`
+- 和图书：`https://www.hetushu.com/book/37/index.html`
+- QQ 阅读：`https://book.qq.com/book-detail/481326`
+
 ## 产能解释
 
 `DAILY_OUTPUT_HOURS=72` 表示每日目标交付 72 小时成片，即：
@@ -101,6 +112,7 @@ API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` �
 ```text
 data/
 ├── state.json              # 项目与任务状态
+├── search-sources.json     # 用户维护的小说检索源
 ├── assets/<project-id>/    # 已落盘概念图
 ├── clips/<project-id>/     # 已落盘镜头
 ├── output/<project-id>/    # 15 分钟成片
@@ -111,6 +123,8 @@ data/
 
 - `GET /api/status`：模式、模型、FFmpeg 与产能配置
 - `GET /api/projects`：项目列表
+- `GET /api/search-sources`：读取已配置小说检索源
+- `PUT /api/search-sources`：校验并保存小说检索源
 - `POST /api/projects`：创建全自动任务，正文为 `{ "novelName": "西游记" }`
 - `GET /api/projects/:id`：生产状态
 - `POST /api/projects/:id/retry`：重试暂停或失败任务

@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Input, Text, Textarea, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
-import { generateAssistant } from '@/services/assistant';
+import { generateAssistant, getAssistantConfig } from '@/services/assistant';
 import { AssistantInput, AssistantResult, AssistantType } from '@/types/assistant';
 import styles from './index.module.scss';
 
@@ -48,7 +48,18 @@ const IndexPage: React.FC = () => {
   const [values, setValues] = useState<Record<string, string>>(initialValues);
   const [result, setResult] = useState<AssistantResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [prices, setPrices] = useState<Record<AssistantType, string>>({
+    product: '9.90',
+    article: '9.90',
+    social: '4.90'
+  });
   const definition = useMemo(() => toolOptions.find((item) => item.type === type) || toolOptions[0], [type]);
+
+  useEffect(() => {
+    getAssistantConfig()
+      .then((config) => setPrices(config.prices))
+      .catch((error) => console.error('[HomePage] config load failed', error));
+  }, []);
 
   const updateValue = (key: string, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -105,7 +116,7 @@ const IndexPage: React.FC = () => {
               <Text className={styles.toolTitle}>{item.title}</Text>
               <Text className={styles.toolCaption}>{item.caption}</Text>
             </View>
-            <Text className={styles.toolPrice}>{item.price}</Text>
+            <Text className={styles.toolPrice}>¥{prices[item.type]}</Text>
           </View>
         ))}
       </View>

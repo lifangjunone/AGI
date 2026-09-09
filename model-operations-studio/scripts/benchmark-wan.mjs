@@ -34,7 +34,7 @@ async function artifactHeuristics(file) {
   const raw = await execRaw('ffmpeg', [
     '-v', 'error', '-i', file,
     '-vf', 'select=eq(n\\,0)+eq(n\\,16)+eq(n\\,32)+eq(n\\,48),scale=208:120,format=rgb24',
-    '-vsync', '0', '-f', 'rawvideo', '-',
+    '-fps_mode', 'passthrough', '-f', 'rawvideo', '-',
   ])
   if (raw.error || raw.stdout.length < frameBytes) return { suspicious: true, reason: 'Unable to inspect frames' }
   const frames = Math.floor(raw.stdout.length / frameBytes)
@@ -113,7 +113,7 @@ for (const profile of profiles) {
   const response = await fetch(`${controlPlane}/api/generate/video`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, ...profile }),
+    body: JSON.stringify({ prompt, seed: 20260909, ...profile }),
   })
   const submission = await response.json()
   const attempt = { profile, startedAt: new Date(started).toISOString(), promptId: submission.prompt_id, error: submission.error }

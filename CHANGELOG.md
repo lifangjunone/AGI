@@ -4,6 +4,10 @@
 
 ### feat
 
+- Added auditable domestic novel discovery to `novel-video-studio`: 360 web search, per-domain searches across nine configurable Chinese fiction sources, persisted query URLs/status/hit counts/timings, and an in-app source registry with validated domain-only additions.
+- Added exact `求魔` candidates for Qidian (`2070910`), Hetushu (`book/37`), and QQ Reading; upstream WAF or search failures now fall back to configured candidates while preserving a degraded-run record.
+- Enabled the approved Alipay mobile website payment capability in production: mobile orders now use `alipay.trade.wap.pay` / `QUICK_WAP_WAP_PAY`, with the existing page-payment fallback retained.
+- Connected the Zhizhu miniapp and official-account entry points to shared assistant configuration: dynamic prices, tool-specific official-account URLs, a miniapp WebView bridge to the article assistant, and live config loading from `/api/assistant/config`.
 - Reworked `novel-video-studio` into a two-level multi-project workspace: the default project center supports creation, search, status filtering, visual progress cards, and explicit project entry; source, pipeline, asset, and episode tools are available only inside a selected project, while execution history remains in the global task center.
 - Configured `novel-video-studio` task planning to use `glm-5-2-260617` through Ark Chat Completions and video rendering to use Seedance 2.5 (`doubao-seedance-2-5-260628`) by default, with legacy `ARK_TEXT_MODEL` compatibility and model IDs exposed in node/API telemetry.
 - Added `model-operations-studio`, a cross-platform local MaaS control plane with model registry, checksum-verified downloads, process lifecycle management, health checks, host telemetry, logs, inference playgrounds, and Electron packaging for macOS, Windows, and Linux.
@@ -35,9 +39,10 @@
 
 ### verify
 
+- Retried the formerly failed `求魔` project and verified three exact candidates plus 14 source-level traces; source-registry persistence, upstream-block fallback, desktop/mobile trace views, and WCAG checks pass, with the Novel Video Studio suite at 25 tests.
 - Verified the project-center, create-modal, enter/return, navigation-gating, filtering, and deep-link flows at 1120×720 and 390×844; both layouts report zero WCAG 2 A/AA violations and the Novel Video Studio suite passes 22 tests.
 - Verified the configured Ark request routes, model IDs, and 30-second Seedance task payload without issuing a billable production request; the Novel Video Studio suite now passes 21 automated tests.
-- Verified the Model Operations Studio production build, lint gate, model/workflow policy tests, and live control-plane host/model-state endpoint; full Wan video quality verification remains gated on completion of the 21.2 GiB model download and render.
+- Verified Model Operations Studio with a production build, zero-warning lint, 3 passing tests, macOS arm64 Electron packaging, responsive screenshots, a Qwen3.5 response at 42.71 token/s, a Wan2.2 832x480/49-frame render in 217.49 seconds cold and 154.57 seconds warm with no black frames, decode errors, progressive banding, or saturation growth, and a 41.44-second image-to-video API smoke test.
 - Verified the source-review pause/resume flow, explicit non-default candidate selection, all six persisted node artifacts, historical-node fallback, and responsive source controls; the Novel Video Studio suite now passes 19 automated tests.
 - Verified production `/video/admin/`: unauthenticated API returns 401, login returns an HttpOnly session, price update persists, order overview loads, and browser verification reached the live Alipay cashier with a `¥9.90` order.
 - Verified project concurrency with a real three-project submission against one slot (`1 running / 2 queued`), automatic queue advancement, restart recovery, mobile/desktop task-center layouts, filtering, search, and historical task restoration; 17 automated tests pass.

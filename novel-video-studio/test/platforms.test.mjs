@@ -40,6 +40,31 @@ test("project center is the default entry before project-scoped tools", async ()
   assert.match(source, /setProjectNavigation\(false\)/);
 });
 
+test("search-source registry is exposed and safely persisted", async () => {
+  const response = await fetch(`${origin}/api/search-sources`);
+  assert.equal(response.status, 200);
+  const initial = await response.json();
+  assert.ok(initial.sources.some((source) => source.id === "qidian"));
+  const custom = {
+    id: "custom-reading",
+    name: "自定义阅读站",
+    domains: ["reading.example.com"],
+    rights: "rights-review-required",
+    enabled: true,
+    knownBooks: []
+  };
+  const updateResponse = await fetch(`${origin}/api/search-sources`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sources: [...initial.sources, custom] })
+  });
+  assert.equal(updateResponse.status, 200);
+  const updated = await updateResponse.json();
+  assert.ok(updated.sources.some((source) => source.id === custom.id));
+  const persisted = JSON.parse(await readFile(path.join(dataDirectory, "search-sources.json"), "utf8"));
+  assert.ok(persisted.sources.some((source) => source.id === custom.id));
+});
+
 test("task history and queue telemetry are exposed as lightweight summaries", async () => {
   const [statusResponse, projectsResponse, queueResponse] = await Promise.all([
     fetch(`${origin}/api/status`),
@@ -66,15 +91,17 @@ test("mobile PWA assets are valid and served with correct types", async () => {
 
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
-  assert.match(await workerResponse.text(), /novel-picture-works-v6/);
+  assert.match(await workerResponse.text(), /novel-picture-works-v7/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {
   const source = await readFile(new URL("../apps/desktop/main.mjs", import.meta.url), "utf8");
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   assert.match(source, /contextIsolation:\s*true/);
   assert.match(source, /nodeIntegration:\s*false/);
   assert.match(source, /sandbox:\s*true/);
   assert.match(source, /NOVEL_STUDIO_DATA_DIRECTORY/);
+  assert.ok(packageJson.build.files.includes("config/**/*"));
 });
 
 test("production manifest can be exported and downloaded", async () => {

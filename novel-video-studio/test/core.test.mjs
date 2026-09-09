@@ -6,7 +6,8 @@ import test from "node:test";
 import { ArkClient } from "../lib/ark-client.mjs";
 import { DEFAULT_ARK_MODELS, makeConfig } from "../lib/config.mjs";
 import { buildDemoBible, makeShots, ProductionPipeline } from "../lib/pipeline.mjs";
-import { titleScore } from "../lib/novel-search.mjs";
+import { searchNovel, titleScore } from "../lib/novel-search.mjs";
+import { loadSourceRegistry, sanitizeSources } from "../lib/source-registry.mjs";
 import { ProjectStore } from "../lib/store.mjs";
 
 const waitFor = async (predicate, timeout = 3000) => {
@@ -21,6 +22,31 @@ test("title matching tolerates book-title punctuation", () => {
   assert.equal(titleScore("《西游记》", "西游记"), 100);
   assert.ok(titleScore("Journey to the West", "Journey to the West: Volume I") >= 80);
   assert.equal(titleScore("", "西游记"), 0);
+});
+
+test("default source registry includes exact Qiu Mo candidates and validates custom domains", async () => {
+  const config = makeConfig(process.cwd());
+  const sources = await loadSourceRegistry(config.search);
+  const qidian = sources.find((source) => source.id === "qidian");
+  const hetushu = sources.find((source) => source.id === "hetushu");
+  assert.equal(qidian.knownBooks[0].url, "https://www.qidian.com/book/2070910/");
+  assert.equal(hetushu.knownBooks[0].url, "https://www.hetushu.com/book/37/index.html");
+  assert.throws(() => sanitizeSources([{ name: "Invalid", domain: "localhost" }]), /有效名称或域名/);
+});
+
+test("known Qiu Mo sources survive upstream search blocking", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => {
+    throw new Error("blocked");
+  };
+  try {
+    const result = await searchNovel("求魔", makeConfig(process.cwd()).search);
+    assert.ok(result.candidates.some((candidate) => candidate.sourceUrl === "https://www.qidian.com/book/2070910/"));
+    assert.ok(result.candidates.some((candidate) => candidate.sourceUrl === "https://www.hetushu.com/book/37/index.html"));
+    assert.equal(result.searches.find((run) => run.provider === "起点中文网").status, "degraded");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("production capacity derives 15-minute episodes and 30-second shots", () => {
@@ -179,8 +205,22 @@ test("pipeline pauses for explicit source confirmation and records every node ar
         maxVideoConcurrency: 4
       }
     };
+    const searchRuns = [{
+      id: "source-a",
+      provider: "目录 A",
+      kind: "domestic-site",
+      queryUrl: "https://search.example.com/?q=test",
+      status: "completed",
+      candidateCount: 2,
+      durationMs: 12,
+      error: null
+    }];
     const pipeline = new ProductionPipeline(config, store, {
-      search: async () => sources,
+      search: async () => ({
+        candidates: sources,
+        searches: searchRuns,
+        configuredSources: [{ id: "a", name: "目录 A", domains: ["example.com"], enabled: true }]
+      }),
       loadText: async () => "目标正文"
     });
 
@@ -191,6 +231,8 @@ test("pipeline pauses for explicit source confirmation and records every node ar
     assert.equal(project.sources.length, 2);
     assert.equal(project.nodes.discover.status, "completed");
     assert.equal(project.nodes.discover.output.candidateCount, 2);
+    assert.deepEqual(project.searchRuns, searchRuns);
+    assert.equal(project.nodes.discover.output.searchCount, 1);
 
     await pipeline.confirmSource(created.id, "candidate-b");
     await waitFor(async () => (await store.get(created.id)).status === "completed");

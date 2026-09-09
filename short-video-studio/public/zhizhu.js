@@ -72,6 +72,26 @@ function renderFields() {
   refreshIcons();
 }
 
+function applyConfig(config) {
+  document.querySelectorAll(".tool-tab").forEach((tab) => {
+    const price = config.prices?.[tab.dataset.tool];
+    const priceNode = tab.querySelector("strong");
+    if (price && priceNode) priceNode.textContent = `¥${Number(price).toFixed(2)}`;
+  });
+  const status = document.querySelector(".status");
+  if (status) status.innerHTML = "<i></i>共享服务已连接";
+}
+
+async function loadConfig() {
+  try {
+    const response = await fetch(apiUrl("/api/assistant/config"), { cache: "no-store" });
+    if (!response.ok) throw new Error(`config ${response.status}`);
+    applyConfig(await response.json());
+  } catch (error) {
+    console.error("[Zhizhu] config load failed", error);
+  }
+}
+
 function showToast(message, error = false) {
   const toast = $("#toast");
   toast.textContent = message;
@@ -132,4 +152,13 @@ $("#assistant-form").addEventListener("submit", generate);
 $("#unlock-button").addEventListener("click", () => {
   showToast("当前为 Web 验证版，支付接入将在小程序虚拟支付完成后开放");
 });
+
+const requestedTool = new URLSearchParams(location.search).get("tool");
+if (requestedTool && toolDefinitions[requestedTool]) {
+  state.tool = requestedTool;
+  document.querySelectorAll(".tool-tab").forEach((tab) => {
+    tab.classList.toggle("is-active", tab.dataset.tool === requestedTool);
+  });
+}
 renderFields();
+loadConfig();

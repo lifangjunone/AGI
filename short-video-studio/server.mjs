@@ -1,9 +1,10 @@
 import { createReadStream } from "node:fs";
-import { access, readFile, stat } from "node:fs/promises";
+import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { generateVideo, listVideos } from "./lib/video-service.mjs";
+import { generateVideo, listVideos, validateGenerationInput } from "./lib/video-service.mjs";
 import { createAlipayWebPay } from "./lib/alipay-webpay.mjs";
 import {
   adminCookie,
@@ -65,6 +66,65 @@ const alipayWebPay = createAlipayWebPay({
   price: adminStore.getPrices().product,
   getPrice: () => adminStore.getPrices().product
 });
+const generationJobsDirectory = path.join(DATA_DIRECTORY, "generation-jobs");
+
+async function writeGenerationJob(job) {
+  await mkdir(generationJobsDirectory, { recursive: true });
+  await writeFile(
+    path.join(generationJobsDirectory, `${job.id}.json`),
+    `${JSON.stringify(job, null, 2)}\n`
+  );
+}
+
+async function getGenerationJob(jobId) {
+  try {
+    return JSON.parse(
+      await readFile(path.join(generationJobsDirectory, `${jobId}.json`), "utf8")
+    );
+  } catch (error) {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function runGenerationJob({ id, input, config: generationConfig, ffmpegPath, ffprobePath }) {
+  const update = async (patch) => {
+    const current = (await getGenerationJob(id)) || { id, input };
+    await writeGenerationJob({
+      ...current,
+      ...patch,
+      updatedAt: new Date().toISOString()
+    });
+  };
+  try {
+    await update({ status: "running", progress: 12, detail: "已进入后台生成队列" });
+    const video = await generateVideo({
+      jobId: id,
+      input,
+      config: generationConfig,
+      dataDirectory: DATA_DIRECTORY,
+      ffmpeg: ffmpegPath,
+      ffprobe: ffprobePath,
+      signal: AbortSignal.timeout(20 * 60 * 1000)
+    });
+    await update({
+      status: "completed",
+      progress: 100,
+      detail: "视频已生成",
+      video,
+      completedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("[VideoJob] generation failed", { id, error: error.message });
+    await update({
+      status: "failed",
+      progress: 100,
+      detail: "视频生成失败",
+      error: error.message || "视频生成失败",
+      completedAt: new Date().toISOString()
+    });
+  }
+}
 
 const mimeTypes = {
   ".css": "text/css; charset=utf-8",
@@ -300,6 +360,31 @@ export const server = createServer(async (request, response) => {
         modelConfigured: Boolean(config.apiKey && config.modelId),
         ffmpegReady: Boolean(ffmpegPath && ffprobePath),
         model: config.modelId || null
+      });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/assistant/config") {
+      const prices = adminStore.getPrices();
+      const base = `${requestOrigin(request, url)}`;
+      sendJson(response, 200, {
+        brand: "智助乖乖",
+        prices,
+        tools: [
+          { type: "product", label: "商品内容包", price: prices.product },
+          { type: "article", label: "公众号文章助手", price: prices.article },
+          { type: "social", label: "朋友圈与社群助手", price: prices.social }
+        ],
+        channels: {
+          web: `${base}/zhizhu/`,
+          miniapp: "zhizhu://pages/index/index",
+          officialAccount: {
+            home: `${base}/zhizhu/?from=official-account`,
+            product: `${base}/zhizhu/?from=official-account&tool=product`,
+            article: `${base}/zhizhu/?from=official-account&tool=article`,
+            social: `${base}/zhizhu/?from=official-account&tool=social`
+          }
+        }
       });
       return;
     }

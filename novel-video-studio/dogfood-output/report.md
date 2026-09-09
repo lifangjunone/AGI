@@ -35,7 +35,7 @@
 - Verified restart recovery for interrupted, queued, and remotely rendering projects.
 - Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
 - Verified desktop and 390×844 mobile layouts with six working mobile destinations.
-- Automated suite: 22 passing tests.
+- Automated suite: 25 passing tests.
 
 ![Task center desktop](screenshots/task-center-desktop.png)
 
@@ -73,6 +73,21 @@
 ![Source review mobile](screenshots/source-review-mobile.png)
 
 ![Node detail mobile](screenshots/node-detail-mobile.png)
+
+## Domestic Search and Source Registry Acceptance
+
+- Retried the previously failed `求魔` project and verified it now stops at source review with exact candidates from 起点中文网、和图书 and QQ 阅读.
+- Verified the exact user-provided URLs: `https://www.qidian.com/book/2070910/` and `https://www.hetushu.com/book/37/index.html`.
+- Verified 14 auditable search runs covering 360 domestic web search, nine configured sites, three international catalogs, and optional Brave Search.
+- Each run exposes its query URL, completion/degraded/failure state, hit count, elapsed time, and error.
+- Verified the source registry supports listing, enabling, disabling, adding, deleting, validation, and persistence without accepting arbitrary server fetch URLs.
+- Desktop 1120×720 and mobile 390×844 trace views, plus the source configuration dialog, report 0 WCAG 2 A/AA violations.
+
+![Search trace desktop](screenshots/search-trace-desktop.png)
+
+![Search trace mobile](screenshots/search-trace-mobile.png)
+
+![Source configuration desktop](screenshots/source-config-desktop.png)
 
 ## Issues
 

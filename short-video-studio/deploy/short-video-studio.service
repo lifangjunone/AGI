@@ -21,6 +21,7 @@ Environment=ALIPAY_PUBLIC_KEY_FILE=/data/app/opportunity-factory/private/alipay-
 Environment=ALIPAY_SELLER_ID=2088122111133366
 Environment=ALIPAY_GATEWAY=https://openapi.alipay.com/gateway.do
 Environment=ALIPAY_NOTIFY_URL=https://lifeyoume.icu/video/api/alipay/notify
+Environment=ALIPAY_MOBILE_WAP_ENABLED=true
 Environment=CONTENT_PACK_PRICE=9.90
 ExecStart=/opt/node20/bin/node /data/app/short-video-studio/server.mjs
 Restart=always

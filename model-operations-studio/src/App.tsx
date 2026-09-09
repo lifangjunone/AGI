@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Activity, Boxes, ChevronRight, CircleStop, Cpu, Database, Download,
   Gauge, HardDrive, LayoutDashboard, MemoryStick, MessageSquareText,
-  Play, RefreshCw, Rocket, ServerCog, Settings, Sparkles, TerminalSquare,
+  ImagePlus, Play, RefreshCw, Rocket, ServerCog, Settings, Sparkles, TerminalSquare,
   Video, Workflow, X,
 } from 'lucide-react'
 import './App.css'
@@ -83,6 +83,7 @@ function App() {
   const [prompt, setPrompt] = useState('请用清晰的结构解释本地部署大模型时，模型注册、运行时和服务端点之间的关系。')
   const [videoPrompt, setVideoPrompt] = useState('雨后的上海街道，一辆复古电车缓慢驶过，电影级光影，镜头平稳向前推进')
   const [videoConfig, setVideoConfig] = useState({ width: 832, height: 480, frames: 49, fps: 16, steps: 20, cfg: 5 })
+  const [referenceImage, setReferenceImage] = useState('')
   const [memoryLimit, setMemoryLimit] = useState(40)
   const [result, setResult] = useState('')
 
@@ -245,6 +246,18 @@ function App() {
         <section className="panel prompt-panel">
           <div className="panel-title"><div><span className="eyebrow">VIDEO / COMFYUI</span><h2>视频任务</h2></div><Video size={18} /></div>
           <textarea value={videoPrompt} onChange={(event) => setVideoPrompt(event.target.value)} />
+          <label className="file-picker"><ImagePlus size={16} />{referenceImage ? '参考图已就绪' : '添加参考图（可选）'}<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
+            const file = event.target.files?.[0]
+            if (!file) return setReferenceImage('')
+            if (file.size > 7_000_000) {
+              setResult('参考图不能超过 7 MB')
+              event.target.value = ''
+              return
+            }
+            const reader = new FileReader()
+            reader.onload = () => setReferenceImage(String(reader.result || ''))
+            reader.readAsDataURL(file)
+          }} /></label>
           <div className="video-controls">
             {([
               ['width', '宽'], ['height', '高'], ['frames', '帧'], ['fps', 'FPS'], ['steps', '步数'], ['cfg', 'CFG'],
@@ -253,7 +266,7 @@ function App() {
           <div className="param-row"><span>Euler</span><span>Simple</span><span>FP16</span><span>Tiled VAE</span></div>
           <button onClick={async () => {
             setBusy('generate-video')
-            const response = await fetch('/api/generate/video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: videoPrompt, ...videoConfig }) })
+            const response = await fetch('/api/generate/video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: videoPrompt, imageBase64: referenceImage || undefined, ...videoConfig }) })
             const payload = await response.json(); setResult(payload.prompt_id ? `任务已入队：${payload.prompt_id}` : payload.error); setBusy('')
           }}><Play size={16} />提交基准任务</button>
         </section>

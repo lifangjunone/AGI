@@ -1,6 +1,6 @@
 import Taro from '@tarojs/taro';
 import generateAssistantMock from '@/data/generateAssistant';
-import { AssistantInput, AssistantResponse } from '@/types/assistant';
+import { AssistantConfig, AssistantInput, AssistantResponse } from '@/types/assistant';
 
 const API_BASE = 'https://lifeyoume.icu/video';
 
@@ -25,6 +25,25 @@ export async function generateAssistant(input: AssistantInput): Promise<Assistan
     return response.data;
   } catch (error) {
     console.error('[Assistant] request error', error);
+    throw error;
+  }
+}
+
+export async function getAssistantConfig(): Promise<AssistantConfig> {
+  if (process.env.TARO_ENV !== 'weapp') {
+    return (await import('@/data/getAssistantConfig')).default();
+  }
+  try {
+    const response = await Taro.request<AssistantConfig>({
+      url: `${API_BASE}/api/assistant/config`,
+      method: 'GET'
+    });
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw new Error(`配置请求失败（${response.statusCode}）`);
+    }
+    return response.data;
+  } catch (error) {
+    console.error('[Assistant] config request error', error);
     throw error;
   }
 }

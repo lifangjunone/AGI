@@ -177,6 +177,7 @@ async function requestVideo({ apiUrl, apiKey, modelId, prompt, signal }) {
 
 export async function generateVideo({
   input,
+  jobId,
   config,
   dataDirectory,
   ffmpeg = "ffmpeg",
@@ -184,7 +185,7 @@ export async function generateVideo({
   signal
 }) {
   const validated = validateGenerationInput(input);
-  const id = randomUUID();
+  const id = jobId || randomUUID();
   const jobsDirectory = path.join(dataDirectory, "jobs");
   const videosDirectory = path.join(dataDirectory, "videos");
   const sourcePath = path.join(videosDirectory, `${id}.source.mp4`);

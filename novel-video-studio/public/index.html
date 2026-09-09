@@ -194,10 +194,17 @@
           <div><p class="eyebrow">SOURCE INTELLIGENCE</p><h2>小说源库</h2></div>
           <div class="source-actions">
             <span id="sourceResultCount">0 个来源</span>
+            <button class="command-button" id="manageSourcesButton"><i data-lucide="settings-2"></i><span>配置来源</span></button>
             <button class="command-button hidden" id="confirmSourceButton" disabled><i data-lucide="check"></i><span>确认来源并继续</span></button>
           </div>
         </header>
         <div class="source-review-notice hidden" id="sourceReviewNotice"><i data-lucide="scan-search"></i><span>请选择与你需要的作品、作者和版本一致的来源。确认前不会处理正文或调用后续生成模型。</span></div>
+        <section class="search-trace">
+          <header><div><span class="micro-label">NODE 01 TRACE</span><h3>检索轨迹</h3></div><span id="searchTraceSummary">尚未执行检索</span></header>
+          <div class="search-trace-list" id="searchTraceList">
+            <div class="view-empty"><i data-lucide="radar"></i><p>进入项目后查看每个检索源的执行地址与结果。</p></div>
+          </div>
+        </section>
         <div class="source-table" id="sourceTable">
           <div class="view-empty"><i data-lucide="library-big"></i><p>启动生产后，这里会列出所有检索来源及版权状态。</p></div>
         </div>
@@ -266,6 +273,22 @@
         <button type="submit" class="primary-command"><i data-lucide="play"></i><span>创建并启动</span></button>
       </footer>
     </form>
+  </dialog>
+  <dialog class="source-config-dialog" id="sourceConfigDialog">
+    <header>
+      <div><span class="micro-label">SEARCH REGISTRY</span><h2>检索源配置</h2></div>
+      <button class="dialog-close" id="sourceConfigDialogClose" aria-label="关闭检索源配置"><i data-lucide="x"></i></button>
+    </header>
+    <div class="source-config-body">
+      <p class="source-config-note">系统通过国内全网搜索执行站内查询。商业站点仅用于作品与版本核验，不会自动抓取未授权正文。</p>
+      <div class="source-config-list" id="sourceConfigList"></div>
+      <form class="source-config-form" id="sourceConfigForm">
+        <label>来源名称<input id="sourceConfigName" maxlength="40" required placeholder="例如：豆瓣阅读"></label>
+        <label>站点域名<input id="sourceConfigDomain" maxlength="120" required placeholder="read.douban.com"></label>
+        <label>版权策略<select id="sourceConfigRights"><option value="metadata-only">仅元数据</option><option value="rights-review-required">需要授权核验</option><option value="public-domain-candidate">公版候选</option></select></label>
+        <button type="submit" class="primary-command"><i data-lucide="plus"></i><span>添加来源</span></button>
+      </form>
+    </div>
   </dialog>
   <dialog class="asset-dialog" id="assetDialog">
     <button class="dialog-close" id="assetDialogClose" aria-label="关闭资产详情"><i data-lucide="x"></i></button>

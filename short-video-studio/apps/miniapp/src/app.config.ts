@@ -2,7 +2,8 @@ export default defineAppConfig({
   pages: [
     'pages/index/index',
     'pages/records/index',
-    'pages/profile/index'
+    'pages/profile/index',
+    'pages/webview/index'
   ],
   window: {
     backgroundTextStyle: 'light',

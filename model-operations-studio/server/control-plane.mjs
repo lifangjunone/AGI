@@ -69,7 +69,7 @@ async function body(req) {
   let raw = ''
   for await (const chunk of req) {
     raw += chunk
-    if (raw.length > 1_000_000) throw new Error('Request body is too large')
+    if (raw.length > 10_000_000) throw new Error('Request body is too large')
   }
   return raw ? JSON.parse(raw) : {}
 }
@@ -160,14 +160,15 @@ function spawnLogged(id, command, args, options = {}) {
   child.stdout.pipe(log)
   child.stderr.pipe(log)
   processes.set(id, child)
-  child.once('exit', (code) => {
+  child.once('exit', (code, signal) => {
     processes.delete(id)
+    const cleanExit = code === 0 || signal === 'SIGTERM'
     const deployment = state.deployments[id]
     if (deployment) {
-      deployment.status = code === 0 ? 'stopped' : 'failed'
+      deployment.status = cleanExit ? 'stopped' : 'failed'
       deployment.pid = null
     }
-    event(code === 0 ? 'info' : 'error', `${id} process exited with code ${code}`, id)
+    event(cleanExit ? 'info' : 'error', cleanExit ? `${id} stopped` : `${id} process exited with code ${code}`, id)
   })
   return child
 }
@@ -391,6 +392,17 @@ async function routeApi(req, res, url) {
     workflow['3'].inputs.steps = clamp(input.steps, 20, 4, 50)
     workflow['3'].inputs.cfg = clamp(input.cfg, 5, 1, 10)
     workflow['47'].inputs.fps = clamp(input.fps, 16, 8, 30)
+    if (input.imageBase64) {
+      const match = String(input.imageBase64).match(/^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/)
+      if (!match) return json(res, 400, { error: 'Reference image must be PNG, JPEG or WebP' })
+      const image = Buffer.from(match[2], 'base64')
+      if (image.length > 7_000_000) return json(res, 400, { error: 'Reference image exceeds 7 MB' })
+      const extension = match[1] === 'jpeg' ? 'jpg' : match[1]
+      const filename = `modelops-${crypto.randomUUID()}.${extension}`
+      await fsp.writeFile(path.join(state.settings.comfyPath, 'input', filename), image)
+      workflow['9'] = { class_type: 'LoadImage', inputs: { image: filename } }
+      workflow['55'].inputs.start_image = ['9', 0]
+    }
     try {
       const response = await fetch('http://127.0.0.1:8188/prompt', {
         method: 'POST',

@@ -48,4 +48,10 @@ test('control plane exposes host and model state', async (context) => {
   const payload = await response.json()
   assert.equal(payload.system.arch, process.arch)
   assert.equal(payload.models.length, 2)
+  const invalidImage = await fetch(`http://127.0.0.1:${port}/api/generate/video`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt: 'test', imageBase64: 'not-an-image' }),
+  })
+  assert.equal(invalidImage.status, 400)
 })

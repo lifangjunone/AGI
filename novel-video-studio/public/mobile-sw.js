@@ -1,4 +1,4 @@
-const CACHE_NAME = "novel-picture-works-v6";
+const CACHE_NAME = "novel-picture-works-v7";
 const APP_SHELL = [
   "/mobile/",
   "/styles.css",

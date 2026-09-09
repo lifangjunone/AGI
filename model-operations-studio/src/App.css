@@ -112,6 +112,8 @@ dt { color: var(--muted); font-size: 9px; } dd { margin: 3px 0 0; font: 11px "SF
 .prompt-panel { padding-bottom: 15px; }.prompt-panel textarea { width: calc(100% - 30px); min-height: 150px; resize: vertical; margin: 15px; padding: 12px; border: 1px solid var(--line); border-radius: 4px; background: #101411; color: var(--text); font-size: 12px; line-height: 1.6; outline: none; }
 .prompt-panel textarea:focus { border-color: #718075; }
 .prompt-panel > button { margin: 0 15px; }
+.file-picker { width: max-content; margin: 0 15px 12px; min-height: 32px; padding: 0 10px; display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 4px; color: #b9c3bb; background: #1d241e; cursor: pointer; }
+.file-picker input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .video-controls { display: grid; grid-template-columns: repeat(6, 1fr); gap: 7px; margin: 0 15px 12px; }
 .video-controls label { margin: 0; }
 .video-controls input { height: 32px; padding: 0 7px; }

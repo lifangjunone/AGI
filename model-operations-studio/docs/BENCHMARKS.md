@@ -23,7 +23,32 @@ The model returned a complete one-sentence Chinese definition through the contro
 
 ## Wan2.2-TI2V-5B FP16
 
-The benchmark result is written only after all three artifacts pass SHA-256 verification and ComfyUI completes a real render. Use:
+Verified 2026-09-09 with ComfyUI 0.35.0, PyTorch 2.14.0 and MPS:
+
+| Metric | Cold run | Warm verified run |
+| --- | ---: | ---: |
+| Resolution | 832x480 | 832x480 |
+| Frames / FPS | 49 / 16 | 49 / 16 |
+| Sampler / steps / CFG | Euler / 20 / 5 | Euler / 20 / 5 |
+| End-to-end time | 217.49 s | 154.57 s |
+| Output duration | 3.063 s | 3.063 s |
+| Highest observed process RSS | 15.93 GiB | 1.28 GiB after model caching/offload |
+| Black frames | None | None |
+| Decode errors | None | None |
+| Progressive vertical banding | None observed | Heuristic passed |
+| Progressive saturation | None observed | Heuristic passed |
+
+The fixed-seed warm run passed automated frame decoding, black-frame detection, progressive column-edge analysis, and saturation-growth analysis. Manual review of frames 0/16/32/48 found coherent tram motion, stable wet-road reflections and no visible stripe corruption. Prompt adherence was good for rainy street, tram, lighting and camera continuity; Shanghai-specific visual identity was only moderate.
+
+The same deployment also passed an image-to-video API smoke test using a PNG reference: 512x288, 9 frames, 4 steps, Euler, CFG 4 completed in 41.44 seconds and produced a decodable 0.563-second WebM.
+
+Evidence:
+
+- Machine-readable report: `runtime/outputs/wan22-benchmark-1788948655012.json`
+- Output: `runtime/ComfyUI/output/ModelOps/wan22-mps_00005_.webm`
+- Contact sheet: `runtime/outputs/wan22-mps_00005_-contact-sheet.png`
+
+Re-run with:
 
 ```bash
 npm run benchmark:wan -- "雨后的上海街道，一辆复古电车缓慢驶过，电影级光影，镜头平稳向前推进"

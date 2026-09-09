@@ -41,6 +41,7 @@ let taskDisplayLimit = 50;
 let selectedSourceId = null;
 let projectFilter = "all";
 let projectQuery = "";
+let sourceRegistry = [];
 
 document.documentElement.dataset.platform = platform;
 
@@ -154,6 +155,7 @@ function renderActivity(activity = []) {
 
 function renderSourceLibrary(project) {
   const sources = project?.sources || [];
+  renderSearchTrace(project);
   const requiresConfirmation = ["source-review", "rights-review"].includes(project?.status);
   if (project?.id !== $("#sourceTable").dataset.projectId || !sources.some((source) => source.id === selectedSourceId)) {
     selectedSourceId = project?.source?.id || project?.suggestedSourceId || sources[0]?.id || null;
@@ -187,6 +189,55 @@ function renderSourceLibrary(project) {
       ${link}
     </article>`;
   }).join("") : `<div class="view-empty"><i data-lucide="library-big"></i><p>启动生产后，这里会列出所有检索来源及版权状态。</p></div>`;
+}
+
+function renderSearchTrace(project) {
+  const runs = project?.searchRuns || project?.nodes?.discover?.output?.searches || [];
+  const completed = runs.filter((run) => run.status === "completed").length;
+  const hits = runs.reduce((sum, run) => sum + Number(run.candidateCount || 0), 0);
+  $("#searchTraceSummary").textContent = runs.length
+    ? `${runs.length} 个检索源 · ${completed} 个完成 · ${hits} 次命中`
+    : "尚未执行检索";
+  $("#searchTraceList").innerHTML = runs.length ? runs.map((run) => {
+    const statusLabel = run.status === "completed"
+      ? "已完成"
+      : run.status === "degraded" ? "降级命中" : run.status === "skipped" ? "未配置" : "失败";
+    const details = run.error
+      ? escapeHtml(run.error)
+      : `${Number(run.candidateCount || 0)} 个命中 · ${Number(run.durationMs || 0)} ms`;
+    const link = run.queryUrl
+      ? `<a href="${escapeHtml(run.queryUrl)}" target="_blank" rel="noopener noreferrer" aria-label="打开 ${escapeHtml(run.provider)} 检索地址"><i data-lucide="external-link"></i></a>`
+      : "";
+    return `<article class="search-trace-row">
+      <span class="trace-state ${escapeHtml(run.status)}"><i></i>${statusLabel}</span>
+      <div><strong>${escapeHtml(run.provider)}</strong><code>${escapeHtml(run.queryUrl || "本地目录")}</code></div>
+      <small>${details}</small>
+      ${link}
+    </article>`;
+  }).join("") : `<div class="view-empty"><i data-lucide="radar"></i><p>进入项目后查看每个检索源的执行地址与结果。</p></div>`;
+  icons();
+}
+
+function renderSourceRegistry() {
+  $("#sourceConfigList").innerHTML = sourceRegistry.map((source, index) => `
+    <article class="source-config-row" data-source-index="${index}">
+      <label class="source-switch"><input type="checkbox" aria-label="${escapeHtml(source.name)}检索源" ${source.enabled ? "checked" : ""}><span></span></label>
+      <div><strong>${escapeHtml(source.name)}</strong><small>${escapeHtml(source.domains.join("、"))}</small></div>
+      <span>${source.rights === "metadata-only" ? "仅元数据" : source.rights === "public-domain-candidate" ? "公版候选" : "需授权核验"}</span>
+      <button class="icon-button" data-remove-source="${index}" aria-label="删除 ${escapeHtml(source.name)}"><i data-lucide="trash-2"></i></button>
+    </article>
+  `).join("");
+  icons();
+}
+
+async function persistSourceRegistry(message) {
+  const payload = await api("/api/search-sources", {
+    method: "PUT",
+    body: JSON.stringify({ sources: sourceRegistry })
+  });
+  sourceRegistry = payload.sources;
+  renderSourceRegistry();
+  showToast(message);
 }
 
 function renderAssetGallery(project) {
@@ -635,6 +686,67 @@ $("#createProjectDialog").addEventListener("click", (event) => {
   if (event.target === $("#createProjectDialog")) $("#createProjectDialog").close();
 });
 $("#backToProjectsButton").addEventListener("click", closeProject);
+$("#manageSourcesButton").addEventListener("click", async () => {
+  try {
+    const payload = await api("/api/search-sources");
+    sourceRegistry = payload.sources;
+    renderSourceRegistry();
+    $("#sourceConfigDialog").showModal();
+  } catch (error) {
+    showToast(error.message);
+  }
+});
+$("#sourceConfigDialogClose").addEventListener("click", () => $("#sourceConfigDialog").close());
+$("#sourceConfigDialog").addEventListener("click", (event) => {
+  if (event.target === $("#sourceConfigDialog")) $("#sourceConfigDialog").close();
+});
+$("#sourceConfigList").addEventListener("change", async (event) => {
+  const row = event.target.closest("[data-source-index]");
+  if (!row || event.target.type !== "checkbox") return;
+  const source = sourceRegistry[Number(row.dataset.sourceIndex)];
+  const previous = source.enabled;
+  source.enabled = event.target.checked;
+  try {
+    await persistSourceRegistry("检索源状态已更新");
+  } catch (error) {
+    source.enabled = previous;
+    renderSourceRegistry();
+    showToast(error.message);
+  }
+});
+$("#sourceConfigList").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-remove-source]");
+  if (!button) return;
+  const index = Number(button.dataset.removeSource);
+  const [removed] = sourceRegistry.splice(index, 1);
+  try {
+    await persistSourceRegistry("检索源已删除");
+  } catch (error) {
+    sourceRegistry.splice(index, 0, removed);
+    renderSourceRegistry();
+    showToast(error.message);
+  }
+});
+$("#sourceConfigForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const name = $("#sourceConfigName").value.trim();
+  const domain = $("#sourceConfigDomain").value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+  sourceRegistry.push({
+    id: `custom-${Date.now()}`,
+    name,
+    domains: [domain],
+    rights: $("#sourceConfigRights").value,
+    enabled: true,
+    knownBooks: []
+  });
+  try {
+    await persistSourceRegistry("检索源已添加");
+    event.currentTarget.reset();
+  } catch (error) {
+    sourceRegistry.pop();
+    showToast(error.message);
+  }
+});
 
 $("#stageTrack").addEventListener("click", (event) => {
   const button = event.target.closest("[data-node-id]");

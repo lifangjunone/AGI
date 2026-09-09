@@ -39,6 +39,7 @@ export function makeConfig(root) {
   const episodeMinutes = positiveNumber(process.env.EPISODE_DURATION_MINUTES, 15);
   const shotSeconds = positiveNumber(process.env.SHOT_DURATION_SECONDS, 30);
   const dailyHours = positiveNumber(process.env.DAILY_OUTPUT_HOURS, 72);
+  const dataDirectory = process.env.NOVEL_STUDIO_DATA_DIRECTORY || path.join(root, "data");
   const planningModel = process.env.ARK_PLANNING_MODEL
     || process.env.ARK_TEXT_MODEL
     || DEFAULT_ARK_MODELS.planning;
@@ -47,7 +48,7 @@ export function makeConfig(root) {
     root,
     port: positiveNumber(process.env.PORT, 4321),
     mode: process.env.PRODUCTION_MODE === "live" ? "live" : "demo",
-    dataDirectory: process.env.NOVEL_STUDIO_DATA_DIRECTORY || path.join(root, "data"),
+    dataDirectory,
     ark: {
       apiKey: process.env.ARK_API_KEY || "",
       baseUrl: process.env.ARK_BASE_URL || "https://ark.cn-beijing.volces.com/api/v3",
@@ -57,7 +58,10 @@ export function makeConfig(root) {
       videoModel: process.env.ARK_VIDEO_MODEL || DEFAULT_ARK_MODELS.video
     },
     search: {
-      braveApiKey: process.env.BRAVE_SEARCH_API_KEY || ""
+      braveApiKey: process.env.BRAVE_SEARCH_API_KEY || "",
+      domesticWebSearch: process.env.DOMESTIC_WEB_SEARCH !== "false",
+      defaultSourceConfigFile: path.join(root, "config", "novel-sources.json"),
+      sourceConfigFile: process.env.NOVEL_SOURCE_CONFIG || path.join(dataDirectory, "search-sources.json")
     },
     production: {
       dailyHours,

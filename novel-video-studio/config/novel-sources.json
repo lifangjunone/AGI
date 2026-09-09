@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "qidian",
+      "name": "起点中文网",
+      "domains": ["www.qidian.com", "m.qidian.com"],
+      "rights": "metadata-only",
+      "enabled": true,
+      "knownBooks": [
+        {
+          "title": "求魔",
+          "authors": "耳根",
+          "url": "https://www.qidian.com/book/2070910/",
+          "description": "耳根创作的仙侠小说，首发于起点中文网。"
+        }
+      ]
+    },
+    {
+      "id": "hetushu",
+      "name": "和图书",
+      "domains": ["www.hetushu.com"],
+      "rights": "rights-review-required",
+      "enabled": true,
+      "knownBooks": [
+        {
+          "title": "求魔",
+          "authors": "耳根",
+          "url": "https://www.hetushu.com/book/37/index.html",
+          "description": "用户提供的《求魔》候选目录，正文使用前必须核验授权。"
+        }
+      ]
+    },
+    {
+      "id": "qq-reading",
+      "name": "QQ 阅读",
+      "domains": ["book.qq.com", "ubook.reader.qq.com", "xiaoshuo.qq.com"],
+      "rights": "metadata-only",
+      "enabled": true,
+      "knownBooks": [
+        {
+          "title": "求魔",
+          "authors": "耳根",
+          "url": "https://book.qq.com/book-detail/481326",
+          "description": "阅文系《求魔》作品页。"
+        }
+      ]
+    },
+    {
+      "id": "zongheng",
+      "name": "纵横中文网",
+      "domains": ["book.zongheng.com", "www.zongheng.com"],
+      "rights": "metadata-only",
+      "enabled": true,
+      "knownBooks": []
+    },
+    {
+      "id": "17k",
+      "name": "17K 小说网",
+      "domains": ["www.17k.com"],
+      "rights": "metadata-only",
+      "enabled": true,
+      "knownBooks": []
+    },
+    {
+      "id": "fanqie",
+      "name": "番茄小说",
+      "domains": ["fanqienovel.com", "www.fanqienovel.com"],
+      "rights": "metadata-only",
+      "enabled": true,
+      "knownBooks": []
+    },
+    {
+      "id": "qimao",
+      "name": "七猫中文网",
+      "domains": ["www.qimao.com"],
+      "rights": "metadata-only",
+      "enabled": true,
+      "knownBooks": []
+    },
+    {
+      "id": "jjwxc",
+      "name": "晋江文学城",
+      "domains": ["www.jjwxc.net"],
+      "rights": "metadata-only",
+      "enabled": true,
+      "knownBooks": []
+    },
+    {
+      "id": "zh-wikisource",
+      "name": "中文维基文库",
+      "domains": ["zh.wikisource.org"],
+      "rights": "public-domain-candidate",
+      "enabled": true,
+      "knownBooks": []
+    }
+  ]
+}
