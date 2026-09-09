@@ -6,6 +6,12 @@ import { fileURLToPath } from "node:url";
 import { generateVideo, listVideos } from "./lib/video-service.mjs";
 import { createAlipayWebPay } from "./lib/alipay-webpay.mjs";
 import {
+  adminCookie,
+  createAdminStore,
+  expiredAdminCookie,
+  parseCookies
+} from "./lib/admin.mjs";
+import {
   assistantToolConfig,
   generateAssistantTool
 } from "./lib/assistant-tools.mjs";
@@ -43,12 +49,21 @@ const config = {
   modelId: process.env.VIDEO_MODEL_ID || ""
 };
 const defaultPort = Number(process.env.PORT || 4317);
-const contentPackPrice = process.env.CONTENT_PACK_PRICE || "9.90";
 const publicBasePath = String(process.env.FRAME60_PUBLIC_BASE_PATH || "").replace(/\/+$/, "");
+const adminStore = createAdminStore({
+  dataDirectory: DATA_DIRECTORY,
+  defaultPrices: {
+    product: process.env.CONTENT_PACK_PRICE || "9.90",
+    article: process.env.ARTICLE_PRICE || "9.90",
+    social: process.env.SOCIAL_PRICE || "4.90"
+  }
+});
+await adminStore.initialize();
 const alipayWebPay = createAlipayWebPay({
   rootDirectory: ROOT,
   dataDirectory: DATA_DIRECTORY,
-  price: contentPackPrice
+  price: adminStore.getPrices().product,
+  getPrice: () => adminStore.getPrices().product
 });
 
 const mimeTypes = {
@@ -77,6 +92,26 @@ function readText(value, field, { min = 1, max = 800 } = {}) {
   if (text.length < min) throw new Error(`${field}至少需要 ${min} 个字符`);
   if (text.length > max) throw new Error(`${field}不能超过 ${max} 个字符`);
   return text;
+}
+
+function requestOrigin(request, url) {
+  const configuredOrigin = String(process.env.FRAME60_PUBLIC_ORIGIN || "").trim().replace(/\/+$/, "");
+  if (configuredOrigin) return configuredOrigin;
+  const forwardedProto = String(request.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+  const forwardedHost = String(request.headers["x-forwarded-host"] || "").split(",")[0].trim();
+  const protocol = forwardedProto || url.protocol.replace(":", "");
+  const host = forwardedHost || url.host;
+  return `${protocol}://${host}${publicBasePath}`;
+}
+
+function isSecureRequest(request) {
+  const forwardedProto = String(request.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+  return forwardedProto === "https" || process.env.NODE_ENV === "production";
+}
+
+function adminAuthorized(request) {
+  const cookies = parseCookies(request.headers.cookie || "");
+  return adminStore.authorize(cookies.frame60_admin);
 }
 
 function makeContentPack(input) {
@@ -124,7 +159,7 @@ function makeContentPack(input) {
     sellingPoints,
     offer,
     source: "local-template",
-    price: contentPackPrice,
+    price: adminStore.getPrices().product,
     titles: hooks,
     scripts,
     captions: [
@@ -239,10 +274,74 @@ export const server = createServer(async (request, response) => {
       sendJson(response, 200, {
         ready: Boolean(config.apiKey && config.modelId && ffmpegPath && ffprobePath),
         contentPackReady: true,
+        prices: adminStore.getPrices(),
         modelConfigured: Boolean(config.apiKey && config.modelId),
         ffmpegReady: Boolean(ffmpegPath && ffprobePath),
         model: config.modelId || null
       });
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/admin/login") {
+      const input = await readJson(request);
+      const token = adminStore.authenticate(
+        input.username,
+        input.password,
+        request.socket.remoteAddress || "unknown"
+      );
+      if (!token) {
+        sendJson(response, adminStore.credentialsConfigured() ? 401 : 503, {
+          error: adminStore.credentialsConfigured() ? "账号或密码错误" : "后台账号尚未配置"
+        });
+        return;
+      }
+      response.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Set-Cookie": adminCookie(token, isSecureRequest(request))
+      });
+      response.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/admin/logout") {
+      const cookies = parseCookies(request.headers.cookie || "");
+      adminStore.revoke(cookies.frame60_admin);
+      response.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "Set-Cookie": expiredAdminCookie(isSecureRequest(request))
+      });
+      response.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    if (url.pathname.startsWith("/api/admin/") && !adminAuthorized(request)) {
+      sendJson(response, 401, { error: "需要后台登录" });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/admin/settings") {
+      sendJson(response, 200, {
+        prices: adminStore.getPrices(),
+        credentialsConfigured: adminStore.credentialsConfigured()
+      });
+      return;
+    }
+
+    if (request.method === "PATCH" && url.pathname === "/api/admin/settings") {
+      const input = await readJson(request);
+      try {
+        const prices = await adminStore.updatePrices(input.prices || input);
+        sendJson(response, 200, { prices });
+      } catch (error) {
+        sendJson(response, 400, { error: error.message || "价格配置无效" });
+      }
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/admin/orders") {
+      sendJson(response, 200, { orders: await alipayWebPay.listOrders() });
       return;
     }
 
@@ -258,7 +357,7 @@ export const server = createServer(async (request, response) => {
         pack,
         payment: {
           status: "not-integrated",
-          amount: contentPackPrice,
+          amount: adminStore.getPrices().product,
           product: "商品短视频内容包"
         }
       });
@@ -269,12 +368,12 @@ export const server = createServer(async (request, response) => {
       const input = await readJson(request);
       let result;
       try {
-        result = generateAssistantTool(input);
+        result = generateAssistantTool(input, adminStore.getPrices());
       } catch (error) {
         sendJson(response, 400, { error: error.message || "输入内容不完整" });
         return;
       }
-      const tool = assistantToolConfig(result.type);
+      const tool = assistantToolConfig(result.type, adminStore.getPrices());
       sendJson(response, 201, {
         result,
         payment: {
@@ -298,7 +397,7 @@ export const server = createServer(async (request, response) => {
           tone: pack.tone,
           offer: pack.offer
         },
-        origin: `${url.protocol}//${url.host}${publicBasePath}`
+        origin: requestOrigin(request, url)
       });
       sendJson(response, 201, {
         orderId: payment.order.orderId,
@@ -401,12 +500,18 @@ export const server = createServer(async (request, response) => {
     }
 
     if (request.method === "GET" || request.method === "HEAD") {
+      if (url.pathname === "/admin") {
+        response.writeHead(301, { Location: `${publicBasePath}/admin/` });
+        response.end();
+        return;
+      }
       const appEntrypoints = new Set([
         "/", "/web", "/web/", "/mobile", "/mobile/", "/desktop", "/desktop/",
         "/zhizhu", "/zhizhu/"
+        , "/admin", "/admin/"
       ]);
       const requestedPath = appEntrypoints.has(url.pathname)
-        ? (url.pathname.startsWith("/zhizhu") ? "zhizhu.html" : "index.html")
+        ? (url.pathname.startsWith("/zhizhu") ? "zhizhu.html" : url.pathname.startsWith("/admin") ? "admin.html" : "index.html")
         : url.pathname.slice(1);
       const filePath = path.resolve(PUBLIC_DIRECTORY, requestedPath);
       if (!filePath.startsWith(`${PUBLIC_DIRECTORY}${path.sep}`)) {

@@ -11,13 +11,16 @@ function text(value, label, min = 2, max = 500) {
   return result;
 }
 
-export function assistantToolConfig(type) {
-  return TOOL_CONFIG[type] || null;
+export function assistantToolConfig(type, prices = {}) {
+  const config = TOOL_CONFIG[type];
+  if (!config) return null;
+  return { ...config, price: prices[type] || config.price };
 }
 
-export function generateAssistantTool(input) {
+export function generateAssistantTool(input, prices = {}) {
   const type = String(input.type || "product");
   if (!TOOL_CONFIG[type]) throw new Error("暂不支持该助手类型");
+  const tool = assistantToolConfig(type, prices);
 
   if (type === "product") {
     const product = text(input.productName, "商品名称", 2, 80);
@@ -33,7 +36,7 @@ export function generateAssistantTool(input) {
         `我把${product}放进日常使用后，最明显的变化`
       ],
       deliverables: ["10 个短视频标题", "3 条口播脚本", "3 套分镜", "7 天发布计划"],
-      price: TOOL_CONFIG[type].price
+      price: tool.price
     };
   }
 
@@ -51,7 +54,7 @@ export function generateAssistantTool(input) {
         `我用一个真实场景解释${topic}`
       ],
       deliverables: ["5 个文章标题", "1 个文章大纲", "开头与结尾", "配图提示词"],
-      price: TOOL_CONFIG[type].price
+      price: tool.price
     };
   }
 
@@ -68,6 +71,6 @@ export function generateAssistantTool(input) {
       `适合发给老客户的一段提醒`
     ],
     deliverables: ["3 条朋友圈文案", "3 条社群公告", "5 条私聊回复", "1 个跟进节奏"],
-    price: TOOL_CONFIG[type].price
+    price: tool.price
   };
 }

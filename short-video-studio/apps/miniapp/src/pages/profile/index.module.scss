@@ -1,0 +1,17 @@
+@use '@/styles/variables.scss' as *;
+
+.page { min-height: 100vh; padding: 40rpx 32rpx; background: $color-bg-page; }
+.profileCard { display: flex; align-items: center; gap: 20rpx; padding: 34rpx; border-radius: $radius-lg; background: $color-surface-dark; }
+.avatar { display: flex; align-items: center; justify-content: center; width: 86rpx; height: 86rpx; border-radius: $radius-round; background: $color-accent; color: $color-surface-dark; font-size: 34rpx; font-weight: $font-weight-bold; }
+.name { display: block; color: #fff; font-size: 30rpx; font-weight: $font-weight-semibold; }
+.caption { display: block; margin-top: 10rpx; color: #bdd0c7; font-size: 22rpx; }
+.stats { display: flex; justify-content: space-around; margin: 24rpx 0; padding: 28rpx 0; border-radius: $radius-md; background: $color-bg-card; box-shadow: $shadow-card; text-align: center; }
+.stats view { display: flex; flex-direction: column; gap: 8rpx; }
+.statNumber { color: $color-primary; font-size: 34rpx; font-weight: $font-weight-bold; }
+.statLabel { color: $color-text-tertiary; font-size: 21rpx; }
+.menu { overflow: hidden; border-radius: $radius-md; background: $color-bg-card; box-shadow: $shadow-card; }
+.menuItem { display: flex; align-items: center; justify-content: space-between; min-height: 92rpx; padding: 0 28rpx; border-bottom: 2rpx solid $color-divider; color: $color-text-primary; font-size: 26rpx; }
+.menuItem:last-child { border-bottom: 0; }
+.menuItem:active { background: $color-bg-hover; }
+.arrow { color: $color-text-tertiary; font-size: 38rpx; }
+.footer { display: block; margin-top: 56rpx; color: $color-text-tertiary; text-align: center; font-size: 21rpx; }

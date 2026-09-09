@@ -39,9 +39,11 @@ async function searchGutendex(title, timeout) {
   }));
 }
 
-async function searchOpenLibrary(title) {
+async function searchOpenLibrary(title, timeout) {
   const payload = await fetchJson(
-    `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&limit=6&fields=key,title,author_name,first_publish_year,public_scan_b`
+    `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&limit=6&fields=key,title,author_name,first_publish_year,public_scan_b`,
+    {},
+    timeout
   );
   return payload.docs.map((book) => ({
     id: `openlibrary-${String(book.key || "").split("/").pop()}`,
@@ -56,9 +58,11 @@ async function searchOpenLibrary(title) {
   }));
 }
 
-async function searchGoogleBooks(title) {
+async function searchGoogleBooks(title, timeout) {
   const payload = await fetchJson(
-    `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}&maxResults=6`
+    `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}&maxResults=6`,
+    {},
+    timeout
   );
   return (payload.items || []).map((item) => ({
     id: `google-${item.id}`,
@@ -93,10 +97,14 @@ async function searchBrave(title, apiKey) {
 }
 
 const BUILTIN_CLASSICS = [
-  ["西游记", "吴承恩", "明代神魔小说，讲述唐僧师徒西行取经及降妖除魔的旅程。"],
-  ["三国演义", "罗贯中", "东汉末年至西晋初年的群雄征战、政治联盟与英雄命运。"],
-  ["水浒传", "施耐庵", "梁山好汉聚义、抗争与招安的群像叙事。"],
-  ["红楼梦", "曹雪芹", "贾府兴衰与宝黛爱情交织的家族史诗。"]
+  ["西游记", "吴承恩", "明代神魔小说，讲述唐僧师徒西行取经及降妖除魔的旅程。", [], "https://zh.wikisource.org/wiki/西遊記"],
+  ["三国演义", "罗贯中", "东汉末年至西晋初年的群雄征战、政治联盟与英雄命运。", [], "https://zh.wikisource.org/wiki/三國演義"],
+  ["水浒传", "施耐庵", "梁山好汉聚义、抗争与招安的群像叙事。", [], "https://zh.wikisource.org/wiki/水滸傳"],
+  ["红楼梦", "曹雪芹", "贾府兴衰与宝黛爱情交织的家族史诗。", [], "https://zh.wikisource.org/wiki/紅樓夢"],
+  ["Alice's Adventures in Wonderland", "Lewis Carroll", "Alice follows a White Rabbit into Wonderland and encounters its strange inhabitants.", ["Alice in Wonderland", "爱丽丝梦游仙境"], "https://www.gutenberg.org/ebooks/11"],
+  ["Pride and Prejudice", "Jane Austen", "Elizabeth Bennet navigates family expectations, social class, and her changing judgment of Mr Darcy.", ["傲慢与偏见"], "https://www.gutenberg.org/ebooks/1342"],
+  ["Moby-Dick", "Herman Melville", "Ishmael joins Captain Ahab's obsessive pursuit of the white whale.", ["Moby Dick", "白鲸"], "https://www.gutenberg.org/ebooks/2701"],
+  ["Frankenstein", "Mary Shelley", "Victor Frankenstein creates life and confronts the consequences of abandoning his creation.", ["弗兰肯斯坦"], "https://www.gutenberg.org/ebooks/84"]
 ];
 
 export async function searchNovel(title, { braveApiKey = "" } = {}) {
@@ -108,9 +116,16 @@ export async function searchNovel(title, { braveApiKey = "" } = {}) {
   ]);
   const results = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
   if (results.length === 0) {
-    results.push(...await searchGutendex(title, 30000).catch(() => []));
+    const retries = await Promise.allSettled([
+      searchGutendex(title, 30000),
+      searchOpenLibrary(title, 30000),
+      searchGoogleBooks(title, 30000)
+    ]);
+    results.push(...retries.flatMap((result) => result.status === "fulfilled" ? result.value : []));
   }
-  const classic = BUILTIN_CLASSICS.find(([name]) => titleScore(title, name) >= 80);
+  const classic = BUILTIN_CLASSICS.find(([name, , , aliases]) =>
+    [name, ...aliases].some((candidate) => titleScore(title, candidate) >= 80)
+  );
   if (classic) {
     results.push({
       id: `classic-${normalize(classic[0])}`,
@@ -120,7 +135,7 @@ export async function searchNovel(title, { braveApiKey = "" } = {}) {
       rights: "public-domain",
       score: 100,
       contentUrl: null,
-      sourceUrl: null,
+      sourceUrl: classic[4],
       description: classic[2]
     });
   }

@@ -12,6 +12,8 @@ Environment=NODE_ENV=production
 Environment=PORT=4321
 Environment=HOST=127.0.0.1
 Environment=FRAME60_PUBLIC_BASE_PATH=/video
+Environment=FRAME60_PUBLIC_ORIGIN=https://lifeyoume.icu/video
+EnvironmentFile=-/data/app/short-video-studio/.admin.env
 Environment=ALIPAY_ENV=production
 Environment=ALIPAY_APP_ID=2021006197631772
 Environment=ALIPAY_PRIVATE_KEY_FILE=/data/app/opportunity-factory/private/alipay-app-private-key.pem

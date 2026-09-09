@@ -15,6 +15,8 @@
 - 同时提供 Web、可安装手机 PWA 和 Electron 桌面 App；三端共享生产 API 与数据结构。
 - 四个主视图均可操作：生产总览、小说源库、角色与视觉资产、分集队列。
 - 支持资产类型筛选与大图详情、生产日志、失败任务重试、视觉结果刷新和生产清单下载。
+- 任务中心提供完整历史、状态筛选、关键词搜索、项目切换、队列位次、预计等待和分批加载。
+- 两级并发调度默认同时运行 2 个小说项目、每项目 4 个镜头；超限任务持久化排队并在重启后自动恢复。
 
 默认是 `demo` 模式：可以完整体验界面和流水线，不会产生模型费用。演示成片状态是流程模拟，不包含真实 MP4。
 
@@ -72,6 +74,8 @@ ARK_IMAGE_MODEL=your-seedream-model-id
 ARK_VIDEO_MODEL=your-seedance-model-id
 PRODUCTION_MODE=live
 ALLOW_BILLABLE_GENERATION=false
+MAX_PROJECT_CONCURRENCY=2
+MAX_VIDEO_CONCURRENCY=4
 ```
 
 先保持 `ALLOW_BILLABLE_GENERATION=false` 验证文本和图片结果。确认账户额度、模型单价、并发配额及日预算后，再改为 `true` 提交批量视频任务。
@@ -115,6 +119,8 @@ npm test
 ```
 
 当前自动化测试覆盖三端入口、PWA、桌面安全配置、输入约束、任务重试、清单下载和媒体 Range 请求。完整交互测试记录见 [`dogfood-output/report.md`](dogfood-output/report.md)。
+
+任务状态机和并发策略见 [`docs/TASK_CENTER.md`](docs/TASK_CENTER.md)。
 
 方舟视频接口参考：
 

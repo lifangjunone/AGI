@@ -28,6 +28,19 @@
 | ISSUE-005 | Fixed | Retry clears the previous error before discovery restarts. |
 | ISSUE-006 | Fixed | Restored projects synchronize the title input unless the user is actively editing it. |
 
+## Task Center Acceptance
+
+- Submitted three projects against one configured project slot and observed `1 running / 2 queued`.
+- Verified FIFO positions `1/2` and `2/2`, wait estimates, and automatic promotion when a slot became available.
+- Verified restart recovery for interrupted, queued, and remotely rendering projects.
+- Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
+- Verified desktop and 390×844 mobile layouts with five working mobile destinations.
+- Automated suite: 17 passing tests.
+
+![Task center desktop](screenshots/task-center-desktop.png)
+
+![Task center mobile](screenshots/task-center-mobile.png)
+
 ## Issues
 
 <!-- Copy this block for each issue found. Interactive issues need video + step-by-step screenshots. Static issues (typos, visual glitches) only need a single screenshot -- set Repro Video to N/A. -->

@@ -53,7 +53,7 @@ test("mobile PWA assets are valid and served with correct types", async () => {
 
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
-  assert.match(await workerResponse.text(), /novel-picture-works-v4/);
+  assert.match(await workerResponse.text(), /novel-picture-works-v5/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {
@@ -82,6 +82,15 @@ test("retry rejects unknown projects instead of reporting false success", async 
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: "{}"
+  });
+  assert.equal(response.status, 404);
+});
+
+test("source confirmation endpoint rejects unknown projects", async () => {
+  const response = await fetch(`${origin}/api/projects/missing/source`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sourceId: "candidate" })
   });
   assert.equal(response.status, 404);
 });

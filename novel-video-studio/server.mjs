@@ -37,6 +37,8 @@ function sendJson(response, status, payload) {
 
 function projectSummary(project) {
   const shots = project.episodes?.flatMap((episode) => episode.shots || []) || [];
+  const displayedSource = project.source
+    || project.sources?.find((source) => source.id === project.suggestedSourceId);
   return {
     id: project.id,
     novelName: project.novelName,
@@ -51,7 +53,8 @@ function projectSummary(project) {
     queuedAt: project.queuedAt,
     startedAt: project.startedAt,
     completedAt: project.completedAt,
-    sourceTitle: project.source?.title || null,
+    sourceTitle: displayedSource?.title || null,
+    sourceConfirmed: Boolean(project.sourceConfirmed),
     episodeCount: project.episodes?.length || 0,
     shotCount: shots.length,
     completedShots: shots.filter((shot) => shot.status === "succeeded").length,
@@ -212,7 +215,7 @@ export const server = createServer(async (request, response) => {
       return;
     }
 
-    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|export|manifest))?$/.exec(url.pathname);
+    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|source|export|manifest))?$/.exec(url.pathname);
     if (request.method === "GET" && projectMatch && !projectMatch[2]) {
       const project = await store.get(projectMatch[1]);
       sendJson(response, project ? 200 : 404, project ? { project } : { error: "项目不存在" });
@@ -230,6 +233,15 @@ export const server = createServer(async (request, response) => {
         return;
       }
       sendJson(response, 202, { accepted: true, project: await pipeline.enqueue(projectMatch[1], { message: "任务已重新进入生产队列" }) });
+      return;
+    }
+
+    if (request.method === "POST" && projectMatch?.[2] === "source") {
+      const body = await readJson(request);
+      sendJson(response, 202, {
+        accepted: true,
+        project: await pipeline.confirmSource(projectMatch[1], body.sourceId)
+      });
       return;
     }
 

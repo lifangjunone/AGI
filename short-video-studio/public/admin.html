@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>FRAME/60 · 后台管理</title>
+    <link rel="stylesheet" href="../admin.css?v=20260909-1" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section class="login-panel" id="login-panel">
+        <div class="brand-mark"><i></i><i></i><i></i></div>
+        <span class="eyebrow">FRAME/60 / ADMIN</span>
+        <h1>后台管理</h1>
+        <p>管理内容包价格和查看支付宝订单。</p>
+        <form id="login-form">
+          <label>账号<input name="username" autocomplete="username" required /></label>
+          <label>密码<input name="password" type="password" autocomplete="current-password" required /></label>
+          <button type="submit">登录后台 <span>↗</span></button>
+          <small id="login-error" role="alert"></small>
+        </form>
+      </section>
+
+      <section class="dashboard" id="dashboard" hidden>
+        <header class="dashboard-header">
+          <div>
+            <span class="eyebrow">FRAME/60 / ADMIN</span>
+            <h1>运营配置</h1>
+          </div>
+          <button class="logout" id="logout" type="button">退出登录</button>
+        </header>
+
+        <section class="settings-panel">
+          <div class="section-head">
+            <div><span class="eyebrow">PRICING / 价格</span><h2>产品价格</h2></div>
+            <span class="save-state" id="save-state">未修改</span>
+          </div>
+          <p class="panel-note">修改后，新创建的订单会立即使用新价格；已创建订单金额不会改变。</p>
+          <form class="price-grid" id="price-form">
+            <label>商品内容包<input name="product" inputmode="decimal" required /></label>
+            <label>公众号文章助手<input name="article" inputmode="decimal" required /></label>
+            <label>朋友圈与社群<input name="social" inputmode="decimal" required /></label>
+            <button type="submit">保存价格 <span>↗</span></button>
+          </form>
+        </section>
+
+        <section class="orders-panel">
+          <div class="section-head"><div><span class="eyebrow">ORDERS / 订单</span><h2>最近订单</h2></div><button class="refresh" id="refresh-orders" type="button">刷新</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>订单号</th><th>金额</th><th>状态</th><th>创建时间</th></tr></thead>
+              <tbody id="orders-body"><tr><td colspan="4">加载中…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="../admin.js?v=20260909-1"></script>
+  </body>
+</html>

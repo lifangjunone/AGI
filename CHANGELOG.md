@@ -4,6 +4,12 @@
 
 ### feat
 
+- Added a password-protected `/admin/` operations console for `short-video-studio`: HttpOnly session login, dynamic prices for product/article/social tools, persisted server-side settings, and read-only Alipay order overview.
+- Added a password-protected `/admin/` operations console for `short-video-studio`: HttpOnly session login, dynamic prices for product/article/social tools, persisted server-side settings, and read-only Alipay order overview.
+- Added a persistent two-level scheduler to `novel-video-studio`: configurable concurrent novel projects, per-project video-shot slots, FIFO queue positions, wait estimates, restart recovery, and queue telemetry APIs.
+- Added a cross-platform task center with complete history, status filters, title/source search, 50-row incremental rendering, queue progress, stage progress, timestamps, and historical-project detail restoration.
+
+- Added `short-video-studio/apps/miniapp/`, colocated with the Web, Mobile, and Desktop entrypoints, as a Taro 4.1.9 WeChat mini-program for 智助乖乖 with native Workbench, Records, and Profile tabs, three assistant modes, local history, shared HTTPS generation, and a reserved official virtual-payment action.
 - Added the `short-video-studio` `/zhizhu/` workspace for the C-end “智助乖乖” funnel, with product content, public-account article, and social/community assistant previews backed by a shared `/api/assistant/generate` endpoint.
 - Expanded `novel-video-studio` into three shared-core editions: a Web control room, an installable mobile PWA with LAN access and offline shell, and a sandboxed Electron desktop app with Application Support storage.
 - Added `novel-video-studio`, an automated novel-to-episode production control room with public-domain source discovery, rights gating, story/character/prop/location planning, Ark image and asynchronous video integrations, persistent shot queues, and FFmpeg assembly for 15-minute episodes.
@@ -23,6 +29,10 @@
 
 ### verify
 
+- Verified production `/video/admin/`: unauthenticated API returns 401, login returns an HttpOnly session, price update persists, order overview loads, and browser verification reached the live Alipay cashier with a `¥9.90` order.
+- Verified project concurrency with a real three-project submission against one slot (`1 running / 2 queued`), automatic queue advancement, restart recovery, mobile/desktop task-center layouts, filtering, search, and historical task restoration; 17 automated tests pass.
+
+- Completed the mini-program file/configuration quality gate: all declared pages have three source files, all native TabBar icons exist, and TypeScript imports/types were manually checked. Skill preview startup was attempted but blocked by an expired TRAE preview credential (`TOKEN_EXPIRED`), not by a project compile error.
 - Verified the Zhizhu workspace in a real browser: tool switching, form filling, local preview generation, and the disabled/not-integrated payment state; `short-video-studio` now has 10 passing Node tests.
 - Completed a full interaction audit of Novel Video Studio across desktop and mobile, covering navigation, filters, asset details, logs, theme, refresh, validation, retry, source links, manifest export, PWA offline startup, accessibility, and media range delivery; 13 automated tests pass.
 - Verified all three Novel Video Studio entrypoints, PWA metadata and cache worker, Electron renderer isolation, and shared API behavior with 8 passing automated tests.

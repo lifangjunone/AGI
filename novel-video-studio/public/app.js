@@ -12,11 +12,13 @@ const STATUS_LABELS = {
   running: "生产中",
   completed: "已完成",
   failed: "失败",
+  "source-review": "待确认来源",
   "rights-review": "版权复核",
   "budget-gate": "预算门禁",
   rendering: "渲染中"
 };
 const ASSET_TYPES = { character: "角色", weapon: "武器", location: "场景" };
+const NODE_STATUS_LABELS = { pending: "未开始", running: "处理中", completed: "已完成", failed: "失败", paused: "已暂停" };
 const VALID_VIEWS = new Set(["overview", "tasks", "sources", "assets", "episodes"]);
 const pathname = window.location.pathname;
 const platform = pathname.startsWith("/mobile")
@@ -35,6 +37,7 @@ let taskFilter = "all";
 let activeView = "overview";
 let taskQuery = "";
 let taskDisplayLimit = 50;
+let selectedSourceId = null;
 
 document.documentElement.dataset.platform = platform;
 
@@ -92,10 +95,18 @@ function renderStatus(status) {
 function renderStages(project) {
   const activeIndex = STAGES.findIndex(([id]) => id === project.stage);
   $("#stageTrack").innerHTML = STAGES.map(([id, label], index) => {
-    const state = index < activeIndex || project.status === "completed"
+    const fallbackState = index < activeIndex || project.status === "completed"
       ? "done"
       : index === activeIndex ? "active" : "";
-    return `<span class="stage ${state}" role="listitem" data-stage="${id}">${String(index + 1).padStart(2, "0")} ${label}</span>`;
+    const nodeStatus = project.nodes?.[id]?.status
+      || (fallbackState === "done" ? "completed" : fallbackState === "active" ? "running" : "pending");
+    const state = nodeStatus === "completed" ? "done" : ["running", "paused", "failed"].includes(nodeStatus) ? "active" : "";
+    return `<span class="stage-item ${state}" role="listitem">
+      <button class="stage" data-node-id="${id}" title="查看${label}节点详情">
+        <span>${String(index + 1).padStart(2, "0")} ${label}</span>
+        <small>${NODE_STATUS_LABELS[nodeStatus] || nodeStatus}</small>
+      </button>
+    </span>`;
   }).join("");
 }
 
@@ -142,7 +153,15 @@ function renderActivity(activity = []) {
 
 function renderSourceLibrary(project) {
   const sources = project?.sources || [];
+  const requiresConfirmation = ["source-review", "rights-review"].includes(project?.status);
+  if (project?.id !== $("#sourceTable").dataset.projectId || !sources.some((source) => source.id === selectedSourceId)) {
+    selectedSourceId = project?.source?.id || project?.suggestedSourceId || sources[0]?.id || null;
+    $("#sourceTable").dataset.projectId = project?.id || "";
+  }
   $("#sourceResultCount").textContent = `${sources.length} 个来源`;
+  $("#sourceReviewNotice").classList.toggle("hidden", !requiresConfirmation);
+  $("#confirmSourceButton").classList.toggle("hidden", !requiresConfirmation);
+  $("#confirmSourceButton").disabled = !selectedSourceId;
   $("#sourceTable").innerHTML = sources.length ? sources.map((source) => {
     const approved = ["public-domain", "public-domain-candidate"].includes(source.rights);
     const rightsText = source.rights === "public-domain"
@@ -151,8 +170,16 @@ function renderSourceLibrary(project) {
     const link = source.sourceUrl
       ? `<a class="source-link" href="${escapeHtml(source.sourceUrl)}" target="_blank" rel="noreferrer" title="打开原始来源" aria-label="打开 ${escapeHtml(source.title)} 原始来源"><i data-lucide="external-link"></i></a>`
       : "<span></span>";
-    return `<article class="source-row">
-      <div><strong>${escapeHtml(source.title)}</strong><small>${escapeHtml(source.authors)}</small></div>
+    const selected = selectedSourceId === source.id;
+    const metadata = [
+      source.authors,
+      source.year ? `${source.year} 年` : "",
+      Array.isArray(source.languages) ? source.languages.join("/") : "",
+      source.contentUrl ? "可读取全文" : source.description ? "内容梗概" : "元数据"
+    ].filter(Boolean).join(" · ");
+    return `<article class="source-row ${selected ? "selected" : ""}" data-source-id="${escapeHtml(source.id)}">
+      <label class="source-choice" title="选择此来源"><input type="radio" name="sourceCandidate" value="${escapeHtml(source.id)}" ${selected ? "checked" : ""} ${requiresConfirmation ? "" : "disabled"}><span class="sr-only">选择 ${escapeHtml(source.title)}</span></label>
+      <div><strong>${escapeHtml(source.title)}</strong><small>${escapeHtml(metadata)}</small>${source.description ? `<p>${escapeHtml(source.description.slice(0, 140))}</p>` : ""}</div>
       <span>${escapeHtml(source.source)}</span>
       <span class="rights-badge ${approved ? "approved" : ""}">${rightsText}</span>
       <span>匹配 ${Number(source.score || 0)}%</span>
@@ -193,6 +220,7 @@ function renderEpisodeQueue(project) {
 function taskMatches(project, filter) {
   if (filter === "all") return true;
   if (filter === "active") return ["running", "rendering"].includes(project.status);
+  if (filter === "review") return project.status === "source-review";
   if (filter === "failed") return ["failed", "rights-review", "budget-gate"].includes(project.status);
   return project.status === filter;
 }
@@ -207,6 +235,75 @@ function formatTaskTime(value) {
   });
 }
 
+function derivedNode(project, id) {
+  if (project.nodes?.[id]) return project.nodes[id];
+  const activeIndex = STAGES.findIndex(([stageId]) => stageId === project.stage);
+  const index = STAGES.findIndex(([stageId]) => stageId === id);
+  const status = project.status === "completed" || index < activeIndex
+    ? "completed"
+    : index === activeIndex ? (project.status === "failed" ? "failed" : "running") : "pending";
+  const outputs = {
+    discover: { candidates: project.sources || [], selectedSource: project.source || null },
+    ingest: { source: project.source || null },
+    adapt: project.bible ? {
+      tone: project.bible.tone,
+      synopsis: project.bible.synopsis,
+      characters: project.bible.characters,
+      weapons: project.bible.weapons,
+      locations: project.bible.locations
+    } : null,
+    design: { assets: project.assets || [] },
+    render: {
+      episodes: (project.episodes || []).map((episode) => ({
+        number: episode.number,
+        title: episode.title,
+        status: episode.status,
+        shots: (episode.shots || []).map(({ id: shotId, status: shotStatus, progress, videoUrl }) => ({
+          id: shotId, status: shotStatus, progress, videoUrl
+        }))
+      }))
+    },
+    assemble: {
+      episodes: (project.episodes || []).map(({ number, title, status: episodeStatus, renderedSeconds, videoUrl }) => ({
+        number, title, status: episodeStatus, renderedSeconds, videoUrl
+      }))
+    }
+  };
+  return {
+    id,
+    order: index + 1,
+    label: STAGES[index]?.[1] || id,
+    status,
+    startedAt: project.startedAt || project.createdAt,
+    completedAt: status === "completed" ? project.completedAt || project.updatedAt : null,
+    input: id === "discover" ? { novelName: project.novelName } : null,
+    output: outputs[id],
+    error: index === activeIndex ? project.error : null
+  };
+}
+
+function openNode(nodeId) {
+  if (!activeProject) return;
+  const node = derivedNode(activeProject, nodeId);
+  const startedAt = node.startedAt ? new Date(node.startedAt) : null;
+  const completedAt = node.completedAt ? new Date(node.completedAt) : null;
+  const duration = startedAt && completedAt
+    ? ` · ${(Math.max(0, completedAt - startedAt) / 1000).toFixed(1)} 秒`
+    : "";
+  $("#nodeDialogOrder").textContent = `NODE ${String(node.order).padStart(2, "0")} · ${activeProject.novelName}`;
+  $("#nodeDialogTitle").textContent = node.label;
+  $("#nodeDialogStatus").textContent = NODE_STATUS_LABELS[node.status] || node.status;
+  $("#nodeDialogStatus").className = `state-badge ${node.status}`;
+  $("#nodeDialogTiming").textContent = startedAt
+    ? `${formatTaskTime(node.startedAt)}${duration}`
+    : "尚未开始";
+  $("#nodeDialogInput").textContent = node.input ? JSON.stringify(node.input, null, 2) : "尚无输入";
+  $("#nodeDialogOutput").textContent = node.output ? JSON.stringify(node.output, null, 2) : "尚无产物";
+  $("#nodeDialogError").textContent = node.error || "";
+  $("#nodeDialogError").classList.toggle("hidden", !node.error);
+  $("#nodeDialog").showModal();
+}
+
 function renderTaskCenter() {
   const queue = queueState || { activeCount: 0, queuedCount: 0, availableSlots: 0, averageDurationMinutes: 15 };
   $("#taskActiveCount").textContent = queue.activeCount;
@@ -217,6 +314,7 @@ function renderTaskCenter() {
     all: allProjects.length,
     active: allProjects.filter((project) => taskMatches(project, "active")).length,
     queued: allProjects.filter((project) => taskMatches(project, "queued")).length,
+    review: allProjects.filter((project) => taskMatches(project, "review")).length,
     completed: allProjects.filter((project) => taskMatches(project, "completed")).length,
     failed: allProjects.filter((project) => taskMatches(project, "failed")).length
   };
@@ -312,7 +410,7 @@ function renderProject(project) {
   activeProject = project;
   activeProjectId = project.id;
   const novelInput = $("#novelName");
-  if (document.activeElement !== novelInput && novelInput.dataset.syncedProject !== project.id) {
+  if (!novelInput.dataset.syncedProject || (document.activeElement !== novelInput && novelInput.dataset.syncedProject !== project.id)) {
     novelInput.value = project.novelName;
     novelInput.dataset.syncedProject = project.id;
   }
@@ -327,12 +425,16 @@ function renderProject(project) {
   $("#projectCover").src = coverSource;
   $("#projectCover").dataset.generatedSrc = coverSource;
   $("#coverProgress").textContent = `${project.progress}%`;
-  $("#sourceTitle").textContent = project.source?.title || "正在检索";
-  $("#sourceMeta").textContent = project.source
-    ? `${project.source.authors} · ${project.source.source}`
+  const displayedSource = project.source
+    || project.sources?.find((source) => source.id === project.suggestedSourceId);
+  $("#sourceTitle").textContent = displayedSource?.title || "正在检索";
+  $("#sourceMeta").textContent = displayedSource
+    ? `${displayedSource.authors} · ${displayedSource.source}`
     : "正在校验来源与版权状态";
-  const rights = project.source?.rights || "checking";
-  $("#rightsText").textContent = rights === "public-domain"
+  const rights = displayedSource?.rights || "checking";
+  $("#rightsText").textContent = project.status === "source-review"
+    ? "候选来源待你确认"
+    : rights === "public-domain"
     ? "公版来源，可自动处理"
     : rights === "public-domain-candidate" ? "公版候选，已进入核验" : "等待授权或来源核验";
   const episode = project.episodes?.[0];
@@ -348,6 +450,8 @@ function renderProject(project) {
     ? project.error
     : project.status === "queued"
       ? `排队第 ${project.queuePosition || "-"}/${queueState?.queuedCount || "-"} 位，预计等待 ${project.estimatedWaitMinutes || queueState?.averageDurationMinutes || 15} 分钟`
+      : project.status === "source-review"
+        ? `已找到 ${project.sources?.length || 0} 个候选来源，请确认作品、作者和版本`
       : `当前阶段：${STAGES.find(([id]) => id === project.stage)?.[1] || project.stage}`;
   icons();
 }
@@ -370,6 +474,7 @@ async function refreshAll({ notify = false } = {}) {
       const selected = allProjects.find((project) => project.id === activeProjectId) || allProjects[0];
       const { project } = await api(`/api/projects/${selected.id}`);
       renderProject(project);
+      if (["source-review", "rights-review"].includes(project.status) && activeView === "overview") showView("sources");
     } else {
       activeProject = null;
       activeProjectId = null;
@@ -436,6 +541,36 @@ document.querySelectorAll(".mobile-tabs button").forEach((button) => {
   button.addEventListener("click", () => showView(button.dataset.view));
 });
 
+$("#stageTrack").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-node-id]");
+  if (button) openNode(button.dataset.nodeId);
+});
+
+$("#sourceTable").addEventListener("change", (event) => {
+  if (!event.target.matches("input[name=sourceCandidate]")) return;
+  selectedSourceId = event.target.value;
+  renderSourceLibrary(activeProject);
+});
+
+$("#confirmSourceButton").addEventListener("click", async () => {
+  if (!activeProjectId || !selectedSourceId) return;
+  const button = $("#confirmSourceButton");
+  button.disabled = true;
+  try {
+    const { project } = await api(`/api/projects/${activeProjectId}/source`, {
+      method: "POST",
+      body: JSON.stringify({ sourceId: selectedSourceId })
+    });
+    renderProject(project);
+    showView("overview");
+    await refreshAll();
+    showToast("来源已确认，流水线继续执行");
+  } catch (error) {
+    showToast(error.message);
+    button.disabled = false;
+  }
+});
+
 $("#assetFilters").addEventListener("click", (event) => {
   const button = event.target.closest("[data-filter]");
   if (!button) return;
@@ -466,7 +601,7 @@ $("#taskList").addEventListener("click", async (event) => {
   try {
     const { project } = await api(`/api/projects/${row.dataset.projectId}`);
     renderProject(project);
-    showView("overview");
+    showView(["source-review", "rights-review"].includes(project.status) ? "sources" : "overview");
   } catch (error) {
     showToast(error.message);
   }
@@ -483,6 +618,10 @@ for (const selector of ["#assetList", "#assetGallery"]) {
 $("#assetDialogClose").addEventListener("click", () => $("#assetDialog").close());
 $("#assetDialog").addEventListener("click", (event) => {
   if (event.target === $("#assetDialog")) $("#assetDialog").close();
+});
+$("#nodeDialogClose").addEventListener("click", () => $("#nodeDialog").close());
+$("#nodeDialog").addEventListener("click", (event) => {
+  if (event.target === $("#nodeDialog")) $("#nodeDialog").close();
 });
 
 $("#retryButton").addEventListener("click", async () => {

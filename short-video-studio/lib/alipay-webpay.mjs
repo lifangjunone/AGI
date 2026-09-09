@@ -29,7 +29,7 @@ async function readJsonFile(filePath, fallback) {
   }
 }
 
-export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90" }) {
+export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90", getPrice = () => price }) {
   const ordersPath = path.join(dataDirectory, "payments", "orders.json");
   const sandboxPath = path.join(rootDirectory, ".alipay-sandbox.json");
   let writeQueue = Promise.resolve();
@@ -104,7 +104,7 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     const order = {
       orderId,
       status: "WAIT_BUYER_PAY",
-      amount: normalizeAmount(price),
+      amount: normalizeAmount(getPrice()),
       subject: "商品短视频内容包",
       input,
       createdAt: new Date().toISOString(),
@@ -147,6 +147,21 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
   async function getOrder(orderId) {
     const orders = await readOrders();
     return orders[orderId] || null;
+  }
+
+  async function listOrders() {
+    const orders = await readOrders();
+    return Object.values(orders)
+      .sort((left, right) => String(right.createdAt).localeCompare(String(left.createdAt)))
+      .map((order) => ({
+        orderId: order.orderId,
+        status: order.status,
+        amount: order.amount,
+        subject: order.subject,
+        createdAt: order.createdAt,
+        paidAt: order.paidAt || null,
+        tradeNo: order.tradeNo || null
+      }));
   }
 
   async function queryTrade(orderId) {
@@ -203,6 +218,7 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
   return {
     buildPaymentForm,
     getOrder,
+    listOrders,
     queryTrade,
     verifyNotification,
     query: (orderId) => executeTradeOperation(orderId, "alipay.trade.query", { out_trade_no: orderId }),

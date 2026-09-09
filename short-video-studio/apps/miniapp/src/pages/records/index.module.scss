@@ -1,0 +1,19 @@
+@use '@/styles/variables.scss' as *;
+
+.page { min-height: 100vh; padding: 40rpx 32rpx 48rpx; background: $color-bg-page; }
+.heading { padding: 12rpx 0 34rpx; }
+.kicker { color: $color-primary-dark; font-size: 20rpx; letter-spacing: 2rpx; }
+.title { display: block; margin-top: 18rpx; color: $color-text-primary; font-size: 44rpx; font-weight: $font-weight-bold; }
+.subtitle { display: block; margin-top: 12rpx; color: $color-text-secondary; font-size: 24rpx; }
+.recordCard { margin-bottom: 18rpx; padding: 28rpx; border-radius: $radius-md; background: $color-bg-card; box-shadow: $shadow-card; }
+.recordTop { display: flex; justify-content: space-between; }
+.recordType { color: $color-primary-dark; font-size: 22rpx; font-weight: $font-weight-semibold; }
+.recordDate { color: $color-text-tertiary; font-size: 21rpx; }
+.recordTitle { display: block; margin-top: 18rpx; color: $color-text-primary; font-size: 29rpx; font-weight: $font-weight-semibold; line-height: 1.4; }
+.recordSummary { display: block; margin-top: 10rpx; color: $color-text-secondary; font-size: 23rpx; line-height: 1.6; @include text-ellipsis-multi(2); }
+.tagRow { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 20rpx; }
+.tag { padding: 8rpx 12rpx; border-radius: $radius-xs; background: #eef5f0; color: $color-primary-dark; font-size: 20rpx; }
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 520rpx; text-align: center; }
+.emptyMark { color: $color-accent; font-size: 64rpx; }
+.emptyTitle { margin-top: 24rpx; color: $color-text-primary; font-size: 30rpx; font-weight: $font-weight-semibold; }
+.emptyText { margin-top: 12rpx; color: $color-text-tertiary; font-size: 23rpx; }

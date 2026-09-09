@@ -7,6 +7,8 @@ const elements = {
   freeTitle: document.querySelector("#free-title"),
   sampleScript: document.querySelector("#sample-script"),
   unlockPack: document.querySelector("#unlock-pack"),
+  contentPackPrice: document.querySelector("#content-pack-price"),
+  unlockPackLabel: document.querySelector("#unlock-pack-label"),
   form: document.querySelector("#generate-form"),
   prompt: document.querySelector("#prompt"),
   promptCount: document.querySelector("#prompt-count"),
@@ -95,6 +97,7 @@ async function checkStatus() {
   try {
     const response = await fetch(apiUrl("/api/status"));
     const status = await response.json();
+    updateContentPackPrice(status.prices?.product);
     const contentPackReady = status.contentPackReady !== false;
     elements.serviceState.className = `service-state ${status.ready || contentPackReady ? "is-ready" : "is-error"}`;
     elements.serviceState.lastElementChild.textContent = status.ready ? "模型就绪" : "内容包就绪";
@@ -109,6 +112,14 @@ async function checkStatus() {
     elements.serviceState.className = "service-state is-error";
     elements.serviceState.lastElementChild.textContent = "服务离线";
   }
+}
+
+function updateContentPackPrice(value) {
+  const price = String(value || "").trim();
+  if (!/^\d+(?:\.\d{1,2})?$/.test(price)) return;
+  const formatted = `¥${Number(price).toFixed(2)}`;
+  if (elements.contentPackPrice) elements.contentPackPrice.textContent = formatted;
+  if (elements.unlockPackLabel) elements.unlockPackLabel.textContent = `解锁完整内容包 · ${formatted}`;
 }
 
 function startRenderTimer() {
@@ -365,7 +376,7 @@ async function startCheckout(pack) {
   } catch (error) {
     showToast(error.message || "支付宝支付启动失败", true);
     elements.unlockPack.disabled = false;
-    label.textContent = "解锁完整内容包 · ¥9.90";
+    label.textContent = `解锁完整内容包 · ${elements.contentPackPrice?.textContent || "¥9.90"}`;
   }
 }
 

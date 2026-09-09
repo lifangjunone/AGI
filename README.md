@@ -22,8 +22,8 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`fde-playbook/`](fde-playbook/README.md) | FDE Playbook | FDE 岗位认知、交付方法、能力地图和制造业实战 | React、TypeScript、Vite |
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
-| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台 | Node.js、FFmpeg、PWA、Electron |
-| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从合法小说来源自动生成剧本、连续性资产、镜头任务与 15 分钟分集，提供 Web、手机 PWA 和桌面 App | Node.js、Electron、PWA、火山方舟、FFmpeg |
+| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台和 Taro 小程序 | Node.js、FFmpeg、PWA、Electron、Taro |
+| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从合法小说来源自动生成 15 分钟分集，支持三端、历史任务、并行生产与持久化排队 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 
 ## 产品协作链路
 
@@ -128,7 +128,9 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `short-video-studio` 修复响应式 CSS 顺序问题，统一收口内容包布局覆盖规则。
 - `short-video-studio` 内容包页完成 UI 重构，参考 Runway/CapCut/Canva 的任务工作区模式，强化步骤层级、空状态和主操作。
 - `short-video-studio` 新增“智助乖乖”共享 Web 工作台 `/zhizhu/`，接入商品内容包、公众号文章助手、朋友圈与社群助手三类本地模板预览；当前支付按钮保持验证版禁用态，等待小程序虚拟支付和小程序源码接入。
-- `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；输入小说名后可检索公版/授权来源，生成剧本、角色、武器、场景和 30 个镜头任务，并通过方舟异步视频 API 与 FFmpeg 装配 15 分钟分集。生产总览、来源库、资产库和分集队列均可操作，并支持筛选、详情、重试、刷新及清单下载。
+- `short-video-studio` 新增 `apps/miniapp/` Taro 小程序，和 Web、Mobile、Desktop 入口并列，包含工作台、生成记录、我的三 Tab，并通过 HTTPS 复用共享生成接口；当前保留微信虚拟支付接入位，模板 AppID 仍需替换为用户真实 AppID。
+- `short-video-studio` 新增 `/video/admin/` 后台管理，使用账号密码和 HttpOnly 会话保护，可动态修改三类内容工具价格，并查看支付宝订单状态；生产账号通过服务器受限环境文件注入。
+- `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；输入小说名后可检索公版/授权来源，生成剧本、角色、武器、场景和 30 个镜头任务，并通过方舟异步视频 API 与 FFmpeg 装配 15 分钟分集。任务中心支持历史搜索、状态筛选、项目切换、并发槽、排队位次和预计等待；超限任务持久化并可在服务重启后恢复。
 
 ## 远端仓库
 

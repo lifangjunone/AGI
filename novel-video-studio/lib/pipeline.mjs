@@ -7,6 +7,14 @@ import { loadAuthorizedText, searchNovel } from "./novel-search.mjs";
 import { TaskScheduler } from "./task-scheduler.mjs";
 
 const STAGES = ["discover", "ingest", "adapt", "design", "render", "assemble"];
+const STAGE_LABELS = {
+  discover: "全网检索",
+  ingest: "内容核验",
+  adapt: "剧本改编",
+  design: "视觉设定",
+  render: "镜头渲染",
+  assemble: "成片装配"
+};
 const DEMO_IMAGE_ENDPOINT = "https://copilot-cn.bytedance.net/api/ide/v1/text_to_image";
 
 function now() {
@@ -15,6 +23,20 @@ function now() {
 
 function imageUrl(prompt, imageSize = "landscape_16_9") {
   return `${DEMO_IMAGE_ENDPOINT}?prompt=${encodeURIComponent(prompt)}&image_size=${imageSize}`;
+}
+
+function createPipelineNodes(novelName) {
+  return Object.fromEntries(STAGES.map((id, index) => [id, {
+    id,
+    order: index + 1,
+    label: STAGE_LABELS[id],
+    status: "pending",
+    startedAt: null,
+    completedAt: null,
+    input: id === "discover" ? { novelName } : null,
+    output: null,
+    error: null
+  }]));
 }
 
 function run(command, args) {
@@ -112,9 +134,11 @@ function buildAssets(title, bible) {
 }
 
 export class ProductionPipeline {
-  constructor(config, store) {
+  constructor(config, store, { search = searchNovel, loadText = loadAuthorizedText } = {}) {
     this.config = config;
     this.store = store;
+    this.searchNovel = search;
+    this.loadAuthorizedText = loadText;
     this.ark = new ArkClient(config.ark);
     this.active = new Set();
     this.scheduler = new TaskScheduler({
@@ -143,9 +167,12 @@ export class ProductionPipeline {
       estimatedWaitMinutes: null,
       source: null,
       sources: [],
+      sourceConfirmed: false,
+      suggestedSourceId: null,
       bible: null,
       assets: [],
       episodes: [],
+      nodes: createPipelineNodes(title),
       activity: [{ at: now(), message: "生产任务已创建" }],
       error: null
     };
@@ -160,6 +187,43 @@ export class ProductionPipeline {
     await this.store.save(project);
   }
 
+  async updateNode(project, id, status, { input, output, error = null, projectPatch = {}, message } = {}) {
+    project.nodes ||= createPipelineNodes(project.novelName);
+    const node = project.nodes[id] || {
+      id,
+      order: STAGES.indexOf(id) + 1,
+      label: STAGE_LABELS[id],
+      status: "pending"
+    };
+    if (status === "running" && !node.startedAt) node.startedAt = now();
+    if (["completed", "failed", "paused"].includes(status)) node.completedAt = now();
+    Object.assign(node, {
+      status,
+      ...(input !== undefined ? { input } : {}),
+      ...(output !== undefined ? { output } : {}),
+      error
+    });
+    project.nodes[id] = node;
+    await this.update(project, { nodes: project.nodes, ...projectPatch }, message);
+  }
+
+  async confirmSource(id, sourceId) {
+    const project = await this.store.get(id);
+    if (!project) throw new Error("项目不存在");
+    if (!["source-review", "rights-review"].includes(project.status)) throw new Error("当前任务不在来源确认阶段");
+    const source = project.sources.find((candidate) => candidate.id === sourceId);
+    if (!source) throw new Error("所选来源不在候选列表中");
+    await this.update(project, {
+      source,
+      sourceConfirmed: true,
+      status: "queued",
+      stage: "ingest",
+      progress: 18,
+      error: null
+    }, `已确认来源：${source.title} / ${source.source}`);
+    return this.scheduler.enqueue(id, { message: "来源确认完成，任务重新进入生产队列" });
+  }
+
   async run(id) {
     const project = await this.store.get(id);
     if (!project || this.active.has(id)) return false;
@@ -167,33 +231,86 @@ export class ProductionPipeline {
     let retainSlot = false;
 
     try {
+      const requiresDiscovery = !project.sourceConfirmed || !project.source;
       await this.update(project, {
         status: "running",
-        stage: "discover",
-        progress: 8,
+        stage: requiresDiscovery ? "discover" : "ingest",
+        progress: requiresDiscovery ? 8 : 20,
         error: null,
         startedAt: now(),
         completedAt: null,
         queuePosition: null,
         estimatedWaitMinutes: null
-      }, "正在检索可信内容源");
-      const sources = await searchNovel(project.novelName, this.config.search);
-      const source = sources.find((item) => item.rights === "public-domain") || sources[0];
-      if (!source) throw new Error("未找到可识别的小说来源");
-      await this.update(project, { sources, source, stage: "ingest", progress: 20 }, `已匹配 ${source.source}`);
-
-      if (!["public-domain", "public-domain-candidate"].includes(source.rights)) {
-        await this.update(project, {
-          status: "rights-review",
-          progress: 22,
-          completedAt: now(),
-          error: "仅找到元数据或待授权网页，需获得作品授权后才能处理正文"
-        }, "版权门禁已暂停正文处理");
+      }, requiresDiscovery ? "正在检索可信内容源" : "正在读取已确认来源");
+      if (requiresDiscovery) {
+        await this.updateNode(project, "discover", "running", {
+          input: { novelName: project.novelName, providers: ["Project Gutenberg", "Open Library", "Google Books", "Brave Search"] }
+        });
+        const sources = await this.searchNovel(project.novelName, this.config.search);
+        const suggested = sources.find((item) => item.rights === "public-domain") || sources[0];
+        if (!suggested) {
+          await this.updateNode(project, "discover", "failed", { error: "未找到可识别的小说来源" });
+          throw new Error("未找到可识别的小说来源");
+        }
+        await this.updateNode(project, "discover", "completed", {
+          output: {
+            candidateCount: sources.length,
+            suggestedSourceId: suggested.id,
+            candidates: sources.map(({ id: sourceId, title, authors, source, rights, score, year, languages, sourceUrl, contentUrl, description }) => ({
+              id: sourceId, title, authors, source, rights, score, year, languages, sourceUrl,
+              contentAvailable: Boolean(contentUrl),
+              description
+            }))
+          },
+          projectPatch: {
+            sources,
+            source: null,
+            sourceConfirmed: false,
+            suggestedSourceId: suggested.id,
+            status: "source-review",
+            stage: "discover",
+            progress: 15
+          },
+          message: `检索到 ${sources.length} 个候选来源，等待确认`
+        });
         return false;
       }
 
-      const sourceText = await loadAuthorizedText(source).catch(() => "");
-      await this.update(project, { stage: "adapt", progress: 34 }, "正文与梗概已进入改编引擎");
+      const source = project.source;
+      await this.updateNode(project, "ingest", "running", {
+        input: { sourceId: source.id, title: source.title, authors: source.authors, source: source.source, rights: source.rights }
+      });
+
+      if (!["public-domain", "public-domain-candidate"].includes(source.rights)) {
+        await this.updateNode(project, "ingest", "paused", {
+          input: { sourceId: source.id, title: source.title, rights: source.rights },
+          error: "仅找到元数据或待授权网页，需获得作品授权后才能处理正文",
+          projectPatch: {
+            status: "rights-review",
+            progress: 22,
+            completedAt: now(),
+            error: "仅找到元数据或待授权网页，需获得作品授权后才能处理正文"
+          },
+          message: "版权门禁已暂停正文处理"
+        });
+        return false;
+      }
+
+      const sourceText = await this.loadAuthorizedText(source).catch(() => "");
+      await this.updateNode(project, "ingest", "completed", {
+        output: {
+          sourceId: source.id,
+          contentCharacters: sourceText.length,
+          contentPreview: (sourceText || source.description || "").slice(0, 1200),
+          usedDescriptionFallback: sourceText.length === 0,
+          rights: source.rights
+        },
+        projectPatch: { stage: "adapt", progress: 34 },
+        message: "正文与梗概已进入改编引擎"
+      });
+      await this.updateNode(project, "adapt", "running", {
+        input: { sourceCharacters: sourceText.length, mode: this.config.mode, targetMinutes: this.config.production.episodeMinutes }
+      });
       let bible;
       if (this.config.mode === "live") {
         bible = await this.ark.generateJson(
@@ -210,8 +327,27 @@ export class ProductionPipeline {
         this.config.production.shotsPerEpisode,
         this.config.production.shotSeconds
       );
-      await this.update(project, { bible, episodes: [episode], stage: "design", progress: 55 }, "剧本、角色与连续性档案已生成");
+      await this.updateNode(project, "adapt", "completed", {
+        output: {
+          tone: bible.tone,
+          synopsis: bible.synopsis,
+          characters: bible.characters || [],
+          weapons: bible.weapons || [],
+          locations: bible.locations || [],
+          episodes: (bible.episodes || []).map(({ shots, ...item }) => ({ ...item, shotCount: shots?.length || 0 })),
+          shotCount: episode.shots.length
+        },
+        projectPatch: { bible, episodes: [episode], stage: "design", progress: 55 },
+        message: "剧本、角色与连续性档案已生成"
+      });
 
+      await this.updateNode(project, "design", "running", {
+        input: {
+          characters: bible.characters?.map((item) => item.name) || [],
+          weapons: bible.weapons?.map((item) => item.name) || [],
+          locations: bible.locations?.map((item) => item.name) || []
+        }
+      });
       let assets = buildAssets(project.novelName, bible);
       if (this.config.mode === "live") {
         const assetsDirectory = path.join(this.config.dataDirectory, "assets", project.id);
@@ -227,19 +363,39 @@ export class ProductionPipeline {
           };
         }));
       }
-      await this.update(project, { assets, stage: "render", progress: 72 }, "角色、武器与场景视觉资产已就绪");
+      await this.updateNode(project, "design", "completed", {
+        output: {
+          assetCount: assets.length,
+          assets: assets.map(({ id: assetId, type, name, status, imageUrl, prompt }) => ({ id: assetId, type, name, status, imageUrl, prompt }))
+        },
+        projectPatch: { assets, stage: "render", progress: 72 },
+        message: "角色、武器与场景视觉资产已就绪"
+      });
 
       const billableEnabled = process.env.ALLOW_BILLABLE_GENERATION === "true";
       if (this.config.mode === "live" && !billableEnabled) {
-        await this.update(project, {
-          status: "budget-gate",
-          progress: 72,
-          completedAt: now(),
-          error: "真实视频生成已停在预算门禁；设置 ALLOW_BILLABLE_GENERATION=true 后重启任务"
-        }, "预算门禁阻止了批量付费调用");
+        await this.updateNode(project, "render", "paused", {
+          input: { shotCount: episode.shots.length, maxConcurrency: this.config.production.maxVideoConcurrency },
+          error: "真实视频生成已停在预算门禁；设置 ALLOW_BILLABLE_GENERATION=true 后重启任务",
+          projectPatch: {
+            status: "budget-gate",
+            progress: 72,
+            completedAt: now(),
+            error: "真实视频生成已停在预算门禁；设置 ALLOW_BILLABLE_GENERATION=true 后重启任务"
+          },
+          message: "预算门禁阻止了批量付费调用"
+        });
         return false;
       }
 
+      await this.updateNode(project, "render", "running", {
+        input: {
+          shotCount: episode.shots.length,
+          shotSeconds: this.config.production.shotSeconds,
+          maxConcurrency: this.config.production.maxVideoConcurrency,
+          model: this.config.mode === "live" ? this.config.ark.videoModel : "demo"
+        }
+      });
       if (this.config.mode === "live") {
         await this.submitVideoBatch(project, episode);
         retainSlot = true;
@@ -250,15 +406,40 @@ export class ProductionPipeline {
         }
         episode.status = "preview-ready";
         episode.renderedSeconds = this.config.production.episodeMinutes * 60;
-        await this.update(project, {
-          status: "completed",
-          stage: "assemble",
-          progress: 100,
-          completedAt: now(),
-          episodes: [episode]
-        }, "演示生产链路已完成，切换 live 可提交真实镜头");
+        await this.updateNode(project, "render", "completed", {
+          output: {
+            totalShots: episode.shots.length,
+            completedShots: episode.shots.length,
+            failedShots: 0,
+            mode: "demo",
+            shots: episode.shots.map(({ id: shotId, order, duration, status, progress, prompt, videoUrl }) => ({
+              id: shotId, order, duration, status, progress, prompt, videoUrl
+            }))
+          },
+          projectPatch: { stage: "assemble", progress: 98, episodes: [episode] },
+          message: "全部演示镜头已生成"
+        });
+        await this.updateNode(project, "assemble", "running", {
+          input: { clipCount: episode.shots.length, targetDurationSeconds: this.config.production.episodeMinutes * 60 }
+        });
+        await this.updateNode(project, "assemble", "completed", {
+          output: {
+            episodeTitle: episode.title,
+            durationSeconds: episode.renderedSeconds,
+            status: episode.status,
+            videoUrl: episode.videoUrl || null
+          },
+          projectPatch: { status: "completed", stage: "assemble", progress: 100, completedAt: now(), episodes: [episode] },
+          message: "演示生产链路已完成，切换 live 可提交真实镜头"
+        });
       }
     } catch (error) {
+      const failedNode = project.nodes?.[project.stage];
+      if (failedNode && failedNode.status === "running") {
+        failedNode.status = "failed";
+        failedNode.completedAt = now();
+        failedNode.error = error.message;
+      }
       await this.update(project, { status: "failed", completedAt: now(), error: error.message }, `任务失败：${error.message}`);
     } finally {
       this.active.delete(id);
@@ -269,22 +450,42 @@ export class ProductionPipeline {
   async submitVideoBatch(project, episode) {
     episode.status = "rendering";
     for (const shot of episode.shots) {
-      const task = await this.ark.createVideo({
-        prompt: shot.prompt,
-        duration: this.config.production.shotSeconds,
-        ratio: "16:9"
-      });
-      shot.remoteTaskId = task.id;
-      shot.status = "submitted";
-      shot.progress = 5;
-      await this.update(project, { episodes: [episode], progress: 75 }, `已提交镜头 ${shot.id}`);
+      shot.status = "queued";
+      shot.progress = 0;
+      delete shot.remoteTaskId;
     }
+    await this.submitAvailableShots(project, episode);
     await this.update(project, {
       status: "rendering",
       stage: "render",
       progress: 78,
       episodes: [episode]
-    }, "本集镜头已全部提交，等待方舟异步渲染");
+    }, "首批镜头已提交，后续镜头将按并发槽自动接续");
+  }
+
+  async submitAvailableShots(project, episode) {
+    const activeCount = episode.shots.filter((shot) =>
+      shot.remoteTaskId && !["succeeded", "failed", "expired"].includes(shot.status)
+    ).length;
+    const available = Math.max(0, this.config.production.maxVideoConcurrency - activeCount);
+    const nextShots = episode.shots
+      .filter((shot) => shot.status === "queued" && !shot.remoteTaskId)
+      .slice(0, available);
+    if (!nextShots.length) return;
+    const tasks = await Promise.all(nextShots.map(async (shot) => {
+      const task = await this.ark.createVideo({
+        prompt: shot.prompt,
+        duration: this.config.production.shotSeconds,
+        ratio: "16:9"
+      });
+      return [shot, task];
+    }));
+    for (const [shot, task] of tasks) {
+      shot.remoteTaskId = task.id;
+      shot.status = "submitted";
+      shot.progress = 5;
+    }
+    await this.update(project, { episodes: [episode] }, `已补充提交 ${tasks.length} 个镜头任务`);
   }
 
   async reconcile(id) {
@@ -313,8 +514,21 @@ export class ProductionPipeline {
           shot.videoUrl = `/media/clips/${project.id}/${shot.id}.mp4`;
         }
       }
+      await this.submitAvailableShots(project, episode);
       const completed = episode.shots.filter((shot) => shot.status === "succeeded").length;
       const progress = 78 + Math.round((completed / episode.shots.length) * 19);
+      if (project.nodes?.render) {
+        project.nodes.render.output = {
+          totalShots: episode.shots.length,
+          completedShots: completed,
+          activeShots: episode.shots.filter((shot) => ["submitted", "running"].includes(shot.status)).length,
+          queuedShots: episode.shots.filter((shot) => shot.status === "queued").length,
+          failedShots: episode.shots.filter((shot) => ["failed", "expired"].includes(shot.status)).length,
+          shots: episode.shots.map(({ id: shotId, order, duration, status, progress: shotProgress, prompt, videoUrl }) => ({
+            id: shotId, order, duration, status, progress: shotProgress, prompt, videoUrl
+          }))
+        };
+      }
       await this.update(project, { episodes: [episode], progress }, `镜头进度 ${completed}/${episode.shots.length}`);
       if (completed === episode.shots.length) await this.assemble(project, episode);
     } catch (error) {
@@ -334,7 +548,28 @@ export class ProductionPipeline {
     const outputFile = path.join(outputDirectory, "episode-001.mp4");
     const quote = (value) => value.replace(/'/g, "'\\''");
     await writeFile(listFile, episode.shots.map((shot) => `file '${quote(shot.localFile)}'`).join("\n"));
-    await this.update(project, { stage: "assemble", progress: 98 }, "正在使用 FFmpeg 装配 15 分钟成片");
+    if (project.nodes?.render) {
+      project.nodes.render.status = "completed";
+      project.nodes.render.completedAt = now();
+      project.nodes.render.output = {
+        totalShots: episode.shots.length,
+        completedShots: episode.shots.length,
+        failedShots: 0,
+        mode: "live",
+        shots: episode.shots.map(({ id: shotId, order, duration, status, progress, prompt, videoUrl }) => ({
+          id: shotId, order, duration, status, progress, prompt, videoUrl
+        }))
+      };
+    }
+    await this.updateNode(project, "assemble", "running", {
+      input: {
+        clipCount: episode.shots.length,
+        targetDurationSeconds: this.config.production.episodeMinutes * 60,
+        encoder: "libx264"
+      },
+      projectPatch: { stage: "assemble", progress: 98 },
+      message: "正在使用 FFmpeg 装配 15 分钟成片"
+    });
     await run(this.config.ffmpeg, [
       "-y", "-f", "concat", "-safe", "0", "-i", listFile,
       "-t", String(this.config.production.episodeMinutes * 60),
@@ -344,13 +579,16 @@ export class ProductionPipeline {
     episode.status = "completed";
     episode.renderedSeconds = this.config.production.episodeMinutes * 60;
     episode.videoUrl = `/media/output/${project.id}/episode-001.mp4`;
-    await this.update(project, {
-      status: "completed",
-      stage: "assemble",
-      progress: 100,
-      completedAt: now(),
-      episodes: [episode]
-    }, "15 分钟成片已完成并归档");
+    await this.updateNode(project, "assemble", "completed", {
+      output: {
+        episodeTitle: episode.title,
+        durationSeconds: episode.renderedSeconds,
+        videoUrl: episode.videoUrl,
+        outputFile
+      },
+      projectPatch: { status: "completed", stage: "assemble", progress: 100, completedAt: now(), episodes: [episode] },
+      message: "15 分钟成片已完成并归档"
+    });
   }
 
   async exportManifest(id) {

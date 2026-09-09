@@ -4,9 +4,17 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { makeConfig } from "../lib/config.mjs";
-import { buildDemoBible, makeShots } from "../lib/pipeline.mjs";
+import { buildDemoBible, makeShots, ProductionPipeline } from "../lib/pipeline.mjs";
 import { titleScore } from "../lib/novel-search.mjs";
 import { ProjectStore } from "../lib/store.mjs";
+
+const waitFor = async (predicate, timeout = 3000) => {
+  const started = Date.now();
+  while (!await predicate()) {
+    if (Date.now() - started > timeout) throw new Error("condition timed out");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+};
 
 test("title matching tolerates book-title punctuation", () => {
   assert.equal(titleScore("《西游记》", "西游记"), 100);
@@ -60,6 +68,92 @@ test("project store persists updates atomically", async () => {
     await store.save({ id: "one", createdAt: "2026-09-09T00:00:00.000Z", status: "completed" });
     assert.equal((await store.get("one")).status, "completed");
     assert.equal((await store.list()).length, 1);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("live video submission fills only the configured per-project shot slots", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "novel-video-slots-"));
+  try {
+    const store = new ProjectStore(directory);
+    const config = {
+      mode: "live",
+      dataDirectory: directory,
+      ark: {},
+      production: {
+        maxProjectConcurrency: 2,
+        maxVideoConcurrency: 4,
+        shotSeconds: 30
+      }
+    };
+    const pipeline = new ProductionPipeline(config, store);
+    let submitted = 0;
+    pipeline.ark.createVideo = async () => ({ id: `remote-${++submitted}` });
+    const episode = { status: "queued", shots: makeShots("西游记", 1, 10, 30) };
+    const project = {
+      id: "video-slots",
+      novelName: "西游记",
+      status: "running",
+      createdAt: new Date().toISOString(),
+      activity: [],
+      episodes: [episode]
+    };
+    await store.save(project);
+    await pipeline.submitVideoBatch(project, episode);
+    assert.equal(submitted, 4);
+    assert.equal(episode.shots.filter((shot) => shot.status === "submitted").length, 4);
+    assert.equal(episode.shots.filter((shot) => shot.status === "queued").length, 6);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("pipeline pauses for explicit source confirmation and records every node artifact", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "novel-source-gate-"));
+  try {
+    const store = new ProjectStore(directory);
+    const sources = [
+      { id: "candidate-a", title: "同名改编版", authors: "作者甲", source: "目录 A", rights: "metadata-only", score: 95 },
+      { id: "candidate-b", title: "目标原著", authors: "作者乙", source: "目录 B", rights: "public-domain", score: 88, description: "正文梗概" }
+    ];
+    const config = {
+      mode: "demo",
+      dataDirectory: directory,
+      ark: {},
+      search: {},
+      production: {
+        episodeMinutes: 15,
+        shotsPerEpisode: 30,
+        shotSeconds: 30,
+        maxProjectConcurrency: 1,
+        maxVideoConcurrency: 4
+      }
+    };
+    const pipeline = new ProductionPipeline(config, store, {
+      search: async () => sources,
+      loadText: async () => "目标正文"
+    });
+
+    const created = await pipeline.create("同名小说");
+    await waitFor(async () => (await store.get(created.id)).status === "source-review");
+    let project = await store.get(created.id);
+    assert.equal(project.source, null);
+    assert.equal(project.sources.length, 2);
+    assert.equal(project.nodes.discover.status, "completed");
+    assert.equal(project.nodes.discover.output.candidateCount, 2);
+
+    await pipeline.confirmSource(created.id, "candidate-b");
+    await waitFor(async () => (await store.get(created.id)).status === "completed");
+    project = await store.get(created.id);
+    assert.equal(project.source.id, "candidate-b");
+    assert.equal(project.sourceConfirmed, true);
+    assert.ok(["discover", "ingest", "adapt", "design", "render", "assemble"].every(
+      (id) => project.nodes[id].status === "completed"
+    ));
+    assert.equal(project.nodes.ingest.output.contentCharacters, 4);
+    assert.equal(project.nodes.render.output.completedShots, 30);
+    assert.equal(project.nodes.assemble.output.durationSeconds, 900);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

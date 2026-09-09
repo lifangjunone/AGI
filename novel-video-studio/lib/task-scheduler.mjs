@@ -12,15 +12,17 @@ export class TaskScheduler {
     this.worker = worker;
     this.pending = [];
     this.active = new Set();
+    this.deferred = new Set();
     this.pumping = false;
     this.resumed = false;
   }
 
   async enqueue(id, { message = "任务已进入生产队列" } = {}) {
-    if (this.active.has(id) || this.pending.includes(id)) return this.store.get(id);
+    if (this.pending.includes(id) || this.deferred.has(id)) return this.store.get(id);
     const project = await this.store.get(id);
     if (!project) throw new Error("项目不存在");
-    this.pending.push(id);
+    if (this.active.has(id)) this.deferred.add(id);
+    else this.pending.push(id);
     project.status = "queued";
     project.queuedAt = now();
     project.startedAt = null;
@@ -55,6 +57,7 @@ export class TaskScheduler {
 
   async release(id) {
     this.active.delete(id);
+    if (this.deferred.delete(id) && !this.pending.includes(id)) this.pending.push(id);
     await this.updateQueuePositions();
     queueMicrotask(() => this.pump());
   }

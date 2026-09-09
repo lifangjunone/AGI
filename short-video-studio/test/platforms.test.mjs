@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { startServer } from "../server.mjs";
+
+process.env.ADMIN_USERNAME = "test-admin";
+process.env.ADMIN_PASSWORD = "test-password";
+const { startServer } = await import("../server.mjs");
 
 test("serves the web, mobile, and desktop entrypoints", async (t) => {
   const instance = await startServer({ host: "127.0.0.1", port: 0, quiet: true });
@@ -55,7 +58,11 @@ test("builds an Alipay web payment form without trusting a browser result", asyn
 
   const response = await fetch(`http://127.0.0.1:${instance.port}/api/content-pack/checkout`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "x-forwarded-proto": "https",
+      "x-forwarded-host": "lifeyoume.icu"
+    },
     body: JSON.stringify({
       productName: "轻薄防晒外套",
       audience: "通勤用户",
@@ -69,6 +76,7 @@ test("builds an Alipay web payment form without trusting a browser result", asyn
   assert.match(result.paymentHtml, /<form/i);
   assert.match(result.paymentHtml, /alipay\.trade\.page\.pay/);
   assert.match(result.paymentHtml, /FAST_INSTANT_TRADE_PAY/);
+  assert.match(result.paymentHtml, /return_url=https%3A%2F%2Flifeyoume\.icu/);
   assert.match(result.orderId, /^FRAME60_/);
 });
 
@@ -129,4 +137,47 @@ test("serves the Zhizhu assistant workspace and generates all three previews", a
   });
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /文章主题|文章角度/);
+});
+
+test("protects the admin console and persists dynamic prices", async (t) => {
+  const instance = await startServer({ host: "127.0.0.1", port: 0, quiet: true });
+  t.after(() => new Promise((resolve) => instance.server.close(resolve)));
+
+  const page = await fetch(`http://127.0.0.1:${instance.port}/admin/`);
+  assert.equal(page.status, 200);
+  assert.match(await page.text(), /后台管理/);
+  const redirect = await fetch(`http://127.0.0.1:${instance.port}/admin`, { redirect: "manual" });
+  assert.equal(redirect.status, 301);
+  assert.equal(redirect.headers.get("location"), "/admin/");
+
+  const unauthorized = await fetch(`http://127.0.0.1:${instance.port}/api/admin/settings`);
+  assert.equal(unauthorized.status, 401);
+
+  const login = await fetch(`http://127.0.0.1:${instance.port}/api/admin/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ username: "test-admin", password: "test-password" })
+  });
+  assert.equal(login.status, 200);
+  const cookie = login.headers.get("set-cookie");
+  assert.match(cookie, /frame60_admin=/);
+
+  const update = await fetch(`http://127.0.0.1:${instance.port}/api/admin/settings`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json", cookie },
+    body: JSON.stringify({ prices: { product: "12.90", article: "8.90", social: "3.90" } })
+  });
+  assert.equal(update.status, 200);
+  assert.deepEqual((await update.json()).prices, { product: "12.90", article: "8.90", social: "3.90" });
+
+  const preview = await fetch(`http://127.0.0.1:${instance.port}/api/content-pack`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      productName: "测试商品",
+      audience: "测试用户",
+      sellingPoints: "轻薄透气，适合日常使用"
+    })
+  });
+  assert.equal((await preview.json()).pack.price, "12.90");
 });
