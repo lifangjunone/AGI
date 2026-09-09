@@ -2,9 +2,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 export async function loadEnv(root) {
-  for (const name of [".env", ".env.local"]) {
+  const files = [
+    path.join(root, ".env"),
+    path.join(root, ".env.local"),
+    process.env.NOVEL_STUDIO_CONFIG_FILE
+  ].filter(Boolean);
+  for (const file of files) {
     try {
-      const content = await readFile(path.join(root, name), "utf8");
+      const content = await readFile(file, "utf8");
       for (const rawLine of content.split(/\r?\n/)) {
         const line = rawLine.trim();
         if (!line || line.startsWith("#")) continue;

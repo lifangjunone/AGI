@@ -1,4 +1,4 @@
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 15000;
 
 function normalize(value) {
   return String(value || "").toLocaleLowerCase().replace(/[\s·:：\-—_《》"'“”‘’]/g, "");
@@ -14,18 +14,18 @@ export function titleScore(query, candidate) {
   return Math.round((overlap / Math.max(left.length, right.length)) * 60);
 }
 
-async function fetchJson(url, options = {}) {
+async function fetchJson(url, options = {}, timeout = REQUEST_TIMEOUT_MS) {
   const response = await fetch(url, {
     ...options,
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeout),
     headers: { "User-Agent": "NovelVideoStudio/0.1", ...(options.headers || {}) }
   });
   if (!response.ok) throw new Error(`检索服务返回 ${response.status}`);
   return response.json();
 }
 
-async function searchGutendex(title) {
-  const payload = await fetchJson(`https://gutendex.com/books/?search=${encodeURIComponent(title)}`);
+async function searchGutendex(title, timeout) {
+  const payload = await fetchJson(`https://gutendex.com/books/?search=${encodeURIComponent(title)}`, {}, timeout);
   return payload.results.slice(0, 6).map((book) => ({
     id: `gutenberg-${book.id}`,
     title: book.title,
@@ -107,6 +107,9 @@ export async function searchNovel(title, { braveApiKey = "" } = {}) {
     searchBrave(title, braveApiKey)
   ]);
   const results = settled.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+  if (results.length === 0) {
+    results.push(...await searchGutendex(title, 30000).catch(() => []));
+  }
   const classic = BUILTIN_CLASSICS.find(([name]) => titleScore(title, name) >= 80);
   if (classic) {
     results.push({

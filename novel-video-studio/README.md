@@ -12,6 +12,7 @@
 - 自动轮询视频任务，在方舟 24 小时临时 URL 失效前下载镜头，再使用 FFmpeg 装配 MP4。
 - 本地 JSON 持久化生产状态；服务重启后仍可继续轮询渲染中的任务。
 - 设有生产/演示模式、付费调用总开关、日预算展示和并发上限。
+- 同时提供 Web、可安装手机 PWA 和 Electron 桌面 App；三端共享生产 API 与数据结构。
 
 默认是 `demo` 模式：可以完整体验界面和流水线，不会产生模型费用。演示成片状态是流程模拟，不包含真实 MP4。
 
@@ -19,13 +20,44 @@
 
 环境要求：Node.js 20+、FFmpeg、FFprobe。
 
+安装依赖并创建本地配置：
+
 ```bash
 cd /Users/bytedance/Desktop/agi/novel-video-studio
+npm install
 cp .env.example .env.local
-npm start
 ```
 
-访问 <http://127.0.0.1:4321>。
+Web：
+
+```bash
+npm run web
+# http://127.0.0.1:4321/web/
+```
+
+手机 App（PWA）：
+
+```bash
+npm run mobile
+# 终端会输出手机可访问的局域网 /mobile/ 地址
+```
+
+手机浏览器可将其添加到主屏幕；正式部署需要 HTTPS 才能稳定使用安装和离线外壳。
+
+macOS 桌面 App：
+
+```bash
+npm run desktop:config
+npm run desktop
+```
+
+桌面配置与数据保存在 `~/Library/Application Support/长卷制片厂/`，不会写入应用包。生成 arm64 应用目录：
+
+```bash
+npm run desktop:pack
+```
+
+产物位于 `dist/mac-arm64/长卷制片厂.app`。本地包默认未签名，正式分发前需完成 Apple Developer 签名与公证。
 
 ## 方舟生产配置
 

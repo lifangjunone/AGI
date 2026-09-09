@@ -22,9 +22,17 @@ body {
   min-width: 320px;
   min-height: 100%;
   overflow-x: hidden;
+  scrollbar-width: none;
   background: var(--ink);
   color: var(--paper);
   font-family: var(--font-body);
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 button,
@@ -235,21 +243,112 @@ main {
 
 .content-pack-view {
   min-height: calc(100vh - 66px);
-  padding: clamp(34px, 6vw, 78px) clamp(22px, 6vw, 92px) 84px;
+  padding: 28px clamp(22px, 5vw, 78px) 56px;
   background:
     radial-gradient(circle at 78% 18%, rgba(244, 211, 94, 0.1), transparent 28%),
     linear-gradient(135deg, rgba(115, 230, 186, 0.04), transparent 42%);
 }
 
+@media (min-width: 821px) {
+  .content-pack-view {
+    height: calc(100vh - 66px);
+    min-height: 0;
+    overflow: hidden;
+    padding-top: 20px;
+    padding-bottom: 20px;
+  }
+
+  .content-pack-intro {
+    margin-bottom: 14px;
+  }
+
+  .content-pack-intro h1 {
+    margin: 3px 0 7px;
+    font-size: clamp(38px, 3.8vw, 56px);
+    line-height: 0.94;
+  }
+
+  .content-pack-intro > p {
+    max-width: 680px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .proof-strip {
+    margin-top: 9px;
+  }
+
+  .proof-strip span {
+    padding: 5px 9px;
+  }
+
+  .proof-strip b {
+    font-size: 14px;
+  }
+
+  .content-pack-grid {
+    height: calc(100% - 190px);
+    min-height: 0;
+  }
+
+  .pack-form {
+    padding: 17px 22px;
+  }
+
+  .pack-form-head {
+    margin-bottom: 12px;
+  }
+
+  .pack-form-head h2 {
+    font-size: 20px;
+  }
+
+  .pack-form input,
+  .pack-form select {
+    height: 38px;
+  }
+
+  .pack-form input,
+  .pack-form select,
+  .pack-form textarea {
+    margin-bottom: 8px;
+    padding: 9px 11px;
+    font-size: 12px;
+  }
+
+  .pack-form textarea {
+    min-height: 70px;
+  }
+
+  .field-label {
+    font-size: 11px;
+  }
+
+  .pack-submit {
+    min-height: 42px;
+  }
+
+  .form-note {
+    margin-top: 6px;
+    font-size: 9px;
+  }
+
+  .pack-result,
+  .result-empty {
+    min-height: 0;
+    height: 100%;
+  }
+}
+
 .content-pack-intro {
-  max-width: 850px;
-  margin: 0 auto 50px;
+  max-width: 1100px;
+  margin: 0 auto 18px;
 }
 
 .content-pack-intro h1 {
-  margin: 12px 0 18px;
+  margin: 6px 0 10px;
   font-family: var(--font-display);
-  font-size: clamp(42px, 7vw, 92px);
+  font-size: clamp(40px, 4.2vw, 60px);
   line-height: 0.98;
   letter-spacing: -1px;
 }
@@ -263,8 +362,8 @@ main {
   max-width: 550px;
   margin: 0;
   color: #c8c5ba;
-  font-size: 15px;
-  line-height: 1.8;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .content-pack-intro > p b {
@@ -274,7 +373,7 @@ main {
 .proof-strip {
   display: flex;
   gap: 8px;
-  margin-top: 28px;
+  margin-top: 12px;
 }
 
 .proof-strip span {
@@ -298,6 +397,7 @@ main {
   gap: 22px;
   max-width: 1100px;
   margin: 0 auto;
+  align-items: start;
 }
 
 .pack-form,
@@ -307,7 +407,7 @@ main {
 }
 
 .pack-form {
-  padding: clamp(22px, 3vw, 34px);
+  padding: clamp(20px, 2.5vw, 28px);
 }
 
 .pack-form-head,
@@ -315,7 +415,7 @@ main {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .pack-form-head h2,
@@ -342,7 +442,7 @@ main {
 .pack-form select,
 .pack-form textarea {
   width: 100%;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   border: 1px solid #484744;
   border-radius: 4px;
   background: #141414;
@@ -356,7 +456,7 @@ main {
 }
 
 .pack-form textarea {
-  min-height: 100px;
+  min-height: 82px;
   resize: vertical;
 }
 
@@ -415,7 +515,7 @@ main {
 }
 
 .pack-result {
-  min-height: 540px;
+  min-height: 520px;
   position: relative;
   overflow: hidden;
 }
@@ -429,7 +529,7 @@ main {
 .result-empty {
   display: grid;
   place-content: center;
-  min-height: 540px;
+  min-height: 520px;
   text-align: center;
 }
 
@@ -577,7 +677,9 @@ main {
   }
 
   .content-pack-view {
+    height: auto;
     min-height: calc(100vh - 102px);
+    overflow: visible;
     padding: 34px 16px 50px;
   }
 
@@ -587,6 +689,7 @@ main {
 
   .content-pack-grid {
     grid-template-columns: 1fr;
+    height: auto;
   }
 
   .pack-result {

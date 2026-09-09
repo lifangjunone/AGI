@@ -54,6 +54,8 @@ let installPrompt = null;
 
 const pathPlatform = location.pathname.split("/").filter(Boolean)[0];
 const platform = ["mobile", "desktop", "web"].includes(pathPlatform) ? pathPlatform : "web";
+const apiPrefix = location.pathname.startsWith("/video/") ? "/video" : "";
+const apiUrl = (pathname) => `${apiPrefix}${pathname}`;
 document.documentElement.dataset.client = platform;
 elements.platformBadge.textContent = platform.toUpperCase();
 
@@ -91,10 +93,11 @@ function showToast(message, error = false) {
 
 async function checkStatus() {
   try {
-    const response = await fetch("/api/status");
+    const response = await fetch(apiUrl("/api/status"));
     const status = await response.json();
-    elements.serviceState.className = `service-state ${status.ready ? "is-ready" : "is-error"}`;
-    elements.serviceState.lastElementChild.textContent = status.ready ? "模型就绪" : "配置异常";
+    const contentPackReady = status.contentPackReady !== false;
+    elements.serviceState.className = `service-state ${status.ready || contentPackReady ? "is-ready" : "is-error"}`;
+    elements.serviceState.lastElementChild.textContent = status.ready ? "模型就绪" : "内容包就绪";
     if (!status.ready) {
       const missing = [
         !status.modelConfigured && "模型配置",
@@ -144,7 +147,8 @@ function setRendering(rendering) {
 
 function showVideo(video, autoplay = true) {
   activeVideo = video;
-  elements.videoPlayer.src = `${video.url}?v=${encodeURIComponent(video.createdAt)}`;
+  const videoUrl = `${apiPrefix}${video.url}`;
+  elements.videoPlayer.src = `${videoUrl}?v=${encodeURIComponent(video.createdAt)}`;
   elements.videoPlayer.classList.add("is-visible");
   elements.emptyState.hidden = true;
   elements.stageTitle.textContent = video.prompt;
@@ -152,7 +156,7 @@ function showVideo(video, autoplay = true) {
   elements.timelineDuration.textContent = formatClock(video.duration);
   elements.timelineEnd.textContent = formatClock(video.duration);
   elements.copyPrompt.disabled = false;
-  elements.downloadVideo.href = video.url;
+  elements.downloadVideo.href = videoUrl;
   elements.downloadVideo.download = `frame60-${video.id}.mp4`;
   elements.downloadVideo.classList.remove("is-disabled");
   if (autoplay) elements.videoPlayer.play().catch(() => {});
@@ -175,7 +179,7 @@ async function generate(event) {
   setRendering(true);
   elements.renderTitle.textContent = `正在生成 ${payload.duration} 秒成片`;
   try {
-    const response = await fetch("/api/generate", {
+    const response = await fetch(apiUrl("/api/generate"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -199,7 +203,7 @@ function createLibraryCard(video) {
   card.tabIndex = 0;
 
   const preview = document.createElement("video");
-  preview.src = video.url;
+  preview.src = `${apiPrefix}${video.url}`;
   preview.preload = "metadata";
   preview.muted = true;
 
@@ -241,7 +245,7 @@ function createLibraryCard(video) {
 
 async function loadLibrary() {
   try {
-    const response = await fetch("/api/videos");
+    const response = await fetch(apiUrl("/api/videos"));
     const result = await response.json();
     if (!response.ok) throw new Error(result.error);
     elements.libraryGrid.replaceChildren(...result.videos.map(createLibraryCard));
@@ -272,7 +276,7 @@ async function generateContentPack(event) {
   submit.disabled = true;
   submit.querySelector("span").textContent = "正在生成预览…";
   try {
-    const response = await fetch("/api/content-pack", {
+    const response = await fetch(apiUrl("/api/content-pack"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -336,7 +340,7 @@ async function startCheckout(pack) {
   const label = elements.unlockPack.querySelector("span");
   label.textContent = "正在创建支付宝订单…";
   try {
-    const response = await fetch("/api/content-pack/checkout", {
+    const response = await fetch(apiUrl("/api/content-pack/checkout"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -19,6 +19,8 @@ const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".webmanifest": "application/manifest+json",
+  ".mp4": "video/mp4",
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".svg": "image/svg+xml"
@@ -68,7 +70,8 @@ async function commandExists(command) {
 }
 
 async function serveStatic(response, pathname) {
-  const requested = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
+  const entrypoints = new Set(["/", "/web", "/web/", "/mobile", "/mobile/", "/desktop", "/desktop/"]);
+  const requested = entrypoints.has(pathname) ? "index.html" : pathname.replace(/^\/+/, "");
   const file = path.resolve(PUBLIC, requested);
   if (!file.startsWith(`${PUBLIC}${path.sep}`) && file !== path.join(PUBLIC, "index.html")) return false;
   try {
@@ -155,7 +158,7 @@ export const server = createServer(async (request, response) => {
       return;
     }
 
-    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|export))?$/.exec(url.pathname);
+    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|export|manifest))?$/.exec(url.pathname);
     if (request.method === "GET" && projectMatch && !projectMatch[2]) {
       const project = await store.get(projectMatch[1]);
       sendJson(response, project ? 200 : 404, project ? { project } : { error: "项目不存在" });
@@ -169,7 +172,23 @@ export const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && projectMatch?.[2] === "export") {
-      sendJson(response, 200, { file: await pipeline.exportManifest(projectMatch[1]) });
+      await pipeline.exportManifest(projectMatch[1]);
+      sendJson(response, 200, { downloadUrl: `/api/projects/${projectMatch[1]}/manifest` });
+      return;
+    }
+
+    if (request.method === "GET" && projectMatch?.[2] === "manifest") {
+      const project = await store.get(projectMatch[1]);
+      if (!project) {
+        sendJson(response, 404, { error: "项目不存在" });
+        return;
+      }
+      response.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename="production-manifest-${project.id}.json"`,
+        "Cache-Control": "no-store"
+      });
+      response.end(`${JSON.stringify(project, null, 2)}\n`);
       return;
     }
 
@@ -188,8 +207,29 @@ const reconciliationTimer = setInterval(async () => {
 }, 15000);
 reconciliationTimer.unref();
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  server.listen(config.port, "127.0.0.1", () => {
-    process.stdout.write(`Novel Video Studio running at http://127.0.0.1:${config.port}\n`);
+export function startServer({
+  host = process.env.HOST || "127.0.0.1",
+  port = config.port,
+  quiet = false
+} = {}) {
+  return new Promise((resolve, reject) => {
+    const onError = (error) => {
+      server.off("listening", onListening);
+      reject(error);
+    };
+    const onListening = () => {
+      server.off("error", onError);
+      const address = server.address();
+      const instance = { server, host, port: address.port };
+      if (!quiet) process.stdout.write(`Novel Video Studio listening on http://${host}:${address.port}\n`);
+      resolve(instance);
+    };
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(port, host);
   });
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  await startServer();
 }

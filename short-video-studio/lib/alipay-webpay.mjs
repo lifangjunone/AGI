@@ -38,10 +38,19 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     const sandbox = await readJsonFile(sandboxPath, {});
     const sandboxApp = sandbox.appIds?.[0] || {};
     const production = process.env.ALIPAY_ENV === "production";
+    const readSecret = async (value, fileValue) => {
+      if (value) return value;
+      if (!fileValue) return "";
+      try {
+        return (await readFile(fileValue, "utf8")).trim();
+      } catch {
+        return "";
+      }
+    };
     const config = {
       appId: process.env.ALIPAY_APP_ID || sandboxApp.appId || "",
-      privateKey: process.env.ALIPAY_PRIVATE_KEY || sandboxApp.appPrivatePkcsKey || "",
-      alipayPublicKey: process.env.ALIPAY_PUBLIC_KEY || sandboxApp.alipayPublicKey || "",
+      privateKey: await readSecret(process.env.ALIPAY_PRIVATE_KEY, process.env.ALIPAY_PRIVATE_KEY_FILE) || sandboxApp.appPrivatePkcsKey || "",
+      alipayPublicKey: await readSecret(process.env.ALIPAY_PUBLIC_KEY, process.env.ALIPAY_PUBLIC_KEY_FILE) || sandboxApp.alipayPublicKey || "",
       gateway: process.env.ALIPAY_GATEWAY || (
         production
           ? "https://openapi.alipay.com/gateway.do"

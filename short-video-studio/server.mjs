@@ -40,6 +40,7 @@ const config = {
 };
 const defaultPort = Number(process.env.PORT || 4317);
 const contentPackPrice = process.env.CONTENT_PACK_PRICE || "9.90";
+const publicBasePath = String(process.env.FRAME60_PUBLIC_BASE_PATH || "").replace(/\/+$/, "");
 const alipayWebPay = createAlipayWebPay({
   rootDirectory: ROOT,
   dataDirectory: DATA_DIRECTORY,
@@ -233,6 +234,7 @@ export const server = createServer(async (request, response) => {
       ]);
       sendJson(response, 200, {
         ready: Boolean(config.apiKey && config.modelId && ffmpegPath && ffprobePath),
+        contentPackReady: true,
         modelConfigured: Boolean(config.apiKey && config.modelId),
         ffmpegReady: Boolean(ffmpegPath && ffprobePath),
         model: config.modelId || null
@@ -271,7 +273,7 @@ export const server = createServer(async (request, response) => {
           tone: pack.tone,
           offer: pack.offer
         },
-        origin: `${url.protocol}//${url.host}`
+        origin: `${url.protocol}//${url.host}${publicBasePath}`
       });
       sendJson(response, 201, {
         orderId: payment.order.orderId,

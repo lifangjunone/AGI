@@ -4,17 +4,25 @@
 
 ### feat
 
+- Expanded `novel-video-studio` into three shared-core editions: a Web control room, an installable mobile PWA with LAN access and offline shell, and a sandboxed Electron desktop app with Application Support storage.
 - Added `novel-video-studio`, an automated novel-to-episode production control room with public-domain source discovery, rights gating, story/character/prop/location planning, Ark image and asynchronous video integrations, persistent shot queues, and FFmpeg assembly for 15-minute episodes.
 - Added Alipay web payment integration to `short-video-studio`: server-side `pageExec` checkout form, persistent pending orders, signed notification verification, trade query, refund, refund query, close, and neutral return page.
 - Added the C-end product content-pack MVP to `short-video-studio`: users can enter a product, audience, selling points, platform, tone, and offer to receive a free title preview plus locally generated titles, scripts, shot lists, hashtags, and a seven-day publishing plan.
 - Unified the content-pack experience across the desktop Electron app, mobile PWA, and Web entrypoints, and fixed checkout order persistence to retain the submitted selling points.
+- Deployed the Web content-pack entrypoint at `https://lifeyoume.icu/video/` with HTTPS Nginx routing and `https://lifeyoume.icu/video/api/alipay/notify` as the configured production notification URL.
+- Fixed content-pack UI clipping introduced by the previous scroll optimization: restored complete page scrolling, reduced hero and form spacing, and kept mobile natural single-column scrolling.
+- Hid the native page scrollbar while preserving wheel, trackpad, and touch scrolling.
+- Added a stylesheet version query to force clients to load the scrollbar fix instead of stale cached CSS.
+- Reworked the desktop content-pack first viewport into a compact fixed workspace so the core input-to-preview-to-unlock flow fits without page scrolling; mobile remains naturally scrollable.
 - Configured seller ID `2088122111133366` for Alipay service `API_4BAB0CE91B3743BE`; the production Pay Skill now listens on port `8788`.
 
 ### verify
 
+- Verified all three Novel Video Studio entrypoints, PWA metadata and cache worker, Electron renderer isolation, and shared API behavior with 8 passing automated tests.
 - Verified `novel-video-studio` with 5 passing unit tests, an end-to-end 30-shot/900-second demo project, and responsive browser screenshots at 1120×720 and 390×844.
 - Verified the checkout button opens the real Alipay sandbox cashier with the `¥9.90` product and price. The sandbox payment itself was not completed.
 - Verified all three entrypoints expose the same content-pack form and unlock flow.
+- Verified the public page (`200`), content-pack API (`201`), and production checkout form (`201`, `9.90`, payment HTML present) without submitting a payment.
 - Verified the return page responds with a neutral payment-confirmation state. Production web-payment signing remains blocked by an authorization mismatch, and a public HTTPS `notify_url` is still required before production readiness.
 - Verified the new `/api/content-pack` endpoint, browser form submission, preview rendering, and the checkout handoff into the Alipay sandbox cashier.
 - Verified the public Pay Skill endpoint returns the expected pre-payment `400 INVALID_REQUEST` response for invalid input without creating an order or charging money.

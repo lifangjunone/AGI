@@ -3,13 +3,53 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "apps/desktop/main.mjs",
+  "author": "LifeYouMe",
   "description": "Automated novel-to-episode production control room.",
   "scripts": {
-    "start": "node server.mjs",
+    "start": "npm run web",
+    "web": "node apps/web/start.mjs",
+    "mobile": "node apps/mobile/start.mjs",
+    "desktop": "electron apps/desktop/main.mjs",
+    "desktop:config": "node apps/desktop/install-config.mjs",
+    "desktop:pack": "electron-builder --mac dir --arm64",
     "dev": "node --watch server.mjs",
     "test": "node --test"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "electron": "^44.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.lifeyoume.novelpictureworks",
+    "productName": "长卷制片厂",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "apps/desktop/**/*",
+      "assets/**/*",
+      "lib/**/*",
+      "public/**/*",
+      "server.mjs",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "icon": "assets/AppIcon.icns",
+      "identity": null,
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ]
+    }
   }
 }

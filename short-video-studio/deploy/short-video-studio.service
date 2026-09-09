@@ -1,0 +1,33 @@
+[Unit]
+Description=FRAME/60 product content studio
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=opportunity
+Group=opportunity
+WorkingDirectory=/data/app/short-video-studio
+Environment=NODE_ENV=production
+Environment=PORT=4321
+Environment=HOST=127.0.0.1
+Environment=FRAME60_PUBLIC_BASE_PATH=/video
+Environment=ALIPAY_ENV=production
+Environment=ALIPAY_APP_ID=2021006197631772
+Environment=ALIPAY_PRIVATE_KEY_FILE=/data/app/opportunity-factory/private/alipay-app-private-key.pem
+Environment=ALIPAY_PUBLIC_KEY_FILE=/data/app/opportunity-factory/private/alipay-public-key.pem
+Environment=ALIPAY_SELLER_ID=2088122111133366
+Environment=ALIPAY_GATEWAY=https://openapi.alipay.com/gateway.do
+Environment=ALIPAY_NOTIFY_URL=https://lifeyoume.icu/video/api/alipay/notify
+Environment=CONTENT_PACK_PRICE=9.90
+ExecStart=/opt/node20/bin/node /data/app/short-video-studio/server.mjs
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/app/short-video-studio/data
+
+[Install]
+WantedBy=multi-user.target

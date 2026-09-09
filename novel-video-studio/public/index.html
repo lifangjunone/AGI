@@ -4,7 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10110f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>长卷制片厂</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/novel-studio-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
@@ -22,6 +26,7 @@
         <span id="modeLabel">正在连接生产引擎</span>
       </div>
       <div class="topbar-actions">
+        <button class="icon-button hidden" id="installButton" title="安装手机 App" aria-label="安装手机 App"><i data-lucide="download"></i></button>
         <button class="icon-button" id="refreshButton" title="刷新生产状态" aria-label="刷新生产状态"><i data-lucide="refresh-cw"></i></button>
         <button class="icon-button" id="themeButton" title="切换明暗主题" aria-label="切换明暗主题"><i data-lucide="sun"></i></button>
       </div>
@@ -29,10 +34,10 @@
 
     <aside class="sidebar">
       <nav aria-label="主导航">
-        <button class="nav-item active"><i data-lucide="clapperboard"></i><span>生产总览</span></button>
-        <button class="nav-item"><i data-lucide="library-big"></i><span>小说源库</span></button>
-        <button class="nav-item"><i data-lucide="users"></i><span>角色资产</span></button>
-        <button class="nav-item"><i data-lucide="film"></i><span>分集队列</span></button>
+        <button class="nav-item active" data-view="overview"><i data-lucide="clapperboard"></i><span>生产总览</span></button>
+        <button class="nav-item" data-view="sources"><i data-lucide="library-big"></i><span>小说源库</span></button>
+        <button class="nav-item" data-view="assets"><i data-lucide="users"></i><span>角色资产</span></button>
+        <button class="nav-item" data-view="episodes"><i data-lucide="film"></i><span>分集队列</span></button>
       </nav>
       <div class="sidebar-foot">
         <span>今日目标</span>
@@ -51,7 +56,7 @@
           <label for="novelName">小说名称</label>
           <div class="search-box">
             <i data-lucide="search"></i>
-            <input id="novelName" name="novelName" value="西游记" maxlength="100" autocomplete="off" placeholder="输入小说名">
+            <input id="novelName" name="novelName" value="西游记" minlength="2" maxlength="100" required autocomplete="off" placeholder="输入小说名">
             <button type="submit"><i data-lucide="play"></i><span>开始生产</span></button>
           </div>
           <p id="formHint">自动检索公版或已授权来源，生成 15 分钟分集。</p>
@@ -66,7 +71,7 @@
         <article class="budget"><span>日预算上限</span><strong id="metricBudget">¥200</strong><small>硬门禁</small></article>
       </section>
 
-      <section class="workspace">
+      <section class="workspace page-view" data-page-view="overview">
         <div class="production-panel">
           <div class="panel-heading">
             <div>
@@ -127,9 +132,61 @@
           </div>
         </aside>
       </section>
+
+      <section class="library-view page-view hidden" data-page-view="sources">
+        <header class="section-heading">
+          <div><p class="eyebrow">SOURCE INTELLIGENCE</p><h2>小说源库</h2></div>
+          <span id="sourceResultCount">0 个来源</span>
+        </header>
+        <div class="source-table" id="sourceTable">
+          <div class="view-empty"><i data-lucide="library-big"></i><p>启动生产后，这里会列出所有检索来源及版权状态。</p></div>
+        </div>
+      </section>
+
+      <section class="asset-view page-view hidden" data-page-view="assets">
+        <header class="section-heading">
+          <div><p class="eyebrow">CONTINUITY LIBRARY</p><h2>角色与视觉资产</h2></div>
+          <div class="asset-controls">
+            <button class="command-button" id="refreshAssetsButton"><i data-lucide="refresh-cw"></i><span>刷新视觉</span></button>
+            <div class="segmented-control" id="assetFilters" role="group" aria-label="资产类型筛选">
+              <button class="active" data-filter="all">全部</button>
+              <button data-filter="character">角色</button>
+              <button data-filter="weapon">武器</button>
+              <button data-filter="location">场景</button>
+            </div>
+          </div>
+        </header>
+        <div class="asset-gallery" id="assetGallery">
+          <div class="view-empty"><i data-lucide="users"></i><p>暂无连续性资产。</p></div>
+        </div>
+      </section>
+
+      <section class="episodes-view page-view hidden" data-page-view="episodes">
+        <header class="section-heading">
+          <div><p class="eyebrow">EPISODE OPERATIONS</p><h2>分集队列</h2></div>
+          <div class="section-actions">
+            <button class="command-button hidden" id="retryButton"><i data-lucide="rotate-ccw"></i><span>重试任务</span></button>
+            <button class="command-button" id="exportButton" disabled><i data-lucide="download"></i><span>导出清单</span></button>
+          </div>
+        </header>
+        <div class="episode-table" id="episodeTable">
+          <div class="view-empty"><i data-lucide="film"></i><p>暂无分集任务。</p></div>
+        </div>
+      </section>
     </main>
   </div>
 
+  <nav class="mobile-tabs" aria-label="手机端导航">
+    <button class="active" data-view="overview"><i data-lucide="clapperboard"></i><span>生产</span></button>
+    <button data-view="sources"><i data-lucide="library-big"></i><span>来源</span></button>
+    <button data-view="episodes"><i data-lucide="film"></i><span>分集</span></button>
+    <button data-view="assets"><i data-lucide="users"></i><span>资产</span></button>
+  </nav>
+  <dialog class="asset-dialog" id="assetDialog">
+    <button class="dialog-close" id="assetDialogClose" aria-label="关闭资产详情"><i data-lucide="x"></i></button>
+    <img id="assetDialogImage" alt="">
+    <div><span class="micro-label" id="assetDialogType"></span><h2 id="assetDialogTitle"></h2><p id="assetDialogPrompt"></p></div>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
   <script type="module" src="/app.js"></script>

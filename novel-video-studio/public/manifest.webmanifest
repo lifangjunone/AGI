@@ -1,0 +1,19 @@
+{
+  "name": "长卷制片厂",
+  "short_name": "长卷",
+  "description": "小说到15分钟分集视频的自动生产控制台",
+  "start_url": "/mobile/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#10110f",
+  "theme_color": "#10110f",
+  "icons": [
+    {
+      "src": "/novel-studio-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
