@@ -5,6 +5,7 @@ export const DEFAULT_ARK_MODELS = Object.freeze({
   planning: "glm-5-2-260617",
   video: "doubao-seedance-2-5-260628"
 });
+export const OUTPUT_DURATION_OPTIONS = Object.freeze([5, 10, 15, 30, 60]);
 
 export async function loadEnv(root) {
   const files = [
@@ -35,11 +36,17 @@ function positiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function outputDuration(value) {
+  const parsed = Number(value);
+  return OUTPUT_DURATION_OPTIONS.includes(parsed) ? parsed : OUTPUT_DURATION_OPTIONS[0];
+}
+
 export function makeConfig(root) {
   const episodeMinutes = positiveNumber(process.env.EPISODE_DURATION_MINUTES, 15);
   const shotSeconds = positiveNumber(process.env.SHOT_DURATION_SECONDS, 30);
   const dailyHours = positiveNumber(process.env.DAILY_OUTPUT_HOURS, 72);
   const videoCostPerSecondCny = positiveNumber(process.env.VIDEO_COST_PER_SECOND_CNY, 1.512);
+  const defaultOutputDurationSeconds = outputDuration(process.env.DEFAULT_OUTPUT_DURATION_SECONDS);
   const dataDirectory = process.env.NOVEL_STUDIO_DATA_DIRECTORY || path.join(root, "data");
   const planningModel = process.env.ARK_PLANNING_MODEL
     || process.env.ARK_TEXT_MODEL
@@ -70,12 +77,15 @@ export function makeConfig(root) {
       shotSeconds,
       shotsPerEpisode: Math.ceil((episodeMinutes * 60) / shotSeconds),
       episodesPerDay: Math.ceil((dailyHours * 60) / episodeMinutes),
+      outputsPerDay: Math.ceil((dailyHours * 3600) / defaultOutputDurationSeconds),
       videoTasksPerDay: Math.ceil((dailyHours * 3600) / shotSeconds),
       maxProjectConcurrency: positiveNumber(process.env.MAX_PROJECT_CONCURRENCY, 2),
       maxVideoConcurrency: positiveNumber(process.env.MAX_VIDEO_CONCURRENCY, 4),
       dailyBudgetCny: positiveNumber(process.env.DAILY_BUDGET_CNY, 200),
       videoCostPerSecondCny,
       estimatedEpisodeVideoCostCny: Number((episodeMinutes * 60 * videoCostPerSecondCny).toFixed(2)),
+      defaultOutputDurationSeconds,
+      outputDurationOptions: OUTPUT_DURATION_OPTIONS,
       billableGenerationEnabled: process.env.ALLOW_BILLABLE_GENERATION === "true",
       budgetOverrunAllowed: process.env.ALLOW_BUDGET_OVERRUN === "true"
     },

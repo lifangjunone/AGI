@@ -5,7 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import { ArkClient } from "../lib/ark-client.mjs";
 import { DEFAULT_ARK_MODELS, makeConfig } from "../lib/config.mjs";
-import { buildDemoBible, makeShots, ProductionPipeline } from "../lib/pipeline.mjs";
+import { buildDemoBible, makeShots, makeShotsForDuration, ProductionPipeline } from "../lib/pipeline.mjs";
 import { searchNovel, titleScore } from "../lib/novel-search.mjs";
 import { loadRecommendations, sanitizeRecommendations } from "../lib/recommendations.mjs";
 import { BLOCKED_SOURCE_DOMAINS, loadSourceRegistry, sanitizeSources } from "../lib/source-registry.mjs";
@@ -95,6 +95,9 @@ test("production capacity derives 15-minute episodes and 30-second shots", () =>
   assert.equal(config.production.maxProjectConcurrency, 2);
   assert.equal(config.production.videoCostPerSecondCny, 1.512);
   assert.equal(config.production.estimatedEpisodeVideoCostCny, 1360.8);
+  assert.equal(config.production.defaultOutputDurationSeconds, 5);
+  assert.deepEqual(config.production.outputDurationOptions, [5, 10, 15, 30, 60]);
+  assert.equal(config.production.outputsPerDay, 51840);
   for (const [key, value] of Object.entries(previous)) {
     const envKey = { hours: "DAILY_OUTPUT_HOURS", minutes: "EPISODE_DURATION_MINUTES", seconds: "SHOT_DURATION_SECONDS" }[key];
     if (value === undefined) delete process.env[envKey];
@@ -156,6 +159,17 @@ test("episode shot plan has stable IDs and exact duration", () => {
   assert.equal(shots.reduce((total, shot) => total + shot.duration, 0), 900);
   assert.equal(shots[0].id, "E001-S001");
   assert.equal(shots[29].id, "E001-S030");
+});
+
+test("selectable output durations split only the 60-second option", () => {
+  for (const duration of [5, 10, 15, 30]) {
+    const shots = makeShotsForDuration("西游记", 1, duration);
+    assert.equal(shots.length, 1);
+    assert.equal(shots[0].duration, duration);
+  }
+  const minute = makeShotsForDuration("西游记", 1, 60);
+  assert.deepEqual(minute.map((shot) => shot.duration), [30, 30]);
+  assert.deepEqual(minute.map((shot) => shot.id), ["E001-S001", "E001-S002"]);
 });
 
 test("demo bible includes continuity-controlled production assets", () => {
@@ -274,6 +288,65 @@ test("live production stops before model calls when cost authorization is missin
   }
 });
 
+test("a demo preview can be upgraded to the current live runtime", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "novel-live-upgrade-"));
+  try {
+    const store = new ProjectStore(directory);
+    const pipeline = new ProductionPipeline({
+      mode: "live",
+      dataDirectory: directory,
+      ark: { planningModel: "glm-test" },
+      search: {},
+      production: {
+        episodeMinutes: 15,
+        defaultOutputDurationSeconds: 5,
+        maxProjectConcurrency: 1,
+        maxVideoConcurrency: 4,
+        dailyBudgetCny: 200,
+        videoCostPerSecondCny: 1.512,
+        billableGenerationEnabled: false,
+        budgetOverrunAllowed: false
+      }
+    }, store, {
+      loadText: async () => "公版正文"
+    });
+    await store.save({
+      id: "upgrade-preview",
+      novelName: "西游记",
+      status: "demo-preview",
+      stage: "render",
+      progress: 72,
+      mode: "demo",
+      targetDurationSeconds: 5,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      activity: [],
+      sourceConfirmed: true,
+      source: {
+        id: "public-domain",
+        title: "西游记",
+        authors: "吴承恩",
+        source: "中文维基文库",
+        rights: "public-domain"
+      },
+      episodes: [{
+        number: 1,
+        durationSeconds: 5,
+        shots: makeShotsForDuration("西游记", 1, 5)
+      }]
+    });
+
+    await pipeline.retry("upgrade-preview");
+    await waitFor(async () => (await store.get("upgrade-preview")).status === "budget-gate");
+    const project = await store.get("upgrade-preview");
+    assert.equal(project.mode, "live");
+    assert.equal(project.targetDurationSeconds, 5);
+    assert.equal(project.stage, "adapt");
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("pipeline pauses for source confirmation and labels demo output as a non-video preview", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "novel-source-gate-"));
   try {
@@ -314,7 +387,7 @@ test("pipeline pauses for source confirmation and labels demo output as a non-vi
       loadText: async () => "目标正文"
     });
 
-    const created = await pipeline.create("同名小说");
+    const created = await pipeline.create("同名小说", 60);
     await waitFor(async () => (await store.get(created.id)).status === "source-review");
     let project = await store.get(created.id);
     assert.equal(project.source, null);
@@ -336,7 +409,9 @@ test("pipeline pauses for source confirmation and labels demo output as a non-vi
     assert.equal(project.nodes.assemble.status, "pending");
     assert.equal(project.nodes.ingest.output.contentCharacters, 4);
     assert.equal(project.nodes.render.output.completedShots, 0);
-    assert.equal(project.nodes.render.output.simulatedShots, 30);
+    assert.equal(project.targetDurationSeconds, 60);
+    assert.equal(project.nodes.render.output.simulatedShots, 2);
+    assert.deepEqual(project.episodes[0].shots.map((shot) => shot.duration), [30, 30]);
     assert.equal(project.episodes[0].videoUrl, undefined);
   } finally {
     await rm(directory, { recursive: true, force: true });

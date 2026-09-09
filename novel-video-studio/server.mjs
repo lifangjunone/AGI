@@ -39,6 +39,10 @@ function sendJson(response, status, payload) {
 
 function projectSummary(project) {
   const shots = project.episodes?.flatMap((episode) => episode.shots || []) || [];
+  const targetDurationSeconds = Number(project.targetDurationSeconds)
+    || Number(project.episodes?.[0]?.durationSeconds)
+    || Number(project.episodes?.[0]?.durationMinutes) * 60
+    || config.production.defaultOutputDurationSeconds;
   const demoPreview = project.mode === "demo"
     && ["completed", "demo-preview"].includes(project.status)
     && project.episodes?.some((episode) => (episode.shots || []).length > 0)
@@ -52,6 +56,10 @@ function projectSummary(project) {
     stage: demoPreview ? "render" : project.stage,
     progress: demoPreview ? 72 : project.progress,
     mode: project.mode,
+    targetDurationSeconds,
+    estimatedVideoCostCny: Number((
+      targetDurationSeconds * config.production.videoCostPerSecondCny
+    ).toFixed(2)),
     queuePosition: project.queuePosition,
     estimatedWaitMinutes: project.estimatedWaitMinutes,
     createdAt: project.createdAt,
@@ -252,7 +260,9 @@ export const server = createServer(async (request, response) => {
 
     if (request.method === "POST" && url.pathname === "/api/projects") {
       const body = await readJson(request);
-      sendJson(response, 202, { project: await pipeline.create(body.novelName) });
+      sendJson(response, 202, {
+        project: await pipeline.create(body.novelName, body.targetDurationSeconds)
+      });
       return;
     }
 
@@ -269,11 +279,16 @@ export const server = createServer(async (request, response) => {
         sendJson(response, 404, { error: "项目不存在" });
         return;
       }
-      if (!["failed", "rights-review", "budget-gate"].includes(project.status)) {
+      const retryable = ["failed", "rights-review", "budget-gate"].includes(project.status)
+        || (["demo-preview", "completed"].includes(project.status) && project.mode === "demo");
+      if (!retryable) {
         sendJson(response, 409, { error: "只有失败或暂停的任务可以重试" });
         return;
       }
-      sendJson(response, 202, { accepted: true, project: await pipeline.enqueue(projectMatch[1], { message: "任务已重新进入生产队列" }) });
+      sendJson(response, 202, {
+        accepted: true,
+        project: await pipeline.retry(projectMatch[1])
+      });
       return;
     }
 

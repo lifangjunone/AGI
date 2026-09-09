@@ -323,6 +323,10 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
 .stage small { color: inherit; font-size: 7px; opacity: 0.72; }
 
 .production-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
   margin: 0 0 14px;
   padding: 10px 12px;
   border: 1px solid var(--amber);
@@ -331,6 +335,7 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
   font-size: 10px;
   line-height: 1.6;
 }
+.production-notice .command-button { flex: 0 0 auto; }
 
 .production-body { min-height: 310px; border-top: 1px solid var(--line-soft); }
 .empty-copy { display: grid; max-width: 420px; margin: 65px auto 0; justify-items: center; text-align: center; }
@@ -543,6 +548,16 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
 .create-project-dialog h2 { margin: 5px 0 0; font-family: "Noto Serif SC", serif; font-size: 22px; }
 .create-project-dialog .launch-form { padding: 20px; }
 .create-project-dialog .search-box { grid-template-columns: 22px 1fr; padding: 9px 12px; }
+.duration-selector { margin: 16px 0 0; padding: 0; border: 0; }
+.duration-selector legend { margin-bottom: 7px; color: var(--muted); font-size: 11px; }
+.duration-selector > div { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); }
+.duration-selector label { position: relative; display: block; margin: 0; border-right: 1px solid var(--line); }
+.duration-selector label:last-child { border-right: 0; }
+.duration-selector input { position: absolute; opacity: 0; pointer-events: none; }
+.duration-selector span { display: grid; height: 38px; place-items: center; color: var(--muted); font-size: 10px; cursor: pointer; }
+.duration-selector input:checked + span { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.duration-selector input:focus-visible + span { outline: 2px solid var(--cyan); outline-offset: -2px; }
+.duration-selector > small { display: block; margin-top: 6px; color: var(--muted); font-size: 8px; }
 .create-project-spec { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 16px; border: 1px solid var(--line); }
 .create-project-spec > span { min-width: 0; padding: 12px; border-right: 1px solid var(--line); }
 .create-project-spec > span:last-child { border-right: 0; }
@@ -687,6 +702,8 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
   .metrics-strip article:nth-last-child(-n+2) { border-bottom: 0; }
   .metrics-strip article:last-child { grid-column: auto; }
   .production-panel { padding: 15px 12px; }
+  .production-notice { align-items: stretch; flex-direction: column; }
+  .production-notice .command-button { justify-content: center; width: 100%; }
   .stage-track { grid-template-columns: repeat(3, 1fr); row-gap: 13px; }
   #projectView { grid-template-columns: 1fr; }
   .source-block { grid-template-columns: 94px 1fr; }

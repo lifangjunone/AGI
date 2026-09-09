@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ArkClient } from "./ark-client.mjs";
+import { OUTPUT_DURATION_OPTIONS } from "./config.mjs";
 import { loadAuthorizedText, searchNovel } from "./novel-search.mjs";
 import { TaskScheduler } from "./task-scheduler.mjs";
 
@@ -72,16 +73,50 @@ function makeShots(title, episodeNumber, count, duration) {
   });
 }
 
-function buildDemoBible(title, source, config) {
+function makeShotsForDuration(title, episodeNumber, durationSeconds) {
+  const durations = [];
+  let remaining = durationSeconds;
+  while (remaining > 0) {
+    const duration = Math.min(30, remaining);
+    durations.push(duration);
+    remaining -= duration;
+  }
+  return durations.map((duration, index) => {
+    const shot = makeShots(title, episodeNumber, 1, duration)[0];
+    return {
+      ...shot,
+      id: `E${String(episodeNumber).padStart(3, "0")}-S${String(index + 1).padStart(3, "0")}`,
+      order: index + 1,
+      prompt: `${title} cinematic adaptation, episode ${episodeNumber}, continuous segment ${index + 1} of ${durations.length}, consistent characters, realistic lighting, 16:9`
+    };
+  });
+}
+
+function projectDurationSeconds(project, config) {
+  const configured = Number(project?.targetDurationSeconds);
+  if (OUTPUT_DURATION_OPTIONS.includes(configured)) return configured;
+  const legacy = Number(project?.episodes?.[0]?.durationSeconds)
+    || Number(project?.episodes?.[0]?.durationMinutes) * 60;
+  return Number.isFinite(legacy) && legacy > 0
+    ? legacy
+    : Number(config.production.defaultOutputDurationSeconds)
+      || Number(config.production.episodeMinutes) * 60;
+}
+
+function buildDemoBible(title, source, config, targetDurationSeconds) {
   const protagonist = title === "西游记" ? "孙悟空" : "主角";
   const companion = title === "西游记" ? "唐三藏" : "同行者";
+  const durationSeconds = targetDurationSeconds
+    || config.production.defaultOutputDurationSeconds
+    || config.production.episodeMinutes * 60;
   const episode = {
     number: 1,
     title: "风暴前夜",
     logline: `${protagonist}在旅程转折点发现异常征兆，被迫在使命与同伴安全之间做出选择。`,
-    durationMinutes: config.production.episodeMinutes,
+    durationMinutes: durationSeconds / 60,
+    durationSeconds,
     sourceRange: "开篇核心事件",
-    shots: makeShots(title, 1, config.production.shotsPerEpisode, config.production.shotSeconds)
+    shots: makeShotsForDuration(title, 1, durationSeconds)
   };
   return {
     tone: "东方史诗、写实奇幻、克制而有张力",
@@ -148,9 +183,13 @@ export class ProductionPipeline {
     });
   }
 
-  async create(novelName) {
+  async create(novelName, targetDurationSeconds = this.config.production.defaultOutputDurationSeconds || 5) {
     const title = String(novelName || "").trim();
     if (title.length < 2 || title.length > 100) throw new Error("小说名需为 2-100 个字符");
+    const duration = Number(targetDurationSeconds);
+    if (!OUTPUT_DURATION_OPTIONS.includes(duration)) {
+      throw new Error("生成时长仅支持 5、10、15、30 或 60 秒");
+    }
     const project = {
       id: randomUUID(),
       novelName: title,
@@ -158,6 +197,7 @@ export class ProductionPipeline {
       stage: "discover",
       progress: 2,
       mode: this.config.mode,
+      targetDurationSeconds: duration,
       createdAt: now(),
       updatedAt: now(),
       queuedAt: now(),
@@ -244,6 +284,37 @@ export class ProductionPipeline {
       error: null
     }, "已按最新来源策略重新发起检索");
     return this.scheduler.enqueue(id, { message: "来源重新检索任务已进入队列" });
+  }
+
+  async retry(id) {
+    const project = await this.store.get(id);
+    if (!project) throw new Error("项目不存在");
+    const retryable = ["failed", "rights-review", "budget-gate"].includes(project.status)
+      || (["demo-preview", "completed"].includes(project.status) && project.mode === "demo");
+    if (!retryable) throw new Error("当前任务不能重新生成");
+
+    project.mode = this.config.mode;
+    project.status = "queued";
+    project.stage = project.sourceConfirmed ? "ingest" : "discover";
+    project.progress = project.sourceConfirmed ? 18 : 0;
+    project.error = null;
+    project.completedAt = null;
+    project.episodes = [];
+    for (const stageId of ["ingest", "adapt", "design", "render", "assemble"]) {
+      if (project.nodes?.[stageId]) {
+        project.nodes[stageId] = {
+          order: STAGES.indexOf(stageId) + 1,
+          label: STAGE_LABELS[stageId],
+          status: "pending"
+        };
+      }
+    }
+    await this.store.save(project);
+    return this.scheduler.enqueue(id, {
+      message: this.config.mode === "live"
+        ? "演示预览已升级为真实生成任务"
+        : "任务已重新进入生产队列"
+    });
   }
 
   async importAuthorizedContent(id, { sourceId, content, fileName, rightsConfirmed }) {
@@ -391,6 +462,10 @@ export class ProductionPipeline {
       }
 
       const sourceText = await this.readSourceText(source).catch(() => "");
+      const targetDurationSeconds = projectDurationSeconds(project, this.config);
+      const estimatedCost = Number((
+        targetDurationSeconds * this.config.production.videoCostPerSecondCny
+      ).toFixed(2));
       await this.updateNode(project, "ingest", "completed", {
         output: {
           sourceId: source.id,
@@ -406,7 +481,6 @@ export class ProductionPipeline {
       });
       const billableEnabled = this.config.production.billableGenerationEnabled === true;
       const budgetOverrunAllowed = this.config.production.budgetOverrunAllowed === true;
-      const estimatedCost = this.config.production.estimatedEpisodeVideoCostCny || 0;
       const overBudget = estimatedCost > this.config.production.dailyBudgetCny;
       if (
         this.config.mode === "live"
@@ -418,7 +492,8 @@ export class ProductionPipeline {
         await this.updateNode(project, "adapt", "paused", {
           input: {
             model: this.config.ark.planningModel || this.config.ark.textModel,
-            estimatedEpisodeVideoCostCny: estimatedCost,
+            targetDurationSeconds,
+            estimatedVideoCostCny: estimatedCost,
             dailyBudgetCny: this.config.production.dailyBudgetCny
           },
           error: reason,
@@ -437,7 +512,7 @@ export class ProductionPipeline {
         input: {
           sourceCharacters: sourceText.length,
           mode: this.config.mode,
-          targetMinutes: this.config.production.episodeMinutes,
+          targetDurationSeconds,
           model: this.config.mode === "live"
             ? this.config.ark.planningModel || this.config.ark.textModel
             : "demo"
@@ -446,19 +521,17 @@ export class ProductionPipeline {
       let bible;
       if (this.config.mode === "live") {
         bible = await this.ark.generateJson(
-          "你是影视制片统筹。只输出 JSON，字段为 tone、synopsis、characters、weapons、locations、episodes。角色/道具/地点必须带 continuityId。第一集严格15分钟并提供可拍摄剧情。",
-          `作品：${project.novelName}\n来源：${source.title} / ${source.authors}\n内容：${(sourceText || source.description || "").slice(0, 120000)}`
+          "你是影视制片统筹。只输出 JSON，字段为 tone、synopsis、characters、weapons、locations、episodes。角色/道具/地点必须带 continuityId，并按用户指定的成片秒数设计可拍摄剧情。",
+          `作品：${project.novelName}\n来源：${source.title} / ${source.authors}\n目标成片时长：${targetDurationSeconds} 秒\n内容：${(sourceText || source.description || "").slice(0, 120000)}`
         );
       } else {
-        bible = buildDemoBible(project.novelName, source, this.config);
+        bible = buildDemoBible(project.novelName, source, this.config, targetDurationSeconds);
       }
-      const episode = bible.episodes?.[0] || buildDemoBible(project.novelName, source, this.config).episodes[0];
-      episode.shots = makeShots(
-        project.novelName,
-        episode.number || 1,
-        this.config.production.shotsPerEpisode,
-        this.config.production.shotSeconds
-      );
+      const episode = bible.episodes?.[0]
+        || buildDemoBible(project.novelName, source, this.config, targetDurationSeconds).episodes[0];
+      episode.durationSeconds = targetDurationSeconds;
+      episode.durationMinutes = targetDurationSeconds / 60;
+      episode.shots = makeShotsForDuration(project.novelName, episode.number || 1, targetDurationSeconds);
       await this.updateNode(project, "adapt", "completed", {
         output: {
           tone: bible.tone,
@@ -469,7 +542,7 @@ export class ProductionPipeline {
           episodes: (bible.episodes || []).map(({ shots, ...item }) => ({ ...item, shotCount: shots?.length || 0 })),
           shotCount: episode.shots.length
         },
-        projectPatch: { bible, episodes: [episode], stage: "design", progress: 55 },
+        projectPatch: { bible, episodes: [episode], targetDurationSeconds, stage: "design", progress: 55 },
         message: "剧本、角色与连续性档案已生成"
       });
 
@@ -481,7 +554,7 @@ export class ProductionPipeline {
         }
       });
       let assets = buildAssets(project.novelName, bible);
-      if (this.config.mode === "live") {
+      if (this.config.mode === "live" && this.config.ark.imageModel) {
         const assetsDirectory = path.join(this.config.dataDirectory, "assets", project.id);
         await mkdir(assetsDirectory, { recursive: true });
         assets = await Promise.all(assets.map(async (asset) => {
@@ -507,7 +580,7 @@ export class ProductionPipeline {
       await this.updateNode(project, "render", "running", {
         input: {
           shotCount: episode.shots.length,
-          shotSeconds: this.config.production.shotSeconds,
+          shotDurations: episode.shots.map((shot) => shot.duration),
           maxConcurrency: this.config.production.maxVideoConcurrency,
           model: this.config.mode === "live" ? this.config.ark.videoModel : "demo"
         }
@@ -587,7 +660,7 @@ export class ProductionPipeline {
     const tasks = await Promise.all(nextShots.map(async (shot) => {
       const task = await this.ark.createVideo({
         prompt: shot.prompt,
-        duration: this.config.production.shotSeconds,
+        duration: shot.duration,
         ratio: "16:9"
       });
       return [shot, task];
@@ -673,23 +746,25 @@ export class ProductionPipeline {
         }))
       };
     }
+    const targetDurationSeconds = Number(episode.durationSeconds)
+      || episode.shots.reduce((sum, shot) => sum + Number(shot.duration || 0), 0);
     await this.updateNode(project, "assemble", "running", {
       input: {
         clipCount: episode.shots.length,
-        targetDurationSeconds: this.config.production.episodeMinutes * 60,
+        targetDurationSeconds,
         encoder: "libx264"
       },
       projectPatch: { stage: "assemble", progress: 98 },
-      message: "正在使用 FFmpeg 装配 15 分钟成片"
+      message: `正在使用 FFmpeg 装配 ${targetDurationSeconds} 秒成片`
     });
     await run(this.config.ffmpeg, [
       "-y", "-f", "concat", "-safe", "0", "-i", listFile,
-      "-t", String(this.config.production.episodeMinutes * 60),
+      "-t", String(targetDurationSeconds),
       "-c:v", "libx264", "-preset", "fast", "-crf", "20",
       "-c:a", "aac", "-movflags", "+faststart", outputFile
     ]);
     episode.status = "completed";
-    episode.renderedSeconds = this.config.production.episodeMinutes * 60;
+    episode.renderedSeconds = targetDurationSeconds;
     episode.videoUrl = `/media/output/${project.id}/episode-001.mp4`;
     await this.updateNode(project, "assemble", "completed", {
       output: {
@@ -699,7 +774,7 @@ export class ProductionPipeline {
         outputFile
       },
       projectPatch: { status: "completed", stage: "assemble", progress: 100, completedAt: now(), episodes: [episode] },
-      message: "15 分钟成片已完成并归档"
+      message: `${targetDurationSeconds} 秒成片已完成并归档`
     });
   }
 
@@ -726,4 +801,4 @@ export class ProductionPipeline {
   }
 }
 
-export { STAGES, buildDemoBible, makeShots };
+export { STAGES, buildDemoBible, makeShots, makeShotsForDuration };

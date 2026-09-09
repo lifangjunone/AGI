@@ -96,6 +96,34 @@ function projectStatusLabel(project) {
     : STATUS_LABELS[project?.status] || project?.status || "未知";
 }
 
+function projectDurationSeconds(project) {
+  return Number(project?.targetDurationSeconds)
+    || Number(project?.episodes?.[0]?.durationSeconds)
+    || Number(project?.episodes?.[0]?.durationMinutes) * 60
+    || Number(runtimeStatus?.production?.defaultOutputDurationSeconds)
+    || 5;
+}
+
+function formatDuration(seconds) {
+  const total = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(total / 60);
+  const remainder = total % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+}
+
+function selectedOutputDuration() {
+  return Number(document.querySelector('input[name="targetDurationSeconds"]:checked')?.value)
+    || Number(runtimeStatus?.production?.defaultOutputDurationSeconds)
+    || 5;
+}
+
+function updateCreateDurationSummary() {
+  const duration = selectedOutputDuration();
+  const rate = Number(runtimeStatus?.production?.videoCostPerSecondCny || 1.512);
+  $("#createDurationSummary").textContent = `${duration} 秒成片`;
+  $("#createCostSummary").textContent = `参考费用约 ¥${(duration * rate).toFixed(2)}`;
+}
+
 async function api(path, options) {
   const response = await fetch(path, {
     ...options,
@@ -116,12 +144,13 @@ function renderStatus(status) {
     ? `${PLATFORM_LABELS[platform]} · 方舟生产模式 · ${!status.arkConfigured ? "API Key 未配置" : status.billableGenerationEnabled ? "计费已开启" : "预算门禁开启"}${queueSuffix}`
     : `${PLATFORM_LABELS[platform]} · 演示预览 · 未调用生成模型${queueSuffix}`;
   $("#dailyTarget").textContent = `${status.production.dailyHours}h`;
-  $("#dailyEpisodes").textContent = `${status.production.episodesPerDay} 集 / 日`;
-  $("#metricMinutes").textContent = status.production.episodeMinutes;
+  $("#dailyEpisodes").textContent = `${status.production.outputsPerDay.toLocaleString("zh-CN")} 条 / 日`;
+  $("#metricMinutes").textContent = "5–60";
   $("#metricBudget").textContent = `¥${status.production.dailyBudgetCny}`;
   $("#metricActiveProjects").textContent = status.queue?.activeCount || 0;
   $("#metricProjectSlots").textContent = `/ ${status.queue?.maxConcurrency || status.production.maxProjectConcurrency} 槽`;
   $("#metricQueuedProjects").textContent = status.queue?.queuedCount || 0;
+  updateCreateDurationSummary();
 }
 
 function renderStages(project) {
@@ -358,13 +387,16 @@ function renderEpisodeQueue(project) {
     return `<article class="episode-row">
       <span class="episode-number">E${String(episode.number || 1).padStart(2, "0")}</span>
       <div><strong>${escapeHtml(episode.title || "未命名分集")}</strong><small>${escapeHtml(episode.logline || "等待剧本")}</small></div>
-      <div><strong>${episode.durationMinutes || 15}:00</strong><small>目标时长</small></div>
+      <div><strong>${formatDuration(episode.durationSeconds || Number(episode.durationMinutes || 15) * 60)}</strong><small>目标时长</small></div>
       <div><strong>${done}/${shots.length}</strong><small>${demoPreview ? "仅规划，未生成" : escapeHtml(episode.status || project.status)}</small></div>
       <div><div class="mini-progress"><span style="width:${percent}%"></span></div><small>${percent}% 视频已生成</small></div>
     </article>`;
   }).join("") : `<div class="view-empty"><i data-lucide="film"></i><p>暂无分集任务。</p></div>`;
   $("#exportButton").disabled = !project;
-  $("#retryButton").classList.toggle("hidden", !["failed", "rights-review", "budget-gate"].includes(project?.status));
+  const canRetry = ["failed", "rights-review", "budget-gate"].includes(project?.status)
+    || isDemoPreview(project);
+  $("#retryButton").classList.toggle("hidden", !canRetry);
+  $("#retryButton span").textContent = isDemoPreview(project) ? "开始真实生成" : "重试任务";
 }
 
 function taskMatches(project, filter) {
@@ -431,7 +463,7 @@ function renderProjectCatalog() {
         <span class="project-stage-rail" aria-label="六节点进度">${STAGES.map((_, index) =>
           `<i class="${index < stageIndex || (project.status === "completed" && !demoPreview) ? "done" : index === stageIndex ? "current" : ""}"></i>`
         ).join("")}</span>
-        <span class="project-card-meta"><small>${escapeHtml(statusDetail)}</small><small>${project.episodeCount || 0} 集 · ${demoPreview ? 0 : project.completedShots || 0}/${project.shotCount || 0} 视频</small></span>
+        <span class="project-card-meta"><small>${escapeHtml(statusDetail)}</small><small>${formatDuration(projectDurationSeconds(project))} · ${demoPreview ? 0 : project.completedShots || 0}/${project.shotCount || 0} 片段</small></span>
         <span class="project-card-footer"><time>${formatTaskTime(project.updatedAt || project.createdAt)}</time><span>进入项目 <i data-lucide="arrow-right"></i></span></span>
       </span>
     </button>`;
@@ -703,12 +735,23 @@ function renderProject(project) {
   badge.textContent = projectStatusLabel(project);
   badge.className = `state-badge ${displayedStatus}`;
   const notice = $("#productionNotice");
-  const estimatedCost = Number(runtimeStatus?.production?.estimatedEpisodeVideoCostCny || 0);
+  const targetDurationSeconds = projectDurationSeconds(project);
+  const estimatedCost = Number((
+    targetDurationSeconds * Number(runtimeStatus?.production?.videoCostPerSecondCny || 0)
+  ).toFixed(2));
   if (isDemoPreview(project)) {
-    notice.textContent = `当前项目只完成了剧本、资产和 ${project.episodes?.[0]?.shots?.length || 0} 个镜头规划，没有调用 Seedance，也没有生成 MP4。按当前 720P 参考单价，15 分钟整集视频预估约 ¥${estimatedCost.toFixed(2)}。`;
+    const liveReady = runtimeStatus?.mode === "live"
+      && runtimeStatus?.arkConfigured
+      && runtimeStatus?.billableGenerationEnabled;
+    notice.innerHTML = `
+      <span>当前项目只完成了剧本、资产和 ${project.episodes?.[0]?.shots?.length || 0} 个片段规划，没有调用 Seedance，也没有生成 MP4。${formatDuration(targetDurationSeconds)} 成片按当前 720P 参考单价预估约 ¥${estimatedCost.toFixed(2)}。</span>
+      <button class="command-button" data-start-live ${liveReady ? "" : "disabled"}>
+        <i data-lucide="play"></i>
+        <span>${liveReady ? "开始真实生成" : "真实模式未就绪"}</span>
+      </button>`;
     notice.classList.remove("hidden");
   } else if (project.status === "budget-gate") {
-    notice.textContent = `真实视频已被预算门禁暂停。15 分钟整集预估约 ¥${estimatedCost.toFixed(2)}，当前日预算上限为 ¥${Number(runtimeStatus?.production?.dailyBudgetCny || 0).toFixed(2)}。`;
+    notice.textContent = `真实视频已被预算门禁暂停。${formatDuration(targetDurationSeconds)} 成片预估约 ¥${estimatedCost.toFixed(2)}，当前日预算上限为 ¥${Number(runtimeStatus?.production?.dailyBudgetCny || 0).toFixed(2)}。`;
     notice.classList.remove("hidden");
   } else {
     notice.classList.add("hidden");
@@ -733,6 +776,7 @@ function renderProject(project) {
     : rights === "public-domain-candidate" ? "公版候选，已进入核验" : "等待授权或来源核验";
   const episode = project.episodes?.[0];
   $("#episodeTitle").textContent = episode?.title || "脚本生成中";
+  $("#episodeDuration").textContent = formatDuration(targetDurationSeconds);
   renderShots(episode, project);
   renderAssets(project.assets);
   renderActivity(project.activity);
@@ -794,7 +838,10 @@ $("#launchForm").addEventListener("submit", async (event) => {
   try {
     const { project } = await api("/api/projects", {
       method: "POST",
-      body: JSON.stringify({ novelName: $("#novelName").value })
+      body: JSON.stringify({
+        novelName: $("#novelName").value,
+        targetDurationSeconds: selectedOutputDuration()
+      })
     });
     $("#createProjectDialog").close();
     $("#launchForm").reset();
@@ -850,6 +897,7 @@ document.querySelectorAll(".mobile-tabs button").forEach((button) => {
 
 $("#newProjectButton").addEventListener("click", () => {
   $("#launchForm").reset();
+  updateCreateDurationSummary();
   $("#formHint").textContent = "创建后先检索候选来源，确认作品、作者和版本后继续。";
   $("#createProjectDialog").showModal();
   $("#novelName").focus();
@@ -858,6 +906,9 @@ $("#createProjectDialogClose").addEventListener("click", () => $("#createProject
 $("#cancelCreateProjectButton").addEventListener("click", () => $("#createProjectDialog").close());
 $("#createProjectDialog").addEventListener("click", (event) => {
   if (event.target === $("#createProjectDialog")) $("#createProjectDialog").close();
+});
+document.querySelectorAll('input[name="targetDurationSeconds"]').forEach((input) => {
+  input.addEventListener("change", updateCreateDurationSummary);
 });
 $("#backToProjectsButton").addEventListener("click", closeProject);
 $("#manageSourcesButton").addEventListener("click", async () => {
@@ -1060,26 +1111,16 @@ $("#recommendationSearch").addEventListener("input", (event) => {
   recommendationQuery = event.target.value.trim().toLocaleLowerCase();
   renderRecommendations();
 });
-$("#recommendationGrid").addEventListener("click", async (event) => {
+$("#recommendationGrid").addEventListener("click", (event) => {
   const button = event.target.closest("[data-start-recommendation]");
   if (!button) return;
   const recommendation = recommendations.find((item) => item.id === button.dataset.startRecommendation);
   if (!recommendation) return;
-  button.disabled = true;
-  try {
-    const { project } = await api("/api/projects", {
-      method: "POST",
-      body: JSON.stringify({ novelName: recommendation.title })
-    });
-    renderProject(project);
-    showView("overview");
-    await refreshAll();
-    showToast(`《${recommendation.title}》项目已创建`);
-  } catch (error) {
-    showToast(error.message);
-  } finally {
-    button.disabled = false;
-  }
+  $("#launchForm").reset();
+  $("#novelName").value = recommendation.title;
+  updateCreateDurationSummary();
+  $("#formHint").textContent = `将《${recommendation.title}》创建为所选时长的制片项目。`;
+  $("#createProjectDialog").showModal();
 });
 $("#projectGrid").addEventListener("click", async (event) => {
   const card = event.target.closest("[data-project-id]");
@@ -1121,16 +1162,21 @@ $("#nodeDialog").addEventListener("click", (event) => {
   if (event.target === $("#nodeDialog")) $("#nodeDialog").close();
 });
 
-$("#retryButton").addEventListener("click", async () => {
+async function retryActiveProject() {
   if (!activeProjectId) return;
   try {
     await api(`/api/projects/${activeProjectId}/retry`, { method: "POST", body: "{}" });
     showView("overview");
-    showToast("任务已重新进入生产队列");
+    showToast(isDemoPreview(activeProject) ? "真实生成任务已启动" : "任务已重新进入生产队列");
     await refreshAll();
   } catch (error) {
     showToast(error.message);
   }
+}
+
+$("#retryButton").addEventListener("click", retryActiveProject);
+$("#productionNotice").addEventListener("click", (event) => {
+  if (event.target.closest("[data-start-live]")) retryActiveProject();
 });
 
 $("#exportButton").addEventListener("click", async () => {

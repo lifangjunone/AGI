@@ -36,7 +36,7 @@
 - Verified restart recovery for interrupted, queued, and remotely rendering projects.
 - Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
 - Verified desktop and 390×844 mobile layouts with six working mobile destinations.
-- Automated suite: 31 passing tests.
+- Automated suite: 33 passing tests.
 
 ![Task center desktop](screenshots/task-center-desktop.png)
 
@@ -92,6 +92,17 @@
 
 ![Audited free-source registry](screenshots/free-source-registry-desktop.png)
 
+## Selectable Duration Acceptance
+
+- Verified project creation offers `5s`, `10s`, `15s`, `30s`, and `60s`, with 5 seconds selected by default.
+- Verified the projected 720P cost updates with the selected duration before submission.
+- Verified 5/10/15/30-second projects create one Seedance task with the exact selected duration.
+- Verified 60-second projects create two ordered 30-second tasks and use the existing FFmpeg assembly path.
+- Verified unsupported durations are rejected by the server instead of being rounded or silently accepted.
+- Automated suite: 33 passing tests.
+
+![Selectable duration dialog on 390x844 mobile viewport](screenshots/selectable-duration-mobile.png)
+
 ## Public-Domain Recommendation Acceptance
 
 - Verified 16 curated works: eight Chinese classics and eight English classics.
@@ -99,7 +110,7 @@
 - Verified language filters return eight Chinese and eight English works; keyword search matches title, author, genre, and tags.
 - Verified every card exposes rights evidence, the original source, and one-click project creation; the created title re-enters the existing source-confirmation and six-node audit workflow.
 - Verified desktop rendering and an emulated 390×844 mobile viewport. The mobile layout has no horizontal overflow, and the recommendation count, all three card actions, and all seven navigation destinations remain within the viewport.
-- Automated suite: 30 passing tests.
+- Automated suite: 33 passing tests.
 
 ![Public-domain recommendations desktop](screenshots/public-domain-recommendations-desktop.png)
 
@@ -271,6 +282,6 @@ axe-core 指出资产筛选和生产阶段容器在普通 `div` 上使用 `aria-
 
 **Resolution**
 
-演示模式现在停在“演示预览”，显示“30 个镜头已规划 · 0 个视频已生成”，渲染节点暂停且装配节点不再完成。真实模式会在任何 Ark 调用前检查 API Key、计费授权和单集预算；15 分钟 720P 当前参考估算约为 `¥1,360.80`。
+演示模式现在停在“演示预览”，显示“片段已规划 · 0 个视频已生成”，渲染节点暂停且装配节点不再完成。真实模式会在任何 Ark 调用前检查 API Key、计费授权和所选时长的预算估算。
 
 ---

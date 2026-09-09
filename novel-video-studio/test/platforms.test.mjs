@@ -109,7 +109,7 @@ test("mobile PWA assets are valid and served with correct types", async () => {
 
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
-  assert.match(await workerResponse.text(), /novel-picture-works-v12/);
+  assert.match(await workerResponse.text(), /novel-picture-works-v14/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {
@@ -192,6 +192,16 @@ test("invalid novel names are rejected before task creation", async () => {
   });
   assert.equal(response.status, 400);
   assert.match((await response.json()).error, /2-100/);
+});
+
+test("project creation accepts only supported output durations", async () => {
+  const response = await fetch(`${origin}/api/projects`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ novelName: "西游记", targetDurationSeconds: 20 })
+  });
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /5、10、15、30 或 60 秒/);
 });
 
 test("generated media supports byte ranges", async () => {

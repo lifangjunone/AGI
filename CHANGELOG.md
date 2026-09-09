@@ -4,6 +4,7 @@
 
 ### feat
 
+- Added project-level 5/10/15/30/60-second output duration selection to Novel Video Studio. Seedance receives supported durations up to 30 seconds, while 60-second outputs use two continuous 30-second tasks followed by FFmpeg assembly.
 - Replaced Model Operations Studio's long scrolling task history with filter-aware pagination: five rows on standard desktop heights, eight on tall screens, global row numbering, compact page navigation, and a single-screen desktop layout without the redundant recent-output strip.
 - Added 5/10/30/60-second video generation presets to Model Operations Studio. Long durations use five-second continuation segments with last-frame handoff and FFmpeg assembly, while generated videos now play in an in-app modal backed by seekable HTTP Range responses.
 - Added a curated Novel Video Studio recommendation catalog with 16 work-level verified public-domain Chinese and English classics, language/search filters, rights evidence, original-source links, and one-click project creation.
@@ -50,6 +51,7 @@
 
 ### verify
 
+- Verified all five duration options, rejected unsupported values, and confirmed 60-second projects split into exactly two 30-second clips; Novel Video Studio now passes 33 automated tests.
 - Verified the preflight budget gate prevents every Ark model call when billing is not authorized; Novel Video Studio now passes 31 automated tests.
 - Verified pagination across 18 persisted tasks: page two renders rows 06-10, status filtering resets to page one, and 1120×720 plus 2048×1022 layouts keep the task controls and node status visible without desktop page scrolling.
 - Verified an 81-frame five-second output at 5.063 seconds, a two-segment ten-second output at exactly 10.000 seconds, application-level video playback with a ready media element, and `206 Partial Content` seeking support.
@@ -86,6 +88,7 @@
 - Fixed the mini-program TabBar build by removing unsupported SVG icon paths; the native TabBar now uses the supported text-only configuration.
 - Uploaded mini-program experience version `1.0.4` successfully through the official WeChat DevTools; review and production release remain separate steps.
 - Attempted to submit experience version `1.0.4` for review; WeChat blocked submission because the mini-program account has not completed主体 verification.
+- Re-authenticated the official-account console and confirmed AppID `wx37ed8960d67b51f7`; official template-message access and OAuth-domain configuration remain blocked by platform permissions/configuration.
 - Updated the Taro mini-program developer-tool configurations from `touristappid` to the verified production AppID `wxa087f03ad52dd2bf`; no AppSecret was added to the repository.
 - Added a production-safe fallback for Alipay mobile checkout: when `alipay.trade.wap.pay` is not authorized (`insufficient-isv-permissions`), mobile orders use the working page-payment flow instead of sending customers to an Alipay error page.
 - Switched mobile checkout to Alipay `alipay.trade.wap.pay` with `QUICK_WAP_WAP_PAY`, added return-page status polling and a clear return-to-product action; desktop checkout remains on `alipay.trade.page.pay`.

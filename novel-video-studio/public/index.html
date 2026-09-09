@@ -67,7 +67,7 @@
           <article><span>运行项目</span><strong id="metricActiveProjects">0</strong><small id="metricProjectSlots">/ 2 槽</small></article>
           <article><span>等待队列</span><strong id="metricQueuedProjects">0</strong><small>个项目</small></article>
           <article><span>待你处理</span><strong id="metricReviewProjects">0</strong><small>个项目</small></article>
-          <article><span>分集规格</span><strong id="metricMinutes">15</strong><small>分钟 / 集</small></article>
+          <article><span>可选时长</span><strong id="metricMinutes">5–60</strong><small>秒 / 条</small></article>
           <article class="budget"><span>日预算上限</span><strong id="metricBudget">¥200</strong><small>硬门禁</small></article>
         </section>
 
@@ -155,7 +155,7 @@
             </div>
 
             <div class="episode-block">
-              <div class="subheading"><span>第 01 集</span><strong id="episodeTitle">脚本生成中</strong><small>15:00</small></div>
+              <div class="subheading"><span>第 01 集</span><strong id="episodeTitle">脚本生成中</strong><small id="episodeDuration">00:05</small></div>
               <div class="shot-grid" id="shotGrid"></div>
               <div class="episode-progress"><span id="episodeProgressBar"></span></div>
               <div class="episode-meta"><span id="episodeMeta">等待镜头拆解</span><span id="episodePercent">0%</span></div>
@@ -303,9 +303,20 @@
         <i data-lucide="search"></i>
         <input id="novelName" name="novelName" value="" minlength="2" maxlength="100" required autocomplete="off" placeholder="例如：西游记">
       </div>
+      <fieldset class="duration-selector">
+        <legend>成片时长</legend>
+        <div role="radiogroup" aria-label="选择成片时长">
+          <label><input type="radio" name="targetDurationSeconds" value="5" checked><span>5s</span></label>
+          <label><input type="radio" name="targetDurationSeconds" value="10"><span>10s</span></label>
+          <label><input type="radio" name="targetDurationSeconds" value="15"><span>15s</span></label>
+          <label><input type="radio" name="targetDurationSeconds" value="30"><span>30s</span></label>
+          <label><input type="radio" name="targetDurationSeconds" value="60"><span>60s</span></label>
+        </div>
+        <small>60 秒会拆为两个连续的 30 秒片段，再由 FFmpeg 合成。</small>
+      </fieldset>
       <div class="create-project-spec">
         <span><i data-lucide="git-branch"></i><strong>固定六节点</strong><small>检索到成片全程可审计</small></span>
-        <span><i data-lucide="clock-3"></i><strong>15 分钟 / 集</strong><small>30 个连续镜头任务</small></span>
+        <span><i data-lucide="clock-3"></i><strong id="createDurationSummary">5 秒成片</strong><small id="createCostSummary">参考费用约 ¥7.56</small></span>
         <span><i data-lucide="shield-check"></i><strong>来源确认门禁</strong><small>确认版本后才继续生产</small></span>
       </div>
       <p id="formHint">创建后先检索候选来源，确认作品、作者和版本后继续。</p>
