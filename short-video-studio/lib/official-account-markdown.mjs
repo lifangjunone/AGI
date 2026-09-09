@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { marked } from "marked";
 
 const colors = {
@@ -30,6 +32,9 @@ renderer.list = function list(token) {
 renderer.strong = function strong(token) {
   return `<strong style="color:${colors.accent};font-weight:700;">${this.parser.parseInline(token.tokens)}</strong>`;
 };
+renderer.image = function image(token) {
+  return `<img src="${token.href}" alt="${token.text || ""}" style="display:block;width:100%;max-width:900px;margin:26px auto;border-radius:14px;">`;
+};
 renderer.hr = () => `<hr style="margin:30px 0;border:0;border-top:1px solid ${colors.line};">`;
 
 marked.setOptions({
@@ -49,11 +54,27 @@ export function parseFrontmatter(source) {
   return { metadata, markdown: match[2].trim() };
 }
 
-export function renderOfficialMarkdown(source) {
+export async function renderOfficialMarkdown(source, { rootDirectory = process.cwd() } = {}) {
   const { metadata, markdown } = parseFrontmatter(source);
-  const html = marked.parse(markdown);
+  const imagePattern = /!\[([^\]]*)\]\(([^)]+)\)/g;
+  const localImages = [...markdown.matchAll(imagePattern)];
+  let preparedMarkdown = markdown;
+  for (const [, alt, href] of localImages) {
+    if (!href.startsWith("public/")) continue;
+    const imagePath = path.join(rootDirectory, href);
+    const extension = path.extname(imagePath).toLowerCase();
+    const mime = extension === ".png" ? "image/png" : "image/jpeg";
+    const dataUri = `data:${mime};base64;${(await readFile(imagePath)).toString("base64")}`;
+    preparedMarkdown = preparedMarkdown.replace(
+      `![${alt}](${href})`,
+      `![${alt}](${dataUri})`
+    );
+  }
+  const html = marked.parse(preparedMarkdown);
+  const imageCount = (html.match(/<img\b/g) || []).length;
   return {
     ...metadata,
+    imageCount,
     html: `<section style="padding:24px 18px 34px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:${colors.ink};">${html}<p style="margin:30px 0 0;padding-top:18px;border-top:1px solid ${colors.line};color:${colors.muted};font-size:13px;line-height:1.7;">智助乖乖 · 把想法变成可发布的内容</p></section>`
   };
 }

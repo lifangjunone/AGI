@@ -36,7 +36,7 @@
 - Verified restart recovery for interrupted, queued, and remotely rendering projects.
 - Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
 - Verified desktop and 390×844 mobile layouts with six working mobile destinations.
-- Automated suite: 39 passing tests.
+- Automated suite: 40 passing tests.
 
 ![Task center desktop](screenshots/task-center-desktop.png)
 
@@ -94,20 +94,27 @@
 
 ## Season Production Acceptance
 
-- Verified project creation offers `1`, `3`, `6`, and `12` episode seasons; every episode is fixed at five minutes and represented as ten ordered 30-second segments.
-- Verified the default 6-episode project shows a `¥2721.60` season reference cost before submission.
-- Verified all episode outlines and scripts are persisted before any Seedance task is submitted.
+- Verified project creation accepts only the novel title and does not expose or submit a season episode count.
+- Verified source analysis extracts chapter boundaries and content length before producing a whole-book adaptation map.
+- Verified a 36-chapter, 186,420-character acceptance fixture produces an 18-episode whole-book plan with explicit chapter ranges.
+- Verified selecting whole-book episode 5 as the start and 10 episodes as the season yields episode range 5–14 and a dynamic `¥4536.00` reference budget.
+- Verified no detailed episode scripts or Seedance tasks exist before the user locks a season range.
+- Verified all selected-season scripts are persisted before any Seedance task is submitted.
 - Verified one-at-a-time segment submission, local last-frame persistence, within-episode handoff, and previous-episode-to-next-episode handoff.
 - Verified a failed render retry preserves succeeded segments and resets only failed or expired segments.
 - Verified desktop `1120×720` and mobile `390×844` create-project layouts have no horizontal or button overflow.
-- Verified the final packaged Electron app exposes the same season controls and reference budget.
-- Automated suite: 39 passing tests.
+- Verified the final packaged Electron app exposes the same content-first creation flow with no episode preset.
+- Automated suite: 40 passing tests.
 
-![Season project creation on desktop](screenshots/series-create-desktop.png)
+![Content-first project creation on desktop](screenshots/dynamic-create-desktop.png)
 
-![Season project creation on mobile](screenshots/series-create-mobile.png)
+![Content-first project creation on mobile](screenshots/dynamic-create-mobile.png)
 
-![Season project creation in the packaged Electron app](screenshots/series-create-electron.png)
+![Content-first project creation in the packaged Electron app](screenshots/dynamic-create-electron.png)
+
+![Dynamic whole-book plan and season selection on desktop](screenshots/dynamic-season-plan-desktop.png)
+
+![Dynamic whole-book plan and season selection on mobile](screenshots/dynamic-season-plan-mobile.png)
 
 ## Episode Center and Budget Gate Acceptance
 
@@ -116,7 +123,7 @@
 - Verified a 3-episode budget gate displays `¥453.60` per episode and `¥1360.80` for the season before rendering.
 - Verified the explicit budget approval action is visible on desktop and mobile; it was not clicked, so no billable Seedance task was created.
 - Verified desktop `1120×720` and mobile `390×844` layouts have no horizontal or button overflow and emit no browser console errors.
-- Fixed a stale PWA asset mix discovered during acceptance by versioning `app.js` and `styles.css` under cache v18.
+- Versioned `app.js` and `styles.css` under PWA cache v19 so the removed create-time episode presets cannot remain cached.
 - Opened the historical real 5-second project in the final Electron package and verified its player, download action, six-node history, and legacy duration remain accessible.
 
 ![Episode center on desktop](screenshots/series-center-desktop.png)
@@ -148,7 +155,7 @@
 - Verified desktop rendering and an emulated 390×844 mobile viewport. The mobile layout has no horizontal overflow, and the recommendation count, all three card actions, and all seven navigation destinations remain within the viewport.
 - Redesigned the catalog as a 3-column cinematic shelf at 1320×828 and a compact single-column list at 390×844.
 - Verified unfinished generated covers remain hidden behind designed title artwork; the provider's white generation placeholder is not visible.
-- Automated suite: 39 passing tests.
+- Automated suite: 40 passing tests.
 
 ![Public-domain recommendations desktop](screenshots/public-domain-recommendations-desktop.png)
 

@@ -472,6 +472,7 @@ function renderEpisodeQueue(project) {
     || isDemoPreview(project);
   $("#retryButton").classList.toggle("hidden", !canRetry);
   $("#retryButton span").textContent = project?.status === "budget-gate"
+    && project?.stage === "render"
     ? "确认预算并开始"
     : isDemoPreview(project) ? "开始真实生成" : "重试任务";
 }
@@ -542,7 +543,9 @@ function renderProjectCatalog() {
         ).join("")}</span>
         <span class="project-card-meta"><small>${escapeHtml(statusDetail)}</small><small>${project.status === "season-review"
           ? `${project.plannedEpisodeCount || 0} 集全书规划 · 待选本季`
-          : `${project.completedEpisodes || 0}/${project.episodeCount || project.seasonEpisodeCount || 1} 集 · 每集 ${formatDuration(projectDurationSeconds(project))}`
+          : !project.episodeCount && !project.seasonEpisodeCount
+          ? `待分析全书集数 · 每集 ${formatDuration(projectDurationSeconds(project))}`
+          : `${project.completedEpisodes || 0}/${project.episodeCount || project.seasonEpisodeCount} 集 · 每集 ${formatDuration(projectDurationSeconds(project))}`
         }</small></span>
         <span class="project-card-footer"><time>${formatTaskTime(project.updatedAt || project.createdAt)}</time><span>进入项目 <i data-lucide="arrow-right"></i></span></span>
       </span>
@@ -882,12 +885,20 @@ function renderProject(project) {
         <span>${liveReady ? "开始真实生成" : "真实模式未就绪"}</span>
       </button>`;
     notice.classList.remove("hidden");
-  } else if (project.status === "budget-gate") {
+  } else if (project.status === "budget-gate" && project.stage === "render") {
     notice.innerHTML = `
       <span>全季 ${episodeCount} 集剧本已全部完成。每集 ${formatDuration(targetDurationSeconds)} 参考费用约 ¥${estimatedEpisodeCost.toFixed(2)}，全季约 ¥${estimatedSeasonCost.toFixed(2)}；确认后将按集、按 30 秒片段顺序生成。</span>
       <button class="command-button" data-approve-budget>
         <i data-lucide="badge-dollar-sign"></i>
         <span>确认预算并开始</span>
+      </button>`;
+    notice.classList.remove("hidden");
+  } else if (project.status === "budget-gate") {
+    notice.innerHTML = `
+      <span>全书分集规划尚未生成。请先开启内容规划模型的计费授权，配置完成后重试；此阶段不会提交 Seedance 视频任务。</span>
+      <button class="command-button" data-retry-planning>
+        <i data-lucide="rotate-ccw"></i>
+        <span>配置后重试规划</span>
       </button>`;
     notice.classList.remove("hidden");
   } else {
@@ -916,7 +927,8 @@ function renderProject(project) {
   const episode = project.episodes?.find((item) => ["rendering", "assembling"].includes(item.status))
     || project.episodes?.find((item) => item.status !== "completed")
     || project.episodes?.at(-1);
-  $("#episodeTitle").textContent = episode?.title || "脚本生成中";
+  $("#episodeTitle").textContent = episode?.title
+    || (project.status === "season-review" ? "等待选择本季" : "脚本生成中");
   $("#episodeDuration").textContent = formatDuration(targetDurationSeconds);
   const episodeOutput = $("#episodeOutput");
   const episodeVideo = $("#episodeVideo");
@@ -1363,11 +1375,15 @@ async function retryActiveProject({ approveBudget = false } = {}) {
 }
 
 $("#retryButton").addEventListener("click", () => {
-  retryActiveProject({ approveBudget: activeProject?.status === "budget-gate" });
+  retryActiveProject({
+    approveBudget: activeProject?.status === "budget-gate"
+      && activeProject?.stage === "render"
+  });
 });
 $("#productionNotice").addEventListener("click", (event) => {
   if (event.target.closest("[data-select-season]")) showView("episodes");
   if (event.target.closest("[data-start-live]")) retryActiveProject();
+  if (event.target.closest("[data-retry-planning]")) retryActiveProject();
   if (event.target.closest("[data-approve-budget]")) {
     retryActiveProject({ approveBudget: true });
   }

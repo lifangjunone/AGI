@@ -1,5 +1,11 @@
 # DeliveryPilot
 
+## 统一身份
+
+Tauri 客户端使用 LifeYouMe 设备授权登录，令牌应写入系统凭据存储，SQLite
+业务库仅保存稳定用户 ID，不建立独立密码体系。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 产品类型：研发交付驾驶舱
 运行形态：Tauri 2 macOS 桌面应用、Rust、Swift sidecar
 协作项目：[`technology-intelligence/`](../technology-intelligence/)、[`delivery-control-center/`](../delivery-control-center/)

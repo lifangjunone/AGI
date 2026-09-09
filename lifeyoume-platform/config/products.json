@@ -25,7 +25,7 @@
       "id": "privacy-vault",
       "name": "隐匣",
       "tagline": "只属于你的本地加密档案",
-      "summary": "无账号、无服务端的个人隐私档案。主密码派生 AES-256-GCM 密钥，记录仅保存在当前浏览器。",
+      "summary": "使用 LifeYouMe 统一账号进入、保险库数据无服务端。主密码派生 AES-256-GCM 密钥，记录仅保存在当前浏览器。",
       "public_url": "https://lifeyoume.icu/vault/",
       "health_url": "",
       "lifecycle": "live",

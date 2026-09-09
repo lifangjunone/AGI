@@ -6,7 +6,6 @@ export const DEFAULT_ARK_MODELS = Object.freeze({
   video: "doubao-seedance-2-5-260628"
 });
 export const OUTPUT_DURATION_OPTIONS = Object.freeze([5, 10, 15, 30, 60]);
-export const EPISODE_COUNT_OPTIONS = Object.freeze([1, 3, 6, 12]);
 export const EPISODE_DURATION_SECONDS = 300;
 export const MAX_VIDEO_SEGMENT_SECONDS = 30;
 export const MAX_SEASON_EPISODES = 24;
@@ -45,11 +44,6 @@ function outputDuration(value) {
   return OUTPUT_DURATION_OPTIONS.includes(parsed) ? parsed : OUTPUT_DURATION_OPTIONS[0];
 }
 
-function episodeCount(value) {
-  const parsed = Number(value);
-  return EPISODE_COUNT_OPTIONS.includes(parsed) ? parsed : 6;
-}
-
 export function makeConfig(root) {
   const episodeMinutes = EPISODE_DURATION_SECONDS / 60;
   const shotSeconds = Math.min(
@@ -59,7 +53,6 @@ export function makeConfig(root) {
   const dailyHours = positiveNumber(process.env.DAILY_OUTPUT_HOURS, 72);
   const videoCostPerSecondCny = positiveNumber(process.env.VIDEO_COST_PER_SECOND_CNY, 1.512);
   const defaultOutputDurationSeconds = outputDuration(process.env.DEFAULT_OUTPUT_DURATION_SECONDS);
-  const defaultEpisodeCount = episodeCount(process.env.DEFAULT_EPISODE_COUNT);
   const dataDirectory = process.env.NOVEL_STUDIO_DATA_DIRECTORY || path.join(root, "data");
   const planningModel = process.env.ARK_PLANNING_MODEL
     || process.env.ARK_TEXT_MODEL
@@ -90,8 +83,6 @@ export function makeConfig(root) {
       dailyHours,
       episodeMinutes,
       episodeDurationSeconds: EPISODE_DURATION_SECONDS,
-      defaultEpisodeCount,
-      episodeCountOptions: EPISODE_COUNT_OPTIONS,
       maxSeasonEpisodes: MAX_SEASON_EPISODES,
       maxVideoSegmentSeconds: MAX_VIDEO_SEGMENT_SECONDS,
       shotSeconds,

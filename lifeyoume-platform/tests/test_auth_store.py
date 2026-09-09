@@ -76,6 +76,47 @@ class AuthStoreTests(unittest.TestCase):
             self.store.exchange_device(device_code, now=3_005),
         )
 
+    def test_admin_can_disable_enable_and_reset_password(self):
+        user = self.create_user()
+        session = self.store.create_session(user.id, 300, now=4_000)
+        self.assertTrue(
+            self.store.set_user_status(user.id, "disabled", "admin", now=4_001)
+        )
+        self.assertIsNone(self.store.session_user(session, now=4_002))
+        self.assertIsNone(
+            self.store.authenticate(
+                "user@example.com", "correct horse battery staple", app.verify_password
+            )
+        )
+
+        self.assertTrue(
+            self.store.set_user_status(user.id, "active", "admin", now=4_003)
+        )
+        self.assertTrue(
+            self.store.set_user_password(
+                user.id,
+                app.password_hash("replacement password 2026"),
+                "admin",
+                now=4_004,
+            )
+        )
+        authenticated = self.store.authenticate(
+            "user@example.com", "replacement password 2026", app.verify_password
+        )
+        self.assertEqual(user.id, authenticated.id)
+        self.assertEqual(3, len(self.store.recent_admin_audit()))
+
+    def test_product_login_policy_defaults_to_required_and_is_mutable(self):
+        self.assertTrue(self.store.login_required("privacy-vault"))
+        self.store.set_login_required("privacy-vault", False, "admin", now=5_000)
+        self.assertFalse(self.store.login_required("privacy-vault"))
+        self.store.set_login_required("privacy-vault", True, "admin", now=5_001)
+        self.assertTrue(self.store.login_required("privacy-vault"))
+        actions = [item["action"] for item in self.store.recent_admin_audit()]
+        self.assertEqual(
+            ["product.login_required", "product.login_optional"], actions
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

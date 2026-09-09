@@ -1,5 +1,11 @@
 # English Immersion Studio
 
+## 统一身份
+
+Electron 桌面端通过 LifeYouMe 设备授权连接统一账号，角色、课程和语言分析
+数据继续由本项目管理，并以稳定用户 ID 分区。应用不接触统一账号密码。接入
+契约见 [`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 English Immersion Studio 是一个 Electron + Unreal Engine 5.7 的英语沉浸学习
 桌面应用。产品目标是使用可动画的写实成年女性 MetaHuman，完成面试、餐厅、
 酒店、闲聊、医疗和航班等真实英语练习。

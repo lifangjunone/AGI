@@ -84,8 +84,25 @@ class AuthStore:
                 );
                 CREATE INDEX IF NOT EXISTS access_tokens_user_idx
                     ON access_tokens(user_id, expires_at);
+                CREATE TABLE IF NOT EXISTS product_auth_policies (
+                    product_id TEXT PRIMARY KEY,
+                    login_required INTEGER NOT NULL CHECK (login_required IN (0, 1)),
+                    updated_at INTEGER NOT NULL,
+                    updated_by TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS admin_audit (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    actor TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    target_type TEXT NOT NULL,
+                    target_id TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS admin_audit_created_idx
+                    ON admin_audit(created_at DESC);
                 """
             )
+        self.path.chmod(0o600)
 
     @staticmethod
     def row_to_user(row: sqlite3.Row | None) -> AuthUser | None:
@@ -295,3 +312,150 @@ class AuthStore:
                 (self.token_hash(token), current),
             ).fetchone()
         return self.row_to_user(row)
+
+    @staticmethod
+    def record_admin_action(
+        connection: sqlite3.Connection,
+        actor: str,
+        action: str,
+        target_type: str,
+        target_id: str,
+        now: int,
+    ) -> None:
+        connection.execute(
+            """
+            INSERT INTO admin_audit (
+                actor, action, target_type, target_id, created_at
+            ) VALUES (?, ?, ?, ?, ?)
+            """,
+            (actor, action, target_type, target_id, now),
+        )
+
+    def list_users(self) -> list[dict[str, object]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT id, email, display_name, status, created_at, last_login_at
+                FROM users
+                ORDER BY created_at DESC, email ASC
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def set_user_status(
+        self, user_id: str, status: str, actor: str, now: int | None = None
+    ) -> bool:
+        if status not in {"active", "disabled"}:
+            raise ValueError("Unsupported user status")
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            cursor = connection.execute(
+                "UPDATE users SET status = ?, updated_at = ? WHERE id = ?",
+                (status, current, user_id),
+            )
+            if cursor.rowcount != 1:
+                return False
+            if status == "disabled":
+                connection.execute(
+                    "UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL",
+                    (current, user_id),
+                )
+                connection.execute(
+                    """
+                    UPDATE access_tokens SET revoked_at = ?
+                    WHERE user_id = ? AND revoked_at IS NULL
+                    """,
+                    (current, user_id),
+                )
+            self.record_admin_action(
+                connection, actor, f"user.{status}", "user", user_id, current
+            )
+        return True
+
+    def set_user_password(
+        self,
+        user_id: str,
+        encoded_password: str,
+        actor: str,
+        now: int | None = None,
+    ) -> bool:
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE users SET password_hash = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (encoded_password, current, user_id),
+            )
+            if cursor.rowcount != 1:
+                return False
+            connection.execute(
+                "UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL",
+                (current, user_id),
+            )
+            connection.execute(
+                """
+                UPDATE access_tokens SET revoked_at = ?
+                WHERE user_id = ? AND revoked_at IS NULL
+                """,
+                (current, user_id),
+            )
+            self.record_admin_action(
+                connection, actor, "user.password_reset", "user", user_id, current
+            )
+        return True
+
+    def login_required(self, product_id: str, default: bool = True) -> bool:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT login_required FROM product_auth_policies
+                WHERE product_id = ?
+                """,
+                (product_id,),
+            ).fetchone()
+        return bool(row["login_required"]) if row is not None else default
+
+    def set_login_required(
+        self,
+        product_id: str,
+        required: bool,
+        actor: str,
+        now: int | None = None,
+    ) -> None:
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO product_auth_policies (
+                    product_id, login_required, updated_at, updated_by
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(product_id) DO UPDATE SET
+                    login_required = excluded.login_required,
+                    updated_at = excluded.updated_at,
+                    updated_by = excluded.updated_by
+                """,
+                (product_id, int(required), current, actor),
+            )
+            self.record_admin_action(
+                connection,
+                actor,
+                "product.login_required" if required else "product.login_optional",
+                "product",
+                product_id,
+                current,
+            )
+
+    def recent_admin_audit(self, limit: int = 20) -> list[dict[str, object]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT actor, action, target_type, target_id, created_at
+                FROM admin_audit
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (max(1, min(limit, 100)),),
+            ).fetchall()
+        return [dict(row) for row in rows]

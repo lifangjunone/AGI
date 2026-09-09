@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-09-10
+
+### feat
+
+- Added LifeYouMe unified end-user identity to `lifeyoume-platform`: email registration/login, PBKDF2 password hashing, SQLite users, revocable cross-subdomain HttpOnly sessions, account/logout pages, authenticated user resolution, CSRF protection, login throttling, trusted-return validation, and product-scoped device authorization for Electron, Tauri, PWA, mini-program, and native clients.
+- Connected the production entry pages for FRAME/60, 智助乖乖, 隐匣, and Opportunity Factory to the shared SSO gateway. Product APIs, Alipay notifications, Pay Skill endpoints, health checks, and public audit reports retain independent routing; authenticated upstream requests receive the stable LifeYouMe user ID.
+- Moved Opportunity Factory's canonical production ownership to `audit.lifeyoume.icu` and documented the root portal, audit compatibility routes, operations/auth/billing boundaries, and unified identity contract across all 16 project READMEs.
+- Replaced Novel Video Studio's create-time episode presets with a content-driven adaptation workflow: the system now analyzes full text, chapter boundaries, chapter lengths, and narrative density to produce a whole-book episode map before the user chooses a season number and contiguous episode range.
+- Added the `season-review` production gate, dynamic season-selection API, whole-book episode catalog, source-range audit fields, season budget preview, and a 24-episode per-season operational limit without imposing a fixed whole-book episode count.
+
+### verify
+
+- Verified unified identity with 13 platform tests plus a temporary production account: registration issued the shared session, `/api/v1/me` resolved the same stable user, and the session opened `/vault/`, `/video/`, and `audit.lifeyoume.icu`; the test user and cascaded sessions were removed afterward.
+- Verified unauthenticated product entry pages redirect to `auth.lifeyoume.icu`, while the portal, catalog, public audit reports, Alipay notification path, assistant configuration, and Pay Skill route remain reachable without an accidental SSO redirect.
+- Verified the revised workflow with 40 passing tests, including chapter extraction, different plan sizes for different source lengths, no scripts or video before season selection, contiguous range selection, full-season script completion, budget approval, and sequential video submission.
+
+### fix
+
+- Preserved complete source coverage for long novels even when the planning model cannot return every episode in one response: deterministic chapter mapping fills all remaining entries while model output enriches available titles and summaries.
+- Versioned Novel Video Studio's PWA shell to v19 so the removed create-time episode selector cannot remain cached in Web or mobile clients.
+
 ## 2026-09-09
 
 ### feat
@@ -12,6 +33,7 @@
 - Deployed Personal Privacy Vault to `https://lifeyoume.icu/vault/` from `/data/app/personal-privacy-vault/current`, using the existing HTTPS Nginx container with a read-only static mount and dedicated security headers while preserving the root portal and `/video/` routes.
 - Added a Playwright-based WeChat official-account publisher for twice-daily structured article generation at 08:30 and 17:30, cover upload, persistent login, publish logging, slot-level deduplication, and macOS launchd scheduling. The first login or platform risk confirmation remains an explicit one-time prerequisite.
 - Added Markdown-first official-account authoring with a WeChat-compatible styled HTML renderer, a structured first article, a 900x383 cover asset, and a default-disabled publish gate for preview-before-publish review.
+- Added a hard three-image minimum for every official-account article, with scene, explanation, and actionable-list visuals included in the first Markdown article; publishing now fails closed when the requirement is not met.
 - Added master-password rotation to the Personal Privacy Vault lock screen and unlocked toolbar. The user must verify the current password before the vault is re-encrypted with a new random salt and derived AES key; no password is written to source or configuration.
 - Promoted Novel Video Studio to production-first behavior: fresh installs enter formal production with explicit credential and budget gates, while non-billable planning is available only through an intentional `PRODUCTION_MODE=planning` setting.
 - Added `personal-privacy-vault` (“隐匣”), a serverless personal privacy archive with six record categories, custom masked fields, favorites, in-memory search, five-minute automatic locking, and encrypted `.pvault` backup/restore. The master password is never persisted; PBKDF2-SHA-256 derives an AES-256-GCM key and the complete vault payload is encrypted before IndexedDB storage.

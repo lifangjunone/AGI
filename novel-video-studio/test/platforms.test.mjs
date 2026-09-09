@@ -31,8 +31,8 @@ test("web, mobile and desktop entrypoints share the production UI", async () => 
     assert.match(html, /推荐小说/);
     assert.match(html, /创建小说项目/);
     assert.match(html, /导入已授权正文/);
-    assert.match(html, /styles\.css\?v=18/);
-    assert.match(html, /app\.js\?v=18/);
+    assert.match(html, /styles\.css\?v=19/);
+    assert.match(html, /app\.js\?v=19/);
   }
 });
 
@@ -121,8 +121,8 @@ test("mobile PWA assets are valid and served with correct types", async () => {
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
   const worker = await workerResponse.text();
-  assert.match(worker, /novel-picture-works-v18/);
-  assert.match(worker, /app\.js\?v=18/);
+  assert.match(worker, /novel-picture-works-v19/);
+  assert.match(worker, /app\.js\?v=19/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {
@@ -207,14 +207,18 @@ test("invalid novel names are rejected before task creation", async () => {
   assert.match((await response.json()).error, /2-100/);
 });
 
-test("project creation accepts only supported season episode counts", async () => {
-  const response = await fetch(`${origin}/api/projects`, {
+test("season selection is rejected until whole-book planning is ready", async () => {
+  const response = await fetch(`${origin}/api/projects/test-project/season`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ novelName: "西游记", episodeCount: 2 })
+    body: JSON.stringify({
+      seasonNumber: 1,
+      startEpisode: 1,
+      episodeCount: 6
+    })
   });
-  assert.equal(response.status, 400);
-  assert.match((await response.json()).error, /1、3、6 或 12 集/);
+  assert.equal(response.status, 409);
+  assert.match((await response.json()).error, /尚未进入本季选择阶段/);
 });
 
 test("generated media supports byte ranges", async () => {

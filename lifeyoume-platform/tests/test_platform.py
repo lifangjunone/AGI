@@ -102,11 +102,7 @@ class PlatformTests(unittest.TestCase):
 
         self.assertIn("把 AI 变成真正可使用的个人工具与生产系统", portal)
         self.assertIn("/products/privacy-vault", portal)
-        self.assertIn(
-            "https://auth.lifeyoume.icu/login?return_to="
-            "https%3A%2F%2Flifeyoume.icu%2Fvault%2F",
-            detail,
-        )
+        self.assertIn('href="https://lifeyoume.icu/vault/"', detail)
         self.assertNotIn("avatar-generator-service", portal)
 
     def test_live_static_product_does_not_require_fake_health_endpoint(self):
@@ -126,6 +122,41 @@ class PlatformTests(unittest.TestCase):
     def test_billing_status_defaults_to_disabled(self):
         self.assertFalse(app.PAYMENT_CONFIGURED)
         self.assertEqual("", app.PAYMENT_PROVIDER)
+
+    def test_sso_redirects_only_allow_lifeyoume_https_hosts(self):
+        self.assertEqual(
+            "https://lifeyoume.icu/vault/",
+            app.safe_return_to("https://lifeyoume.icu/vault/"),
+        )
+        self.assertEqual(
+            "https://audit.lifeyoume.icu/",
+            app.safe_return_to("https://audit.lifeyoume.icu/"),
+        )
+        self.assertEqual(
+            "https://lifeyoume.icu/",
+            app.safe_return_to("https://lifeyoume.icu.evil.example/"),
+        )
+        self.assertIsNone(app.trusted_origin("https://example.com"))
+
+    def test_admin_dashboard_contains_account_and_product_controls(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = app.AuthStore(Path(directory) / "auth.db")
+            store.initialize()
+            store.create_user(
+                "admin-test@example.com",
+                "Admin Test",
+                app.password_hash("not used by this render"),
+                now=1_000,
+            )
+            with mock.patch.object(app, "AUTH_STORE", store):
+                document = app.admin_dashboard(
+                    app.load_products(), "operator", "csrf-test"
+                ).decode("utf-8")
+        self.assertIn('action="/admin/users/status"', document)
+        self.assertIn('action="/admin/users/password"', document)
+        self.assertIn('action="/admin/products/login-policy"', document)
+        self.assertIn("privacy-vault", document)
+        self.assertNotIn("not used by this render", document)
 
 
 if __name__ == "__main__":

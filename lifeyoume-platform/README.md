@@ -37,6 +37,19 @@ creation, learning, AI engineering, privacy tools, and enterprise services.
 Internal components remain registered for operations but are excluded from the
 public portal.
 
+## 统一身份与 SSO
+
+`auth.lifeyoume.icu` is the only end-user credential authority:
+
+- browser products share a revocable HttpOnly session across LifeYouMe subdomains;
+- Electron, Tauri, PWA, mini-program, and native clients use device authorization;
+- products receive a stable LifeYouMe user ID and keep business data in their own stores;
+- product-specific administrator credentials remain operator-only accounts.
+
+The identity database is stored at `/var/lib/lifeyoume-platform/auth.db`, outside
+release directories. See [docs/SSO.md](docs/SSO.md) for endpoints, storage rules,
+gateway behavior, and client integration.
+
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for boundaries, onboarding,
 security rules, failure isolation, and compatibility behavior.
 

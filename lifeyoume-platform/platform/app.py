@@ -54,6 +54,8 @@ AUTH_REGISTRATION_ENABLED = (
 )
 SSO_COOKIE = "lym_sso_session"
 CSRF_COOKIE = "lym_auth_csrf"
+ADMIN_COOKIE = "lym_admin_session"
+ADMIN_CSRF_COOKIE = "lym_admin_csrf"
 AUTH_STORE = AuthStore(AUTH_DB_PATH)
 
 
@@ -390,10 +392,7 @@ def product_page(product: Product) -> bytes:
     )
     platforms = "".join(f"<span>{esc(item)}</span>" for item in product.platforms)
     if product.public_url:
-        action = (
-            f'<a class="button primary" href="{esc(sso_login_url(product.public_url))}">'
-            f"{esc(product.cta)}</a>"
-        )
+        action = f'<a class="button primary" href="{esc(product.public_url)}">{esc(product.cta)}</a>'
     else:
         action = '<span class="button disabled" aria-disabled="true">暂未开放公开入口</span>'
     body = f"""<main class="detail-main">
@@ -456,6 +455,143 @@ def login_page(error: str = "") -> bytes:
     return page("运营端登录", body)
 
 
+def admin_login_page(csrf_token: str, error: str = "") -> bytes:
+    body = f"""<main class="admin-login-main">
+<section class="auth-copy"><p class="eyebrow">PLATFORM ADMINISTRATION</p>
+<h1>底座管理后台</h1>
+<p>统一管理 LifeYouMe 用户状态、密码重置和各子产品的登录策略。</p></section>
+<section class="auth-panel admin-login-panel">
+<form method="post" action="/admin/login">
+<input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+<label for="username">管理员账号</label>
+<input id="username" name="username" autocomplete="username" required>
+<label for="password">管理员密码</label>
+<input id="password" name="password" type="password" autocomplete="current-password" required>
+<button class="button primary auth-submit" type="submit">进入管理后台</button>
+{f'<p class="error" role="alert">{esc(error)}</p>' if error else ''}
+</form></section></main>"""
+    return page("底座管理后台", body, portal=True)
+
+
+def format_admin_time(value: object) -> str:
+    if not value:
+        return "-"
+    return time.strftime("%Y-%m-%d %H:%M", time.localtime(int(value)))
+
+
+def admin_dashboard(
+    products: list[Product],
+    username: str,
+    csrf_token: str,
+    notice: str = "",
+) -> bytes:
+    users = AUTH_STORE.list_users()
+    active_users = sum(item["status"] == "active" for item in users)
+    user_rows = []
+    for user in users:
+        active = user["status"] == "active"
+        next_status = "disabled" if active else "active"
+        status_label = "已启用" if active else "已禁用"
+        action_label = "禁用" if active else "启用"
+        user_rows.append(
+            f"""<tr>
+<td><strong>{esc(user["display_name"])}</strong><small>{esc(user["email"])}</small></td>
+<td><span class="admin-status {'active' if active else 'disabled'}"><i></i>{status_label}</span></td>
+<td>{esc(format_admin_time(user["last_login_at"]))}</td>
+<td class="admin-actions">
+  <form method="post" action="/admin/users/status">
+    <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+    <input type="hidden" name="user_id" value="{esc(user["id"])}">
+    <input type="hidden" name="status" value="{next_status}">
+    <button class="table-button {'danger' if active else 'positive'}" type="submit">{action_label}</button>
+  </form>
+  <form class="password-reset-form" method="post" action="/admin/users/password">
+    <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+    <input type="hidden" name="user_id" value="{esc(user["id"])}">
+    <label><span>新密码</span><input name="new_password" type="password" minlength="12"
+      maxlength="200" autocomplete="new-password" placeholder="至少 12 位" required></label>
+    <button class="table-button" type="submit">修改密码</button>
+  </form>
+</td></tr>"""
+        )
+    if not user_rows:
+        user_rows.append(
+            '<tr><td colspan="4" class="admin-empty">暂无注册账号</td></tr>'
+        )
+
+    policy_rows = []
+    for product in products:
+        required = AUTH_STORE.login_required(product.id)
+        next_required = "false" if required else "true"
+        policy_rows.append(
+            f"""<tr>
+<td><strong>{esc(product.name)}</strong><small>{esc(product.id)}</small></td>
+<td>{esc(product.category)}</td>
+<td><span class="admin-status {'required' if required else 'optional'}"><i></i>
+{'需要登录' if required else '免登录直达'}</span></td>
+<td><form method="post" action="/admin/products/login-policy">
+  <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+  <input type="hidden" name="product_id" value="{esc(product.id)}">
+  <input type="hidden" name="login_required" value="{next_required}">
+  <button class="table-button" type="submit">{'关闭登录' if required else '开启登录'}</button>
+</form></td></tr>"""
+        )
+
+    audit_rows = "".join(
+        f"""<tr><td>{esc(format_admin_time(item["created_at"]))}</td>
+<td>{esc(item["actor"])}</td><td><code>{esc(item["action"])}</code></td>
+<td>{esc(item["target_id"])}</td></tr>"""
+        for item in AUTH_STORE.recent_admin_audit()
+    )
+    if not audit_rows:
+        audit_rows = '<tr><td colspan="4" class="admin-empty">暂无管理操作</td></tr>'
+
+    notice_map = {
+        "user-status": "账号状态已更新，相关会话已按策略处理。",
+        "password": "账号密码已更新，原有 Web 与设备会话已全部失效。",
+        "product-policy": "产品登录策略已生效，无需重载服务。",
+    }
+    notice_text = notice_map.get(notice, "")
+    body = f"""<main class="admin-main">
+<section class="admin-heading">
+  <div><p class="eyebrow">LIFEYOUME CONTROL PLANE</p><h1>底座管理后台</h1>
+  <p>账号、访问策略与审计记录统一由 LifeYouMe Platform 管理。</p></div>
+  <form method="post" action="/admin/logout"><button class="button" type="submit">退出管理</button></form>
+</section>
+{f'<div class="admin-notice" role="status">{esc(notice_text)}</div>' if notice_text else ''}
+<section class="admin-metrics" aria-label="平台摘要">
+  <div><strong>{len(users)}</strong><span>注册账号</span></div>
+  <div><strong>{active_users}</strong><span>已启用账号</span></div>
+  <div><strong>{len(products)}</strong><span>已注册产品</span></div>
+  <div><strong>{sum(AUTH_STORE.login_required(item.id) for item in products)}</strong><span>启用登录</span></div>
+</section>
+<nav class="admin-tabs" aria-label="后台分区">
+  <a href="#users">账号管理</a><a href="#products">产品登录</a><a href="#audit">操作审计</a>
+</nav>
+<section class="admin-section" id="users">
+  <div class="admin-section-head"><div><p class="eyebrow">ACCOUNTS</p><h2>账号管理</h2></div>
+  <p>禁用或改密会立即撤销该账号全部会话。</p></div>
+  <div class="admin-table-wrap"><table class="admin-table">
+  <thead><tr><th>账号</th><th>状态</th><th>最近登录</th><th>操作</th></tr></thead>
+  <tbody>{''.join(user_rows)}</tbody></table></div>
+</section>
+<section class="admin-section" id="products">
+  <div class="admin-section-head"><div><p class="eyebrow">ACCESS POLICY</p><h2>子产品登录策略</h2></div>
+  <p>关闭后产品主入口直接打开；开启后先进入统一登录。</p></div>
+  <div class="admin-table-wrap"><table class="admin-table">
+  <thead><tr><th>产品</th><th>分类</th><th>当前策略</th><th>操作</th></tr></thead>
+  <tbody>{''.join(policy_rows)}</tbody></table></div>
+</section>
+<section class="admin-section" id="audit">
+  <div class="admin-section-head"><div><p class="eyebrow">AUDIT TRAIL</p><h2>最近管理操作</h2></div></div>
+  <div class="admin-table-wrap"><table class="admin-table">
+  <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>目标</th></tr></thead>
+  <tbody>{audit_rows}</tbody></table></div>
+</section>
+</main>"""
+    return page("底座管理后台", body, portal=True)
+
+
 def service_page(service: str) -> bytes:
     if service == "auth":
         title = "统一身份服务"
@@ -492,6 +628,24 @@ def safe_return_to(value: str) -> str:
     ):
         return value
     return fallback
+
+
+def trusted_origin(value: str) -> str | None:
+    if not value:
+        return None
+    parsed = urllib.parse.urlparse(value)
+    hostname = (parsed.hostname or "").lower()
+    if (
+        parsed.scheme == "https"
+        and not parsed.username
+        and not parsed.password
+        and not parsed.path.strip("/")
+        and not parsed.query
+        and not parsed.fragment
+        and (hostname == "lifeyoume.icu" or hostname.endswith(".lifeyoume.icu"))
+    ):
+        return value.rstrip("/")
+    return None
 
 
 def sso_login_url(return_to: str) -> str:
@@ -602,6 +756,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header(
             "Cache-Control", "no-store" if ROLE in {"ops", "auth"} else "public, max-age=60"
         )
+        origin = trusted_origin(self.headers.get("Origin", ""))
+        if ROLE == "auth" and origin:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Access-Control-Allow-Credentials", "true")
+            self.send_header("Vary", "Origin")
 
     def send_body(self, status: int, body: bytes, content_type: str = "text/html; charset=utf-8") -> None:
         self.send_response(status)
@@ -728,6 +887,31 @@ class Handler(BaseHTTPRequestHandler):
         token = jar.get("lym_ops_session")
         return verify_session(token.value) if token else None
 
+    def admin_user(self) -> str | None:
+        username = verify_session(self.cookie_value(ADMIN_COOKIE))
+        return username if username == OPS_ADMIN_USER else None
+
+    def admin_csrf_valid(self, form: dict[str, str]) -> bool:
+        submitted = form.get("csrf_token", "")
+        cookie_token = self.cookie_value(ADMIN_CSRF_COOKIE)
+        return bool(submitted and cookie_token) and hmac.compare_digest(
+            submitted, cookie_token
+        )
+
+    @staticmethod
+    def admin_session_cookie(token: str, max_age: int = 43_200) -> str:
+        return (
+            f"{ADMIN_COOKIE}={token}; Path=/admin; Max-Age={max_age}; "
+            "HttpOnly; Secure; SameSite=Strict"
+        )
+
+    @staticmethod
+    def admin_csrf_cookie(token: str, max_age: int = 43_200) -> str:
+        return (
+            f"{ADMIN_CSRF_COOKIE}={token}; Path=/admin; Max-Age={max_age}; "
+            "HttpOnly; Secure; SameSite=Strict"
+        )
+
     def do_GET(self) -> None:
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
@@ -745,6 +929,40 @@ class Handler(BaseHTTPRequestHandler):
                     {"provider": PAYMENT_PROVIDER or None, "checkout_enabled": PAYMENT_CONFIGURED}
                 )
             self.send_json(200, payload)
+            return
+        if ROLE == "auth" and path == "/api/v1/access/check":
+            product_id = self.headers.get("X-LifeYouMe-Product-ID", "")[:64]
+            valid_products = {item.id for item in load_products()}
+            if product_id not in valid_products:
+                self.send_json(400, {"allowed": False, "error": "invalid_product"})
+                return
+            required = AUTH_STORE.login_required(product_id)
+            user = self.sso_user()
+            if required and not user:
+                self.send_json(
+                    401,
+                    {
+                        "allowed": False,
+                        "login_required": True,
+                        "product_id": product_id,
+                    },
+                )
+                return
+            payload = {
+                "allowed": True,
+                "login_required": required,
+                "product_id": product_id,
+                "authenticated": bool(user),
+            }
+            headers = {"X-LifeYouMe-Login-Required": str(required).lower()}
+            if user:
+                headers.update(
+                    {
+                        "X-LifeYouMe-User-ID": user.id,
+                        "X-LifeYouMe-User-Email": user.email,
+                    }
+                )
+            self.send_json_headers(200, payload, headers)
             return
         if ROLE == "auth" and path in {"/api/v1/me", "/api/v1/session/verify"}:
             user = self.sso_user()
@@ -803,6 +1021,31 @@ class Handler(BaseHTTPRequestHandler):
                 {"Set-Cookie": self.csrf_cookie(csrf_token)},
             )
             return
+        if ROLE == "ops" and path in {"/admin", "/admin/", "/admin/login"}:
+            if path == "/admin":
+                self.redirect("/admin/")
+                return
+            username = self.admin_user()
+            if username and path == "/admin/login":
+                self.redirect("/admin/")
+                return
+            csrf_token = self.cookie_value(ADMIN_CSRF_COOKIE) or secrets.token_urlsafe(24)
+            headers = (
+                {"Set-Cookie": self.admin_csrf_cookie(csrf_token)}
+                if not self.cookie_value(ADMIN_CSRF_COOKIE)
+                else {}
+            )
+            if username:
+                body = admin_dashboard(
+                    load_products(),
+                    username,
+                    csrf_token,
+                    query.get("ok", [""])[0],
+                )
+            else:
+                body = admin_login_page(csrf_token)
+            self.send_with_headers(200, body, headers)
+            return
         if path == "/api/v1/products" and ROLE in {"portal", "ops"}:
             products = [
                 {
@@ -860,8 +1103,127 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self.send_json(503, {"status": "error", "message": "Unknown service role"})
 
+    def do_OPTIONS(self) -> None:
+        path = urllib.parse.urlparse(self.path).path
+        origin = trusted_origin(self.headers.get("Origin", ""))
+        if ROLE != "auth" or path not in {"/api/v1/me", "/api/v1/session/verify"} or not origin:
+            self.send_json(404, {"status": "error", "message": "Not found"})
+            return
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Access-Control-Allow-Credentials", "true")
+        self.send_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Max-Age", "600")
+        self.send_header("Vary", "Origin")
+        self.end_headers()
+
     def do_POST(self) -> None:
         path = urllib.parse.urlparse(self.path).path
+        if ROLE == "ops" and path.startswith("/admin/"):
+            form = self.form_data()
+            if path == "/admin/logout":
+                self.redirect(
+                    "/admin/",
+                    {"Set-Cookie": self.admin_session_cookie("", max_age=0)},
+                )
+                return
+            if path == "/admin/login":
+                csrf_token = self.cookie_value(ADMIN_CSRF_COOKIE)
+                if not self.admin_csrf_valid(form):
+                    self.send_body(
+                        403,
+                        admin_login_page(
+                            csrf_token, "登录页面已过期，请刷新后重试"
+                        ),
+                    )
+                    return
+                if self.rate_limited():
+                    self.send_body(
+                        429,
+                        admin_login_page(
+                            csrf_token, "尝试次数过多，请稍后再试"
+                        ),
+                    )
+                    return
+                username = form.get("username", "")[:128]
+                password = form.get("password", "")[:200]
+                valid = (
+                    bool(OPS_ADMIN_PASSWORD_HASH)
+                    and hmac.compare_digest(username, OPS_ADMIN_USER)
+                    and verify_password(password, OPS_ADMIN_PASSWORD_HASH)
+                )
+                if not valid:
+                    self.record_failed_attempt()
+                    self.send_body(
+                        401,
+                        admin_login_page(csrf_token, "管理员账号或密码不正确"),
+                    )
+                    return
+                self.clear_failed_attempts()
+                self.redirect(
+                    "/admin/",
+                    {"Set-Cookie": self.admin_session_cookie(issue_session(username))},
+                )
+                return
+
+            username = self.admin_user()
+            if not username:
+                self.redirect("/admin/")
+                return
+            if not self.admin_csrf_valid(form):
+                self.send_body(
+                    403,
+                    page(
+                        "请求已过期",
+                        '<main class="not-found"><h1>请求已过期</h1>'
+                        '<a href="/admin/">返回管理后台</a></main>',
+                        portal=True,
+                    ),
+                )
+                return
+            if path == "/admin/users/status":
+                user_id = form.get("user_id", "")[:64]
+                status = form.get("status", "")
+                if not re.fullmatch(r"[a-f0-9]{32}", user_id) or status not in {
+                    "active",
+                    "disabled",
+                }:
+                    self.send_json(400, {"error": "invalid_request"})
+                    return
+                if not AUTH_STORE.set_user_status(user_id, status, username):
+                    self.send_json(404, {"error": "user_not_found"})
+                    return
+                self.redirect("/admin/?ok=user-status#users")
+                return
+            if path == "/admin/users/password":
+                user_id = form.get("user_id", "")[:64]
+                new_password = form.get("new_password", "")[:200]
+                if (
+                    not re.fullmatch(r"[a-f0-9]{32}", user_id)
+                    or len(new_password) < 12
+                ):
+                    self.send_json(400, {"error": "invalid_password"})
+                    return
+                if not AUTH_STORE.set_user_password(
+                    user_id, password_hash(new_password), username
+                ):
+                    self.send_json(404, {"error": "user_not_found"})
+                    return
+                self.redirect("/admin/?ok=password#users")
+                return
+            if path == "/admin/products/login-policy":
+                product_id = form.get("product_id", "")[:64]
+                valid_products = {item.id for item in load_products()}
+                if product_id not in valid_products:
+                    self.send_json(400, {"error": "invalid_product"})
+                    return
+                required = form.get("login_required") == "true"
+                AUTH_STORE.set_login_required(product_id, required, username)
+                self.redirect("/admin/?ok=product-policy#products")
+                return
+            self.send_json(404, {"error": "not_found"})
+            return
         if ROLE == "auth":
             form = self.form_data()
             if path == "/api/v1/device/start":
@@ -1081,7 +1443,7 @@ def main() -> None:
         SESSION_SECRET == "development-only" or not OPS_ADMIN_PASSWORD_HASH
     ):
         raise SystemExit("Ops requires SESSION_SECRET and OPS_ADMIN_PASSWORD_HASH")
-    if ROLE == "auth":
+    if ROLE in {"auth", "ops"}:
         AUTH_STORE.initialize()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(json.dumps({"service": ROLE, "listen": f"{HOST}:{PORT}"}), flush=True)

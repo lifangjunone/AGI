@@ -1,5 +1,11 @@
 # FDE Playbook
 
+## 统一身份
+
+公网 Web 版使用 LifeYouMe SSO 网关，本地开发或封装客户端使用设备授权。
+学习进度只关联平台稳定用户 ID，不保存统一账号密码。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 产品类型：FDE 岗位学习与交互式实战手册
 原产品名：FDE 前线工程手册 / FDE Fieldbook
 运行形态：React、TypeScript、Vite、静态 Web 应用

@@ -336,7 +336,7 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
 .state-badge { padding: 5px 8px; border: 1px solid var(--line); color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: 0.12em; }
 .state-badge.running { border-color: var(--accent); color: var(--accent); }
 .state-badge.queued { border-color: var(--amber); color: var(--amber); }
-.state-badge.source-review, .state-badge.paused { border-color: var(--amber); color: var(--amber); }
+.state-badge.source-review, .state-badge.season-review, .state-badge.paused { border-color: var(--amber); color: var(--amber); }
 .state-badge.failed, .state-badge.rights-review, .state-badge.configuration-gate { border-color: var(--danger); color: var(--danger); }
 .state-badge.completed { border-color: var(--cyan); color: var(--cyan); }
 .state-badge.demo-preview, .state-badge.planning-ready { border-color: var(--amber); color: var(--amber); }
@@ -568,6 +568,8 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
 .episode-row strong, .episode-row small { display: block; }
 .episode-row strong { font-size: 12px; }
 .episode-row small { margin-top: 3px; color: var(--muted); font-size: 9px; }
+.episode-row.planning-row { align-items: start; }
+.episode-row.planning-row > div:nth-child(3) strong { font-size: 10px; line-height: 1.5; }
 .mini-progress { height: 4px; background: var(--line-soft); }
 .mini-progress span { display: block; height: 100%; background: var(--accent); }
 .view-empty { display: grid; min-height: 300px; place-content: center; justify-items: center; color: var(--muted); text-align: center; }
@@ -670,7 +672,7 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
 .task-state { width: fit-content; padding: 4px 7px; border: 1px solid var(--line); color: var(--muted); font-size: 9px; }
 .task-state.running, .task-state.rendering { border-color: var(--accent); color: var(--accent); }
 .task-state.queued { border-color: var(--amber); color: var(--amber); }
-.task-state.source-review { border-color: var(--amber); color: var(--amber); }
+.task-state.source-review, .task-state.season-review { border-color: var(--amber); color: var(--amber); }
 .task-state.completed { border-color: var(--cyan); color: var(--cyan); }
 .task-state.failed, .task-state.rights-review, .task-state.budget-gate, .task-state.configuration-gate { border-color: var(--danger); color: var(--danger); }
 .task-state.demo-preview, .task-state.planning-ready { border-color: var(--amber); color: var(--amber); }

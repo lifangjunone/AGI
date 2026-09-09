@@ -23,7 +23,8 @@ const STAGE_LABELS = {
 };
 const DEMO_IMAGE_ENDPOINT = "https://copilot-cn.bytedance.net/api/ide/v1/text_to_image";
 const TARGET_SOURCE_CHARACTERS_PER_EPISODE = 6000;
-const MAX_ADAPTATION_PLAN_EPISODES = 240;
+const MAX_ADAPTATION_PLAN_EPISODES = 2000;
+const MAX_MODEL_PLAN_EPISODES = 240;
 
 function now() {
   return new Date().toISOString();
@@ -246,9 +247,12 @@ function normalizeAdaptationPlan(candidate, fallback) {
   const sourceEpisodes = Array.isArray(candidate?.episodes)
     ? candidate.episodes
     : [];
-  const episodes = sourceEpisodes
-    .slice(0, MAX_ADAPTATION_PLAN_EPISODES)
-    .map((episode, index) => {
+  const totalEpisodes = Math.min(
+    MAX_ADAPTATION_PLAN_EPISODES,
+    Math.max(sourceEpisodes.length, fallback.episodes.length)
+  );
+  const episodes = Array.from({ length: totalEpisodes }, (_, index) => {
+      const episode = sourceEpisodes[index];
       const fallbackEpisode = fallback.episodes[index]
         || fallback.episodes.at(-1);
       return {
@@ -578,6 +582,20 @@ export class ProductionPipeline {
       source: null,
       sourceConfirmed: false,
       suggestedSourceId: null,
+      adaptationPlan: null,
+      seasonSelection: null,
+      seasonEpisodeCount: null,
+      bible: null,
+      assets: [],
+      episodes: [],
+      contentPlanCompletedAt: null,
+      productionSpec: {
+        episodeDurationSeconds: projectDurationSeconds(project, this.config),
+        segmentDurationSeconds: project.productionSpec?.segmentDurationSeconds
+          || MAX_VIDEO_SEGMENT_SECONDS,
+        continuityMode: "last-frame-chain",
+        renderOrder: "episode-sequential"
+      },
       nodes: createPipelineNodes(project.novelName),
       status: "queued",
       stage: "discover",
@@ -956,7 +974,7 @@ export class ProductionPipeline {
         if (this.config.mode === "live") {
           generatedPlan = await this.ark.generateJson(
             "你是长篇小说剧集策划。只输出 JSON，字段为 analysisBasis、recommendedEpisodeCount、suggestedSeasonSize、tone、seriesSynopsis、characters、weapons、locations、episodes。必须根据实际章节边界、章节长度、事件密度和五分钟叙事容量决定总集数，不得使用固定档位。episodes 必须按全书顺序列出，每项只包含 number、title、logline、sourceRange、sourceChapterStart、sourceChapterEnd、estimatedSourceCharacters。每集必须对应明确正文范围，不能先决定季集数，也不要生成分镜或视频。",
-            `作品：${project.novelName}\n来源：${source.title} / ${source.authors}\n正文字符数：${sourceText.length}\n检测到的章节：${JSON.stringify(chapterInventory.slice(0, MAX_ADAPTATION_PLAN_EPISODES))}\n正文开篇：${(sourceText || source.description || "").slice(0, 60000)}\n正文结尾：${(sourceText || source.description || "").slice(-30000)}`
+            `作品：${project.novelName}\n来源：${source.title} / ${source.authors}\n正文字符数：${sourceText.length}\n全书章节或内容单元总数：${chapterInventory.length}\n章节清单（当前批次）：${JSON.stringify(chapterInventory.slice(0, MAX_MODEL_PLAN_EPISODES))}\n正文开篇：${(sourceText || source.description || "").slice(0, 60000)}\n正文结尾：${(sourceText || source.description || "").slice(-30000)}`
           );
         }
         adaptationPlan = normalizeAdaptationPlan(
@@ -1421,7 +1439,7 @@ export class ProductionPipeline {
         completedAt: allCompleted ? now() : null,
         episodes: project.episodes
       },
-      message: `第 ${episode.number}/${project.episodes.length} 集五分钟成片已完成${allCompleted ? "，全季生产结束" : "，开始下一集"}`
+      message: `本季第 ${episode.seasonOrder || completedEpisodes}/${project.episodes.length} 集五分钟成片已完成${allCompleted ? "，本季生产结束" : "，开始下一集"}`
     });
     if (!allCompleted) {
       await this.submitNextSequentialShot(project);
@@ -1451,4 +1469,13 @@ export class ProductionPipeline {
   }
 }
 
-export { STAGES, buildDemoBible, buildSeriesBible, makeShots, makeShotsForDuration };
+export {
+  STAGES,
+  buildDemoBible,
+  buildFallbackAdaptationPlan,
+  buildSeriesBible,
+  extractChapterInventory,
+  makeShots,
+  makeShotsForDuration,
+  normalizeAdaptationPlan
+};

@@ -5,6 +5,24 @@
 
 产品类型：商机发现、审计与验证工作台
 
+## 生产域名与平台边界
+
+Opportunity Factory 已从 `https://lifeyoume.icu/` 根域迁回独立审计子域：
+
+```text
+https://audit.lifeyoume.icu/
+```
+
+根域由 [`lifeyoume-platform`](../lifeyoume-platform/README.md) 产品展厅接管。
+历史 `/reports`、`/compare`、`/r/*`、Badge、RSS、Sitemap 和支付回调继续兼容，
+但新的审计产品链接和 canonical 地址统一使用审计子域。
+
+公开报告保持无需登录即可访问；进入审计工作台时使用 LifeYouMe 统一账号。
+浏览器会话由 `auth.lifeyoume.icu` 提供，Opportunity Factory 不再创建第二套
+终端用户密码。`/admin` 的独立凭据仅用于运维人员，不属于产品用户体系。
+统一身份契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 网站使用与桌面端一致的“增长罗盘”品牌图标，并提供浏览器标签页和 Apple 设备主屏图标。
 原产品名：商机罗盘 / Opportunity Compass
 运行形态：macOS 桌面应用 + 本地/服务器无人值守服务

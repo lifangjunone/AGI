@@ -1,5 +1,11 @@
 # English Speaking Coach
 
+## 统一身份
+
+PWA、Capacitor 和移动端统一使用 LifeYouMe 设备授权；浏览器正式入口可使用
+Web SSO 会话。学习数据按稳定用户 ID 归属，不建立第二套密码库。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 产品类型：英语口语训练产品
 原产品名：EasySay
 运行形态：React PWA、Capacitor iOS/Android、Node API、本地 MLX 语音服务

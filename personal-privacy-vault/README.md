@@ -1,5 +1,12 @@
 # 隐匣 Personal Privacy Vault
 
+## 统一身份与隐私边界
+
+公网入口使用 LifeYouMe Web SSO，会话只负责确认访问者身份。保险库内容、主
+密码、派生密钥和解密结果仍只存在当前设备，绝不上传到统一身份服务。统一账号
+密码与保险库主密码是两套用途不同的凭据。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 本地优先的个人隐私档案系统。适合保存身份资料、账号凭据、财务信息、医疗健康、家庭档案和私密笔记。
 
 ## 隐私边界

@@ -1,5 +1,11 @@
 # Hover Translator
 
+## 统一身份
+
+Electron 客户端使用 LifeYouMe 设备授权，浏览器完成认证后应用获取产品作用域
+令牌；翻译记录仍按本地优先原则保存，不接触统一账号密码。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 macOS system-wide English-to-Chinese translator built with Electron, Swift, and
 Apple Vision OCR.
 

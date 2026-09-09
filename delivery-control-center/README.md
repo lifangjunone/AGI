@@ -1,5 +1,11 @@
 # Delivery Control Center
 
+## 统一身份
+
+Electron 客户端使用 LifeYouMe 设备授权登录，系统浏览器完成账号认证，应用只
+保存产品作用域访问令牌和稳定用户 ID，不采集统一账号密码。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 产品类型：本地 AI 研发交付控制中心
 原产品名：OneOPC
 运行形态：Electron macOS 桌面应用

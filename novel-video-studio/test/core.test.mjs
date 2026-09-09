@@ -6,16 +6,19 @@ import test from "node:test";
 import { ArkClient } from "../lib/ark-client.mjs";
 import {
   DEFAULT_ARK_MODELS,
-  EPISODE_COUNT_OPTIONS,
   EPISODE_DURATION_SECONDS,
+  MAX_SEASON_EPISODES,
   MAX_VIDEO_SEGMENT_SECONDS,
   makeConfig
 } from "../lib/config.mjs";
 import {
   buildDemoBible,
+  buildFallbackAdaptationPlan,
   buildSeriesBible,
+  extractChapterInventory,
   makeShots,
   makeShotsForDuration,
+  normalizeAdaptationPlan,
   ProductionPipeline
 } from "../lib/pipeline.mjs";
 import { searchNovel, titleScore } from "../lib/novel-search.mjs";
@@ -112,7 +115,7 @@ test("production capacity fixes episodes at five minutes and segments at 30 seco
   assert.equal(config.production.videoCostPerSecondCny, 1.512);
   assert.equal(config.production.estimatedEpisodeVideoCostCny, 453.6);
   assert.equal(config.production.maxVideoSegmentSeconds, 30);
-  assert.deepEqual(config.production.episodeCountOptions, [1, 3, 6, 12]);
+  assert.equal(config.production.maxSeasonEpisodes, MAX_SEASON_EPISODES);
   assert.equal(config.production.defaultOutputDurationSeconds, 5);
   assert.deepEqual(config.production.outputDurationOptions, [5, 10, 15, 30, 60]);
   assert.equal(config.production.outputsPerDay, 864);
@@ -208,6 +211,46 @@ test("five-minute episodes split into ten ordered 30-second segments", () => {
   assert.deepEqual(minute.map((shot) => shot.id), ["E001-S001", "E001-S002"]);
 });
 
+test("chapter inventory drives a dynamic whole-book episode plan", () => {
+  const sourceText = [
+    "第一章 山中异响",
+    "甲".repeat(3200),
+    "第二章 夜访古寺",
+    "乙".repeat(3400),
+    "第三章 真相初现",
+    "丙".repeat(2800)
+  ].join("\n");
+  const chapters = extractChapterInventory(sourceText, "测试小说");
+  const plan = buildFallbackAdaptationPlan(
+    "测试小说",
+    sourceText,
+    { description: "" }
+  );
+  assert.equal(chapters.length, 3);
+  assert.equal(plan.detectedChapterCount, 3);
+  assert.equal(plan.episodes.length, 3);
+  assert.equal(plan.episodes[0].sourceChapterStart, 1);
+  assert.equal(plan.episodes[2].sourceChapterEnd, 3);
+
+  const shortPlan = buildFallbackAdaptationPlan(
+    "短篇",
+    "短篇正文".repeat(100),
+    { description: "" }
+  );
+  assert.equal(shortPlan.episodes.length, 1);
+
+  const partialModelPlan = normalizeAdaptationPlan({
+    episodes: [{
+      number: 1,
+      title: "模型增强标题",
+      logline: "模型只返回了第一集"
+    }]
+  }, plan);
+  assert.equal(partialModelPlan.episodes.length, 3);
+  assert.equal(partialModelPlan.episodes[0].title, "模型增强标题");
+  assert.equal(partialModelPlan.episodes[2].sourceChapterEnd, 3);
+});
+
 test("series planning prepares every episode before video rendering", () => {
   const config = {
     production: {
@@ -221,7 +264,7 @@ test("series planning prepares every episode before video rendering", () => {
     "西游记",
     { description: "公版名著" },
     config,
-    EPISODE_COUNT_OPTIONS[2]
+    6
   );
   assert.equal(bible.episodes.length, 6);
   assert.ok(bible.episodes.every((episode) => episode.contentStatus === "ready"));
@@ -474,7 +517,7 @@ test("live production stops before model calls when cost authorization is missin
   }
 });
 
-test("all episode content is ready before budget approval starts sequential video", async () => {
+test("whole-book planning precedes season selection and video budget approval", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "novel-series-budget-"));
   try {
     const store = new ProjectStore(directory);
@@ -495,20 +538,33 @@ test("all episode content is ready before budget approval starts sequential vide
         budgetOverrunAllowed: false
       }
     }, store, {
-      loadText: async () => "公版正文"
+      loadText: async () => [
+        "第一章 五行山",
+        "正文".repeat(2500),
+        "第二章 拜师",
+        "正文".repeat(2500),
+        "第三章 启程",
+        "正文".repeat(2500)
+      ].join("\n")
     });
     let planningCalls = 0;
     pipeline.ark.generateJson = async () => {
       planningCalls += 1;
       if (planningCalls === 1) {
         return {
-          seasonTitle: "西游记 第一季",
-          seasonSynopsis: "取经启程",
+          analysisBasis: "章节边界与叙事事件",
+          recommendedEpisodeCount: 3,
+          suggestedSeasonSize: 2,
+          seriesSynopsis: "取经启程",
           tone: "东方奇幻",
           characters: [{ name: "孙悟空", continuityId: "CHAR-001" }],
           weapons: [{ name: "金箍棒", continuityId: "PROP-001" }],
           locations: [{ name: "五行山", continuityId: "LOC-001" }],
-          episodes: [{ number: 1, title: "启程", logline: "孙悟空重获自由" }]
+          episodes: [
+            { number: 1, title: "五行山", logline: "孙悟空等待取经人", sourceRange: "第一章" },
+            { number: 2, title: "拜师", logline: "孙悟空重获自由", sourceRange: "第二章" },
+            { number: 3, title: "启程", logline: "师徒踏上西行路", sourceRange: "第三章" }
+          ]
         };
       }
       return {
@@ -532,9 +588,7 @@ test("all episode content is ready before budget approval starts sequential vide
       progress: 18,
       mode: "live",
       episodeDurationSeconds: 300,
-      seasonEpisodeCount: 1,
       productionSpec: {
-        episodeCount: 1,
         episodeDurationSeconds: 300,
         segmentDurationSeconds: 30
       },
@@ -553,11 +607,34 @@ test("all episode content is ready before budget approval starts sequential vide
 
     await pipeline.run("series-budget");
     let project = await store.get("series-budget");
+    assert.equal(project.status, "season-review");
+    assert.equal(project.stage, "adapt");
+    assert.equal(project.adaptationPlan.episodes.length, 3);
+    assert.equal(project.seasonEpisodeCount, undefined);
+    assert.equal(project.episodes?.length || 0, 0);
+    assert.equal(videoCalls, 0);
+
+    await assert.rejects(
+      pipeline.selectSeason("series-budget", {
+        seasonNumber: 1,
+        startEpisode: 3,
+        episodeCount: 2
+      }),
+      /本季集数必须/
+    );
+    await pipeline.selectSeason("series-budget", {
+      seasonNumber: 1,
+      startEpisode: 2,
+      episodeCount: 2
+    });
+    await waitFor(async () => (await store.get("series-budget")).status === "budget-gate");
+    project = await store.get("series-budget");
     assert.equal(project.status, "budget-gate");
     assert.equal(project.stage, "render");
-    assert.equal(project.episodes.length, 1);
-    assert.equal(project.episodes[0].contentStatus, "ready");
-    assert.equal(project.episodes[0].shots.length, 10);
+    assert.equal(project.episodes.length, 2);
+    assert.deepEqual(project.episodes.map((episode) => episode.number), [2, 3]);
+    assert.ok(project.episodes.every((episode) => episode.contentStatus === "ready"));
+    assert.ok(project.episodes.every((episode) => episode.shots.length === 10));
     assert.equal(videoCalls, 0);
 
     await pipeline.retry("series-budget", { approveBudget: true });
@@ -565,7 +642,8 @@ test("all episode content is ready before budget approval starts sequential vide
     project = await store.get("series-budget");
     assert.equal(project.budgetApproved, true);
     assert.equal(videoCalls, 1);
-    assert.equal(project.episodes[0].shots.filter((shot) => shot.status === "submitted").length, 1);
+    assert.equal(project.episodes.flatMap((episode) => episode.shots)
+      .filter((shot) => shot.status === "submitted").length, 1);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -681,6 +759,15 @@ test("pipeline pauses for source confirmation and labels planning output as non-
     assert.equal(project.nodes.discover.output.searchCount, 1);
 
     await pipeline.confirmSource(created.id, "candidate-b");
+    await waitFor(async () => (await store.get(created.id)).status === "season-review");
+    project = await store.get(created.id);
+    assert.equal(project.adaptationPlan.episodes.length, 1);
+    assert.equal(project.episodes.length, 0);
+    await pipeline.selectSeason(created.id, {
+      seasonNumber: 1,
+      startEpisode: 1,
+      episodeCount: 1
+    });
     await waitFor(async () => (await store.get(created.id)).status === "planning-ready");
     project = await store.get(created.id);
     assert.equal(project.source.id, "candidate-b");
@@ -749,8 +836,16 @@ test("authorized full-text import persists content and resumes the pipeline", as
       fileName: "求魔-授权正文.txt",
       rightsConfirmed: true
     });
+    await waitFor(async () => (await store.get(created.id)).status === "season-review");
+    let project = await store.get(created.id);
+    assert.ok(project.adaptationPlan.episodes.length >= 1);
+    await pipeline.selectSeason(created.id, {
+      seasonNumber: 1,
+      startEpisode: 1,
+      episodeCount: 1
+    });
     await waitFor(async () => (await store.get(created.id)).status === "planning-ready");
-    const project = await store.get(created.id);
+    project = await store.get(created.id);
     assert.equal(project.source.rights, "user-provided");
     assert.equal(project.authorizedContent.characterCount, content.length);
     assert.equal(project.authorizedContent.sha256.length, 64);

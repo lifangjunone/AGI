@@ -39,10 +39,21 @@ Future contracts must be added as versioned APIs:
 - `POST /platform/v1/events` for product events;
 - `GET /platform/v1/metrics` for product aggregates;
 - `POST /platform/v1/releases` for deployment metadata;
-- billing entitlements issued by `billing.lifeyoume.icu`;
-- OIDC authorization issued by `auth.lifeyoume.icu`.
+- billing entitlements issued by `billing.lifeyoume.icu`.
 
 The operations service must never connect directly to a product database.
+
+## Identity plane
+
+`auth.lifeyoume.icu` owns the only end-user account database. Browser products
+use a shared, opaque, server-side session through Nginx `auth_request`.
+Electron, Tauri, native mobile, PWA, and mini-program clients use the device
+authorization endpoints and receive product-scoped bearer tokens.
+
+The identity plane returns a stable LifeYouMe user ID. Product stores may use
+that value as an external owner key, but remain independently deployed and
+must not copy password hashes or central session tokens. Full protocol details
+are in [`SSO.md`](SSO.md).
 
 ## Product onboarding
 
@@ -74,6 +85,10 @@ fabricating a runtime check. Desktop and lab products may omit `public_url`.
 - Operations sessions are HMAC signed, short-lived, `HttpOnly`, `Secure`, and
   `SameSite=Strict`.
 - Operator passwords use PBKDF2-HMAC-SHA256 with a per-password random salt.
+- End-user passwords use the same hardened derivation in the isolated identity
+  database; browser and device tokens are stored only as SHA-256 hashes.
+- Login and registration forms use CSRF tokens, trusted return URLs, and
+  per-source throttling.
 - Payment providers remain disabled until signed merchant credentials exist.
 - Reserved products are never presented as available.
 

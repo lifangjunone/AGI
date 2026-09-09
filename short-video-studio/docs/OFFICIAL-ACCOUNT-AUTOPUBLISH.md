@@ -11,6 +11,16 @@ npm install
 WECHAT_PUBLISHER_HEADLESS=0 node scripts/official-account-publisher.mjs
 ```
 
+只预览首篇 Markdown 文章，不发布：
+
+```bash
+WECHAT_PUBLISHER_ENABLE=1 \
+WECHAT_PUBLISHER_MODE=preview \
+WECHAT_PUBLISHER_ARTICLE_INDEX=0 \
+WECHAT_PUBLISHER_HEADLESS=0 \
+npm run official:publish
+```
+
 第一次运行需要在公众号后台完成登录或扫码。登录态保存在：
 
 ```text
@@ -34,5 +44,6 @@ bash scripts/install-official-account-publisher.sh
 
 - 公众号平台出现二维码、验证码、风控确认或登录过期时，任务会失败并写入日志，不会伪造发布成功。
 - 文章使用语义化标题、段落、列表和引用，避免将 HTML 当作纯文本塞入编辑器。
+- 每篇正文必须包含至少 3 张图片；图片数量不足时发布器直接失败。
 - `runs.jsonl` 只记录日期、状态、标题和错误，不记录 AppSecret。
 - 自动发布能力依赖公众号账号当前的后台权限和平台风控策略。

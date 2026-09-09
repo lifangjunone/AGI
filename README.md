@@ -10,7 +10,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 
 | 目录 | 产品 | 定位 | 技术形态 |
 | --- | --- | --- | --- |
-| [`lifeyoume-platform/`](lifeyoume-platform/README.md) | LifeYouMe Platform | 已上线 `https://lifeyoume.icu/` 产品展厅、14 项公开产品目录、详情页、运营控制和私有健康检查 | Python、systemd、Nginx |
+| [`lifeyoume-platform/`](lifeyoume-platform/README.md) | LifeYouMe Platform | 已上线产品展厅、14 项公开目录、统一账号、跨子域 Web SSO、设备授权、运营控制和健康检查 | Python、SQLite、systemd、Nginx |
 | [`technology-intelligence/`](technology-intelligence/README.md) | Technology Intelligence | 技术信号聚合、主题学习、需求匹配和 Demo 交接 | Python、Objective-C、WebKit |
 | [`opportunity-factory/`](opportunity-factory/README.md) | Opportunity Factory | 将政企 AI 招标与 POC 材料转为可追踪的验收矩阵，通过 Pay Skill 按次自动收款与交付 | Python、SkillHub、支付宝 A2M、Objective-C |
 | [`delivery-control-center/`](delivery-control-center/README.md) | Delivery Control Center | 从需求输入到研发、测试、部署和交付收据的桌面控制中心 | Electron、Node.js |
@@ -23,9 +23,39 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
 | [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台和 Taro 小程序 | Node.js、FFmpeg、PWA、Electron、Taro |
-| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验来源发现作品，先完成全季剧本，再按集顺序生成五分钟连续成片，支持三端、预算门禁、历史任务与断点恢复 | Node.js、Electron、PWA、火山方舟、FFmpeg |
+| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验来源发现作品，按正文与章节动态规划全书分集，用户选定本季范围后再生产五分钟连续成片 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
-| [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 无账号、无服务端的个人隐私档案，支持分类记录、本地全文搜索、自动锁定和加密备份恢复 | React、TypeScript、Web Crypto、IndexedDB |
+| [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 使用统一账号进入、业务数据仍无服务端的个人隐私档案，支持本地搜索、自动锁定和加密备份 | React、TypeScript、Web Crypto、IndexedDB |
+
+## 门户信息架构
+
+`https://lifeyoume.icu/` 由 `lifeyoume-platform` 提供统一产品入口：
+
+```text
+lifeyoume.icu/
+├── /                         LifeYouMe 产品展厅
+├── /products                 14 项公开产品与实验项目目录
+├── /products/<product-id>    统一产品详情、状态和入口
+├── /video/                   FRAME/60 / 智助乖乖
+├── /vault/                   隐匣
+└── 历史审计兼容路径          转交 Opportunity Factory
+
+audit.lifeyoume.icu/           Opportunity Factory 审计产品
+auth.lifeyoume.icu/            统一账号、Web SSO 与设备授权
+ops.lifeyoume.icu/             受保护的平台运营控制面
+billing.lifeyoume.icu/         统一计费服务边界
+```
+
+产品展厅和公开报告允许匿名浏览；进入产品工作台时统一跳转
+`auth.lifeyoume.icu`。浏览器产品使用跨子域 HttpOnly 会话，Electron、Tauri、
+PWA、小程序和原生客户端使用设备授权，不允许各产品再保存独立终端用户密码。
+完整身份契约见 [`lifeyoume-platform/docs/SSO.md`](lifeyoume-platform/docs/SSO.md)。
+
+## README 状态
+
+当前 16 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
+定位、真实运行状态、构建测试方式、数据边界和统一身份接入方式；根 README 只
+维护产品地图、门户架构和跨项目约束。
 
 ## 产品协作链路
 
@@ -36,7 +66,8 @@ Technology Intelligence
   └─ Demo handoff ──> DeliveryPilot
 
 LifeYouMe Platform
-  └─ 产品注册、域名路由、运营状态和共享服务边界
+  ├─ 产品注册、域名路由、运营状态和共享服务边界
+  └─ 统一账号、Web SSO、设备授权和产品用户 ID
 
 English Speaking Coach / English Immersion Studio / English Foundation / FDE Playbook / Agent Workforce Console
   └─ 独立运行的学习、培训和 Agent 协作产品
@@ -113,8 +144,8 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `novel-video-studio`：新增“推荐小说”目录，首批提供 16 部作品级公版核验的中英文热门经典，支持语言/关键词筛选、版权依据、原文来源和一键创建制片项目。
 - `novel-video-studio`：重构推荐页为响应式影视选题书架，修复超宽屏信息稀疏、字号过小及第三方生成占位图直接暴露的问题。
 - `novel-video-studio`：默认运行正式生产模式；缺少凭据或计费授权时进入明确门禁，不会用模拟结果冒充真实成片。
-- `novel-video-studio`：升级为“小说项目 → 全季内容 → 分集成片”生产体系；支持 1/3/6/12 集，每集固定 5 分钟，由 10 个顺序执行的 30 秒 Seedance 片段组成，并以本地持久化尾帧实现同集和跨集连续生成。
-- `novel-video-studio`：新增全季视频预算确认、逐集 FFmpeg 装配和渲染断点恢复；失败重试保留成功片段，服务重启后继续轮询当前远端任务。
+- `novel-video-studio`：升级为“小说项目 → 全书动态分集 → 用户选择本季连续范围 → 分集成片”生产体系；创建时不再预设集数，建议总集数由正文长度、章节边界和叙事密度决定。
+- `novel-video-studio`：每集固定 5 分钟，由 10 个顺序执行的 30 秒 Seedance 片段组成；支持本季预算确认、逐集 FFmpeg 装配、尾帧连续生成和失败断点恢复。
 - `novel-video-studio`：规划预览可升级为真实生成，成片完成后支持项目内播放和 MP4 下载；已跑通 5 秒 Seedance 2.5 真实生产链路。
 - `english-immersion-studio`：新增沉浸式英语桌面训练产品，覆盖固定/推荐场景、CEFR 难度、语言分析、字幕模式、VRM/GLB 角色、MediaPipe 本地头像烘焙、Microsoft 神经语音和 MetaHuman 5.7 生产级数字人接入。
 - `english-immersion-studio`：补充 [MetaHuman 资产重建说明](english-immersion-studio/docs/METAHUMAN_ASSET_REBUILD.md)，明确公共仓库边界、私有备份、角色重建和视觉验收要求。
@@ -153,6 +184,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `short-video-studio` 已完成小程序管理员扫码验证并更新 Taro `project.config.json` / `project.tt.json`；小程序订阅模板已配置，真实用户授权和完成消息发送仍需在真机小程序中验收。
 - `short-video-studio` 新增公众号 Playwright 自动发布器，每天北京时间 08:30、17:30 各生成并发布一篇结构化文章；首次登录/二维码与平台风控确认仍需一次人工完成，失败会记录日志，不伪造发布成功。
 - `short-video-studio` 公众号内容改为 Markdown 源文件 + 微信主题 HTML 渲染，首篇样稿加入 900×383 头图、段落留白、章节层级、重点引用和列表；发布闸门默认关闭，未通过预览验收不会发布。
+- 公众号文章生成新增硬性规则：正文至少包含 3 张相关图片，用于分隔阅读节奏；少于 3 张时不允许进入发布流程。
 - `short-video-studio` 小程序构建依赖已对齐 Taro 4.1.9 要求的 Webpack 5.91.0，准备导入微信开发者工具上传新版本。
 - `short-video-studio` 小程序构建依赖进一步对齐 Taro 4.1.9 要求的 React Refresh 0.14.x，避免开发者工具构建时产生 peer 依赖冲突。
 - `short-video-studio` 修复微信开发者工具不支持 SVG TabBar 图标的问题，改为兼容真机的文字 TabBar 配置。

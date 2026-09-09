@@ -1,5 +1,11 @@
 # English Foundation
 
+## 统一身份
+
+Tauri 桌面端通过 LifeYouMe 设备授权连接统一账号，学习记录继续本地保存并以
+稳定用户 ID 分区；产品不得收集或保存统一账号密码。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 产品类型：英语基础训练桌面应用
 运行形态：Tauri 2、React、TypeScript、Rust
 兼容性说明：macOS 构建产物当前仍使用 `Foundation.app`，后续可在签名和发布迁移时一并升级。

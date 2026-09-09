@@ -1,5 +1,12 @@
 # 长卷制片厂 / Novel Video Studio
 
+## 统一身份
+
+正式 Web 入口使用 LifeYouMe SSO 网关，Electron、PWA 和移动端使用设备授权。
+小说来源、项目、任务和成片仍由本项目保存，并以稳定用户 ID 归属；不得新增
+独立终端用户密码库。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 输入小说名后，自动完成合法内容源检索、影视化改编、角色/武器/场景设定、镜头视频生成和成片装配的本地生产控制台。
 
 ## 当前能力
@@ -10,7 +17,8 @@
 - 推荐目录采用响应式影视选题书架：宽屏自动排列 3–4 列，手机端切换紧凑列表；生成封面未完成时显示品牌化书籍底板，不暴露第三方占位图。
 - 自动读取公版正文；商业作品可导入已获授权的 TXT/Markdown 全文，系统持久化原文件、SHA-256、字数和预览后自动继续流水线。
 - 只找到作品信息或普通网页时停在版权门禁，不绕过 WAF、登录、付费机制或抓取未授权正文。
-- 创建项目时可选择 `1 / 3 / 6 / 12 集`，先生成并锁定全季大纲、全部分集剧本、角色连续性 ID、武器道具和地点设定，再进入视频生产。
+- 创建项目时只输入小说名，不预设集数。确认来源并读取正文后，系统先识别章节边界、章节长度与叙事密度，生成覆盖全书的分集规划和建议总集数。
+- 全书分集规划完成后进入人工门禁：用户核对每集对应章节与梗概，再选择季号、起始集和本季连续集数（单季最多 24 集）；系统只为所选范围生成详细剧本、连续性档案和视频。
 - 每集固定 5 分钟，拆为 10 个 30 秒 Seedance 片段；同一项目内严格顺序生成，以上一片段尾帧作为下一片段首帧，并锁定角色、服装、道具、空间、光线、镜头方向和动作势能。
 - 对接火山方舟 Chat Completions、Seedream 图片生成和 Seedance 异步视频生成 API。
 - 自动轮询视频任务，在方舟 24 小时临时 URL 失效前下载片段与尾帧；每集 10 段完成后由 FFmpeg 输出独立 H.264/AAC MP4，再开始下一集。
@@ -82,7 +90,6 @@ ARK_VIDEO_MODEL=doubao-seedance-2-5-260628
 PRODUCTION_MODE=live
 ALLOW_BILLABLE_GENERATION=false
 ALLOW_BUDGET_OVERRUN=false
-DEFAULT_EPISODE_COUNT=6
 EPISODE_DURATION_MINUTES=5
 SHOT_DURATION_SECONDS=30
 MAX_PROJECT_CONCURRENCY=2
@@ -91,9 +98,9 @@ VIDEO_COST_PER_SECOND_CNY=1.512
 
 任务规划默认调用方舟 Chat Completions 的 `glm-5-2-260617`；视频镜头默认调用 Seedance 2.5 的 `doubao-seedance-2-5-260628`。旧配置项 `ARK_TEXT_MODEL` 仍可作为规划模型的兼容回退。
 
-真实生产必须同时满足 API Key、`PRODUCTION_MODE=live` 和计费授权。内容模型调用前会检查总计费开关；全季剧本完成后，若视频预算超过 `DAILY_BUDGET_CNY`，产品会停在视频预算门禁，必须在项目内再次确认才会提交 Seedance 任务。也可由部署方显式设置 `ALLOW_BUDGET_OVERRUN=true`。
+真实生产必须同时满足 API Key、`PRODUCTION_MODE=live` 和计费授权。内容模型调用前会检查总计费开关；全书规划不会直接启动视频。用户选择本季并完成该季全部剧本后，若视频预算超过 `DAILY_BUDGET_CNY`，产品会停在视频预算门禁，必须再次确认才会提交 Seedance 任务。也可由部署方显式设置 `ALLOW_BUDGET_OVERRUN=true`。
 
-按 2026-09-09 方舟 720P 文生视频参考价约 `¥1.512/秒` 估算，每集 300 秒约 `¥453.60`，默认 6 集全季约 `¥2721.60`，不包含文本、图片、失败重试等额外费用。实际费用以方舟账单为准。
+按 2026-09-09 方舟 720P 文生视频参考价约 `¥1.512/秒` 估算，每集 300 秒约 `¥453.60`；本季总预算根据用户在全书规划中选择的实际集数动态计算，不包含文本、图片、失败重试等额外费用。实际费用以方舟账单为准。
 
 API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` 已被 Git 忽略。聊天中出现过的 Key 应先在方舟控制台轮换，不建议继续使用。
 
@@ -116,7 +123,7 @@ API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` �
 
 - 864 集五分钟成片 / 日
 - 每集 10 个顺序执行的 30 秒 Seedance 任务
-- 默认 6 集项目共 60 个片段，逐集完成和装配
+- 本季片段数由实际选择集数决定，每集固定 10 个片段，逐集完成和装配
 
 这是容量规划目标，不是单机性能承诺。实际产能取决于 Seedance 账户 RPM/并发、审核通过率、下载带宽和预算。生产部署可通过 `MAX_PROJECT_CONCURRENCY` 并行不同小说项目，但不能并发同一项目内需要尾帧接续的片段。
 
@@ -140,11 +147,12 @@ data/
 - `GET /api/recommendations`：读取作品级公版热门推荐目录
 - `GET /api/search-sources`：读取已配置小说检索源
 - `PUT /api/search-sources`：校验并保存小说检索源
-- `POST /api/projects`：创建剧集项目，正文为 `{ "novelName": "西游记", "episodeCount": 6 }`
+- `POST /api/projects`：创建剧集项目，正文为 `{ "novelName": "西游记" }`
 - `GET /api/projects/:id`：生产状态
 - `POST /api/projects/:id/rescan`：按最新版来源注册表重新执行发现节点
 - `POST /api/projects/:id/source`：确认具体作品版本并继续
 - `POST /api/projects/:id/content`：导入已授权正文并继续流水线
+- `POST /api/projects/:id/season`：全书规划完成后选择本季范围，正文为 `{ "seasonNumber": 1, "startEpisode": 1, "episodeCount": 8 }`
 - `POST /api/projects/:id/retry`：重试暂停或失败任务；视频预算确认正文为 `{ "approveBudget": true }`
 - `POST /api/projects/:id/export`：导出生产清单
 
@@ -154,7 +162,7 @@ data/
 npm test
 ```
 
-当前 39 项自动化测试覆盖三端入口、全季内容先行、五分钟分集拆分、顺序渲染、同集与跨集尾帧接续、失败断点恢复、预算确认、公版推荐目录与 API、PWA、桌面安全配置、清单下载和媒体 Range 请求。完整交互测试记录见 [`dogfood-output/report.md`](dogfood-output/report.md)。
+当前 40 项自动化测试覆盖三端入口、章节提取、动态全书分集、先规划后选季、五分钟分集拆分、顺序渲染、同集与跨集尾帧接续、失败断点恢复、预算确认、公版推荐目录与 API、PWA、桌面安全配置、清单下载和媒体 Range 请求。完整交互测试记录见 [`dogfood-output/report.md`](dogfood-output/report.md)。
 
 任务状态机和并发策略见 [`docs/TASK_CENTER.md`](docs/TASK_CENTER.md)。
 来源确认与节点数据契约见 [`docs/PIPELINE_NODES.md`](docs/PIPELINE_NODES.md)。

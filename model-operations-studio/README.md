@@ -1,5 +1,11 @@
 # Model Operations Studio
 
+## 统一身份
+
+Electron 客户端通过 LifeYouMe 设备授权连接统一账号，模型、任务和运行数据
+继续保存在本地控制面，并按稳定用户 ID 隔离。应用不保存统一账号密码。接入
+契约见 [`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 本地优先、跨平台的 MaaS 控制面，用于注册、下载、配置、启动、停止、监控和调用本地模型。当前纵向切片优先支持 Apple Silicon，并提供：
 
 - Wan2.2-TI2V-5B FP16：通过 ComfyUI API 提供文生视频与可选参考图的图生视频能力。

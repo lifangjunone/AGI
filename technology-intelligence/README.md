@@ -1,5 +1,11 @@
 # Technology Intelligence
 
+## 统一身份
+
+macOS 客户端通过 LifeYouMe 设备授权连接统一账号，报告、订阅和需求匹配记录
+继续保存在本机并关联稳定用户 ID；应用不收集统一账号密码。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 产品类型：技术情报、主题学习与需求匹配工作台
 原产品名：Technology Exploration Agent
 运行形态：macOS 桌面应用 + 本地报告与 handoff 服务

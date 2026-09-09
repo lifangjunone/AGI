@@ -1,5 +1,12 @@
 # Local Avatar Generator
 
+## 统一身份
+
+本项目是内部服务组件，没有独立终端用户登录页。调用方必须先通过 LifeYouMe
+统一身份获得用户上下文，服务仅接受受信产品传递的稳定用户 ID，不保存账号
+密码。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 This service repaints the full material set of an existing rigged GLB from a
 full-character reference. It uses the MIT-licensed Hunyuan3D-Swift MLX port on
 Apple Silicon. Close-up face identity is handled inside English Immersion

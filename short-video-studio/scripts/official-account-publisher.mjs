@@ -181,7 +181,7 @@ function renderArticle(article) {
 async function loadArticle(index) {
   const markdownPath = MARKDOWN_ARTICLES[index];
   if (!markdownPath) return articles[index % articles.length];
-  return renderOfficialMarkdown(await readFile(markdownPath, "utf8"));
+  return renderOfficialMarkdown(await readFile(markdownPath, "utf8"), { rootDirectory: ROOT });
 }
 
 async function logRun(entry) {
@@ -220,7 +220,7 @@ async function waitForDashboard(page) {
   await page.waitForTimeout(1500);
 }
 
-async function fillArticle(page, article) {
+async function fillArticle(page, article, { previewOnly = false } = {}) {
   await page.goto("https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit_v2&action=edit&type=77", {
     waitUntil: "domcontentloaded"
   });
@@ -252,6 +252,7 @@ async function fillArticle(page, article) {
   await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
   await page.keyboard.press(process.platform === "darwin" ? "Meta+V" : "Control+V");
   await page.waitForTimeout(500);
+  if (previewOnly) return;
   const fileInput = page.locator('input[type="file"]').first();
   if (await fileInput.count()) {
     await fileInput.setInputFiles(COVER_PATH);
@@ -268,11 +269,25 @@ async function fillArticle(page, article) {
 
 const dateKey = beijingDateKey();
 const slot = process.env.WECHAT_PUBLISHER_SLOT || publishSlot();
-const articleIndex = (dayNumber() * 2 + slotIndex(slot)) % articles.length;
+const mode = process.env.WECHAT_PUBLISHER_MODE || "publish";
+const requestedIndex = Number(process.env.WECHAT_PUBLISHER_ARTICLE_INDEX);
+const articleIndex = Number.isInteger(requestedIndex) && requestedIndex >= 0
+  ? requestedIndex % articles.length
+  : (dayNumber() * 2 + slotIndex(slot)) % articles.length;
 const article = await loadArticle(articleIndex);
 if (process.env.WECHAT_PUBLISHER_ENABLE !== "1") {
-  console.log(JSON.stringify({ status: "disabled", dateKey, slot, title: article.title }));
+  console.log(JSON.stringify({
+    status: "disabled",
+    dateKey,
+    slot,
+    title: article.title,
+    imageCount: article.imageCount || 0,
+    requiredImages: 3
+  }));
   process.exit(0);
+}
+if (!Number.isInteger(article.imageCount) || article.imageCount < 3) {
+  throw new Error(`公众号正文必须至少包含 3 张图片，当前为 ${article.imageCount || 0} 张`);
 }
 if (await alreadyPublished(dateKey, slot)) {
   console.log(JSON.stringify({ status: "skipped", dateKey, slot, reason: "already published for this slot" }));
@@ -285,10 +300,15 @@ const browser = await chromium.launchPersistentContext(PROFILE_DIR, {
 try {
   const page = browser.pages()[0] || await browser.newPage();
   await waitForDashboard(page);
-  await fillArticle(page, article);
-  await markPublished(dateKey, slot, article.title);
-  await logRun({ dateKey, slot, status: "published", title: article.title });
-  console.log(JSON.stringify({ status: "published", dateKey, slot, title: article.title }));
+  await fillArticle(page, article, { previewOnly: mode === "preview" });
+  if (mode === "preview") {
+    await logRun({ dateKey, slot, status: "previewed", title: article.title, imageCount: article.imageCount });
+    console.log(JSON.stringify({ status: "previewed", dateKey, slot, title: article.title, imageCount: article.imageCount }));
+  } else {
+    await markPublished(dateKey, slot, article.title);
+    await logRun({ dateKey, slot, status: "published", title: article.title });
+    console.log(JSON.stringify({ status: "published", dateKey, slot, title: article.title }));
+  }
 } catch (error) {
   await logRun({ dateKey, slot, status: "failed", error: error.message });
   console.error(JSON.stringify({ status: "failed", dateKey, slot, error: error.message }));

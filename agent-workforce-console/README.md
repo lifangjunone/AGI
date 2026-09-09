@@ -1,5 +1,11 @@
 # Agent Workforce Console
 
+## 统一身份
+
+产品接入 LifeYouMe 统一账号。本地/Vite 运行使用设备授权，未来公网入口使用
+Web SSO 网关；不得新增独立终端用户密码库。接入契约见
+[`lifeyoume-platform/docs/SSO.md`](../lifeyoume-platform/docs/SSO.md)。
+
 产品类型：多 Agent 自主协作控制台
 原产品名：Nexora
 运行形态：React、TypeScript、Vite、本地确定性任务引擎
