@@ -15,11 +15,27 @@ Shared control plane for independently deployed products under `lifeyoume.icu`.
 | `auth.lifeyoume.icu` | Identity service boundary | 8802 |
 | `billing.lifeyoume.icu` | Billing service boundary | 8803 |
 | `audit.lifeyoume.icu` | Independent audit product | 8787 |
-| `easysay.lifeyoume.icu` | Reserved independent product | 8788 |
+| `lifeyoume.icu/video/` | FRAME/60 / 智助乖乖 | 4321 |
+| `lifeyoume.icu/vault/` | Personal Privacy Vault | Nginx static |
 
 The platform never imports product code or reads product databases. Products
 join through `config/products.json`, private health endpoints, and future
 versioned event APIs.
+
+## Public portal
+
+The portal now provides:
+
+- `/` - editorial product showroom with real product imagery and selected products;
+- `/products` - searchable, category-filtered catalog;
+- `/products/<id>` - standardized product detail pages;
+- `/api/v1/products` - public Catalog Schema v2 response without private health URLs;
+- an operations-only view that also includes internal platform components.
+
+The public catalog currently contains 14 products and lab projects across AI
+creation, learning, AI engineering, privacy tools, and enterprise services.
+Internal components remain registered for operations but are excluded from the
+public portal.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for boundaries, onboarding,
 security rules, failure isolation, and compatibility behavior.
@@ -57,13 +73,23 @@ production site remains available until every new platform service is healthy.
 
 ## Product registration contract
 
-Each product declares:
+Catalog Schema v2 declares:
 
 - stable product ID;
-- public HTTPS URL;
-- private loopback health URL;
-- lifecycle state;
-- category and owner.
+- name, tagline, summary, audience, category and platforms;
+- lifecycle, availability, visibility and featured placement;
+- capability list, CTA copy, accent and optional real product visual;
+- optional public HTTPS URL;
+- optional private loopback health URL.
 
-`reserved` products are shown as unavailable and are never health-checked or
-linked as if deployed.
+Only `live` products with a private health URL are actively checked. Static
+products can be marked live without a fabricated health endpoint. Products
+without a public URL receive a truthful unavailable action instead of a fake
+online link.
+
+## Production routing
+
+`lifeyoume.icu` proxies the portal to `127.0.0.1:8800`.
+`audit.lifeyoume.icu` remains isolated on `127.0.0.1:8787`, while historical
+audit paths on the root domain continue to proxy to the audit service.
+`/video/` and `/vault/` preserve their existing production routes.

@@ -47,6 +47,8 @@ cat > "$PLIST" <<PLIST
   <dict>
     <key>WECHAT_PUBLISHER_HEADLESS</key>
     <string>1</string>
+    <key>WECHAT_PUBLISHER_ENABLE</key>
+    <string>0</string>
   </dict>
 </dict>
 </plist>

@@ -536,6 +536,25 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
 .command-button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .command-button:disabled { opacity: 0.35; cursor: not-allowed; }
 .command-button svg { width: 14px; }
+.season-planning-panel { border-bottom: 1px solid var(--line); background: var(--panel-2); }
+.season-planning-panel > header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.season-planning-panel h3 { margin: 5px 0 0; font-family: "Noto Serif SC", serif; font-size: 18px; }
+.season-planning-panel header p { max-width: 700px; margin: 6px 0 0; color: var(--muted); font-size: 9px; line-height: 1.6; }
+.season-planning-panel header > strong { flex: 0 0 auto; color: var(--accent); font-family: "Noto Serif SC", serif; font-size: 24px; }
+.season-planning-panel form { display: grid; grid-template-columns: 90px minmax(160px, 1fr) 130px minmax(210px, 1.2fr) auto; align-items: end; gap: 10px; padding: 14px 20px 18px; }
+.season-planning-panel label { color: var(--muted); font-size: 8px; }
+.season-planning-panel input, .season-planning-panel select { display: block; width: 100%; height: 36px; margin-top: 6px; padding: 0 10px; border: 1px solid var(--line); outline: 0; background: var(--bg); color: var(--text); }
+.season-planning-panel input:focus, .season-planning-panel select:focus { border-color: var(--accent); }
+.season-selection-result { min-width: 0; height: 36px; padding: 0 10px; border-left: 2px solid var(--accent); }
+.season-selection-result small, .season-selection-result strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.season-selection-result small { color: var(--muted); font-size: 8px; }
+.season-selection-result strong { margin-top: 5px; font-size: 10px; }
+.episode-season-summary { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--line); background: var(--bg); }
+.episode-season-summary span { min-width: 0; padding: 12px 20px; border-right: 1px solid var(--line); }
+.episode-season-summary span:last-child { border-right: 0; }
+.episode-season-summary small, .episode-season-summary strong { display: block; }
+.episode-season-summary small { color: var(--muted); font-size: 8px; }
+.episode-season-summary strong { margin-top: 5px; font-size: 11px; }
 .episode-row {
   display: grid;
   grid-template-columns: 70px minmax(180px, 1.5fr) 100px 130px minmax(140px, 1fr);
@@ -581,7 +600,7 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
 .create-project-dialog .search-box { grid-template-columns: 22px 1fr; padding: 9px 12px; }
 .duration-selector { margin: 16px 0 0; padding: 0; border: 0; }
 .duration-selector legend { margin-bottom: 7px; color: var(--muted); font-size: 11px; }
-.duration-selector > div { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); }
+.duration-selector > div { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); }
 .duration-selector label { position: relative; display: block; margin: 0; border-right: 1px solid var(--line); }
 .duration-selector label:last-child { border-right: 0; }
 .duration-selector input { position: absolute; opacity: 0; pointer-events: none; }
@@ -737,6 +756,17 @@ h1 { margin-bottom: 0; font-family: "Noto Serif SC", serif; font-size: 36px; lin
   .create-project-spec { grid-template-columns: 1fr; }
   .create-project-spec > span { border-right: 0; border-bottom: 1px solid var(--line); }
   .create-project-spec > span:last-child { border-bottom: 0; }
+  .episode-season-summary { grid-template-columns: repeat(2, 1fr); }
+  .episode-season-summary span:nth-child(2) { border-right: 0; }
+  .episode-season-summary span:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .episode-row { grid-template-columns: 44px minmax(0, 1fr); gap: 9px; padding: 12px; }
+  .episode-row > div { grid-column: 2; }
+  .season-planning-panel > header { align-items: flex-start; padding: 14px 12px; }
+  .season-planning-panel header > strong { font-size: 20px; }
+  .season-planning-panel form { grid-template-columns: 1fr 1fr; padding: 12px; }
+  .season-planning-panel form label:nth-child(2) { grid-column: 1 / -1; }
+  .season-selection-result, .season-planning-panel form .primary-command { grid-column: 1 / -1; }
+  .season-planning-panel form .primary-command { justify-content: center; width: 100%; }
   .search-box { grid-template-columns: 20px 1fr; }
   .search-box button { grid-column: 1 / -1; justify-content: center; width: 100%; }
   .metrics-strip { grid-template-columns: repeat(2, 1fr); }

@@ -6,9 +6,12 @@ import hashlib
 import hmac
 import html
 import json
+import mimetypes
 import os
 import re
 import secrets
+import sqlite3
+import sys
 import time
 import urllib.error
 import urllib.parse
@@ -21,6 +24,14 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PLATFORM_DIR = Path(__file__).resolve().parent
+if str(PLATFORM_DIR) not in sys.path:
+    sys.path.insert(0, str(PLATFORM_DIR))
+
+from auth_store import AuthStore, AuthUser
+
+
+ASSET_ROOT = ROOT / "platform" / "assets"
 ROLE = os.environ.get("SERVICE_ROLE", "portal").strip().lower()
 PORTS = {"portal": 8800, "ops": 8801, "auth": 8802, "billing": 8803}
 PORT = int(os.environ.get("PORT", str(PORTS.get(ROLE, 8800))))
@@ -34,39 +45,85 @@ OPS_ADMIN_PASSWORD_HASH = os.environ.get("OPS_ADMIN_PASSWORD_HASH", "")
 SESSION_TTL_SECONDS = int(os.environ.get("SESSION_TTL_SECONDS", "28800"))
 PAYMENT_PROVIDER = os.environ.get("PAYMENT_PROVIDER", "").strip()
 PAYMENT_CONFIGURED = os.environ.get("PAYMENT_CONFIGURED", "false").lower() == "true"
+AUTH_DB_PATH = Path(os.environ.get("AUTH_DB", str(ROOT / "data" / "auth.db")))
+SSO_SESSION_TTL_SECONDS = int(
+    os.environ.get("SSO_SESSION_TTL_SECONDS", str(30 * 24 * 60 * 60))
+)
+AUTH_REGISTRATION_ENABLED = (
+    os.environ.get("AUTH_REGISTRATION_ENABLED", "true").lower() == "true"
+)
+SSO_COOKIE = "lym_sso_session"
+CSRF_COOKIE = "lym_auth_csrf"
+AUTH_STORE = AuthStore(AUTH_DB_PATH)
 
 
 @dataclass(frozen=True)
 class Product:
     id: str
     name: str
+    tagline: str
     summary: str
     public_url: str
     health_url: str
     lifecycle: str
+    availability: str
     category: str
     owner: str
+    audience: str
+    platforms: tuple[str, ...]
+    capabilities: tuple[str, ...]
+    featured: bool
+    visibility: str
+    visual: str
+    accent: str
+    cta: str
 
 
 def load_products(path: Path = REGISTRY_PATH) -> list[Product]:
     payload = json.loads(path.read_text(encoding="utf-8"))
-    if payload.get("schema_version") != 1:
+    if payload.get("schema_version") not in {1, 2}:
         raise ValueError("Unsupported product registry schema")
     products: list[Product] = []
     seen: set[str] = set()
     for raw in payload.get("products", []):
-        product = Product(**raw)
+        product = Product(
+            id=raw["id"],
+            name=raw["name"],
+            tagline=raw.get("tagline", raw["summary"]),
+            summary=raw["summary"],
+            public_url=raw.get("public_url", ""),
+            health_url=raw.get("health_url", ""),
+            lifecycle=raw["lifecycle"],
+            availability=raw.get(
+                "availability", "online" if raw["lifecycle"] == "live" else "showcase"
+            ),
+            category=raw["category"],
+            owner=raw["owner"],
+            audience=raw.get("audience", ""),
+            platforms=tuple(raw.get("platforms", [])),
+            capabilities=tuple(raw.get("capabilities", [])),
+            featured=bool(raw.get("featured", False)),
+            visibility=raw.get("visibility", "public"),
+            visual=raw.get("visual", ""),
+            accent=raw.get("accent", "cobalt"),
+            cta=raw.get("cta", "查看产品"),
+        )
         if not re.fullmatch(r"[a-z][a-z0-9-]{1,31}", product.id):
             raise ValueError(f"Invalid product id: {product.id}")
         if product.id in seen:
             raise ValueError(f"Duplicate product id: {product.id}")
-        if product.lifecycle not in {"live", "reserved", "paused", "retired"}:
+        if product.lifecycle not in {
+            "live", "beta", "preview", "internal", "reserved", "paused", "retired"
+        }:
             raise ValueError(f"Invalid lifecycle: {product.lifecycle}")
-        if urllib.parse.urlparse(product.public_url).scheme != "https":
+        if product.public_url and urllib.parse.urlparse(product.public_url).scheme != "https":
             raise ValueError(f"Product URL must use HTTPS: {product.id}")
-        health = urllib.parse.urlparse(product.health_url)
-        if health.scheme != "http" or health.hostname not in {"127.0.0.1", "localhost"}:
-            raise ValueError(f"Health URL must be loopback HTTP: {product.id}")
+        if product.health_url:
+            health = urllib.parse.urlparse(product.health_url)
+            if health.scheme != "http" or health.hostname not in {"127.0.0.1", "localhost"}:
+                raise ValueError(f"Health URL must be loopback HTTP: {product.id}")
+        if product.visibility not in {"public", "lab", "internal"}:
+            raise ValueError(f"Invalid visibility: {product.visibility}")
         seen.add(product.id)
         products.append(product)
     return products
@@ -75,6 +132,8 @@ def load_products(path: Path = REGISTRY_PATH) -> list[Product]:
 def check_product(product: Product, timeout: float = 0.8) -> dict[str, Any]:
     if product.lifecycle != "live":
         return {"status": product.lifecycle, "latency_ms": None}
+    if not product.health_url:
+        return {"status": "live", "latency_ms": None}
     started = time.monotonic()
     try:
         request = urllib.request.Request(
@@ -154,63 +213,217 @@ def esc(value: Any) -> str:
     return html.escape(str(value), quote=True)
 
 
-def page(title: str, body: str, *, ops: bool = False) -> bytes:
-    nav = (
-        '<a class="brand" href="/">LifeYouMe</a>'
-        '<nav><a href="https://lifeyoume.icu">产品</a>'
-        + ('<form method="post" action="/logout"><button class="link">退出</button></form>' if ops else "")
-        + "</nav>"
-    )
+def page(title: str, body: str, *, ops: bool = False, portal: bool = False) -> bytes:
+    if ops:
+        nav = (
+            '<a href="https://lifeyoume.icu/products">产品目录</a>'
+            '<form method="post" action="/logout"><button class="nav-link">退出</button></form>'
+        )
+    else:
+        nav = (
+            '<a href="https://lifeyoume.icu/products">全部产品</a>'
+            '<a href="https://lifeyoume.icu/products?scope=lab">实验室</a>'
+            '<a href="https://auth.lifeyoume.icu/account">账号</a>'
+        )
+    content = body if portal else f"<main>{body}</main>"
     document = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="LifeYouMe 产品展厅：把 AI 变成真正可使用的个人工具与生产系统。">
+<meta name="theme-color" content="#111411">
 <title>{esc(title)} · LifeYouMe</title>
-<style>
-:root{{--bg:#f5f7f9;--surface:#fff;--ink:#17202a;--muted:#66717d;--line:#dce2e8;--blue:#1769aa;--blue-soft:#e8f3fb;--green:#087f5b;--amber:#9a6700;--red:#b42318}}
-*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--ink);font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:0}}
-header{{height:60px;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 max(24px,calc((100vw - 1120px)/2));position:sticky;top:0;z-index:2}}
-.brand{{font-size:18px;font-weight:600;color:var(--ink);text-decoration:none}}nav{{display:flex;gap:18px;align-items:center}}nav a,.link{{color:var(--muted);text-decoration:none;background:none;border:0;padding:8px 0;font:inherit;cursor:pointer}}
-main{{max-width:1120px;margin:auto;padding:52px 24px 72px}}.eyebrow{{font:11px ui-monospace,SFMono-Regular,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:10px}}
-h1{{font-size:40px;line-height:1.12;margin:0 0 16px;max-width:760px;font-weight:600}}h2{{font-size:22px;margin:0 0 8px}}p{{color:var(--muted);margin:0}}.lead{{font-size:17px;max-width:700px}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:36px}}.card{{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px;text-decoration:none;color:inherit;min-height:190px;display:flex;flex-direction:column;transition:transform .18s,border-color .18s}}
-a.card:hover{{transform:translateY(-2px);border-color:#8fb8d6}}.meta{{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}}.tag,.status{{font-size:12px;color:var(--muted)}}.dot{{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;background:#9aa4ad}}.healthy .dot{{background:var(--green)}}.reserved .dot{{background:var(--amber)}}.offline .dot,.degraded .dot{{background:var(--red)}}.arrow{{margin-top:auto;color:var(--blue);padding-top:22px}}
-.metrics{{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin:28px 0 24px}}.metric{{background:var(--surface);padding:18px}}.value{{font-size:28px;font-weight:600;color:var(--blue)}}.label{{font-size:12px;color:var(--muted)}}
-table{{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line)}}th,td{{padding:14px;text-align:left;border-bottom:1px solid var(--line)}}th{{font-size:12px;color:var(--muted);font-weight:600}}code{{font:12px ui-monospace,SFMono-Regular,monospace}}.panel{{max-width:440px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:26px;margin-top:30px}}
-label{{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px}}input{{width:100%;height:42px;border:1px solid var(--line);border-radius:6px;padding:0 12px;font:inherit}}button.primary{{width:100%;height:42px;border:0;border-radius:6px;background:var(--blue);color:#fff;font:600 14px inherit;margin-top:20px;cursor:pointer}}.error{{color:var(--red);margin-top:12px}}
-@media(max-width:700px){{h1{{font-size:31px}}main{{padding-top:34px}}.metrics{{grid-template-columns:1fr 1fr}}table{{display:block;overflow-x:auto}}}}
-</style></head><body><header>{nav}</header><main>{body}</main></body></html>"""
+<link rel="stylesheet" href="/assets/portal.css?v=2">
+</head><body class="{'portal-page' if portal else 'service-page'}">
+<header class="site-header">
+  <a class="brand" href="/"><span class="brand-glyph">LY</span><span>LifeYouMe<small>PRODUCT STUDIO</small></span></a>
+  <nav aria-label="主导航">{nav}</nav>
+</header>
+{content}
+{'<script src="/assets/portal.js?v=2" defer></script>' if portal else ''}
+</body></html>"""
     return document.encode("utf-8")
 
 
+STATUS_LABELS = {
+    "healthy": "在线可用",
+    "live": "在线可用",
+    "beta": "内测中",
+    "preview": "产品预览",
+    "internal": "内部组件",
+    "reserved": "待部署",
+    "offline": "暂时离线",
+    "degraded": "服务异常",
+    "paused": "已暂停",
+    "retired": "已下线",
+}
+
+
+def visible_products(products: list[Product]) -> list[Product]:
+    return [item for item in products if item.visibility in {"public", "lab"}]
+
+
+def product_status(product: Product) -> tuple[str, str]:
+    runtime = check_product(product)
+    state = runtime["status"]
+    return state, STATUS_LABELS.get(state, state)
+
+
+def product_visual(product: Product, *, large: bool = False) -> str:
+    visual_class = "product-visual large" if large else "product-visual"
+    if product.visual:
+        return (
+            f'<div class="{visual_class}"><img src="/assets/{esc(product.visual)}" '
+            f'alt="{esc(product.name)} 产品界面" loading="{"eager" if large else "lazy"}"></div>'
+        )
+    initials = "".join(part[:1] for part in re.split(r"[\s/·]+", product.name) if part)[:3]
+    return (
+        f'<div class="{visual_class} visual-fallback accent-{esc(product.accent)}">'
+        f'<span>{esc(initials or product.name[:2])}</span>'
+        f'<small>{esc(product.category)}</small></div>'
+    )
+
+
+def product_card(product: Product) -> str:
+    state, label = product_status(product)
+    platforms = "".join(f"<span>{esc(item)}</span>" for item in product.platforms[:3])
+    return f"""<article class="product-card" data-category="{esc(product.category)}"
+ data-scope="{esc(product.visibility)}" data-search="{esc(product.name + ' ' + product.tagline + ' ' + product.summary)}">
+{product_visual(product)}
+<div class="product-card-body">
+  <div class="product-meta"><span>{esc(product.category)}</span><span class="status {esc(state)}"><i></i>{esc(label)}</span></div>
+  <h3>{esc(product.name)}</h3>
+  <p>{esc(product.tagline)}</p>
+  <div class="platforms">{platforms}</div>
+  <a class="product-link" href="/products/{esc(product.id)}">查看产品 <span aria-hidden="true">↗</span></a>
+</div></article>"""
+
+
 def portal_page(products: list[Product]) -> bytes:
-    cards = []
-    for product in products:
-        health = check_product(product)
-        state = health["status"]
-        enabled = product.lifecycle == "live"
-        tag = {
-            "healthy": "运行正常",
-            "reserved": "待部署",
-            "offline": "离线",
-            "degraded": "服务异常",
-            "paused": "已暂停",
-            "retired": "已下线",
-        }.get(state, state)
-        content = f"""<div class="meta"><span class="tag">{esc(product.category)}</span>
-<span class="status {esc(state)}"><span class="dot"></span>{esc(tag)}</span></div>
-<h2>{esc(product.name)}</h2><p>{esc(product.summary)}</p>
-<span class="arrow">{'进入产品 &rarr;' if enabled else '入口已预留'}</span>"""
-        if enabled:
-            cards.append(
-                f'<a class="card" href="{esc(product.public_url)}">{content}</a>'
-            )
-        else:
-            cards.append(f'<article class="card" aria-disabled="true">{content}</article>')
-    body = f"""<div class="eyebrow">独立产品 · 统一可信基座</div>
-<h1>每个产品独立运行，共享平台能力。</h1>
-<p class="lead">LifeYouMe 的产品拥有独立入口、进程与发布周期，身份、支付和运营能力由平台统一提供。</p>
-<section class="grid" aria-label="产品">{''.join(cards)}</section>"""
-    return page("产品", body)
+    public = visible_products(products)
+    featured = [item for item in public if item.featured][:6]
+    cards = "".join(product_card(item) for item in featured)
+    total = len(public)
+    online = sum(item.lifecycle == "live" for item in public)
+    categories = len({item.category for item in public})
+    body = f"""<main>
+<section class="hero">
+  <div class="hero-image" role="img" aria-label="LifeYouMe 多款产品界面"></div>
+  <div class="hero-shade"></div>
+  <div class="hero-content">
+    <p class="eyebrow light">LIFEYOUME PRODUCT STUDIO · 2026</p>
+    <h1>LifeYouMe</h1>
+    <p class="hero-line">把 AI 变成真正可使用的个人工具与生产系统。</p>
+    <div class="hero-actions">
+      <a class="button primary" href="/products">探索全部产品</a>
+      <a class="button ghost" href="/video/">打开智助乖乖</a>
+    </div>
+    <dl class="hero-stats">
+      <div><dt>{total:02d}</dt><dd>公开产品与实验</dd></div>
+      <div><dt>{online:02d}</dt><dd>当前在线产品</dd></div>
+      <div><dt>{categories:02d}</dt><dd>产品方向</dd></div>
+    </dl>
+  </div>
+</section>
+<section class="showcase band">
+  <div class="section-head">
+    <div><p class="eyebrow">SELECTED PRODUCTS</p><h2>正在形成的产品组合</h2></div>
+    <a class="section-link" href="/products">查看全部 {total} 个产品</a>
+  </div>
+  <div class="product-grid">{cards}</div>
+</section>
+<section class="collections band">
+  <div class="section-head">
+    <div><p class="eyebrow">PRODUCT COLLECTIONS</p><h2>从个人工具到生产系统</h2></div>
+  </div>
+  <div class="collection-list">
+    <a href="/products?category=AI%20创作"><b>01</b><span><strong>AI 创作</strong><small>内容、短视频与长篇故事生产</small></span><em>2 PRODUCTS</em></a>
+    <a href="/products?category=学习成长"><b>02</b><span><strong>学习成长</strong><small>语言学习、职业训练与阅读辅助</small></span><em>5 PRODUCTS</em></a>
+    <a href="/products?category=AI%20工程"><b>03</b><span><strong>AI 工程</strong><small>情报、Agent、模型与交付控制</small></span><em>5 PRODUCTS</em></a>
+    <a href="/products?category=隐私工具"><b>04</b><span><strong>隐私工具</strong><small>本地优先的数据与个人信息管理</small></span><em>1 PRODUCT</em></a>
+    <a href="/products?category=企业服务"><b>05</b><span><strong>企业服务</strong><small>面向真实决策和验收的专业服务</small></span><em>1 PRODUCT</em></a>
+  </div>
+</section>
+<section class="principles band" id="principles">
+  <div class="principle-intro"><p class="eyebrow">HOW WE BUILD</p><h2>产品可以不同，底线必须一致。</h2></div>
+  <div class="principle-grid">
+    <div><b>01</b><h3>真实能力</h3><p>未接入的模型、支付和平台能力明确标记，不用演示数据伪装生产状态。</p></div>
+    <div><b>02</b><h3>本地优先</h3><p>能在设备侧完成的处理留在设备侧，凭据与隐私数据不进入浏览器包。</p></div>
+    <div><b>03</b><h3>证据交付</h3><p>任务、产物、状态与限制均可追溯，让结果不仅能看，也能够被验证。</p></div>
+  </div>
+</section>
+</main>
+<footer class="site-footer"><span>LifeYouMe · Product Studio</span><span>Independent products. Shared standards.</span></footer>"""
+    return page("产品展厅", body, portal=True)
+
+
+def catalog_page(products: list[Product]) -> bytes:
+    public = visible_products(products)
+    cards = "".join(product_card(item) for item in public)
+    categories = ["全部", "AI 创作", "学习成长", "AI 工程", "隐私工具", "企业服务"]
+    controls = "".join(
+        f'<button type="button" data-category-filter="{esc(item)}">{esc(item)}</button>'
+        for item in categories
+    )
+    body = f"""<main class="catalog-main">
+<section class="catalog-intro">
+  <p class="eyebrow">PRODUCT INDEX · {len(public):02d}</p>
+  <h1>产品目录</h1>
+  <p>浏览当前在线产品、桌面工具与实验室项目。每项状态均对应真实交付能力。</p>
+</section>
+<section class="catalog-controls" aria-label="产品筛选">
+  <div class="segmented">{controls}</div>
+  <label class="catalog-search"><span>搜索</span><input id="product-search" type="search" placeholder="产品、能力或场景"></label>
+</section>
+<p class="catalog-result" aria-live="polite"><strong id="visible-count">{len(public)}</strong> 个产品</p>
+<section class="product-grid catalog-grid" id="product-grid">{cards}</section>
+<section class="catalog-empty" id="catalog-empty" hidden><strong>没有匹配产品</strong><span>尝试其他分类或关键词。</span></section>
+</main>
+<footer class="site-footer"><span>LifeYouMe · Product Index</span><a href="/">返回产品展厅</a></footer>"""
+    return page("产品目录", body, portal=True)
+
+
+def product_page(product: Product) -> bytes:
+    state, label = product_status(product)
+    capabilities = "".join(
+        f"<li><span>{index:02d}</span>{esc(item)}</li>"
+        for index, item in enumerate(product.capabilities, 1)
+    )
+    platforms = "".join(f"<span>{esc(item)}</span>" for item in product.platforms)
+    if product.public_url:
+        action = (
+            f'<a class="button primary" href="{esc(sso_login_url(product.public_url))}">'
+            f"{esc(product.cta)}</a>"
+        )
+    else:
+        action = '<span class="button disabled" aria-disabled="true">暂未开放公开入口</span>'
+    body = f"""<main class="detail-main">
+<a class="back-link" href="/products">← 返回产品目录</a>
+<section class="product-hero accent-{esc(product.accent)}">
+  <div class="product-hero-copy">
+    <div class="product-meta"><span>{esc(product.category)}</span><span class="status {esc(state)}"><i></i>{esc(label)}</span></div>
+    <h1>{esc(product.name)}</h1>
+    <p class="detail-tagline">{esc(product.tagline)}</p>
+    <p class="detail-summary">{esc(product.summary)}</p>
+    <div class="hero-actions">{action}</div>
+  </div>
+  {product_visual(product, large=True)}
+</section>
+<section class="product-facts">
+  <div><span>适用人群</span><strong>{esc(product.audience)}</strong></div>
+  <div><span>产品形态</span><div class="platforms">{platforms}</div></div>
+  <div><span>当前阶段</span><strong>{esc(label)}</strong></div>
+</section>
+<section class="capability-section">
+  <div><p class="eyebrow">CORE CAPABILITIES</p><h2>核心能力</h2></div>
+  <ol>{capabilities}</ol>
+</section>
+<section class="detail-note">
+  <p class="eyebrow">DELIVERY STATUS</p>
+  <p>页面只展示当前真实可用范围。没有公开入口的桌面产品和实验室项目不会被标记为在线服务。</p>
+</section>
+</main>
+<footer class="site-footer"><span>LifeYouMe · {esc(product.name)}</span><a href="/products">全部产品</a></footer>"""
+    return page(product.name, body, portal=True)
 
 
 def ops_page(products: list[Product], username: str) -> bytes:
@@ -218,8 +431,8 @@ def ops_page(products: list[Product], username: str) -> bytes:
     live = sum(product.lifecycle == "live" for product, _ in states)
     healthy = sum(state["status"] == "healthy" for _, state in states)
     rows = "".join(
-        f"""<tr><td><a href="{esc(product.public_url)}">{esc(product.name)}</a><br><code>{esc(product.id)}</code></td>
-<td>{esc(product.lifecycle)}</td><td><span class="status {esc(state['status'])}"><span class="dot"></span>{esc(state['status'])}</span></td>
+        f"""<tr><td>{f'<a href="{esc(product.public_url)}">{esc(product.name)}</a>' if product.public_url else esc(product.name)}<br><code>{esc(product.id)}</code></td>
+<td>{esc(product.lifecycle)}</td><td><span class="status {esc(state['status'])}"><i></i>{esc(state['status'])}</span></td>
 <td>{esc(state['latency_ms']) + ' ms' if state['latency_ms'] is not None else '-'}</td><td>{esc(product.owner)}</td></tr>"""
         for product, state in states
     )
@@ -265,8 +478,114 @@ def service_page(service: str) -> bytes:
     return page(title, body)
 
 
+def safe_return_to(value: str) -> str:
+    fallback = "https://lifeyoume.icu/"
+    if not value:
+        return fallback
+    parsed = urllib.parse.urlparse(value)
+    hostname = (parsed.hostname or "").lower()
+    if (
+        parsed.scheme == "https"
+        and not parsed.username
+        and not parsed.password
+        and (hostname == "lifeyoume.icu" or hostname.endswith(".lifeyoume.icu"))
+    ):
+        return value
+    return fallback
+
+
+def sso_login_url(return_to: str) -> str:
+    return (
+        "https://auth.lifeyoume.icu/login?return_to="
+        + urllib.parse.quote(safe_return_to(return_to), safe="")
+    )
+
+
+def auth_form_page(
+    mode: str, csrf_token: str, return_to: str, error: str = ""
+) -> bytes:
+    registering = mode == "register"
+    title = "创建 LifeYouMe 账号" if registering else "登录 LifeYouMe"
+    action = "/register" if registering else "/login"
+    alternate = (
+        f'<a href="/login?return_to={urllib.parse.quote(return_to, safe="")}">已有账号，直接登录</a>'
+        if registering
+        else f'<a href="/register?return_to={urllib.parse.quote(return_to, safe="")}">创建统一账号</a>'
+    )
+    display_name = (
+        '<label for="display_name">显示名称</label>'
+        '<input id="display_name" name="display_name" maxlength="80" autocomplete="name" required>'
+        if registering
+        else ""
+    )
+    note = (
+        "一个账号可进入 LifeYouMe 的 Web、桌面和移动产品。"
+        if registering
+        else "登录一次，即可在 LifeYouMe 产品间切换。"
+    )
+    body = f"""<main class="auth-main"><section class="auth-copy">
+<p class="eyebrow">LIFEYOUME IDENTITY</p><h1>{esc(title)}</h1>
+<p>{esc(note)}</p>
+<ul><li>跨产品单点登录</li><li>产品数据继续独立存储</li><li>密码只由身份服务验证</li></ul>
+</section>
+<section class="auth-panel">
+<form method="post" action="{action}">
+<input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+<input type="hidden" name="return_to" value="{esc(return_to)}">
+{display_name}
+<label for="email">邮箱</label>
+<input id="email" name="email" type="email" maxlength="254" autocomplete="email" required>
+<label for="password">密码</label>
+<input id="password" name="password" type="password" minlength="12"
+ autocomplete="{'new-password' if registering else 'current-password'}" required>
+<button class="button primary auth-submit" type="submit">{'创建账号' if registering else '登录'}</button>
+{f'<p class="error" role="alert">{esc(error)}</p>' if error else ''}
+</form>
+<div class="auth-alternate">{alternate}</div>
+</section></main>"""
+    return page(title, body, portal=True)
+
+
+def account_page(user: AuthUser) -> bytes:
+    body = f"""<main class="auth-main account-main"><section class="auth-copy">
+<p class="eyebrow">LIFEYOUME ACCOUNT</p><h1>{esc(user.display_name)}</h1>
+<p>{esc(user.email)}</p>
+<div class="account-id"><span>USER ID</span><code>{esc(user.id)}</code></div>
+</section>
+<section class="auth-panel account-panel">
+<h2>统一账号已连接</h2>
+<p>当前会话适用于 `lifeyoume.icu` 及其产品子域。产品业务数据仍由各产品独立管理。</p>
+<a class="button" href="https://lifeyoume.icu/products">进入产品目录</a>
+<form method="post" action="/logout"><button class="nav-link danger" type="submit">退出所有 Web 产品</button></form>
+</section></main>"""
+    return page("账号", body, portal=True)
+
+
+def device_page(
+    user_code: str, user: AuthUser | None, csrf_token: str = "", message: str = ""
+) -> bytes:
+    if user:
+        form = f"""<form method="post" action="/device">
+<input type="hidden" name="user_code" value="{esc(user_code)}">
+<input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+<button class="button primary auth-submit" type="submit">授权此设备</button></form>"""
+    else:
+        return_to = "https://auth.lifeyoume.icu/device?user_code=" + urllib.parse.quote(
+            user_code
+        )
+        form = f'<a class="button primary" href="{esc(sso_login_url(return_to))}">先登录账号</a>'
+    body = f"""<main class="auth-main"><section class="auth-copy">
+<p class="eyebrow">DEVICE AUTHORIZATION</p><h1>连接桌面产品</h1>
+<p>仅授权你正在使用的 LifeYouMe 应用。设备不会接触你的账号密码。</p>
+</section><section class="auth-panel">
+<label>设备代码</label><div class="device-code">{esc(user_code or "---- ----")}</div>
+{form}{f'<p class="success">{esc(message)}</p>' if message else ''}
+</section></main>"""
+    return page("设备授权", body, portal=True)
+
+
 class Handler(BaseHTTPRequestHandler):
-    server_version = "LifeYouMePlatform/1.0"
+    server_version = "LifeYouMePlatform/2.0"
     login_attempts: dict[str, list[float]] = {}
 
     def send_common_headers(self, content_type: str, length: int) -> None:
@@ -277,9 +596,12 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("X-Frame-Options", "DENY")
         self.send_header(
             "Content-Security-Policy",
-            "default-src 'self'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
+            "default-src 'self'; img-src 'self' data:; style-src 'self'; "
+            "script-src 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
         )
-        self.send_header("Cache-Control", "no-store" if ROLE == "ops" else "public, max-age=60")
+        self.send_header(
+            "Cache-Control", "no-store" if ROLE in {"ops", "auth"} else "public, max-age=60"
+        )
 
     def send_body(self, status: int, body: bytes, content_type: str = "text/html; charset=utf-8") -> None:
         self.send_response(status)
@@ -294,13 +616,125 @@ class Handler(BaseHTTPRequestHandler):
             "application/json; charset=utf-8",
         )
 
+    def send_json_headers(
+        self, status: int, payload: dict[str, Any], headers: dict[str, str]
+    ) -> None:
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_with_headers(
+            status, body, headers, "application/json; charset=utf-8"
+        )
+
+    def send_with_headers(
+        self,
+        status: int,
+        body: bytes,
+        headers: dict[str, str],
+        content_type: str = "text/html; charset=utf-8",
+    ) -> None:
+        self.send_response(status)
+        self.send_common_headers(content_type, len(body))
+        for name, value in headers.items():
+            self.send_header(name, value)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def redirect(self, location: str, headers: dict[str, str] | None = None) -> None:
+        self.send_response(303)
+        self.send_header("Location", location)
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+
+    def cookie_jar(self) -> cookies.SimpleCookie[str]:
+        return cookies.SimpleCookie(self.headers.get("Cookie", ""))
+
+    def cookie_value(self, name: str) -> str:
+        morsel = self.cookie_jar().get(name)
+        return morsel.value if morsel else ""
+
+    def form_data(self, limit: int = 8192) -> dict[str, str]:
+        length = min(int(self.headers.get("Content-Length", "0")), limit)
+        raw = self.rfile.read(length).decode("utf-8")
+        if self.headers.get("Content-Type", "").split(";", 1)[0] == "application/json":
+            payload = json.loads(raw or "{}")
+            return {
+                str(key): str(value)
+                for key, value in payload.items()
+                if isinstance(value, (str, int, float))
+            }
+        parsed = urllib.parse.parse_qs(raw, keep_blank_values=True)
+        return {key: values[0] for key, values in parsed.items()}
+
+    def sso_user(self) -> AuthUser | None:
+        authorization = self.headers.get("Authorization", "")
+        if authorization.startswith("Bearer "):
+            return AUTH_STORE.bearer_user(authorization.removeprefix("Bearer ").strip())
+        return AUTH_STORE.session_user(self.cookie_value(SSO_COOKIE))
+
+    def csrf_valid(self, form: dict[str, str]) -> bool:
+        submitted = form.get("csrf_token", "")
+        cookie_token = self.cookie_value(CSRF_COOKIE)
+        return bool(submitted and cookie_token) and hmac.compare_digest(
+            submitted, cookie_token
+        )
+
+    def rate_limited(self, limit: int = 8) -> bool:
+        client = self.client_address[0]
+        now = time.monotonic()
+        attempts = [
+            stamp for stamp in self.login_attempts.get(client, []) if now - stamp < 900
+        ]
+        self.login_attempts[client] = attempts
+        return len(attempts) >= limit
+
+    def record_failed_attempt(self) -> None:
+        self.login_attempts.setdefault(self.client_address[0], []).append(
+            time.monotonic()
+        )
+
+    def clear_failed_attempts(self) -> None:
+        self.login_attempts.pop(self.client_address[0], None)
+
+    @staticmethod
+    def sso_cookie(token: str, max_age: int = SSO_SESSION_TTL_SECONDS) -> str:
+        return (
+            f"{SSO_COOKIE}={token}; Domain=.lifeyoume.icu; Path=/; "
+            f"Max-Age={max_age}; HttpOnly; Secure; SameSite=Lax"
+        )
+
+    @staticmethod
+    def csrf_cookie(token: str, max_age: int = 900) -> str:
+        return (
+            f"{CSRF_COOKIE}={token}; Path=/; Max-Age={max_age}; "
+            "HttpOnly; Secure; SameSite=Strict"
+        )
+
+    def send_asset(self, path: str) -> None:
+        relative = urllib.parse.unquote(path.removeprefix("/assets/"))
+        candidate = (ASSET_ROOT / relative).resolve()
+        if ASSET_ROOT.resolve() not in candidate.parents or not candidate.is_file():
+            self.send_body(404, b"Not found", "text/plain; charset=utf-8")
+            return
+        body = candidate.read_bytes()
+        content_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+        self.send_response(200)
+        self.send_common_headers(content_type, len(body))
+        self.end_headers()
+        self.wfile.write(body)
+
     def session_user(self) -> str | None:
         jar = cookies.SimpleCookie(self.headers.get("Cookie", ""))
         token = jar.get("lym_ops_session")
         return verify_session(token.value) if token else None
 
     def do_GET(self) -> None:
-        path = urllib.parse.urlparse(self.path).path
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
+        if path.startswith("/assets/"):
+            self.send_asset(path)
+            return
         if path == "/healthz":
             self.send_json(200, {"status": "ok", "service": ROLE})
             return
@@ -312,25 +746,113 @@ class Handler(BaseHTTPRequestHandler):
                 )
             self.send_json(200, payload)
             return
+        if ROLE == "auth" and path in {"/api/v1/me", "/api/v1/session/verify"}:
+            user = self.sso_user()
+            if not user:
+                self.send_json(401, {"authenticated": False})
+                return
+            payload = {
+                "authenticated": True,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "display_name": user.display_name,
+                },
+            }
+            self.send_json_headers(
+                200,
+                payload,
+                {
+                    "X-LifeYouMe-User-ID": user.id,
+                    "X-LifeYouMe-User-Email": user.email,
+                },
+            )
+            return
+        if ROLE == "auth" and path in {"/", "/login", "/register"}:
+            return_to = safe_return_to(query.get("return_to", [""])[0])
+            user = self.sso_user()
+            if user:
+                self.redirect(return_to if path != "/" else "/account")
+                return
+            if path == "/" :
+                self.redirect("/login")
+                return
+            if path == "/register" and not AUTH_REGISTRATION_ENABLED:
+                self.send_body(403, auth_form_page("login", "", return_to, "当前未开放注册"))
+                return
+            csrf_token = secrets.token_urlsafe(24)
+            self.send_with_headers(
+                200,
+                auth_form_page(path.removeprefix("/"), csrf_token, return_to),
+                {"Set-Cookie": self.csrf_cookie(csrf_token)},
+            )
+            return
+        if ROLE == "auth" and path == "/account":
+            user = self.sso_user()
+            if not user:
+                self.redirect(sso_login_url("https://auth.lifeyoume.icu/account"))
+                return
+            self.send_body(200, account_page(user))
+            return
+        if ROLE == "auth" and path == "/device":
+            user_code = query.get("user_code", [""])[0].strip().upper()[:9]
+            csrf_token = secrets.token_urlsafe(24)
+            self.send_with_headers(
+                200,
+                device_page(user_code, self.sso_user(), csrf_token),
+                {"Set-Cookie": self.csrf_cookie(csrf_token)},
+            )
+            return
         if path == "/api/v1/products" and ROLE in {"portal", "ops"}:
             products = [
                 {
                     "id": item.id,
                     "name": item.name,
+                    "tagline": item.tagline,
+                    "summary": item.summary,
                     "public_url": item.public_url,
                     "lifecycle": item.lifecycle,
+                    "availability": item.availability,
+                    "category": item.category,
+                    "audience": item.audience,
+                    "platforms": item.platforms,
+                    "capabilities": item.capabilities,
+                    "featured": item.featured,
+                    "visibility": item.visibility,
+                    "visual": item.visual,
+                    "cta": item.cta,
                     "runtime": check_product(item),
                 }
                 for item in load_products()
+                if ROLE == "ops" or item.visibility in {"public", "lab"}
             ]
-            self.send_json(200, {"schema_version": 1, "products": products})
+            self.send_json(200, {"schema_version": 2, "products": products})
+            return
+        if ROLE == "portal" and path == "/":
+            self.send_body(200, portal_page(load_products()))
+            return
+        if ROLE == "portal" and path == "/products":
+            self.send_body(200, catalog_page(load_products()))
+            return
+        if ROLE == "portal" and path.startswith("/products/"):
+            product_id = path.removeprefix("/products/").strip("/")
+            product = next(
+                (
+                    item
+                    for item in load_products()
+                    if item.id == product_id and item.visibility in {"public", "lab"}
+                ),
+                None,
+            )
+            if product:
+                self.send_body(200, product_page(product))
+            else:
+                self.send_body(404, page("未找到产品", "<main class=\"not-found\"><h1>未找到产品</h1><a href=\"/products\">返回产品目录</a></main>", portal=True))
             return
         if path != "/":
             self.send_body(404, page("Not found", "<h1>Page not found</h1>"))
             return
-        if ROLE == "portal":
-            self.send_body(200, portal_page(load_products()))
-        elif ROLE == "ops":
+        if ROLE == "ops":
             user = self.session_user()
             self.send_body(200, ops_page(load_products(), user) if user else login_page())
         elif ROLE in {"auth", "billing"}:
@@ -340,6 +862,166 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:
         path = urllib.parse.urlparse(self.path).path
+        if ROLE == "auth":
+            form = self.form_data()
+            if path == "/api/v1/device/start":
+                client_id = form.get("client_id", "")[:64]
+                valid_clients = {item.id for item in load_products()}
+                if client_id not in valid_clients:
+                    self.send_json(400, {"error": "invalid_client"})
+                    return
+                device_code, user_code, interval = AUTH_STORE.start_device_authorization(
+                    client_id
+                )
+                self.send_json(
+                    201,
+                    {
+                        "device_code": device_code,
+                        "user_code": user_code,
+                        "verification_uri": "https://auth.lifeyoume.icu/device",
+                        "verification_uri_complete": (
+                            "https://auth.lifeyoume.icu/device?user_code="
+                            + urllib.parse.quote(user_code)
+                        ),
+                        "expires_in": 600,
+                        "interval": interval,
+                    },
+                )
+                return
+            if path == "/api/v1/device/token":
+                status, access_token, client_id = AUTH_STORE.exchange_device(
+                    form.get("device_code", "")[:256]
+                )
+                if status != "ok":
+                    self.send_json(400, {"error": status})
+                    return
+                self.send_json(
+                    200,
+                    {
+                        "access_token": access_token,
+                        "token_type": "Bearer",
+                        "expires_in": 2_592_000,
+                        "client_id": client_id,
+                    },
+                )
+                return
+            if path == "/logout":
+                AUTH_STORE.revoke_session(self.cookie_value(SSO_COOKIE))
+                self.redirect(
+                    "https://lifeyoume.icu/",
+                    {"Set-Cookie": self.sso_cookie("", max_age=0)},
+                )
+                return
+            if path == "/device":
+                user = self.sso_user()
+                user_code = form.get("user_code", "").strip().upper()[:9]
+                if not user:
+                    self.redirect(sso_login_url(
+                        "https://auth.lifeyoume.icu/device?user_code="
+                        + urllib.parse.quote(user_code)
+                    ))
+                    return
+                if not self.csrf_valid(form):
+                    self.send_body(
+                        403, device_page(user_code, user, "", "授权页面已过期，请重新打开")
+                    )
+                    return
+                approved = AUTH_STORE.approve_device(user_code, user.id)
+                self.send_body(
+                    200,
+                    device_page(
+                        user_code,
+                        user,
+                        "",
+                        "设备已授权，可以返回应用" if approved else "设备代码无效或已过期",
+                    ),
+                )
+                return
+            if path not in {"/login", "/register"}:
+                self.send_json(404, {"status": "error", "message": "Not found"})
+                return
+            return_to = safe_return_to(form.get("return_to", ""))
+            mode = path.removeprefix("/")
+            if not self.csrf_valid(form):
+                self.send_body(
+                    403,
+                    auth_form_page(
+                        mode, "", return_to, "登录页面已过期，请刷新后重试"
+                    ),
+                )
+                return
+            if self.rate_limited():
+                self.send_body(
+                    429,
+                    auth_form_page(
+                        mode, self.cookie_value(CSRF_COOKIE), return_to, "尝试次数过多，请稍后再试"
+                    ),
+                )
+                return
+            email = AuthStore.normalize_email(form.get("email", ""))[:254]
+            password = form.get("password", "")[:200]
+            if path == "/register":
+                display_name = form.get("display_name", "").strip()[:80]
+                valid_email = bool(
+                    re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email)
+                )
+                if (
+                    not AUTH_REGISTRATION_ENABLED
+                    or not valid_email
+                    or len(display_name) < 2
+                    or len(password) < 12
+                ):
+                    self.record_failed_attempt()
+                    self.send_body(
+                        400,
+                        auth_form_page(
+                            "register",
+                            self.cookie_value(CSRF_COOKIE),
+                            return_to,
+                            "请填写有效邮箱、至少 2 位显示名称和至少 12 位密码",
+                        ),
+                    )
+                    return
+                try:
+                    user = AUTH_STORE.create_user(
+                        email, display_name, password_hash(password)
+                    )
+                except sqlite3.IntegrityError:
+                    self.record_failed_attempt()
+                    self.send_body(
+                        409,
+                        auth_form_page(
+                            "register",
+                            self.cookie_value(CSRF_COOKIE),
+                            return_to,
+                            "该邮箱已经注册",
+                        ),
+                    )
+                    return
+            else:
+                user = AUTH_STORE.authenticate(email, password, verify_password)
+                if not user:
+                    self.record_failed_attempt()
+                    self.send_body(
+                        401,
+                        auth_form_page(
+                            "login",
+                            self.cookie_value(CSRF_COOKIE),
+                            return_to,
+                            "邮箱或密码不正确",
+                        ),
+                    )
+                    return
+            self.clear_failed_attempts()
+            session_token = AUTH_STORE.create_session(
+                user.id,
+                SSO_SESSION_TTL_SECONDS,
+                self.headers.get("User-Agent", "")[:512],
+            )
+            self.redirect(
+                return_to, {"Set-Cookie": self.sso_cookie(session_token)}
+            )
+            return
         if ROLE != "ops" or path not in {"/login", "/logout"}:
             self.send_json(404, {"status": "error", "message": "Not found"})
             return
@@ -399,6 +1081,8 @@ def main() -> None:
         SESSION_SECRET == "development-only" or not OPS_ADMIN_PASSWORD_HASH
     ):
         raise SystemExit("Ops requires SESSION_SECRET and OPS_ADMIN_PASSWORD_HASH")
+    if ROLE == "auth":
+        AUTH_STORE.initialize()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(json.dumps({"service": ROLE, "listen": f"{HOST}:{PORT}"}), flush=True)
     server.serve_forever()

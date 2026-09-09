@@ -10,18 +10,18 @@
 - 推荐目录采用响应式影视选题书架：宽屏自动排列 3–4 列，手机端切换紧凑列表；生成封面未完成时显示品牌化书籍底板，不暴露第三方占位图。
 - 自动读取公版正文；商业作品可导入已获授权的 TXT/Markdown 全文，系统持久化原文件、SHA-256、字数和预览后自动继续流水线。
 - 只找到作品信息或普通网页时停在版权门禁，不绕过 WAF、登录、付费机制或抓取未授权正文。
-- 生成故事圣经、角色连续性 ID、武器道具、地点设定和第一集脚本。
-- 创建项目时可选择 `5 / 10 / 15 / 30 / 60 秒`成片；前四档对应单个 Seedance 任务，60 秒拆为两个连续 30 秒片段后用 FFmpeg 合成。
+- 创建项目时可选择 `1 / 3 / 6 / 12 集`，先生成并锁定全季大纲、全部分集剧本、角色连续性 ID、武器道具和地点设定，再进入视频生产。
+- 每集固定 5 分钟，拆为 10 个 30 秒 Seedance 片段；同一项目内严格顺序生成，以上一片段尾帧作为下一片段首帧，并锁定角色、服装、道具、空间、光线、镜头方向和动作势能。
 - 对接火山方舟 Chat Completions、Seedream 图片生成和 Seedance 异步视频生成 API。
-- 自动轮询视频任务，在方舟 24 小时临时 URL 失效前下载镜头，再使用 FFmpeg 装配 MP4。
-- 成片完成后可在项目流水线内直接播放，并可下载本地归档 MP4。
-- 本地 JSON 持久化生产状态；服务重启后仍可继续轮询渲染中的任务。
-- 默认运行正式生产模式，设有凭据配置门禁、付费调用总开关、日预算展示和并发上限。
+- 自动轮询视频任务，在方舟 24 小时临时 URL 失效前下载片段与尾帧；每集 10 段完成后由 FFmpeg 输出独立 H.264/AAC MP4，再开始下一集。
+- 分集成片可在项目流水线内直接播放和下载；失败重试只重置失败片段，已完成片段与分集保持不变。
+- 本地 JSON 持久化生产状态、片段任务 ID 和连续性尾帧；服务重启后继续轮询当前片段并从断点恢复。
+- 默认运行正式生产模式，设有凭据配置门禁、付费调用总开关、全季预算确认和项目并发上限。
 - 同时提供 Web、可安装手机 PWA 和 Electron 桌面 App；三端共享生产 API 与数据结构。
 - 默认入口为项目工作台，支持创建、搜索、状态筛选和打开多个小说项目；进入具体项目后才显示生产流水线、小说源库、角色资产与分集队列。
 - 支持资产类型筛选与大图详情、生产日志、失败任务重试、视觉结果刷新和生产清单下载。
 - 全局任务中心提供完整执行历史、状态筛选、关键词搜索、项目切换、队列位次、预计等待和分批加载。
-- 两级并发调度默认同时运行 2 个小说项目、每项目 4 个镜头；超限任务持久化排队并在重启后自动恢复。
+- 调度器默认同时运行 2 个小说项目；不同项目可并发，同一项目内的分集和连续片段严格串行，超限项目持久化排队并在重启后自动恢复。
 - 小说检索完成后进入来源确认门禁，可按作品名、作者、年份、语言、来源、匹配度和版权状态核对版本；确认前不会处理正文。
 - 固定六节点均可点击查看结构化输入、完整产物摘要、起止时间和错误，历史任务同样支持回看。
 
@@ -82,17 +82,18 @@ ARK_VIDEO_MODEL=doubao-seedance-2-5-260628
 PRODUCTION_MODE=live
 ALLOW_BILLABLE_GENERATION=false
 ALLOW_BUDGET_OVERRUN=false
-DEFAULT_OUTPUT_DURATION_SECONDS=5
+DEFAULT_EPISODE_COUNT=6
+EPISODE_DURATION_MINUTES=5
+SHOT_DURATION_SECONDS=30
 MAX_PROJECT_CONCURRENCY=2
-MAX_VIDEO_CONCURRENCY=4
 VIDEO_COST_PER_SECOND_CNY=1.512
 ```
 
 任务规划默认调用方舟 Chat Completions 的 `glm-5-2-260617`；视频镜头默认调用 Seedance 2.5 的 `doubao-seedance-2-5-260628`。旧配置项 `ARK_TEXT_MODEL` 仍可作为规划模型的兼容回退。
 
-真实生产必须同时满足 API Key、`PRODUCTION_MODE=live` 和计费授权。预算门禁会在任何生成模型调用前执行；当单集预估费用超过 `DAILY_BUDGET_CNY` 时，即使已设置 `ALLOW_BILLABLE_GENERATION=true` 也不会提交任务，除非再次显式设置 `ALLOW_BUDGET_OVERRUN=true`。
+真实生产必须同时满足 API Key、`PRODUCTION_MODE=live` 和计费授权。内容模型调用前会检查总计费开关；全季剧本完成后，若视频预算超过 `DAILY_BUDGET_CNY`，产品会停在视频预算门禁，必须在项目内再次确认才会提交 Seedance 任务。也可由部署方显式设置 `ALLOW_BUDGET_OVERRUN=true`。
 
-按 2026-09-09 方舟 720P 文生视频参考价约 `¥1.512/秒` 估算，5/10/15/30/60 秒分别约为 `¥7.56 / ¥15.12 / ¥22.68 / ¥45.36 / ¥90.72`，不包含文本、图片、失败重试等额外费用。实际费用以方舟账单为准。
+按 2026-09-09 方舟 720P 文生视频参考价约 `¥1.512/秒` 估算，每集 300 秒约 `¥453.60`，默认 6 集全季约 `¥2721.60`，不包含文本、图片、失败重试等额外费用。实际费用以方舟账单为准。
 
 API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` 已被 Git 忽略。聊天中出现过的 Key 应先在方舟控制台轮换，不建议继续使用。
 
@@ -111,13 +112,13 @@ API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` �
 
 ## 产能解释
 
-`DAILY_OUTPUT_HOURS=72` 表示每日目标交付 72 小时成片。按默认 5 秒规格折算为：
+`DAILY_OUTPUT_HOURS=72` 表示每日目标交付 72 小时成片。按每集 5 分钟规格折算为：
 
-- 51,840 条 5 秒成片 / 日
-- 5/10/15/30 秒为单个 Seedance 任务
-- 60 秒为两个连续 30 秒任务
+- 864 集五分钟成片 / 日
+- 每集 10 个顺序执行的 30 秒 Seedance 任务
+- 默认 6 集项目共 60 个片段，逐集完成和装配
 
-这是容量规划目标，不是单机性能承诺。实际产能取决于 Seedance 模型支持的单次时长、账户 RPM/并发、审核通过率、下载带宽和预算。生产部署应使用任务队列与多 Worker，并依据实际配额调整 `MAX_VIDEO_CONCURRENCY`。
+这是容量规划目标，不是单机性能承诺。实际产能取决于 Seedance 账户 RPM/并发、审核通过率、下载带宽和预算。生产部署可通过 `MAX_PROJECT_CONCURRENCY` 并行不同小说项目，但不能并发同一项目内需要尾帧接续的片段。
 
 ## 数据目录
 
@@ -139,12 +140,12 @@ data/
 - `GET /api/recommendations`：读取作品级公版热门推荐目录
 - `GET /api/search-sources`：读取已配置小说检索源
 - `PUT /api/search-sources`：校验并保存小说检索源
-- `POST /api/projects`：创建全自动任务，正文为 `{ "novelName": "西游记", "targetDurationSeconds": 5 }`
+- `POST /api/projects`：创建剧集项目，正文为 `{ "novelName": "西游记", "episodeCount": 6 }`
 - `GET /api/projects/:id`：生产状态
 - `POST /api/projects/:id/rescan`：按最新版来源注册表重新执行发现节点
 - `POST /api/projects/:id/source`：确认具体作品版本并继续
 - `POST /api/projects/:id/content`：导入已授权正文并继续流水线
-- `POST /api/projects/:id/retry`：重试暂停或失败任务
+- `POST /api/projects/:id/retry`：重试暂停或失败任务；视频预算确认正文为 `{ "approveBudget": true }`
 - `POST /api/projects/:id/export`：导出生产清单
 
 ## 验证
@@ -153,7 +154,7 @@ data/
 npm test
 ```
 
-当前 35 项自动化测试覆盖三端入口、5–60 秒时长拆分、规划预览升级真实生成、公版推荐目录与 API、推荐封面降级、配置/预算门禁、PWA、桌面安全配置、输入约束、任务重试、清单下载和媒体 Range 请求。完整交互测试记录见 [`dogfood-output/report.md`](dogfood-output/report.md)。
+当前 39 项自动化测试覆盖三端入口、全季内容先行、五分钟分集拆分、顺序渲染、同集与跨集尾帧接续、失败断点恢复、预算确认、公版推荐目录与 API、PWA、桌面安全配置、清单下载和媒体 Range 请求。完整交互测试记录见 [`dogfood-output/report.md`](dogfood-output/report.md)。
 
 任务状态机和并发策略见 [`docs/TASK_CENTER.md`](docs/TASK_CENTER.md)。
 来源确认与节点数据契约见 [`docs/PIPELINE_NODES.md`](docs/PIPELINE_NODES.md)。

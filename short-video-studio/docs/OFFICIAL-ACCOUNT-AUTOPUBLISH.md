@@ -2,6 +2,8 @@
 
 `scripts/official-account-publisher.mjs` 使用 Playwright 持久化浏览器登录态，每天生成一篇结构化文章，填写公众号编辑器、上传封面并提交发布。
 
+发布器默认关闭发布动作。只有在完成内容验收后，明确设置 `WECHAT_PUBLISHER_ENABLE=1` 才会点击“发表”。
+
 ## 首次初始化
 
 ```bash

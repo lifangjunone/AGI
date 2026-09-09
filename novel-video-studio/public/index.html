@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/styles.css?v=18">
 </head>
 <body>
   <div class="app-shell">
@@ -67,7 +67,7 @@
           <article><span>运行项目</span><strong id="metricActiveProjects">0</strong><small id="metricProjectSlots">/ 2 槽</small></article>
           <article><span>等待队列</span><strong id="metricQueuedProjects">0</strong><small>个项目</small></article>
           <article><span>待你处理</span><strong id="metricReviewProjects">0</strong><small>个项目</small></article>
-          <article><span>可选时长</span><strong id="metricMinutes">5–60</strong><small>秒 / 条</small></article>
+          <article><span>单集规格</span><strong id="metricMinutes">05:00</strong><small>10 段连续生成</small></article>
           <article class="budget"><span>日预算上限</span><strong id="metricBudget">¥200</strong><small>硬门禁</small></article>
         </section>
 
@@ -278,12 +278,42 @@
 
       <section class="episodes-view page-view hidden" data-page-view="episodes">
         <header class="section-heading">
-          <div><p class="eyebrow">EPISODE OPERATIONS</p><h2>分集队列</h2></div>
+          <div><p class="eyebrow">SERIES PRODUCTION</p><h2>整季分集中心</h2></div>
           <div class="section-actions">
             <button class="command-button hidden" id="retryButton"><i data-lucide="rotate-ccw"></i><span>重试任务</span></button>
             <button class="command-button" id="exportButton" disabled><i data-lucide="download"></i><span>导出清单</span></button>
           </div>
         </header>
+        <section class="season-planning-panel hidden" id="seasonPlanningPanel">
+          <header>
+            <div>
+              <span class="micro-label">WHOLE BOOK ADAPTATION MAP</span>
+              <h3>先看全书分集，再决定本季</h3>
+              <p id="seasonPlanningBasis"></p>
+            </div>
+            <strong id="plannedEpisodeCount">0 集</strong>
+          </header>
+          <form id="seasonSelectionForm">
+            <label>季号
+              <input id="seasonNumber" type="number" min="1" max="99" value="1" required>
+            </label>
+            <label>从全书第几集开始
+              <select id="seasonStartEpisode" required></select>
+            </label>
+            <label>本季生成集数
+              <input id="seasonEpisodeCount" type="number" min="1" max="24" value="6" required>
+            </label>
+            <div class="season-selection-result">
+              <small>本季范围与视频预算</small>
+              <strong id="seasonSelectionSummary">等待选择</strong>
+            </div>
+            <button class="primary-command" type="submit">
+              <i data-lucide="list-checks"></i>
+              <span>锁定本季并生成剧本</span>
+            </button>
+          </form>
+        </section>
+        <div class="episode-season-summary" id="episodeSeasonSummary"></div>
         <div class="episode-table" id="episodeTable">
           <div class="view-empty"><i data-lucide="film"></i><p>暂无分集任务。</p></div>
         </div>
@@ -311,26 +341,15 @@
         <i data-lucide="search"></i>
         <input id="novelName" name="novelName" value="" minlength="2" maxlength="100" required autocomplete="off" placeholder="例如：西游记">
       </div>
-      <fieldset class="duration-selector">
-        <legend>成片时长</legend>
-        <div role="radiogroup" aria-label="选择成片时长">
-          <label><input type="radio" name="targetDurationSeconds" value="5" checked><span>5s</span></label>
-          <label><input type="radio" name="targetDurationSeconds" value="10"><span>10s</span></label>
-          <label><input type="radio" name="targetDurationSeconds" value="15"><span>15s</span></label>
-          <label><input type="radio" name="targetDurationSeconds" value="30"><span>30s</span></label>
-          <label><input type="radio" name="targetDurationSeconds" value="60"><span>60s</span></label>
-        </div>
-        <small>60 秒会拆为两个连续的 30 秒片段，再由 FFmpeg 合成。</small>
-      </fieldset>
       <div class="create-project-spec">
-        <span><i data-lucide="git-branch"></i><strong>固定六节点</strong><small>检索到成片全程可审计</small></span>
-        <span><i data-lucide="clock-3"></i><strong id="createDurationSummary">5 秒成片</strong><small id="createCostSummary">参考费用约 ¥7.56</small></span>
-        <span><i data-lucide="shield-check"></i><strong>来源确认门禁</strong><small>确认版本后才继续生产</small></span>
+        <span><i data-lucide="scan-text"></i><strong>先分析正文</strong><small>识别章节、长度与叙事密度</small></span>
+        <span><i data-lucide="list-tree"></i><strong>动态规划全书</strong><small>集数由内容决定，不预设档位</small></span>
+        <span><i data-lucide="list-checks"></i><strong>分析后选本季</strong><small>选择连续集范围后生成剧本</small></span>
       </div>
-      <p id="formHint">创建后先检索候选来源，确认作品、作者和版本后继续。</p>
+      <p id="formHint">创建后先确认来源；系统读取正文并生成全书分集规划，再由你选择本季范围。</p>
       <footer>
         <button type="button" class="command-button" id="cancelCreateProjectButton">取消</button>
-        <button type="submit" class="primary-command"><i data-lucide="play"></i><span>创建并启动</span></button>
+        <button type="submit" class="primary-command"><i data-lucide="scan-search"></i><span>创建并分析</span></button>
       </footer>
     </form>
   </dialog>
@@ -370,6 +389,6 @@
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="/app.js?v=18"></script>
 </body>
 </html>

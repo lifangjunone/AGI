@@ -40,9 +40,15 @@ function sendJson(response, status, payload) {
 function projectSummary(project) {
   const shots = project.episodes?.flatMap((episode) => episode.shots || []) || [];
   const targetDurationSeconds = Number(project.targetDurationSeconds)
+    || Number(project.episodeDurationSeconds)
     || Number(project.episodes?.[0]?.durationSeconds)
     || Number(project.episodes?.[0]?.durationMinutes) * 60
-    || config.production.defaultOutputDurationSeconds;
+    || config.production.episodeDurationSeconds;
+  const episodeCount = Number(project.seasonEpisodeCount)
+    || Number(project.productionSpec?.episodeCount)
+    || project.episodes?.length
+    || 0;
+  const plannedEpisodeCount = project.adaptationPlan?.episodes?.length || 0;
   const demoPreview = ["demo", "planning"].includes(project.mode)
     && ["completed", "demo-preview", "planning-ready"].includes(project.status)
     && project.episodes?.some((episode) => (episode.shots || []).length > 0)
@@ -57,8 +63,13 @@ function projectSummary(project) {
     progress: demoPreview ? 72 : project.progress,
     mode: project.mode,
     targetDurationSeconds,
+    episodeDurationSeconds: targetDurationSeconds,
+    seasonEpisodeCount: episodeCount,
+    plannedEpisodeCount,
+    detectedChapterCount: project.adaptationPlan?.detectedChapterCount || 0,
+    seasonSelection: project.seasonSelection || null,
     estimatedVideoCostCny: Number((
-      targetDurationSeconds * config.production.videoCostPerSecondCny
+      targetDurationSeconds * episodeCount * config.production.videoCostPerSecondCny
     ).toFixed(2)),
     queuePosition: project.queuePosition,
     estimatedWaitMinutes: project.estimatedWaitMinutes,
@@ -69,7 +80,10 @@ function projectSummary(project) {
     completedAt: project.completedAt,
     sourceTitle: displayedSource?.title || null,
     sourceConfirmed: Boolean(project.sourceConfirmed),
-    episodeCount: project.episodes?.length || 0,
+    episodeCount: project.episodes?.length || episodeCount,
+    contentReadyEpisodes: project.episodes?.filter((episode) => episode.contentStatus === "ready").length || 0,
+    completedEpisodes: project.episodes?.filter((episode) => episode.status === "completed").length || 0,
+    activeEpisode: project.episodes?.find((episode) => ["rendering", "assembling"].includes(episode.status))?.number || null,
     shotCount: shots.length,
     completedShots: demoPreview ? 0 : shots.filter((shot) => shot.status === "succeeded").length,
     hasVideo: project.episodes?.some((episode) => Boolean(episode.videoUrl)) || false,
@@ -261,12 +275,12 @@ export const server = createServer(async (request, response) => {
     if (request.method === "POST" && url.pathname === "/api/projects") {
       const body = await readJson(request);
       sendJson(response, 202, {
-        project: await pipeline.create(body.novelName, body.targetDurationSeconds)
+        project: await pipeline.create(body.novelName)
       });
       return;
     }
 
-    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|rescan|source|content|export|manifest))?$/.exec(url.pathname);
+    const projectMatch = /^\/api\/projects\/([^/]+)(?:\/(retry|rescan|source|content|season|export|manifest))?$/.exec(url.pathname);
     if (request.method === "GET" && projectMatch && !projectMatch[2]) {
       const project = await store.get(projectMatch[1]);
       sendJson(response, project ? 200 : 404, project ? { project } : { error: "项目不存在" });
@@ -274,6 +288,7 @@ export const server = createServer(async (request, response) => {
     }
 
     if (request.method === "POST" && projectMatch?.[2] === "retry") {
+      const body = await readJson(request);
       const project = await store.get(projectMatch[1]);
       if (!project) {
         sendJson(response, 404, { error: "项目不存在" });
@@ -290,7 +305,9 @@ export const server = createServer(async (request, response) => {
       }
       sendJson(response, 202, {
         accepted: true,
-        project: await pipeline.retry(projectMatch[1])
+        project: await pipeline.retry(projectMatch[1], {
+          approveBudget: body.approveBudget === true
+        })
       });
       return;
     }
@@ -322,6 +339,21 @@ export const server = createServer(async (request, response) => {
         accepted: true,
         project: await pipeline.importAuthorizedContent(projectMatch[1], body)
       });
+      return;
+    }
+
+    if (request.method === "POST" && projectMatch?.[2] === "season") {
+      const body = await readJson(request);
+      try {
+        sendJson(response, 202, {
+          accepted: true,
+          project: await pipeline.selectSeason(projectMatch[1], body)
+        });
+      } catch (error) {
+        sendJson(response, /不存在/.test(error.message) ? 404 : 409, {
+          error: error.message
+        });
+      }
       return;
     }
 

@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { chromium } from "playwright";
+import { renderOfficialMarkdown } from "../lib/official-account-markdown.mjs";
 
 const ROOT = path.resolve(new URL(".", import.meta.url).pathname, "..");
 const DATA_DIR = path.join(ROOT, "data", "official-account-publisher");
@@ -12,36 +13,35 @@ const COVER_PATH = process.env.WECHAT_PUBLISHER_COVER ||
   path.join(ROOT, "public", "studio-poster.jpg");
 const ACCOUNT_HOME = "https://mp.weixin.qq.com/";
 const LOGIN_WAIT_MS = 180_000;
+const MARKDOWN_ARTICLES = [
+  path.join(ROOT, "content", "official-account", "001-normal-product-7-videos.md")
+];
 
 const articles = [
   {
-    title: "商品卖点不会写？用这套公式，3分钟生成10个标题",
-    digest: "不会写卖点，不等于产品没机会。用“人群+场景+结果”这套公式，把一个普通商品拆成10个可直接拍的视频标题。",
+    title: "我把一个普通商品拆成7条视频，第3条最容易带来咨询",
+    digest: "没有大预算、没有专业团队，也可以先用一个商品做出一周内容。关键不是每天硬想选题，而是把同一个问题讲清楚。",
     paragraphs: [
-      ["p", "很多人拍商品短视频，第一句话就是“今天给大家介绍一款……”。用户划走，不一定是产品不好，而是开头没有回答一个问题：这件商品到底能帮我解决什么问题？"],
-      ["h2", "一、先确定目标人群"],
-      ["p", "不要只写“所有人都能用”。把人群说具体，例如租房上班族、带娃家长、刚开店的卖家、经常出差的人。人群越具体，标题越容易让目标用户停下来。"],
-      ["h2", "二、再写真实场景"],
-      ["p", "场景越具体，用户越容易代入。可以从“早上出门、下班回家、发货前、客户催单、拍视频前”这些时刻开始。"],
-      ["h2", "三、最后写清楚结果"],
-      ["p", "结果不要写“效果很好”，要写成用户能感受到的变化，例如省下10分钟、少走一次弯路、一次准备7天内容、让客户更快看懂卖点。"],
-      ["h2", "四、直接套用这10个标题"],
+      ["p", "昨天帮一个卖收纳用品的小店看内容。商品本身不差，但连续发了几条“产品介绍”，播放量一直很低。店主以为问题在于没有投流，后来我们只改了一件事：不再从产品开始，而是从用户每天遇到的麻烦开始。"],
+      ["h2", "先把一个商品拆成7个问题"],
+      ["p", "同一个商品，不要每天重复说“材质好、容量大、方便使用”。换成用户能代入的问题：什么时候会用到？使用前最麻烦的是什么？用完之后少做了哪一步？"],
+      ["h2", "第1条：先讲用户正在经历什么"],
+      ["p", "例如：“每天出门前都要翻遍抽屉找东西，真正浪费时间的不是整理，而是没有固定位置。”这条内容不急着卖货，先让目标用户确认“你说的就是我”。"],
+      ["h2", "第2条：展示一个具体场景"],
+      ["p", "把商品放进早上出门、下班回家、发货前等真实时刻。镜头里要有动作和变化，不要只拍商品旋转。"],
+      ["h2", "第3条：回答客户最常问的一句话"],
+      ["p", "这条通常最容易带来咨询，因为用户已经有了购买意图。把评论区、私信和线下客户问过的问题整理出来，一次只回答一个。"],
+      ["h2", "第4至第7条：方法、对比、避坑和选择建议"],
       ["ol", [
-        "给刚开店的卖家：用这3句话，把商品卖点说清楚",
-        "客户总问“有什么用”？把商品放进这5个真实场景",
-        "不会拍短视频？一个商品拆成7天内容的简单方法",
-        "别再只说“质量好”，这样写用户更容易理解",
-        "发货前多做这一步，能少回答很多重复问题",
-        "租房空间小，也能用这个方法解决收纳问题",
-        "带娃后时间不够用，先把这件事交给一套固定流程",
-        "商品没有大卖点？先找到用户最在意的一个小问题",
-        "朋友圈不知道发什么？今天直接复制这段内容",
-        "从一个商品开始，安排好接下来7天要发什么"
+        "第4条：展示正确使用方法，减少用户试错",
+        "第5条：展示使用前后的一个可见变化",
+        "第6条：讲清楚什么人适合、什么人不适合",
+        "第7条：给出购买前的检查清单"
       ]],
-      ["h2", "五、把标题变成视频"],
-      ["p", "选中一个标题后，按“问题开场—展示场景—给出方法—说明结果—行动引导”拍摄。不要一上来讲参数，先让用户看到自己的问题。"],
-      ["blockquote", "智助乖乖可以根据你的商品、目标客户和卖点，生成标题、口播、分镜和发布计划。先免费生成一份预览，再决定是否继续完善。"],
-      ["p", "进入小程序，回复“模板”或点击菜单“免费工具”，开始生成。"]
+      ["h2", "为什么第3条更容易带来咨询"],
+      ["p", "前两条是在建立代入感，第3条正好接住用户的疑问。用户不一定马上下单，但会更愿意留言、私信，或者询问规格和价格。对小店来说，这些真实问题比单纯的点赞更有价值。"],
+      ["blockquote", "先让用户看见自己的问题，再让他看见你的解决方法。商品只需要在最后出现。"],
+      ["p", "如果你也想把一个商品拆成一周内容，可以进入“智助乖乖”小程序，免费生成一份内容预览。"]
     ]
   },
   {
@@ -175,7 +175,13 @@ function renderBlock([type, content]) {
 }
 
 function renderArticle(article) {
-  return article.paragraphs.map(renderBlock).join("");
+  return article.html || article.paragraphs.map(renderBlock).join("");
+}
+
+async function loadArticle(index) {
+  const markdownPath = MARKDOWN_ARTICLES[index];
+  if (!markdownPath) return articles[index % articles.length];
+  return renderOfficialMarkdown(await readFile(markdownPath, "utf8"));
 }
 
 async function logRun(entry) {
@@ -219,14 +225,19 @@ async function fillArticle(page, article) {
     waitUntil: "domcontentloaded"
   });
   await page.waitForTimeout(1800);
-  await page.locator('input[placeholder*="标题"], input[placeholder*="请输入标题"]').first().fill(article.title);
+  const titleEditor = page.locator(".title-editor__input .ProseMirror").first();
+  await titleEditor.click();
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
+  await page.keyboard.insertText(article.title);
   const author = page.locator('input[placeholder*="作者"]').first();
-  if (await author.count()) await author.fill("智助乖乖");
+  if (await author.count()) await author.fill(article.author || "智助乖乖");
   const digest = page.locator('textarea[placeholder*="摘要"], textarea[placeholder*="简介"]').first();
   if (await digest.count()) await digest.fill(article.digest);
-  const editor = page.locator('[contenteditable="true"]:visible').first();
+  const editor = page.locator(".rich_media_content .ProseMirror").first();
   const html = renderArticle(article);
-  const plainText = article.paragraphs.map(([, content]) => Array.isArray(content) ? content.join("\n") : content).join("\n\n");
+  const plainText = article.html
+    ? article.html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
+    : article.paragraphs.map(([, content]) => Array.isArray(content) ? content.join("\n") : content).join("\n\n");
   await page.context().grantPermissions(["clipboard-read", "clipboard-write"], {
     origin: "https://mp.weixin.qq.com"
   });
@@ -257,7 +268,12 @@ async function fillArticle(page, article) {
 
 const dateKey = beijingDateKey();
 const slot = process.env.WECHAT_PUBLISHER_SLOT || publishSlot();
-const article = articles[(dayNumber() * 2 + slotIndex(slot)) % articles.length];
+const articleIndex = (dayNumber() * 2 + slotIndex(slot)) % articles.length;
+const article = await loadArticle(articleIndex);
+if (process.env.WECHAT_PUBLISHER_ENABLE !== "1") {
+  console.log(JSON.stringify({ status: "disabled", dateKey, slot, title: article.title }));
+  process.exit(0);
+}
 if (await alreadyPublished(dateKey, slot)) {
   console.log(JSON.stringify({ status: "skipped", dateKey, slot, reason: "already published for this slot" }));
   process.exit(0);

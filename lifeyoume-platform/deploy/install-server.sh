@@ -5,7 +5,7 @@ APP="/data/app/lifeyoume-platform"
 SOURCE="${1:-/tmp/lifeyoume-platform-release}"
 BACKUP="/data/app/backups/lifeyoume-platform-$(date -u +%Y%m%dT%H%M%SZ)"
 
-if [[ ! -f "$SOURCE/platform/app.py" || ! -f "$SOURCE/config/products.json" ]]; then
+if [[ ! -f "$SOURCE/platform/app.py" || ! -f "$SOURCE/platform/auth_store.py" || ! -f "$SOURCE/config/products.json" ]]; then
   echo "Release bundle is incomplete: $SOURCE" >&2
   exit 1
 fi
@@ -22,8 +22,12 @@ if [[ -d "$APP" ]]; then
 fi
 
 install -d -o lifeyoume -g lifeyoume -m 0750 "$APP"
-install -d -o lifeyoume -g lifeyoume -m 0750 "$APP/platform" "$APP/config" "$APP/deploy"
+install -d -o lifeyoume -g lifeyoume -m 0750 "$APP/platform" "$APP/platform/assets" "$APP/config" "$APP/deploy"
 install -o lifeyoume -g lifeyoume -m 0644 "$SOURCE/platform/app.py" "$APP/platform/app.py"
+install -o lifeyoume -g lifeyoume -m 0644 "$SOURCE/platform/auth_store.py" "$APP/platform/auth_store.py"
+rm -rf "$APP/platform/assets"
+cp -a "$SOURCE/platform/assets" "$APP/platform/assets"
+chown -R lifeyoume:lifeyoume "$APP/platform/assets"
 install -o lifeyoume -g lifeyoume -m 0644 "$SOURCE/config/products.json" "$APP/config/products.json"
 install -o root -g root -m 0644 \
   "$SOURCE/deploy/lifeyoume-platform@.service" \

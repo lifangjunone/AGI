@@ -31,6 +31,8 @@ test("web, mobile and desktop entrypoints share the production UI", async () => 
     assert.match(html, /推荐小说/);
     assert.match(html, /创建小说项目/);
     assert.match(html, /导入已授权正文/);
+    assert.match(html, /styles\.css\?v=18/);
+    assert.match(html, /app\.js\?v=18/);
   }
 });
 
@@ -103,7 +105,7 @@ test("task history and queue telemetry are exposed as lightweight summaries", as
   assert.equal(status.models.planning, "glm-5-2-260617");
   assert.equal(status.models.video, "doubao-seedance-2-5-260628");
   assert.equal(status.production.videoCostPerSecondCny, 1.512);
-  assert.equal(status.production.estimatedEpisodeVideoCostCny, 1360.8);
+  assert.equal(status.production.estimatedEpisodeVideoCostCny, 453.6);
   assert.equal(queue.queue.queuedCount, 0);
   assert.equal(projects.projects[0].novelName, "西游记");
   assert.equal("assets" in projects.projects[0], false);
@@ -118,7 +120,9 @@ test("mobile PWA assets are valid and served with correct types", async () => {
 
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
-  assert.match(await workerResponse.text(), /novel-picture-works-v17/);
+  const worker = await workerResponse.text();
+  assert.match(worker, /novel-picture-works-v18/);
+  assert.match(worker, /app\.js\?v=18/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {
@@ -203,14 +207,14 @@ test("invalid novel names are rejected before task creation", async () => {
   assert.match((await response.json()).error, /2-100/);
 });
 
-test("project creation accepts only supported output durations", async () => {
+test("project creation accepts only supported season episode counts", async () => {
   const response = await fetch(`${origin}/api/projects`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ novelName: "西游记", targetDurationSeconds: 20 })
+    body: JSON.stringify({ novelName: "西游记", episodeCount: 2 })
   });
   assert.equal(response.status, 400);
-  assert.match((await response.json()).error, /5、10、15、30 或 60 秒/);
+  assert.match((await response.json()).error, /1、3、6 或 12 集/);
 });
 
 test("generated media supports byte ranges", async () => {

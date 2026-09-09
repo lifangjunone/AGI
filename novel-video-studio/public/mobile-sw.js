@@ -1,8 +1,8 @@
-const CACHE_NAME = "novel-picture-works-v17";
+const CACHE_NAME = "novel-picture-works-v18";
 const APP_SHELL = [
   "/mobile/",
-  "/styles.css",
-  "/app.js",
+  "/styles.css?v=18",
+  "/app.js?v=18",
   "/manifest.webmanifest",
   "/novel-studio-icon.svg",
   "/apple-touch-icon.png"

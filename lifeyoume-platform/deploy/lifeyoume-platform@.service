@@ -10,12 +10,15 @@ Group=lifeyoume
 WorkingDirectory=/data/app/lifeyoume-platform
 EnvironmentFile=/data/app/lifeyoume-platform/.env
 Environment=SERVICE_ROLE=%i
+Environment=AUTH_DB=/var/lib/lifeyoume-platform/auth.db
 ExecStart=/usr/bin/python3 /data/app/lifeyoume-platform/platform/app.py
 Restart=always
 RestartSec=3
 TimeoutStopSec=15
 NoNewPrivileges=true
 PrivateTmp=true
+StateDirectory=lifeyoume-platform
+StateDirectoryMode=0750
 ProtectSystem=strict
 ProtectHome=true
 ReadOnlyPaths=/data/app/lifeyoume-platform

@@ -13,7 +13,8 @@ TLS / host routing / rate limits
    +-- auth.lifeyoume.icu ----- identity :8802
    +-- billing.lifeyoume.icu -- billing :8803
    +-- audit.lifeyoume.icu ---- audit product :8787
-   `-- easysay.lifeyoume.icu -- reserved :8788
+   +-- lifeyoume.icu/video/ --- content studio :4321
+   `-- lifeyoume.icu/vault/ --- static privacy vault
 ```
 
 The four platform roles run as separate systemd instances. Every product runs
@@ -25,8 +26,10 @@ logs, and data store.
 The operations service is the control plane. Its current production contract
 contains:
 
-- product registration;
+- Catalog Schema v2 product registration;
 - lifecycle visibility;
+- public, lab, and internal catalog visibility;
+- platform, audience, capability, CTA, and visual metadata;
 - private server-side health checks;
 - runtime latency;
 - authenticated operator access.
@@ -43,26 +46,31 @@ The operations service must never connect directly to a product database.
 
 ## Product onboarding
 
-1. Allocate a stable product ID and subdomain.
-2. Allocate an unused loopback port.
-3. Deploy the product under its own Unix user and systemd service.
-4. Expose a cheap `GET /healthz` or `GET /api/health` endpoint.
-5. Register it in `config/products.json` as `reserved`.
-6. Add its Nginx virtual host and certificate name.
-7. Verify process, HTTPS, logs, and rollback independently.
+1. Allocate a stable product ID and truthful public visibility.
+2. Register audience, category, platforms, capabilities, CTA, and optional visual.
+3. For an online product, allocate an isolated route or subdomain.
+4. For a server product, expose a cheap loopback health endpoint.
+5. Register the product in `config/products.json` with its real lifecycle.
+6. Add its Nginx route only when a public runtime exists.
+7. Verify process, HTTPS, links, responsive UI, logs, and rollback independently.
 8. Change lifecycle to `live` only after public acceptance passes.
 
 Allowed lifecycle values:
 
 ```text
-reserved -> live -> paused -> retired
+preview -> beta -> live -> paused -> retired
 ```
+
+`internal` is reserved for platform components. A live static product may omit
+`health_url`; the portal then reports its declared availability without
+fabricating a runtime check. Desktop and lab products may omit `public_url`.
 
 ## Security rules
 
 - Only Nginx listens on public ports 80 and 443.
 - Services listen on `127.0.0.1`.
-- Product health URLs are restricted to loopback HTTP to prevent SSRF.
+- Configured product health URLs are restricted to loopback HTTP to prevent SSRF.
+- The public catalog API omits health URLs, owners, and internal-only components.
 - Operations sessions are HMAC signed, short-lived, `HttpOnly`, `Secure`, and
   `SameSite=Strict`.
 - Operator passwords use PBKDF2-HMAC-SHA256 with a per-password random salt.

@@ -17,9 +17,13 @@ SPEC.loader.exec_module(app)
 class PlatformTests(unittest.TestCase):
     def test_registry_loads_independent_products(self):
         products = app.load_products()
-        self.assertEqual(["audit", "easysay"], [item.id for item in products])
-        self.assertEqual("live", products[0].lifecycle)
-        self.assertEqual("reserved", products[1].lifecycle)
+        self.assertEqual(15, len(products))
+        self.assertEqual(
+            ["frame60", "privacy-vault", "audit"],
+            [item.id for item in products[:3]],
+        )
+        self.assertTrue(all(item.platforms for item in products))
+        self.assertEqual("internal", products[-1].visibility)
 
     def test_registry_rejects_external_health_endpoint(self):
         payload = {
@@ -61,17 +65,63 @@ class PlatformTests(unittest.TestCase):
         product = app.Product(
             id="reserved",
             name="Reserved",
+            tagline="Reserved product",
             summary="Not deployed",
             public_url="https://reserved.lifeyoume.icu",
             health_url="http://127.0.0.1:9999/healthz",
             lifecycle="reserved",
+            availability="showcase",
             category="Test",
             owner="Test",
+            audience="Test audience",
+            platforms=("Web",),
+            capabilities=("Test",),
+            featured=False,
+            visibility="public",
+            visual="",
+            accent="cobalt",
+            cta="View",
         )
         with mock.patch("urllib.request.urlopen") as urlopen:
             result = app.check_product(product)
         urlopen.assert_not_called()
         self.assertEqual({"status": "reserved", "latency_ms": None}, result)
+
+    def test_public_catalog_excludes_internal_components(self):
+        products = app.visible_products(app.load_products())
+        ids = [item.id for item in products]
+        self.assertIn("frame60", ids)
+        self.assertIn("delivery-pilot", ids)
+        self.assertNotIn("avatar-generator-service", ids)
+
+    def test_portal_and_detail_pages_use_real_catalog_data(self):
+        products = app.load_products()
+        portal = app.portal_page(products).decode("utf-8")
+        vault = next(item for item in products if item.id == "privacy-vault")
+        detail = app.product_page(vault).decode("utf-8")
+
+        self.assertIn("把 AI 变成真正可使用的个人工具与生产系统", portal)
+        self.assertIn("/products/privacy-vault", portal)
+        self.assertIn(
+            "https://auth.lifeyoume.icu/login?return_to="
+            "https%3A%2F%2Flifeyoume.icu%2Fvault%2F",
+            detail,
+        )
+        self.assertNotIn("avatar-generator-service", portal)
+
+    def test_live_static_product_does_not_require_fake_health_endpoint(self):
+        vault = next(
+            item for item in app.load_products() if item.id == "privacy-vault"
+        )
+        self.assertEqual({"status": "live", "latency_ms": None}, app.check_product(vault))
+
+    def test_registered_product_visuals_exist(self):
+        for product in app.load_products():
+            if product.visual:
+                self.assertTrue(
+                    (app.ASSET_ROOT / product.visual).is_file(),
+                    f"Missing visual for {product.id}",
+                )
 
     def test_billing_status_defaults_to_disabled(self):
         self.assertFalse(app.PAYMENT_CONFIGURED)

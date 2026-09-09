@@ -1,11 +1,23 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { ArkClient } from "../lib/ark-client.mjs";
-import { DEFAULT_ARK_MODELS, makeConfig } from "../lib/config.mjs";
-import { buildDemoBible, makeShots, makeShotsForDuration, ProductionPipeline } from "../lib/pipeline.mjs";
+import {
+  DEFAULT_ARK_MODELS,
+  EPISODE_COUNT_OPTIONS,
+  EPISODE_DURATION_SECONDS,
+  MAX_VIDEO_SEGMENT_SECONDS,
+  makeConfig
+} from "../lib/config.mjs";
+import {
+  buildDemoBible,
+  buildSeriesBible,
+  makeShots,
+  makeShotsForDuration,
+  ProductionPipeline
+} from "../lib/pipeline.mjs";
 import { searchNovel, titleScore } from "../lib/novel-search.mjs";
 import { loadRecommendations, sanitizeRecommendations } from "../lib/recommendations.mjs";
 import { BLOCKED_SOURCE_DOMAINS, loadSourceRegistry, sanitizeSources } from "../lib/source-registry.mjs";
@@ -79,7 +91,7 @@ test("known Qiu Mo sources survive upstream search blocking", async () => {
   }
 });
 
-test("production capacity derives 15-minute episodes and 30-second shots", () => {
+test("production capacity fixes episodes at five minutes and segments at 30 seconds", () => {
   const previous = {
     hours: process.env.DAILY_OUTPUT_HOURS,
     minutes: process.env.EPISODE_DURATION_MINUTES,
@@ -92,15 +104,18 @@ test("production capacity derives 15-minute episodes and 30-second shots", () =>
   delete process.env.PRODUCTION_MODE;
   const config = makeConfig("/tmp/novel-video-studio");
   assert.equal(config.mode, "live");
-  assert.equal(config.production.episodesPerDay, 288);
-  assert.equal(config.production.shotsPerEpisode, 30);
+  assert.equal(config.production.episodeDurationSeconds, 300);
+  assert.equal(config.production.episodesPerDay, 864);
+  assert.equal(config.production.shotsPerEpisode, 10);
   assert.equal(config.production.videoTasksPerDay, 8640);
   assert.equal(config.production.maxProjectConcurrency, 2);
   assert.equal(config.production.videoCostPerSecondCny, 1.512);
-  assert.equal(config.production.estimatedEpisodeVideoCostCny, 1360.8);
+  assert.equal(config.production.estimatedEpisodeVideoCostCny, 453.6);
+  assert.equal(config.production.maxVideoSegmentSeconds, 30);
+  assert.deepEqual(config.production.episodeCountOptions, [1, 3, 6, 12]);
   assert.equal(config.production.defaultOutputDurationSeconds, 5);
   assert.deepEqual(config.production.outputDurationOptions, [5, 10, 15, 30, 60]);
-  assert.equal(config.production.outputsPerDay, 51840);
+  assert.equal(config.production.outputsPerDay, 864);
   for (const [key, value] of Object.entries(previous)) {
     const envKey = {
       hours: "DAILY_OUTPUT_HOURS",
@@ -150,12 +165,18 @@ test("Ark client sends planning and video requests to the configured models", as
       videoModel: DEFAULT_ARK_MODELS.video
     });
     await client.generateJson("system", "user");
-    await client.createVideo({ prompt: "shot", duration: 30 });
+    await client.createVideo({
+      prompt: "shot",
+      duration: 30,
+      firstFrameUrl: "data:image/jpeg;base64,ZmFrZQ=="
+    });
     assert.equal(requests[0].url, "https://ark.cn-beijing.volces.com/api/v3/chat/completions");
     assert.equal(requests[0].body.model, "glm-5-2-260617");
     assert.equal(requests[1].url, "https://ark.cn-beijing.volces.com/api/v3/contents/generations/tasks");
     assert.equal(requests[1].body.model, "doubao-seedance-2-5-260628");
     assert.equal(requests[1].body.duration, 30);
+    assert.equal(requests[1].body.return_last_frame, true);
+    assert.equal(requests[1].body.content[1].role, "first_frame");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -169,7 +190,14 @@ test("episode shot plan has stable IDs and exact duration", () => {
   assert.equal(shots[29].id, "E001-S030");
 });
 
-test("selectable output durations split only the 60-second option", () => {
+test("five-minute episodes split into ten ordered 30-second segments", () => {
+  const episode = makeShotsForDuration("西游记", 1, 300);
+  assert.equal(episode.length, 10);
+  assert.ok(episode.every((shot) => shot.duration === 30));
+  assert.equal(episode[0].continuityMode, "episode-opening");
+  assert.equal(episode[1].continuityMode, "previous-last-frame");
+  assert.equal(episode[1].previousShotId, "E001-S001");
+
   for (const duration of [5, 10, 15, 30]) {
     const shots = makeShotsForDuration("西游记", 1, duration);
     assert.equal(shots.length, 1);
@@ -178,6 +206,28 @@ test("selectable output durations split only the 60-second option", () => {
   const minute = makeShotsForDuration("西游记", 1, 60);
   assert.deepEqual(minute.map((shot) => shot.duration), [30, 30]);
   assert.deepEqual(minute.map((shot) => shot.id), ["E001-S001", "E001-S002"]);
+});
+
+test("series planning prepares every episode before video rendering", () => {
+  const config = {
+    production: {
+      episodeDurationSeconds: EPISODE_DURATION_SECONDS,
+      maxVideoSegmentSeconds: MAX_VIDEO_SEGMENT_SECONDS,
+      defaultOutputDurationSeconds: 5,
+      episodeMinutes: 5
+    }
+  };
+  const bible = buildSeriesBible(
+    "西游记",
+    { description: "公版名著" },
+    config,
+    EPISODE_COUNT_OPTIONS[2]
+  );
+  assert.equal(bible.episodes.length, 6);
+  assert.ok(bible.episodes.every((episode) => episode.contentStatus === "ready"));
+  assert.ok(bible.episodes.every((episode) => episode.durationSeconds === 300));
+  assert.ok(bible.episodes.every((episode) => episode.shots.length === 10));
+  assert.equal(bible.episodes[1].shots[0].previousShotId, null);
 });
 
 test("demo bible includes continuity-controlled production assets", () => {
@@ -202,7 +252,7 @@ test("project store persists updates atomically", async () => {
   }
 });
 
-test("live video submission fills only the configured per-project shot slots", async () => {
+test("live video submission is sequential and chains the previous last frame", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "novel-video-slots-"));
   try {
     const store = new ProjectStore(directory);
@@ -217,8 +267,11 @@ test("live video submission fills only the configured per-project shot slots", a
       }
     };
     const pipeline = new ProductionPipeline(config, store);
-    let submitted = 0;
-    pipeline.ark.createVideo = async () => ({ id: `remote-${++submitted}` });
+    const submissions = [];
+    pipeline.ark.createVideo = async (input) => {
+      submissions.push(input);
+      return { id: `remote-${submissions.length}` };
+    };
     const episode = { status: "queued", shots: makeShots("西游记", 1, 10, 30) };
     const project = {
       id: "video-slots",
@@ -229,10 +282,135 @@ test("live video submission fills only the configured per-project shot slots", a
       episodes: [episode]
     };
     await store.save(project);
-    await pipeline.submitVideoBatch(project, episode);
-    assert.equal(submitted, 4);
-    assert.equal(episode.shots.filter((shot) => shot.status === "submitted").length, 4);
-    assert.equal(episode.shots.filter((shot) => shot.status === "queued").length, 6);
+    await pipeline.submitVideoBatch(project, [episode]);
+    assert.equal(submissions.length, 1);
+    assert.equal(episode.shots.filter((shot) => shot.status === "submitted").length, 1);
+    assert.equal(episode.shots.filter((shot) => shot.status === "queued").length, 9);
+    const frameFile = path.join(directory, "last-frame.jpg");
+    await writeFile(frameFile, Buffer.from("frame"));
+    episode.shots[0].status = "succeeded";
+    episode.shots[0].lastFrameFile = frameFile;
+    await pipeline.submitNextSequentialShot(project);
+    assert.equal(submissions.length, 2);
+    assert.match(submissions[1].firstFrameUrl, /^data:image\/jpeg;base64,/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("the first segment of a new episode continues from the previous episode last frame", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "novel-cross-episode-frame-"));
+  try {
+    const store = new ProjectStore(directory);
+    const pipeline = new ProductionPipeline({
+      mode: "live",
+      dataDirectory: directory,
+      ark: {},
+      production: {
+        maxProjectConcurrency: 1,
+        maxVideoConcurrency: 4
+      }
+    }, store);
+    const frameFile = path.join(directory, "episode-one-last-frame.jpg");
+    await writeFile(frameFile, Buffer.from("episode-one-frame"));
+    const project = {
+      episodes: [
+        {
+          number: 1,
+          status: "completed",
+          shots: [{
+            id: "E001-S010",
+            status: "succeeded",
+            lastFrameFile: frameFile
+          }]
+        },
+        {
+          number: 2,
+          status: "queued",
+          shots: makeShotsForDuration("西游记", 2, 300)
+        }
+      ]
+    };
+
+    const firstFrame = await pipeline.continuityFrame(project, 1, 0);
+    assert.match(firstFrame, /^data:image\/jpeg;base64,/);
+    assert.equal(
+      Buffer.from(firstFrame.split(",")[1], "base64").toString(),
+      "episode-one-frame"
+    );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("render retry preserves completed segments and resets only the failed segment", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "novel-render-retry-"));
+  try {
+    const store = new ProjectStore(directory);
+    const pipeline = new ProductionPipeline({
+      mode: "live",
+      dataDirectory: directory,
+      ark: {},
+      production: {
+        maxProjectConcurrency: 1,
+        maxVideoConcurrency: 4
+      }
+    }, store);
+    pipeline.scheduler.enqueue = async (id) => store.get(id);
+    const project = {
+      id: "render-retry",
+      novelName: "西游记",
+      status: "failed",
+      stage: "render",
+      progress: 78,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      contentPlanCompletedAt: new Date().toISOString(),
+      activity: [],
+      nodes: {
+        render: {
+          id: "render",
+          status: "failed",
+          error: "片段 E001-S002 渲染失败"
+        }
+      },
+      episodes: [{
+        number: 1,
+        status: "rendering",
+        shots: [
+          {
+            id: "E001-S001",
+            status: "succeeded",
+            progress: 100,
+            remoteTaskId: "completed-task",
+            localFile: "/tmp/completed.mp4",
+            lastFrameFile: "/tmp/completed.jpg"
+          },
+          {
+            id: "E001-S002",
+            status: "failed",
+            progress: 0,
+            remoteTaskId: "failed-task"
+          },
+          {
+            id: "E001-S003",
+            status: "queued",
+            progress: 0
+          }
+        ]
+      }]
+    };
+    await store.save(project);
+
+    const retried = await pipeline.retry(project.id);
+    assert.equal(retried.status, "queued");
+    assert.equal(retried.resumeStage, "render-retry");
+    assert.equal(retried.episodes[0].status, "queued");
+    assert.equal(retried.episodes[0].shots[0].status, "succeeded");
+    assert.equal(retried.episodes[0].shots[0].remoteTaskId, "completed-task");
+    assert.equal(retried.episodes[0].shots[1].status, "queued");
+    assert.equal(retried.episodes[0].shots[1].remoteTaskId, undefined);
+    assert.equal(retried.episodes[0].shots[2].status, "queued");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -291,6 +469,103 @@ test("live production stops before model calls when cost authorization is missin
     assert.equal(project.stage, "adapt");
     assert.equal(project.nodes.adapt.status, "paused");
     assert.match(project.error, /未获计费授权/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("all episode content is ready before budget approval starts sequential video", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "novel-series-budget-"));
+  try {
+    const store = new ProjectStore(directory);
+    const pipeline = new ProductionPipeline({
+      mode: "live",
+      dataDirectory: directory,
+      ark: { apiKey: "test-key", planningModel: "glm-test", videoModel: "seedance-test" },
+      search: {},
+      production: {
+        episodeMinutes: 5,
+        episodeDurationSeconds: 300,
+        maxVideoSegmentSeconds: 30,
+        maxProjectConcurrency: 1,
+        maxVideoConcurrency: 4,
+        dailyBudgetCny: 200,
+        videoCostPerSecondCny: 1.512,
+        billableGenerationEnabled: true,
+        budgetOverrunAllowed: false
+      }
+    }, store, {
+      loadText: async () => "公版正文"
+    });
+    let planningCalls = 0;
+    pipeline.ark.generateJson = async () => {
+      planningCalls += 1;
+      if (planningCalls === 1) {
+        return {
+          seasonTitle: "西游记 第一季",
+          seasonSynopsis: "取经启程",
+          tone: "东方奇幻",
+          characters: [{ name: "孙悟空", continuityId: "CHAR-001" }],
+          weapons: [{ name: "金箍棒", continuityId: "PROP-001" }],
+          locations: [{ name: "五行山", continuityId: "LOC-001" }],
+          episodes: [{ number: 1, title: "启程", logline: "孙悟空重获自由" }]
+        };
+      }
+      return {
+        title: "启程",
+        logline: "孙悟空重获自由",
+        script: "五分钟分集剧本",
+        segmentBriefs: Array.from({ length: 10 }, (_, index) => ({
+          order: index + 1,
+          beat: `段落 ${index + 1}`,
+          prompt: `连续镜头 ${index + 1}`
+        }))
+      };
+    };
+    let videoCalls = 0;
+    pipeline.ark.createVideo = async () => ({ id: `video-${++videoCalls}` });
+    await store.save({
+      id: "series-budget",
+      novelName: "西游记",
+      status: "queued",
+      stage: "ingest",
+      progress: 18,
+      mode: "live",
+      episodeDurationSeconds: 300,
+      seasonEpisodeCount: 1,
+      productionSpec: {
+        episodeCount: 1,
+        episodeDurationSeconds: 300,
+        segmentDurationSeconds: 30
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      activity: [],
+      sourceConfirmed: true,
+      source: {
+        id: "public-domain",
+        title: "西游记",
+        authors: "吴承恩",
+        source: "中文维基文库",
+        rights: "public-domain"
+      }
+    });
+
+    await pipeline.run("series-budget");
+    let project = await store.get("series-budget");
+    assert.equal(project.status, "budget-gate");
+    assert.equal(project.stage, "render");
+    assert.equal(project.episodes.length, 1);
+    assert.equal(project.episodes[0].contentStatus, "ready");
+    assert.equal(project.episodes[0].shots.length, 10);
+    assert.equal(videoCalls, 0);
+
+    await pipeline.retry("series-budget", { approveBudget: true });
+    await waitFor(async () => (await store.get("series-budget")).status === "rendering");
+    project = await store.get("series-budget");
+    assert.equal(project.budgetApproved, true);
+    assert.equal(videoCalls, 1);
+    assert.equal(project.episodes[0].shots.filter((shot) => shot.status === "submitted").length, 1);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -60,12 +60,20 @@ export class ArkClient {
     return image.url;
   }
 
-  async createVideo({ prompt, duration = 30, ratio = "16:9" }) {
+  async createVideo({ prompt, duration = 30, ratio = "16:9", firstFrameUrl = null }) {
+    const content = [{ type: "text", text: prompt }];
+    if (firstFrameUrl) {
+      content.push({
+        type: "image_url",
+        role: "first_frame",
+        image_url: { url: firstFrameUrl }
+      });
+    }
     return this.request("/contents/generations/tasks", {
       method: "POST",
       body: JSON.stringify({
         model: requireValue(this.config.videoModel, "ARK_VIDEO_MODEL"),
-        content: [{ type: "text", text: prompt }],
+        content,
         duration,
         ratio,
         resolution: "720p",

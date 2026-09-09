@@ -2,10 +2,10 @@ const $ = (selector) => document.querySelector(selector);
 const STAGES = [
   ["discover", "全网检索"],
   ["ingest", "内容核验"],
-  ["adapt", "剧本改编"],
-  ["design", "视觉设定"],
-  ["render", "镜头渲染"],
-  ["assemble", "成片装配"]
+  ["adapt", "全书拆集"],
+  ["design", "本季设定"],
+  ["render", "分集渲染"],
+  ["assemble", "逐集装配"]
 ];
 const STATUS_LABELS = {
   queued: "排队中",
@@ -13,6 +13,7 @@ const STATUS_LABELS = {
   completed: "已完成",
   failed: "失败",
   "source-review": "待确认来源",
+  "season-review": "待选择本季",
   "rights-review": "版权复核",
   "budget-gate": "预算门禁",
   "configuration-gate": "生产配置待完成",
@@ -100,11 +101,12 @@ function projectStatusLabel(project) {
 }
 
 function projectDurationSeconds(project) {
-  return Number(project?.targetDurationSeconds)
+  return Number(project?.episodeDurationSeconds)
+    || Number(project?.targetDurationSeconds)
     || Number(project?.episodes?.[0]?.durationSeconds)
     || Number(project?.episodes?.[0]?.durationMinutes) * 60
-    || Number(runtimeStatus?.production?.defaultOutputDurationSeconds)
-    || 5;
+    || Number(runtimeStatus?.production?.episodeDurationSeconds)
+    || 300;
 }
 
 function formatDuration(seconds) {
@@ -112,19 +114,6 @@ function formatDuration(seconds) {
   const minutes = Math.floor(total / 60);
   const remainder = total % 60;
   return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
-}
-
-function selectedOutputDuration() {
-  return Number(document.querySelector('input[name="targetDurationSeconds"]:checked')?.value)
-    || Number(runtimeStatus?.production?.defaultOutputDurationSeconds)
-    || 5;
-}
-
-function updateCreateDurationSummary() {
-  const duration = selectedOutputDuration();
-  const rate = Number(runtimeStatus?.production?.videoCostPerSecondCny || 1.512);
-  $("#createDurationSummary").textContent = `${duration} 秒成片`;
-  $("#createCostSummary").textContent = `参考费用约 ¥${(duration * rate).toFixed(2)}`;
 }
 
 async function api(path, options) {
@@ -147,13 +136,12 @@ function renderStatus(status) {
     ? `${PLATFORM_LABELS[platform]} · 正式生产 · ${!status.arkConfigured ? "生产配置待完成" : status.billableGenerationEnabled ? "计费已开启" : "预算确认待完成"}${queueSuffix}`
     : `${PLATFORM_LABELS[platform]} · 规划模式 · 未调用生成模型${queueSuffix}`;
   $("#dailyTarget").textContent = `${status.production.dailyHours}h`;
-  $("#dailyEpisodes").textContent = `${status.production.outputsPerDay.toLocaleString("zh-CN")} 条 / 日`;
-  $("#metricMinutes").textContent = "5–60";
+  $("#dailyEpisodes").textContent = `${status.production.episodesPerDay.toLocaleString("zh-CN")} 集 / 日`;
+  $("#metricMinutes").textContent = "05:00";
   $("#metricBudget").textContent = `¥${status.production.dailyBudgetCny}`;
   $("#metricActiveProjects").textContent = status.queue?.activeCount || 0;
   $("#metricProjectSlots").textContent = `/ ${status.queue?.maxConcurrency || status.production.maxProjectConcurrency} 槽`;
   $("#metricQueuedProjects").textContent = status.queue?.queuedCount || 0;
-  updateCreateDurationSummary();
 }
 
 function renderStages(project) {
@@ -380,18 +368,102 @@ function renderAssetGallery(project) {
   `).join("") : `<div class="view-empty"><i data-lucide="users"></i><p>当前筛选下暂无连续性资产。</p></div>`;
 }
 
+function updateSeasonSelectionSummary() {
+  const plan = activeProject?.adaptationPlan;
+  if (!plan?.episodes?.length) return;
+  const start = Number($("#seasonStartEpisode").value) || 1;
+  const remaining = plan.episodes.length - start + 1;
+  const maxCount = Math.min(
+    Number(runtimeStatus?.production?.maxSeasonEpisodes) || 24,
+    remaining
+  );
+  const countInput = $("#seasonEpisodeCount");
+  countInput.max = String(maxCount);
+  const count = Math.max(1, Math.min(Number(countInput.value) || 1, maxCount));
+  countInput.value = String(count);
+  const end = start + count - 1;
+  const cost = count
+    * projectDurationSeconds(activeProject)
+    * Number(runtimeStatus?.production?.videoCostPerSecondCny || 0);
+  $("#seasonSelectionSummary").textContent =
+    `全书第 ${start}-${end} 集 · ${count} 集 · 约 ¥${cost.toFixed(2)}`;
+}
+
 function renderEpisodeQueue(project) {
   const episodes = project?.episodes || [];
+  const plan = project?.adaptationPlan;
+  const selectingSeason = project?.status === "season-review"
+    && plan?.episodes?.length;
+  $("#seasonPlanningPanel").classList.toggle("hidden", !selectingSeason);
+  if (selectingSeason) {
+    const planEpisodes = plan.episodes;
+    const suggestedCount = Math.min(
+      Number(plan.suggestedSeasonSize) || 6,
+      Number(runtimeStatus?.production?.maxSeasonEpisodes) || 24,
+      planEpisodes.length
+    );
+    $("#seasonPlanningBasis").textContent =
+      `${Number(plan.detectedChapterCount || 0)} 个明确章节 · `
+      + `${Number(plan.sourceCharacterCount || 0).toLocaleString("zh-CN")} 字 · `
+      + "按章节边界、内容长度和叙事密度规划";
+    $("#plannedEpisodeCount").textContent = `${planEpisodes.length} 集`;
+    if ($("#seasonPlanningPanel").dataset.projectId !== project.id) {
+      $("#seasonPlanningPanel").dataset.projectId = project.id;
+      $("#seasonNumber").value = "1";
+      $("#seasonStartEpisode").innerHTML = planEpisodes.map((episode) =>
+        `<option value="${episode.number}">第 ${episode.number} 集 · ${escapeHtml(episode.title)}</option>`
+      ).join("");
+      $("#seasonEpisodeCount").value = String(suggestedCount);
+    }
+    updateSeasonSelectionSummary();
+    $("#episodeSeasonSummary").innerHTML = `
+      <span><small>全书规划</small><strong>${planEpisodes.length} 集</strong></span>
+      <span><small>章节依据</small><strong>${plan.detectedChapterCount || "内容"} 个单元</strong></span>
+      <span><small>单集规格</small><strong>05:00 · 10 段</strong></span>
+      <span><small>下一步</small><strong>选择本季范围</strong></span>`;
+    $("#episodeTable").innerHTML = planEpisodes.map((episode) => `
+      <article class="episode-row planning-row">
+        <span class="episode-number">E${String(episode.number).padStart(2, "0")}</span>
+        <div><strong>${escapeHtml(episode.title)}</strong><small>${escapeHtml(episode.logline)}</small></div>
+        <div><strong>${escapeHtml(episode.sourceRange)}</strong><small>正文覆盖范围</small></div>
+        <div><strong>${Number(episode.estimatedSourceCharacters || 0).toLocaleString("zh-CN")} 字</strong><small>内容容量依据</small></div>
+        <div><small>尚未选择本季，不生成详细剧本或视频</small></div>
+      </article>`
+    ).join("");
+    $("#exportButton").disabled = false;
+    $("#retryButton").classList.add("hidden");
+    icons();
+    return;
+  }
+  const contentReady = episodes.filter((episode) => episode.contentStatus === "ready").length;
+  const completedEpisodes = episodes.filter((episode) => episode.status === "completed").length;
+  const totalSegments = episodes.reduce((sum, episode) => sum + (episode.shots?.length || 0), 0);
+  const completedSegments = episodes.reduce(
+    (sum, episode) => sum + (episode.shots || []).filter((shot) => shot.status === "succeeded").length,
+    0
+  );
+  $("#episodeSeasonSummary").innerHTML = `
+    <span><small>全季内容</small><strong>${contentReady}/${episodes.length || project?.seasonEpisodeCount || 0} 集已就绪</strong></span>
+    <span><small>视频交付</small><strong>${completedEpisodes}/${episodes.length || project?.seasonEpisodeCount || 0} 集已完成</strong></span>
+    <span><small>连续片段</small><strong>${completedSegments}/${totalSegments || (project?.seasonEpisodeCount || 0) * 10} 段</strong></span>
+    <span><small>生产策略</small><strong>逐集 · 尾帧接续</strong></span>`;
   $("#episodeTable").innerHTML = episodes.length ? episodes.map((episode) => {
     const shots = episode.shots || [];
     const demoPreview = isDemoPreview(project);
     const done = demoPreview ? 0 : shots.filter((shot) => shot.status === "succeeded").length;
     const percent = shots.length ? Math.round((done / shots.length) * 100) : 0;
+    const episodeState = episode.status === "completed"
+      ? "成片已完成"
+      : episode.status === "rendering"
+      ? "正在顺序渲染"
+      : episode.status === "assembling"
+      ? "正在装配"
+      : episode.contentStatus === "ready" ? "剧本已锁定" : "等待编剧";
     return `<article class="episode-row">
       <span class="episode-number">E${String(episode.number || 1).padStart(2, "0")}</span>
       <div><strong>${escapeHtml(episode.title || "未命名分集")}</strong><small>${escapeHtml(episode.logline || "等待剧本")}</small></div>
-      <div><strong>${formatDuration(episode.durationSeconds || Number(episode.durationMinutes || 15) * 60)}</strong><small>目标时长</small></div>
-      <div><strong>${done}/${shots.length}</strong><small>${demoPreview ? "仅规划，未生成" : escapeHtml(episode.status || project.status)}</small></div>
+      <div><strong>${formatDuration(episode.durationSeconds || 300)}</strong><small>${episode.contentStatus === "ready" ? "内容已就绪" : "内容规划中"}</small></div>
+      <div><strong>${done}/${shots.length}</strong><small>${escapeHtml(episodeState)} · 尾帧接续</small></div>
       <div><div class="mini-progress"><span style="width:${percent}%"></span></div><small>${percent}% 视频已生成</small></div>
     </article>`;
   }).join("") : `<div class="view-empty"><i data-lucide="film"></i><p>暂无分集任务。</p></div>`;
@@ -399,13 +471,15 @@ function renderEpisodeQueue(project) {
   const canRetry = ["failed", "rights-review", "budget-gate", "configuration-gate"].includes(project?.status)
     || isDemoPreview(project);
   $("#retryButton").classList.toggle("hidden", !canRetry);
-  $("#retryButton span").textContent = isDemoPreview(project) ? "开始真实生成" : "重试任务";
+  $("#retryButton span").textContent = project?.status === "budget-gate"
+    ? "确认预算并开始"
+    : isDemoPreview(project) ? "开始真实生成" : "重试任务";
 }
 
 function taskMatches(project, filter) {
   if (filter === "all") return true;
   if (filter === "active") return ["running", "rendering"].includes(project.status);
-  if (filter === "review") return project.status === "source-review" || isDemoPreview(project);
+  if (filter === "review") return ["source-review", "season-review"].includes(project.status) || isDemoPreview(project);
   if (filter === "completed") return project.status === "completed" && !isDemoPreview(project);
   if (filter === "failed") return ["failed", "rights-review", "budget-gate", "configuration-gate"].includes(project.status);
   return project.status === filter;
@@ -426,7 +500,7 @@ function projectMatches(project, filter) {
   if (filter === "active") return ["queued", "running", "rendering"].includes(project.status);
   if (filter === "review") {
     return isDemoPreview(project)
-      || ["source-review", "rights-review", "budget-gate", "configuration-gate", "failed"].includes(project.status);
+      || ["source-review", "season-review", "rights-review", "budget-gate", "configuration-gate", "failed"].includes(project.status);
   }
   if (filter === "completed") return project.status === "completed" && !isDemoPreview(project);
   return project.status === filter;
@@ -436,7 +510,7 @@ function renderProjectCatalog() {
   $("#metricProjectCount").textContent = allProjects.length;
   $("#metricReviewProjects").textContent = allProjects.filter((project) =>
     isDemoPreview(project)
-      || ["source-review", "rights-review", "budget-gate", "configuration-gate", "failed"].includes(project.status)
+      || ["source-review", "season-review", "rights-review", "budget-gate", "configuration-gate", "failed"].includes(project.status)
   ).length;
   const projects = allProjects.filter((project) => {
     const queryMatch = !projectQuery || `${project.novelName} ${project.sourceTitle || ""} ${project.id}`.toLowerCase().includes(projectQuery);
@@ -449,7 +523,7 @@ function renderProjectCatalog() {
       ? STAGES.findIndex(([id]) => id === "render")
       : Math.max(0, STAGES.findIndex(([id]) => id === project.stage));
     const stageLabel = STAGES[stageIndex]?.[1] || "等待调度";
-    const needsAction = demoPreview || ["source-review", "rights-review", "budget-gate", "configuration-gate", "failed"].includes(project.status);
+    const needsAction = demoPreview || ["source-review", "season-review", "rights-review", "budget-gate", "configuration-gate", "failed"].includes(project.status);
     const statusDetail = demoPreview
       ? "尚未调用 Seedance"
       : project.status === "queued"
@@ -466,7 +540,10 @@ function renderProjectCatalog() {
         <span class="project-stage-rail" aria-label="六节点进度">${STAGES.map((_, index) =>
           `<i class="${index < stageIndex || (project.status === "completed" && !demoPreview) ? "done" : index === stageIndex ? "current" : ""}"></i>`
         ).join("")}</span>
-        <span class="project-card-meta"><small>${escapeHtml(statusDetail)}</small><small>${formatDuration(projectDurationSeconds(project))} · ${demoPreview ? 0 : project.completedShots || 0}/${project.shotCount || 0} 片段</small></span>
+        <span class="project-card-meta"><small>${escapeHtml(statusDetail)}</small><small>${project.status === "season-review"
+          ? `${project.plannedEpisodeCount || 0} 集全书规划 · 待选本季`
+          : `${project.completedEpisodes || 0}/${project.episodeCount || project.seasonEpisodeCount || 1} 集 · 每集 ${formatDuration(projectDurationSeconds(project))}`
+        }</small></span>
         <span class="project-card-footer"><time>${formatTaskTime(project.updatedAt || project.createdAt)}</time><span>进入项目 <i data-lucide="arrow-right"></i></span></span>
       </span>
     </button>`;
@@ -780,22 +857,38 @@ function renderProject(project) {
   badge.className = `state-badge ${displayedStatus}`;
   const notice = $("#productionNotice");
   const targetDurationSeconds = projectDurationSeconds(project);
-  const estimatedCost = Number((
+  const episodeCount = Number(project.seasonEpisodeCount || project.episodeCount || project.episodes?.length || 0);
+  const estimatedEpisodeCost = Number((
     targetDurationSeconds * Number(runtimeStatus?.production?.videoCostPerSecondCny || 0)
   ).toFixed(2));
-  if (isDemoPreview(project)) {
+  const estimatedSeasonCost = Number((estimatedEpisodeCost * episodeCount).toFixed(2));
+  if (project.status === "season-review") {
+    const plannedCount = project.adaptationPlan?.episodes?.length || 0;
+    notice.innerHTML = `
+      <span>已根据正文与章节生成 ${plannedCount} 集全书规划。请先核对每集对应的章节和梗概，再选择本季连续范围。</span>
+      <button class="command-button" data-select-season>
+        <i data-lucide="list-checks"></i>
+        <span>查看规划并选择本季</span>
+      </button>`;
+    notice.classList.remove("hidden");
+  } else if (isDemoPreview(project)) {
     const liveReady = runtimeStatus?.mode === "live"
       && runtimeStatus?.arkConfigured
       && runtimeStatus?.billableGenerationEnabled;
     notice.innerHTML = `
-      <span>当前项目已完成剧本、资产和 ${project.episodes?.[0]?.shots?.length || 0} 个片段规划，等待启动真实 Seedance 生成。${formatDuration(targetDurationSeconds)} 成片按当前 720P 参考单价预估约 ¥${estimatedCost.toFixed(2)}。</span>
+      <span>全季 ${episodeCount} 集内容与剧本已完成，等待启动逐集 Seedance 生成。每集 ${formatDuration(targetDurationSeconds)}、${project.episodes?.[0]?.shots?.length || 10} 个连续片段，全季参考费用约 ¥${estimatedSeasonCost.toFixed(2)}。</span>
       <button class="command-button" data-start-live ${liveReady ? "" : "disabled"}>
         <i data-lucide="play"></i>
         <span>${liveReady ? "开始真实生成" : "真实模式未就绪"}</span>
       </button>`;
     notice.classList.remove("hidden");
   } else if (project.status === "budget-gate") {
-    notice.textContent = `真实视频已被预算门禁暂停。${formatDuration(targetDurationSeconds)} 成片预估约 ¥${estimatedCost.toFixed(2)}，当前日预算上限为 ¥${Number(runtimeStatus?.production?.dailyBudgetCny || 0).toFixed(2)}。`;
+    notice.innerHTML = `
+      <span>全季 ${episodeCount} 集剧本已全部完成。每集 ${formatDuration(targetDurationSeconds)} 参考费用约 ¥${estimatedEpisodeCost.toFixed(2)}，全季约 ¥${estimatedSeasonCost.toFixed(2)}；确认后将按集、按 30 秒片段顺序生成。</span>
+      <button class="command-button" data-approve-budget>
+        <i data-lucide="badge-dollar-sign"></i>
+        <span>确认预算并开始</span>
+      </button>`;
     notice.classList.remove("hidden");
   } else {
     notice.classList.add("hidden");
@@ -815,10 +908,14 @@ function renderProject(project) {
   const rights = displayedSource?.rights || "checking";
   $("#rightsText").textContent = project.status === "source-review"
     ? "候选来源待你确认"
+    : project.status === "season-review"
+    ? "正文已分析，等待选择本季"
     : rights === "public-domain"
     ? "公版来源，可自动处理"
     : rights === "public-domain-candidate" ? "公版候选，已进入核验" : "等待授权或来源核验";
-  const episode = project.episodes?.[0];
+  const episode = project.episodes?.find((item) => ["rendering", "assembling"].includes(item.status))
+    || project.episodes?.find((item) => item.status !== "completed")
+    || project.episodes?.at(-1);
   $("#episodeTitle").textContent = episode?.title || "脚本生成中";
   $("#episodeDuration").textContent = formatDuration(targetDurationSeconds);
   const episodeOutput = $("#episodeOutput");
@@ -868,7 +965,12 @@ async function refreshAll({ notify = false } = {}) {
     if (activeProjectId && allProjects.some((project) => project.id === activeProjectId)) {
       const { project } = await api(`/api/projects/${activeProjectId}`);
       renderProject(project);
-      if (["source-review", "rights-review"].includes(project.status) && activeView === "overview") showView("sources");
+      if (["source-review", "rights-review"].includes(project.status) && activeView === "overview") {
+        showView("sources");
+      }
+      if (project.status === "season-review" && activeView === "overview") {
+        showView("episodes");
+      }
     } else {
       activeProject = null;
       activeProjectId = null;
@@ -896,8 +998,7 @@ $("#launchForm").addEventListener("submit", async (event) => {
     const { project } = await api("/api/projects", {
       method: "POST",
       body: JSON.stringify({
-        novelName: $("#novelName").value,
-        targetDurationSeconds: selectedOutputDuration()
+        novelName: $("#novelName").value
       })
     });
     $("#createProjectDialog").close();
@@ -954,8 +1055,7 @@ document.querySelectorAll(".mobile-tabs button").forEach((button) => {
 
 $("#newProjectButton").addEventListener("click", () => {
   $("#launchForm").reset();
-  updateCreateDurationSummary();
-  $("#formHint").textContent = "创建后先检索候选来源，确认作品、作者和版本后继续。";
+  $("#formHint").textContent = "确认来源后先分析章节与正文，生成全书分集规划，再选择本季范围。";
   $("#createProjectDialog").showModal();
   $("#novelName").focus();
 });
@@ -963,9 +1063,6 @@ $("#createProjectDialogClose").addEventListener("click", () => $("#createProject
 $("#cancelCreateProjectButton").addEventListener("click", () => $("#createProjectDialog").close());
 $("#createProjectDialog").addEventListener("click", (event) => {
   if (event.target === $("#createProjectDialog")) $("#createProjectDialog").close();
-});
-document.querySelectorAll('input[name="targetDurationSeconds"]').forEach((input) => {
-  input.addEventListener("change", updateCreateDurationSummary);
 });
 $("#backToProjectsButton").addEventListener("click", closeProject);
 $("#manageSourcesButton").addEventListener("click", async () => {
@@ -1175,8 +1272,7 @@ $("#recommendationGrid").addEventListener("click", (event) => {
   if (!recommendation) return;
   $("#launchForm").reset();
   $("#novelName").value = recommendation.title;
-  updateCreateDurationSummary();
-  $("#formHint").textContent = `将《${recommendation.title}》创建为所选时长的制片项目。`;
+  $("#formHint").textContent = `将先分析《${recommendation.title}》的正文与章节，再生成可选择的全书分集规划。`;
   $("#createProjectDialog").showModal();
 });
 $("#projectGrid").addEventListener("click", async (event) => {
@@ -1219,10 +1315,45 @@ $("#nodeDialog").addEventListener("click", (event) => {
   if (event.target === $("#nodeDialog")) $("#nodeDialog").close();
 });
 
-async function retryActiveProject() {
-  if (!activeProjectId) return;
+$("#seasonStartEpisode").addEventListener("change", updateSeasonSelectionSummary);
+$("#seasonEpisodeCount").addEventListener("input", updateSeasonSelectionSummary);
+$("#seasonSelectionForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!activeProjectId || activeProject?.status !== "season-review") return;
+  const button = event.currentTarget.querySelector("button[type=submit]");
+  button.disabled = true;
   try {
-    await api(`/api/projects/${activeProjectId}/retry`, { method: "POST", body: "{}" });
+    const startEpisode = Number($("#seasonStartEpisode").value);
+    const episodeCount = Number($("#seasonEpisodeCount").value);
+    const seasonNumber = Number($("#seasonNumber").value);
+    await api(`/api/projects/${activeProjectId}/season`, {
+      method: "POST",
+      body: JSON.stringify({ startEpisode, episodeCount, seasonNumber })
+    });
+    showToast(`第 ${seasonNumber} 季范围已锁定，正在生成 ${episodeCount} 集详细剧本`);
+    showView("overview");
+    await refreshAll();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+async function retryActiveProject({ approveBudget = false } = {}) {
+  if (!activeProjectId) return;
+  if (approveBudget) {
+    const episodeCount = Number(activeProject?.seasonEpisodeCount || activeProject?.episodes?.length || 1);
+    const cost = episodeCount
+      * projectDurationSeconds(activeProject)
+      * Number(runtimeStatus?.production?.videoCostPerSecondCny || 0);
+    if (!window.confirm(`确认启动全季 ${episodeCount} 集视频生成？参考费用约 ¥${cost.toFixed(2)}。`)) return;
+  }
+  try {
+    await api(`/api/projects/${activeProjectId}/retry`, {
+      method: "POST",
+      body: JSON.stringify({ approveBudget })
+    });
     showView("overview");
     showToast(isDemoPreview(activeProject) ? "真实生成任务已启动" : "任务已重新进入生产队列");
     await refreshAll();
@@ -1231,9 +1362,15 @@ async function retryActiveProject() {
   }
 }
 
-$("#retryButton").addEventListener("click", retryActiveProject);
+$("#retryButton").addEventListener("click", () => {
+  retryActiveProject({ approveBudget: activeProject?.status === "budget-gate" });
+});
 $("#productionNotice").addEventListener("click", (event) => {
+  if (event.target.closest("[data-select-season]")) showView("episodes");
   if (event.target.closest("[data-start-live]")) retryActiveProject();
+  if (event.target.closest("[data-approve-budget]")) {
+    retryActiveProject({ approveBudget: true });
+  }
 });
 
 $("#exportButton").addEventListener("click", async () => {

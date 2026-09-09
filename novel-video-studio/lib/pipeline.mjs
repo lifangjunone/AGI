@@ -3,7 +3,12 @@ import { spawn } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ArkClient } from "./ark-client.mjs";
-import { OUTPUT_DURATION_OPTIONS } from "./config.mjs";
+import {
+  EPISODE_DURATION_SECONDS,
+  MAX_SEASON_EPISODES,
+  MAX_VIDEO_SEGMENT_SECONDS,
+  OUTPUT_DURATION_OPTIONS
+} from "./config.mjs";
 import { loadAuthorizedText, searchNovel } from "./novel-search.mjs";
 import { TaskScheduler } from "./task-scheduler.mjs";
 
@@ -11,12 +16,14 @@ const STAGES = ["discover", "ingest", "adapt", "design", "render", "assemble"];
 const STAGE_LABELS = {
   discover: "全网检索",
   ingest: "内容核验",
-  adapt: "剧本改编",
-  design: "视觉设定",
-  render: "镜头渲染",
-  assemble: "成片装配"
+  adapt: "全书拆集",
+  design: "本季设定",
+  render: "分集渲染",
+  assemble: "逐集装配"
 };
 const DEMO_IMAGE_ENDPOINT = "https://copilot-cn.bytedance.net/api/ide/v1/text_to_image";
+const TARGET_SOURCE_CHARACTERS_PER_EPISODE = 6000;
+const MAX_ADAPTATION_PLAN_EPISODES = 240;
 
 function now() {
   return new Date().toISOString();
@@ -73,11 +80,17 @@ function makeShots(title, episodeNumber, count, duration) {
   });
 }
 
-function makeShotsForDuration(title, episodeNumber, durationSeconds) {
+function makeShotsForDuration(
+  title,
+  episodeNumber,
+  durationSeconds,
+  segmentSeconds = MAX_VIDEO_SEGMENT_SECONDS,
+  segmentBriefs = []
+) {
   const durations = [];
   let remaining = durationSeconds;
   while (remaining > 0) {
-    const duration = Math.min(30, remaining);
+    const duration = Math.min(segmentSeconds, remaining);
     durations.push(duration);
     remaining -= duration;
   }
@@ -87,20 +100,184 @@ function makeShotsForDuration(title, episodeNumber, durationSeconds) {
       ...shot,
       id: `E${String(episodeNumber).padStart(3, "0")}-S${String(index + 1).padStart(3, "0")}`,
       order: index + 1,
-      prompt: `${title} cinematic adaptation, episode ${episodeNumber}, continuous segment ${index + 1} of ${durations.length}, consistent characters, realistic lighting, 16:9`
+      continuityMode: index === 0 ? "episode-opening" : "previous-last-frame",
+      previousShotId: index === 0
+        ? null
+        : `E${String(episodeNumber).padStart(3, "0")}-S${String(index).padStart(3, "0")}`,
+      prompt: segmentBriefs[index]?.prompt
+        || `${title} cinematic adaptation, episode ${episodeNumber}, continuous segment ${index + 1} of ${durations.length}, ${segmentBriefs[index]?.beat || "advance the story naturally"}, preserve character identity, wardrobe, props, geography, lighting direction and screen direction, realistic cinematic lighting, 16:9`
     };
   });
 }
 
 function projectDurationSeconds(project, config) {
+  const episodeDuration = Number(project?.episodeDurationSeconds);
+  if (Number.isFinite(episodeDuration) && episodeDuration > 0) return episodeDuration;
   const configured = Number(project?.targetDurationSeconds);
-  if (OUTPUT_DURATION_OPTIONS.includes(configured)) return configured;
+  if (Number.isFinite(configured) && configured > 0) return configured;
   const legacy = Number(project?.episodes?.[0]?.durationSeconds)
     || Number(project?.episodes?.[0]?.durationMinutes) * 60;
   return Number.isFinite(legacy) && legacy > 0
     ? legacy
     : Number(config.production.defaultOutputDurationSeconds)
       || Number(config.production.episodeMinutes) * 60;
+}
+
+function chapterHeading(line) {
+  return /^(?:第[零〇一二三四五六七八九十百千万两\d]{1,12}[章节回卷部篇]|chapter\s+\d+\b)/i
+    .test(String(line || "").trim());
+}
+
+function extractChapterInventory(sourceText, fallbackTitle = "正文") {
+  const text = String(sourceText || "").replace(/\r\n/g, "\n");
+  const lines = text.split("\n");
+  const chapters = [];
+  let offset = 0;
+  for (const line of lines) {
+    const normalized = line.trim();
+    if (normalized && chapterHeading(normalized)) {
+      if (chapters.length) {
+        chapters.at(-1).characterCount = Math.max(
+          1,
+          offset - chapters.at(-1).startOffset
+        );
+      }
+      chapters.push({
+        number: chapters.length + 1,
+        title: normalized.slice(0, 120),
+        startOffset: offset,
+        characterCount: 0
+      });
+    }
+    offset += line.length + 1;
+  }
+  if (chapters.length) {
+    chapters.at(-1).characterCount = Math.max(
+      1,
+      text.length - chapters.at(-1).startOffset
+    );
+    return chapters;
+  }
+  if (!text.trim()) return [];
+  const inferredCount = Math.max(
+    1,
+    Math.min(
+      MAX_ADAPTATION_PLAN_EPISODES,
+      Math.ceil(text.length / TARGET_SOURCE_CHARACTERS_PER_EPISODE)
+    )
+  );
+  const size = Math.ceil(text.length / inferredCount);
+  return Array.from({ length: inferredCount }, (_, index) => ({
+    number: index + 1,
+    title: `${fallbackTitle} · 内容单元 ${index + 1}`,
+    startOffset: index * size,
+    characterCount: Math.min(size, Math.max(0, text.length - index * size)),
+    inferred: true
+  }));
+}
+
+function buildFallbackAdaptationPlan(title, sourceText, source) {
+  const chapters = extractChapterInventory(
+    sourceText || source?.description || "",
+    title
+  );
+  const inventory = chapters.length
+    ? chapters
+    : [{
+        number: 1,
+        title: "现有内容梗概",
+        startOffset: 0,
+        characterCount: String(source?.description || "").length
+      }];
+  const episodes = [];
+  let group = [];
+  let characters = 0;
+  const flush = () => {
+    if (!group.length || episodes.length >= MAX_ADAPTATION_PLAN_EPISODES) return;
+    const first = group[0];
+    const last = group.at(-1);
+    const number = episodes.length + 1;
+    episodes.push({
+      number,
+      title: first.title.replace(
+        /^(?:第[零〇一二三四五六七八九十百千万两\d]{1,12}[章节回卷部篇]|chapter\s+\d+\b)\s*/i,
+        ""
+      ).slice(0, 48) || `叙事单元 ${number}`,
+      logline: `改编自${first.number === last.number ? first.title : `${first.title} 至 ${last.title}`}，形成完整的五分钟叙事单元。`,
+      sourceRange: first.number === last.number
+        ? first.title
+        : `${first.title} - ${last.title}`,
+      sourceChapterStart: first.number,
+      sourceChapterEnd: last.number,
+      estimatedSourceCharacters: characters
+    });
+    group = [];
+    characters = 0;
+  };
+  for (const chapter of inventory) {
+    if (
+      group.length
+      && characters + chapter.characterCount > TARGET_SOURCE_CHARACTERS_PER_EPISODE
+    ) {
+      flush();
+    }
+    group.push(chapter);
+    characters += chapter.characterCount;
+    if (characters >= TARGET_SOURCE_CHARACTERS_PER_EPISODE) flush();
+  }
+  flush();
+  return {
+    title,
+    generatedAt: now(),
+    analysisBasis: chapters.some((chapter) => !chapter.inferred)
+      ? "chapter-boundaries-and-content-density"
+      : sourceText
+        ? "content-density"
+        : "available-synopsis",
+    sourceCharacterCount: String(sourceText || "").length,
+    detectedChapterCount: chapters.filter((chapter) => !chapter.inferred).length,
+    recommendedEpisodeCount: episodes.length,
+    suggestedSeasonSize: Math.min(6, episodes.length),
+    episodes
+  };
+}
+
+function normalizeAdaptationPlan(candidate, fallback) {
+  const sourceEpisodes = Array.isArray(candidate?.episodes)
+    ? candidate.episodes
+    : [];
+  const episodes = sourceEpisodes
+    .slice(0, MAX_ADAPTATION_PLAN_EPISODES)
+    .map((episode, index) => {
+      const fallbackEpisode = fallback.episodes[index]
+        || fallback.episodes.at(-1);
+      return {
+        ...fallbackEpisode,
+        ...episode,
+        number: index + 1,
+        title: String(episode?.title || fallbackEpisode?.title || `第 ${index + 1} 集`).slice(0, 80),
+        logline: String(episode?.logline || fallbackEpisode?.logline || "待生成分集梗概").slice(0, 500),
+        sourceRange: String(episode?.sourceRange || fallbackEpisode?.sourceRange || "待核验章节").slice(0, 180)
+      };
+    });
+  const normalizedEpisodes = episodes.length ? episodes : fallback.episodes;
+  return {
+    ...fallback,
+    ...candidate,
+    generatedAt: now(),
+    sourceCharacterCount: fallback.sourceCharacterCount,
+    detectedChapterCount: fallback.detectedChapterCount,
+    recommendedEpisodeCount: normalizedEpisodes.length,
+    suggestedSeasonSize: Math.max(
+      1,
+      Math.min(
+        MAX_SEASON_EPISODES,
+        Number(candidate?.suggestedSeasonSize) || fallback.suggestedSeasonSize,
+        normalizedEpisodes.length
+      )
+    ),
+    episodes: normalizedEpisodes
+  };
 }
 
 function buildDemoBible(title, source, config, targetDurationSeconds) {
@@ -137,6 +314,48 @@ function buildDemoBible(title, source, config, targetDurationSeconds) {
     ],
     episodes: [episode]
   };
+}
+
+function buildSeriesBible(title, source, config, episodeCount) {
+  const count = Math.max(
+    1,
+    Math.min(MAX_SEASON_EPISODES, Number(episodeCount) || 1)
+  );
+  const durationSeconds = Number(config.production.episodeDurationSeconds) || EPISODE_DURATION_SECONDS;
+  const base = buildDemoBible(title, source, config, durationSeconds);
+  const arcNames = ["启程", "异兆", "试炼", "裂变", "决战", "余波", "暗线", "再会", "破局", "归途", "真相", "新章"];
+  base.seasonTitle = `${title} · 第一季`;
+  base.seasonSynopsis = base.synopsis;
+  base.episodes = Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+    const titleText = `第${number}集 ${arcNames[index] || `篇章${number}`}`;
+    const segmentBriefs = Array.from({ length: durationSeconds / MAX_VIDEO_SEGMENT_SECONDS }, (__, segmentIndex) => ({
+      order: segmentIndex + 1,
+      beat: `第 ${segmentIndex + 1} 段推进本集冲突并承接前一段动作`,
+      prompt: `${title}，${titleText}，第 ${segmentIndex + 1} 个连续段落。保持角色身份、服装、道具、场景方位、光线和运动方向连续，电影写实风格，16:9`
+    }));
+    return {
+      number,
+      title: titleText,
+      logline: `${base.characters[0].name}沿主线继续推进，在新的阻力中完成阶段目标并留下下一集悬念。`,
+      durationMinutes: durationSeconds / 60,
+      durationSeconds,
+      sourceRange: `第 ${number} 个改编单元`,
+      contentStatus: "ready",
+      script: `本集按五分钟结构展开：建立目标、升级冲突、形成转折，并以明确悬念收束。`,
+      continuityIn: number === 1 ? "系列开场" : `承接第 ${number - 1} 集结尾状态`,
+      continuityOut: number === count ? "本季阶段收束" : `进入第 ${number + 1} 集悬念`,
+      segmentBriefs,
+      shots: makeShotsForDuration(
+        title,
+        number,
+        durationSeconds,
+        MAX_VIDEO_SEGMENT_SECONDS,
+        segmentBriefs
+      )
+    };
+  });
+  return base;
 }
 
 function buildAssets(title, bible) {
@@ -183,13 +402,15 @@ export class ProductionPipeline {
     });
   }
 
-  async create(novelName, targetDurationSeconds = this.config.production.defaultOutputDurationSeconds || 5) {
+  async create(novelName, options = {}) {
     const title = String(novelName || "").trim();
     if (title.length < 2 || title.length > 100) throw new Error("小说名需为 2-100 个字符");
-    const duration = Number(targetDurationSeconds);
-    if (!OUTPUT_DURATION_OPTIONS.includes(duration)) {
-      throw new Error("生成时长仅支持 5、10、15、30 或 60 秒");
+    const legacyDuration = typeof options === "number" ? Number(options) : null;
+    if (legacyDuration !== null && !OUTPUT_DURATION_OPTIONS.includes(legacyDuration)) {
+      throw new Error("旧版生成时长仅支持 5、10、15、30 或 60 秒");
     }
+    const requestedEpisodeCount = legacyDuration !== null ? 1 : null;
+    const duration = legacyDuration || EPISODE_DURATION_SECONDS;
     const project = {
       id: randomUUID(),
       novelName: title,
@@ -198,6 +419,17 @@ export class ProductionPipeline {
       progress: 2,
       mode: this.config.mode,
       targetDurationSeconds: duration,
+      episodeDurationSeconds: duration,
+      seasonEpisodeCount: requestedEpisodeCount,
+      productionSpec: {
+        episodeDurationSeconds: duration,
+        segmentDurationSeconds: Math.min(
+          MAX_VIDEO_SEGMENT_SECONDS,
+          Number(this.config.production.maxVideoSegmentSeconds) || MAX_VIDEO_SEGMENT_SECONDS
+        ),
+        continuityMode: "last-frame-chain",
+        renderOrder: "episode-sequential"
+      },
       createdAt: now(),
       updatedAt: now(),
       queuedAt: now(),
@@ -210,14 +442,83 @@ export class ProductionPipeline {
       sourceConfirmed: false,
       suggestedSourceId: null,
       bible: null,
+      adaptationPlan: null,
+      seasonSelection: null,
       assets: [],
       episodes: [],
       nodes: createPipelineNodes(title),
-      activity: [{ at: now(), message: "生产任务已创建" }],
+      activity: [{
+        at: now(),
+        message: legacyDuration !== null
+          ? `旧版项目已创建：1 集，时长 ${duration} 秒`
+          : "小说项目已创建：确认正文后将按章节与内容生成全书分集规划"
+      }],
       error: null
     };
     await this.store.save(project);
     return this.scheduler.enqueue(project.id, { message: "任务已进入生产队列" });
+  }
+
+  async selectSeason(id, {
+    startEpisode,
+    episodeCount,
+    seasonNumber = 1
+  } = {}) {
+    const project = await this.store.get(id);
+    if (!project) throw new Error("项目不存在");
+    if (project.status !== "season-review" || !project.adaptationPlan?.episodes?.length) {
+      throw new Error("当前任务尚未进入本季选择阶段");
+    }
+    const start = Number(startEpisode);
+    const count = Number(episodeCount);
+    const season = Number(seasonNumber);
+    const total = project.adaptationPlan.episodes.length;
+    if (!Number.isInteger(start) || start < 1 || start > total) {
+      throw new Error(`起始集必须在 1-${total} 之间`);
+    }
+    if (
+      !Number.isInteger(count)
+      || count < 1
+      || count > MAX_SEASON_EPISODES
+      || start + count - 1 > total
+    ) {
+      throw new Error(
+        `本季集数必须在 1-${Math.min(MAX_SEASON_EPISODES, total - start + 1)} 之间`
+      );
+    }
+    if (!Number.isInteger(season) || season < 1 || season > 99) {
+      throw new Error("季号必须在 1-99 之间");
+    }
+    const endEpisode = start + count - 1;
+    project.seasonSelection = {
+      seasonNumber: season,
+      startEpisode: start,
+      endEpisode,
+      episodeCount: count,
+      selectedAt: now()
+    };
+    project.seasonEpisodeCount = count;
+    project.productionSpec = {
+      ...(project.productionSpec || {}),
+      episodeCount: count,
+      sourceEpisodeStart: start,
+      sourceEpisodeEnd: endEpisode
+    };
+    project.status = "queued";
+    project.stage = "adapt";
+    project.progress = 44;
+    project.error = null;
+    project.completedAt = null;
+    project.episodes = [];
+    if (project.nodes?.adapt) {
+      project.nodes.adapt.status = "pending";
+      project.nodes.adapt.error = null;
+      project.nodes.adapt.completedAt = null;
+    }
+    await this.store.save(project);
+    return this.scheduler.enqueue(id, {
+      message: `已锁定第 ${season} 季：全书规划第 ${start}-${endEpisode} 集，开始生成详细剧本`
+    });
   }
 
   async update(project, patch, message) {
@@ -286,7 +587,7 @@ export class ProductionPipeline {
     return this.scheduler.enqueue(id, { message: "来源重新检索任务已进入队列" });
   }
 
-  async retry(id) {
+  async retry(id, { approveBudget = false } = {}) {
     const project = await this.store.get(id);
     if (!project) throw new Error("项目不存在");
     const retryable = ["failed", "rights-review", "budget-gate", "configuration-gate"].includes(project.status)
@@ -295,6 +596,56 @@ export class ProductionPipeline {
         && ["planning", "demo"].includes(project.mode)
       );
     if (!retryable) throw new Error("当前任务不能重新生成");
+
+    if (
+      project.status === "budget-gate"
+      && project.stage === "render"
+      && project.contentPlanCompletedAt
+      && project.episodes?.length
+    ) {
+      if (!approveBudget) throw new Error("请先确认全季视频预算");
+      project.mode = this.config.mode;
+      project.budgetApproved = true;
+      project.resumeStage = "render-new";
+      project.status = "queued";
+      project.progress = 72;
+      project.error = null;
+      project.completedAt = null;
+      if (project.nodes?.render) {
+        project.nodes.render.status = "pending";
+        project.nodes.render.error = null;
+      }
+      await this.store.save(project);
+      return this.scheduler.enqueue(id, {
+        message: "全季视频预算已确认，按集顺序进入渲染队列"
+      });
+    }
+
+    if (
+      project.status === "failed"
+      && project.stage === "render"
+      && project.contentPlanCompletedAt
+      && project.episodes?.length
+    ) {
+      project.resumeStage = "render-retry";
+      project.status = "queued";
+      project.error = null;
+      project.completedAt = null;
+      for (const episode of project.episodes) {
+        if (episode.status === "completed") continue;
+        episode.status = "queued";
+        for (const shot of episode.shots || []) {
+          if (!["failed", "expired"].includes(shot.status)) continue;
+          shot.status = "queued";
+          shot.progress = 0;
+          delete shot.remoteTaskId;
+        }
+      }
+      await this.store.save(project);
+      return this.scheduler.enqueue(id, {
+        message: "失败片段已重置，将从断点继续逐集生成"
+      });
+    }
 
     project.mode = this.config.mode;
     project.status = "queued";
@@ -383,6 +734,35 @@ export class ProductionPipeline {
     let retainSlot = false;
 
     try {
+      if (["render-new", "render-retry"].includes(project.resumeStage) && project.episodes?.length) {
+        const renderResume = project.resumeStage;
+        delete project.resumeStage;
+        await this.updateNode(project, "render", "running", {
+          input: {
+            episodeCount: project.episodes.length,
+            episodeDurationSeconds: projectDurationSeconds(project, this.config),
+            totalSegmentCount: project.episodes.reduce((sum, episode) => sum + (episode.shots?.length || 0), 0),
+            segmentDurationSeconds: project.productionSpec?.segmentDurationSeconds || MAX_VIDEO_SEGMENT_SECONDS,
+            renderOrder: "episode-sequential",
+            continuityMode: "previous-last-frame",
+            model: this.config.ark.videoModel
+          },
+          projectPatch: { status: "running", stage: "render", progress: 72, error: null },
+          message: "全季内容已锁定，开始逐集视频生产"
+        });
+        if (renderResume === "render-new") {
+          await this.submitVideoBatch(project, project.episodes);
+        } else {
+          await this.update(project, {
+            status: "rendering",
+            stage: "render",
+            episodes: project.episodes
+          }, "从失败片段断点恢复");
+          await this.submitNextSequentialShot(project);
+        }
+        retainSlot = true;
+        return retainSlot;
+      }
       const requiresDiscovery = !project.sourceConfirmed || !project.source;
       await this.update(project, {
         status: "running",
@@ -465,14 +845,36 @@ export class ProductionPipeline {
       }
 
       const sourceText = await this.readSourceText(source).catch(() => "");
+      const chapterInventory = extractChapterInventory(
+        sourceText || source.description || "",
+        project.novelName
+      );
+      const detectedChapterCount = chapterInventory.filter(
+        (chapter) => !chapter.inferred
+      ).length;
       const targetDurationSeconds = projectDurationSeconds(project, this.config);
-      const estimatedCost = Number((
+      const episodeCount = Number(
+        project.seasonSelection?.episodeCount
+        || project.seasonEpisodeCount
+        || project.productionSpec?.episodeCount
+        || 0
+      );
+      const segmentDurationSeconds = Number(
+        project.productionSpec?.segmentDurationSeconds
+        || this.config.production.maxVideoSegmentSeconds
+        || MAX_VIDEO_SEGMENT_SECONDS
+      );
+      const estimatedEpisodeCost = Number((
         targetDurationSeconds * this.config.production.videoCostPerSecondCny
+      ).toFixed(2));
+      const estimatedSeasonCost = Number((
+        estimatedEpisodeCost * episodeCount
       ).toFixed(2));
       await this.updateNode(project, "ingest", "completed", {
         output: {
           sourceId: source.id,
           contentCharacters: sourceText.length,
+          detectedChapterCount,
           contentPreview: (sourceText || source.description || "").slice(0, 1200),
           usedDescriptionFallback: sourceText.length === 0,
           rights: source.rights,
@@ -484,13 +886,14 @@ export class ProductionPipeline {
       });
       const billableEnabled = this.config.production.billableGenerationEnabled === true;
       const budgetOverrunAllowed = this.config.production.budgetOverrunAllowed === true;
-      const overBudget = estimatedCost > this.config.production.dailyBudgetCny;
+      const overBudget = estimatedSeasonCost > this.config.production.dailyBudgetCny;
       if (this.config.mode === "live" && !this.config.ark.apiKey) {
         const reason = "生产环境尚未配置 ARK_API_KEY；完成用户级配置后重试";
         await this.updateNode(project, "adapt", "paused", {
           input: {
             targetDurationSeconds,
-            estimatedVideoCostCny: estimatedCost
+            selectedEpisodeCount: episodeCount || null,
+            estimatedSeasonCostCny: episodeCount ? estimatedSeasonCost : null
           },
           error: reason,
           projectPatch: {
@@ -506,16 +909,15 @@ export class ProductionPipeline {
       }
       if (
         this.config.mode === "live"
-        && (!billableEnabled || (overBudget && !budgetOverrunAllowed))
+        && !billableEnabled
       ) {
-        const reason = !billableEnabled
-          ? "真实生成未获计费授权；设置 ALLOW_BILLABLE_GENERATION=true 后重试"
-          : `单集预估 ¥${estimatedCost.toFixed(2)}，超过日预算 ¥${this.config.production.dailyBudgetCny.toFixed(2)}；如确认超额，设置 ALLOW_BUDGET_OVERRUN=true`;
+        const reason = "生成模型未获计费授权；设置 ALLOW_BILLABLE_GENERATION=true 后重试";
         await this.updateNode(project, "adapt", "paused", {
           input: {
             model: this.config.ark.planningModel || this.config.ark.textModel,
             targetDurationSeconds,
-            estimatedVideoCostCny: estimatedCost,
+            selectedEpisodeCount: episodeCount || null,
+            estimatedSeasonCostCny: episodeCount ? estimatedSeasonCost : null,
             dailyBudgetCny: this.config.production.dailyBudgetCny
           },
           error: reason,
@@ -534,38 +936,181 @@ export class ProductionPipeline {
         input: {
           sourceCharacters: sourceText.length,
           mode: this.config.mode,
+          selectedEpisodeCount: episodeCount || null,
+          detectedChapterCount,
           targetDurationSeconds,
+          segmentDurationSeconds,
           model: this.config.mode === "live"
             ? this.config.ark.planningModel || this.config.ark.textModel
             : "planning"
         }
       });
-      let bible;
-      if (this.config.mode === "live") {
-        bible = await this.ark.generateJson(
-          "你是影视制片统筹。只输出 JSON，字段为 tone、synopsis、characters、weapons、locations、episodes。角色/道具/地点必须带 continuityId，并按用户指定的成片秒数设计可拍摄剧情。",
-          `作品：${project.novelName}\n来源：${source.title} / ${source.authors}\n目标成片时长：${targetDurationSeconds} 秒\n内容：${(sourceText || source.description || "").slice(0, 120000)}`
+      const fallbackPlan = buildFallbackAdaptationPlan(
+        project.novelName,
+        sourceText,
+        source
+      );
+      let adaptationPlan = project.adaptationPlan;
+      if (!adaptationPlan) {
+        let generatedPlan = fallbackPlan;
+        if (this.config.mode === "live") {
+          generatedPlan = await this.ark.generateJson(
+            "你是长篇小说剧集策划。只输出 JSON，字段为 analysisBasis、recommendedEpisodeCount、suggestedSeasonSize、tone、seriesSynopsis、characters、weapons、locations、episodes。必须根据实际章节边界、章节长度、事件密度和五分钟叙事容量决定总集数，不得使用固定档位。episodes 必须按全书顺序列出，每项只包含 number、title、logline、sourceRange、sourceChapterStart、sourceChapterEnd、estimatedSourceCharacters。每集必须对应明确正文范围，不能先决定季集数，也不要生成分镜或视频。",
+            `作品：${project.novelName}\n来源：${source.title} / ${source.authors}\n正文字符数：${sourceText.length}\n检测到的章节：${JSON.stringify(chapterInventory.slice(0, MAX_ADAPTATION_PLAN_EPISODES))}\n正文开篇：${(sourceText || source.description || "").slice(0, 60000)}\n正文结尾：${(sourceText || source.description || "").slice(-30000)}`
+          );
+        }
+        adaptationPlan = normalizeAdaptationPlan(
+          generatedPlan,
+          fallbackPlan
         );
-      } else {
-        bible = buildDemoBible(project.novelName, source, this.config, targetDurationSeconds);
+        await this.updateNode(project, "adapt", "paused", {
+          output: {
+            phase: "whole-book-plan",
+            analysisBasis: adaptationPlan.analysisBasis,
+            sourceCharacterCount: adaptationPlan.sourceCharacterCount,
+            detectedChapterCount: adaptationPlan.detectedChapterCount,
+            recommendedEpisodeCount: adaptationPlan.episodes.length,
+            suggestedSeasonSize: adaptationPlan.suggestedSeasonSize,
+            episodes: adaptationPlan.episodes
+          },
+          error: "全书分集规划已完成，等待选择本季范围",
+          projectPatch: {
+            adaptationPlan,
+            status: "season-review",
+            stage: "adapt",
+            progress: 42,
+            error: null,
+            completedAt: null
+          },
+          message: `已根据 ${adaptationPlan.detectedChapterCount || "现有"} 个章节/内容单元生成 ${adaptationPlan.episodes.length} 集全书规划，等待选择本季`
+        });
+        return false;
       }
-      const episode = bible.episodes?.[0]
-        || buildDemoBible(project.novelName, source, this.config, targetDurationSeconds).episodes[0];
-      episode.durationSeconds = targetDurationSeconds;
-      episode.durationMinutes = targetDurationSeconds / 60;
-      episode.shots = makeShotsForDuration(project.novelName, episode.number || 1, targetDurationSeconds);
+      if (!project.seasonSelection) {
+        await this.update(project, {
+          status: "season-review",
+          stage: "adapt",
+          progress: 42,
+          error: null
+        }, "全书分集规划已就绪，等待选择本季");
+        return false;
+      }
+      const selection = project.seasonSelection;
+      const selectedOutlines = adaptationPlan.episodes.slice(
+        selection.startEpisode - 1,
+        selection.endEpisode
+      );
+      if (!selectedOutlines.length || selectedOutlines.length !== episodeCount) {
+        throw new Error("本季选择与全书分集规划不一致，请重新选择");
+      }
+      const fallbackBible = buildSeriesBible(
+        project.novelName,
+        source,
+        this.config,
+        episodeCount
+      );
+      const bible = {
+        ...fallbackBible,
+        seasonTitle: `${project.novelName} · 第 ${selection.seasonNumber} 季`,
+        seasonSynopsis: adaptationPlan.seriesSynopsis
+          || fallbackBible.synopsis,
+        tone: adaptationPlan.tone || fallbackBible.tone,
+        characters: Array.isArray(adaptationPlan.characters)
+          && adaptationPlan.characters.length
+          ? adaptationPlan.characters
+          : fallbackBible.characters,
+        weapons: Array.isArray(adaptationPlan.weapons)
+          && adaptationPlan.weapons.length
+          ? adaptationPlan.weapons
+          : fallbackBible.weapons,
+        locations: Array.isArray(adaptationPlan.locations)
+          && adaptationPlan.locations.length
+          ? adaptationPlan.locations
+          : fallbackBible.locations
+      };
+      bible.characters = bible.characters.map((item, index) => ({
+        ...item,
+        continuityId: item.continuityId || `CHAR-${String(index + 1).padStart(3, "0")}`
+      }));
+      bible.weapons = bible.weapons.map((item, index) => ({
+        ...item,
+        continuityId: item.continuityId || `PROP-${String(index + 1).padStart(3, "0")}`
+      }));
+      bible.locations = bible.locations.map((item, index) => ({
+        ...item,
+        continuityId: item.continuityId || `LOC-${String(index + 1).padStart(3, "0")}`
+      }));
+      const outlines = selectedOutlines;
+      const episodes = [];
+      for (let index = 0; index < outlines.length; index += 1) {
+        const outline = outlines[index];
+        let script = outline;
+        if (this.config.mode === "live") {
+          script = await this.ark.generateJson(
+            "你是分集编剧和分镜导演。只输出 JSON，字段为 title、logline、sourceRange、script、continuityIn、continuityOut、segmentBriefs。segmentBriefs 必须严格包含 10 项，每项包含 order、beat、dialogue、visual、camera、sound、prompt。每项对应连续的 30 秒视频，prompt 必须锁定角色身份、服装、道具、场景方位、光线、时间和屏幕运动方向，并自然承接上一段。整集必须形成完整 5 分钟叙事。",
+            `作品：${project.novelName}\n本季：第 ${selection.seasonNumber} 季，全书规划第 ${selection.startEpisode}-${selection.endEpisode} 集\n本季梗概：${bible.seasonSynopsis || bible.synopsis}\n全季角色：${JSON.stringify(bible.characters)}\n当前分集：${JSON.stringify(outline)}\n上一集连续性：${episodes[index - 1]?.continuityOut || "本季开场"}`
+          );
+        }
+        const fallbackEpisode = fallbackBible.episodes[index];
+        const briefs = Array.from(
+          { length: Math.ceil(targetDurationSeconds / segmentDurationSeconds) },
+          (_, segmentIndex) => script.segmentBriefs?.[segmentIndex]
+            || fallbackEpisode.segmentBriefs[segmentIndex]
+        );
+        const episode = {
+          ...outline,
+          ...script,
+          number: Number(outline.number) || selection.startEpisode + index,
+          seasonOrder: index + 1,
+          durationSeconds: targetDurationSeconds,
+          durationMinutes: targetDurationSeconds / 60,
+          contentStatus: "ready",
+          segmentBriefs: briefs
+        };
+        episode.shots = makeShotsForDuration(
+          project.novelName,
+          episode.number,
+          targetDurationSeconds,
+          segmentDurationSeconds,
+          briefs
+        );
+        episodes.push(episode);
+        await this.update(project, {
+          episodes: [...episodes],
+          progress: 34 + Math.round(((index + 1) / episodeCount) * 18)
+        }, `第 ${index + 1}/${episodeCount} 集剧本已完成`);
+      }
+      bible.episodes = episodes;
       await this.updateNode(project, "adapt", "completed", {
         output: {
+          seasonTitle: bible.seasonTitle || `${project.novelName} · 第一季`,
+          seasonSynopsis: bible.seasonSynopsis || bible.synopsis,
           tone: bible.tone,
           synopsis: bible.synopsis,
           characters: bible.characters || [],
           weapons: bible.weapons || [],
           locations: bible.locations || [],
-          episodes: (bible.episodes || []).map(({ shots, ...item }) => ({ ...item, shotCount: shots?.length || 0 })),
-          shotCount: episode.shots.length
+          episodes: episodes.map(({ shots, segmentBriefs, ...item }) => ({
+            ...item,
+            contentStatus: "ready",
+            segmentCount: shots.length,
+            segmentBriefs
+          })),
+          contentReadyEpisodes: episodes.length,
+          totalSegments: episodes.reduce((sum, episode) => sum + episode.shots.length, 0),
+          seasonSelection: selection
         },
-        projectPatch: { bible, episodes: [episode], targetDurationSeconds, stage: "design", progress: 55 },
-        message: "剧本、角色与连续性档案已生成"
+        projectPatch: {
+          bible,
+          episodes,
+          targetDurationSeconds,
+          episodeDurationSeconds: targetDurationSeconds,
+          seasonEpisodeCount: episodeCount,
+          contentPlanCompletedAt: now(),
+          stage: "design",
+          progress: 55
+        },
+        message: `第 ${selection.seasonNumber} 季 ${episodeCount} 集详细剧本与连续性档案已全部生成`
       });
 
       await this.updateNode(project, "design", "running", {
@@ -601,32 +1146,64 @@ export class ProductionPipeline {
 
       await this.updateNode(project, "render", "running", {
         input: {
-          shotCount: episode.shots.length,
-          shotDurations: episode.shots.map((shot) => shot.duration),
-          maxConcurrency: this.config.production.maxVideoConcurrency,
+          episodeCount: episodes.length,
+          episodeDurationSeconds: targetDurationSeconds,
+          totalSegmentCount: episodes.reduce((sum, item) => sum + item.shots.length, 0),
+          segmentDurationSeconds,
+          renderOrder: "episode-sequential",
+          continuityMode: "previous-last-frame",
           model: this.config.mode === "live" ? this.config.ark.videoModel : "planning"
         }
       });
+      if (
+        this.config.mode === "live"
+        && overBudget
+        && !budgetOverrunAllowed
+        && project.budgetApproved !== true
+      ) {
+        const reason = `全季 ${episodeCount} 集预估 ¥${estimatedSeasonCost.toFixed(2)}（单集约 ¥${estimatedEpisodeCost.toFixed(2)}），超过当前预算上限 ¥${this.config.production.dailyBudgetCny.toFixed(2)}`;
+        await this.updateNode(project, "render", "paused", {
+          input: {
+            episodeCount,
+            episodeDurationSeconds: targetDurationSeconds,
+            estimatedEpisodeCostCny: estimatedEpisodeCost,
+            estimatedSeasonCostCny: estimatedSeasonCost,
+            dailyBudgetCny: this.config.production.dailyBudgetCny
+          },
+          error: reason,
+          projectPatch: {
+            status: "budget-gate",
+            stage: "render",
+            progress: 72,
+            episodes,
+            error: reason
+          },
+          message: "全季内容已完成，视频生产等待预算确认"
+        });
+        return false;
+      }
       if (this.config.mode === "live") {
-        await this.submitVideoBatch(project, episode);
+        await this.submitVideoBatch(project, episodes);
         retainSlot = true;
       } else {
-        for (const shot of episode.shots) {
-          shot.status = "simulated";
-          shot.progress = 0;
+        for (const episode of episodes) {
+          for (const shot of episode.shots) {
+            shot.status = "simulated";
+            shot.progress = 0;
+          }
+          episode.status = "planning-ready";
+          episode.renderedSeconds = 0;
         }
-        episode.status = "planning-ready";
-        episode.renderedSeconds = 0;
+        const totalSegments = episodes.reduce((sum, item) => sum + item.shots.length, 0);
         await this.updateNode(project, "render", "paused", {
           output: {
-            totalShots: episode.shots.length,
+            totalEpisodes: episodes.length,
+            contentReadyEpisodes: episodes.length,
+            totalShots: totalSegments,
             completedShots: 0,
-            simulatedShots: episode.shots.length,
+            simulatedShots: totalSegments,
             failedShots: 0,
-            mode: "planning",
-            shots: episode.shots.map(({ id: shotId, order, duration, status, progress, prompt, videoUrl }) => ({
-              id: shotId, order, duration, status, progress, prompt, videoUrl
-            }))
+            mode: "planning"
           },
           error: "规划模式只生成镜头规划，不调用 Seedance，也不会产出 MP4",
           projectPatch: {
@@ -634,10 +1211,10 @@ export class ProductionPipeline {
             stage: "render",
             progress: 72,
             completedAt: now(),
-            episodes: [episode],
+            episodes,
             error: null
           },
-          message: "规划预览已完成；未调用 Seedance，未生成视频文件"
+          message: `全季 ${episodes.length} 集内容规划已完成；未调用 Seedance`
         });
       }
     } catch (error) {
@@ -654,45 +1231,73 @@ export class ProductionPipeline {
     return retainSlot;
   }
 
-  async submitVideoBatch(project, episode) {
-    episode.status = "rendering";
-    for (const shot of episode.shots) {
-      shot.status = "queued";
-      shot.progress = 0;
-      delete shot.remoteTaskId;
+  async submitVideoBatch(project, episodes) {
+    for (const episode of episodes) {
+      episode.status = "queued";
+      for (const shot of episode.shots) {
+        shot.status = "queued";
+        shot.progress = 0;
+        delete shot.remoteTaskId;
+        delete shot.localFile;
+        delete shot.videoUrl;
+        delete shot.lastFrameUrl;
+        delete shot.lastFrameFile;
+      }
     }
-    await this.submitAvailableShots(project, episode);
     await this.update(project, {
       status: "rendering",
       stage: "render",
-      progress: 78,
-      episodes: [episode]
-    }, "首批镜头已提交，后续镜头将按并发槽自动接续");
+      progress: 72,
+      episodes
+    }, `全季内容已锁定，开始按集顺序生成 ${episodes.length} 集视频`);
+    await this.submitNextSequentialShot(project);
   }
 
-  async submitAvailableShots(project, episode) {
-    const activeCount = episode.shots.filter((shot) =>
-      shot.remoteTaskId && !["succeeded", "failed", "expired"].includes(shot.status)
-    ).length;
-    const available = Math.max(0, this.config.production.maxVideoConcurrency - activeCount);
-    const nextShots = episode.shots
-      .filter((shot) => shot.status === "queued" && !shot.remoteTaskId)
-      .slice(0, available);
-    if (!nextShots.length) return;
-    const tasks = await Promise.all(nextShots.map(async (shot) => {
-      const task = await this.ark.createVideo({
-        prompt: shot.prompt,
-        duration: shot.duration,
-        ratio: "16:9"
-      });
-      return [shot, task];
-    }));
-    for (const [shot, task] of tasks) {
-      shot.remoteTaskId = task.id;
-      shot.status = "submitted";
-      shot.progress = 5;
+  async continuityFrame(project, episodeIndex, shotIndex) {
+    const previousShot = shotIndex > 0
+      ? project.episodes[episodeIndex].shots[shotIndex - 1]
+      : project.episodes[episodeIndex - 1]?.shots?.at(-1);
+    if (!previousShot) return null;
+    if (previousShot.lastFrameFile) {
+      const bytes = await readFile(previousShot.lastFrameFile);
+      return `data:image/jpeg;base64,${bytes.toString("base64")}`;
     }
-    await this.update(project, { episodes: [episode] }, `已补充提交 ${tasks.length} 个镜头任务`);
+    return previousShot.lastFrameUrl || null;
+  }
+
+  async submitNextSequentialShot(project) {
+    const active = project.episodes
+      .flatMap((episode) => episode.shots || [])
+      .find((shot) => shot.remoteTaskId && ["submitted", "queued", "running"].includes(shot.status));
+    if (active) return;
+    const episodeIndex = project.episodes.findIndex((episode) => episode.status !== "completed");
+    if (episodeIndex < 0) return;
+    const episode = project.episodes[episodeIndex];
+    episode.status = "rendering";
+    const shotIndex = episode.shots.findIndex((shot) => shot.status === "queued" && !shot.remoteTaskId);
+    if (shotIndex < 0) return;
+    const shot = episode.shots[shotIndex];
+    const firstFrameUrl = await this.continuityFrame(project, episodeIndex, shotIndex);
+    const continuity = [
+      shot.prompt,
+      `全季连续性：${project.bible?.tone || "统一电影质感"}`,
+      `本集承接：${episode.continuityIn || "自然承接上一集"}`,
+      firstFrameUrl
+        ? "严格延续输入首帧中的角色外观、服装、道具位置、场景空间、光线、镜头方向和动作势能。"
+        : "建立本集连续性的角色外观、服装、道具、场景空间和光线基准。"
+    ].join("\n");
+    const task = await this.ark.createVideo({
+      prompt: continuity,
+      duration: shot.duration,
+      ratio: "16:9",
+      firstFrameUrl
+    });
+    shot.remoteTaskId = task.id;
+    shot.status = "submitted";
+    shot.progress = 5;
+    shot.usedPreviousLastFrame = Boolean(firstFrameUrl);
+    await this.update(project, { episodes: project.episodes },
+      `第 ${episode.number} 集片段 ${shot.order}/${episode.shots.length} 已提交${firstFrameUrl ? "，已接入上一片段尾帧" : ""}`);
   }
 
   async reconcile(id) {
@@ -701,43 +1306,62 @@ export class ProductionPipeline {
     try {
       const project = await this.store.get(id);
       if (!project || project.status !== "rendering") return;
-      const episode = project.episodes?.[0];
-      const pending = (episode?.shots || [])
-        .filter((shot) => shot.remoteTaskId && !["succeeded", "failed"].includes(shot.status))
-        .slice(0, this.config.production.maxVideoConcurrency);
-      const results = await Promise.all(pending.map(async (shot) => [shot, await this.ark.getVideoTask(shot.remoteTaskId)]));
-      for (const [shot, task] of results) {
+      const episode = project.episodes.find((item) => item.status === "rendering")
+        || project.episodes.find((item) => item.status !== "completed");
+      const shot = episode?.shots?.find((item) =>
+        item.remoteTaskId && !["succeeded", "failed", "expired"].includes(item.status)
+      );
+      if (shot) {
+        const task = await this.ark.getVideoTask(shot.remoteTaskId);
         shot.status = task.status;
         shot.progress = task.status === "succeeded" ? 100 : task.status === "running" ? 55 : task.status === "queued" ? 10 : 0;
         if (task.status === "failed" || task.status === "expired") {
-          throw new Error(`镜头 ${shot.id} 渲染失败: ${task.error?.message || task.status}`);
+          await this.update(project, { episodes: project.episodes },
+            `片段 ${shot.id} 返回 ${task.status}`);
+          throw new Error(`片段 ${shot.id} 渲染失败: ${task.error?.message || task.status}`);
         }
         if (task.status === "succeeded" && task.content?.video_url && !shot.localFile) {
           const clipsDirectory = path.join(this.config.dataDirectory, "clips", project.id);
-          await mkdir(clipsDirectory, { recursive: true });
+          const framesDirectory = path.join(this.config.dataDirectory, "frames", project.id);
+          await Promise.all([
+            mkdir(clipsDirectory, { recursive: true }),
+            mkdir(framesDirectory, { recursive: true })
+          ]);
           const file = path.join(clipsDirectory, `${shot.id}.mp4`);
           await downloadFile(task.content.video_url, file);
           shot.localFile = file;
           shot.videoUrl = `/media/clips/${project.id}/${shot.id}.mp4`;
+          if (task.content?.last_frame_url) {
+            const frameFile = path.join(framesDirectory, `${shot.id}.jpg`);
+            await downloadFile(task.content.last_frame_url, frameFile);
+            shot.lastFrameFile = frameFile;
+            shot.lastFrameUrl = task.content.last_frame_url;
+          }
         }
       }
-      await this.submitAvailableShots(project, episode);
-      const completed = episode.shots.filter((shot) => shot.status === "succeeded").length;
-      const progress = 78 + Math.round((completed / episode.shots.length) * 19);
+      const allShots = project.episodes.flatMap((item) => item.shots || []);
+      const completed = allShots.filter((item) => item.status === "succeeded").length;
+      const progress = 72 + Math.round((completed / allShots.length) * 26);
       if (project.nodes?.render) {
         project.nodes.render.output = {
-          totalShots: episode.shots.length,
+          totalEpisodes: project.episodes.length,
+          completedEpisodes: project.episodes.filter((item) => item.status === "completed").length,
+          activeEpisode: episode?.number || null,
+          totalShots: allShots.length,
           completedShots: completed,
-          activeShots: episode.shots.filter((shot) => ["submitted", "running"].includes(shot.status)).length,
-          queuedShots: episode.shots.filter((shot) => shot.status === "queued").length,
-          failedShots: episode.shots.filter((shot) => ["failed", "expired"].includes(shot.status)).length,
-          shots: episode.shots.map(({ id: shotId, order, duration, status, progress: shotProgress, prompt, videoUrl }) => ({
-            id: shotId, order, duration, status, progress: shotProgress, prompt, videoUrl
-          }))
+          activeShots: allShots.filter((item) => ["submitted", "running"].includes(item.status)).length,
+          queuedShots: allShots.filter((item) => item.status === "queued").length,
+          failedShots: allShots.filter((item) => ["failed", "expired"].includes(item.status)).length,
+          continuityMode: "previous-last-frame"
         };
       }
-      await this.update(project, { episodes: [episode], progress }, `镜头进度 ${completed}/${episode.shots.length}`);
-      if (completed === episode.shots.length) await this.assemble(project, episode);
+      await this.update(project, { episodes: project.episodes, progress },
+        `全季视频进度 ${completed}/${allShots.length}，当前第 ${episode?.number || "-"} 集`);
+      if (episode && episode.shots.every((item) => item.status === "succeeded")) {
+        await this.assembleEpisode(project, episode);
+      } else {
+        await this.submitNextSequentialShot(project);
+      }
     } catch (error) {
       const project = await this.store.get(id);
       if (project) await this.update(project, { status: "failed", error: error.message }, `生产失败：${error.message}`);
@@ -748,37 +1372,19 @@ export class ProductionPipeline {
     }
   }
 
-  async assemble(project, episode) {
+  async assembleEpisode(project, episode) {
     const outputDirectory = path.join(this.config.dataDirectory, "output", project.id);
     await mkdir(outputDirectory, { recursive: true });
-    const listFile = path.join(outputDirectory, "clips.txt");
-    const outputFile = path.join(outputDirectory, "episode-001.mp4");
+    const episodeId = String(episode.number).padStart(3, "0");
+    const listFile = path.join(outputDirectory, `episode-${episodeId}-clips.txt`);
+    const outputFile = path.join(outputDirectory, `episode-${episodeId}.mp4`);
     const quote = (value) => value.replace(/'/g, "'\\''");
     await writeFile(listFile, episode.shots.map((shot) => `file '${quote(shot.localFile)}'`).join("\n"));
-    if (project.nodes?.render) {
-      project.nodes.render.status = "completed";
-      project.nodes.render.completedAt = now();
-      project.nodes.render.output = {
-        totalShots: episode.shots.length,
-        completedShots: episode.shots.length,
-        failedShots: 0,
-        mode: "live",
-        shots: episode.shots.map(({ id: shotId, order, duration, status, progress, prompt, videoUrl }) => ({
-          id: shotId, order, duration, status, progress, prompt, videoUrl
-        }))
-      };
-    }
     const targetDurationSeconds = Number(episode.durationSeconds)
       || episode.shots.reduce((sum, shot) => sum + Number(shot.duration || 0), 0);
-    await this.updateNode(project, "assemble", "running", {
-      input: {
-        clipCount: episode.shots.length,
-        targetDurationSeconds,
-        encoder: "libx264"
-      },
-      projectPatch: { stage: "assemble", progress: 98 },
-      message: `正在使用 FFmpeg 装配 ${targetDurationSeconds} 秒成片`
-    });
+    episode.status = "assembling";
+    await this.update(project, { episodes: project.episodes },
+      `正在装配第 ${episode.number} 集：${episode.shots.length} 个连续片段`);
     await run(this.config.ffmpeg, [
       "-y", "-f", "concat", "-safe", "0", "-i", listFile,
       "-t", String(targetDurationSeconds),
@@ -787,17 +1393,39 @@ export class ProductionPipeline {
     ]);
     episode.status = "completed";
     episode.renderedSeconds = targetDurationSeconds;
-    episode.videoUrl = `/media/output/${project.id}/episode-001.mp4`;
-    await this.updateNode(project, "assemble", "completed", {
+    episode.videoUrl = `/media/output/${project.id}/episode-${episodeId}.mp4`;
+    episode.completedAt = now();
+    const completedEpisodes = project.episodes.filter((item) => item.status === "completed").length;
+    const allCompleted = completedEpisodes === project.episodes.length;
+    if (allCompleted && project.nodes?.render) {
+      project.nodes.render.status = "completed";
+      project.nodes.render.completedAt = now();
+    }
+    await this.updateNode(project, "assemble", allCompleted ? "completed" : "running", {
       output: {
-        episodeTitle: episode.title,
-        durationSeconds: episode.renderedSeconds,
-        videoUrl: episode.videoUrl,
-        outputFile
+        episodeCount: project.episodes.length,
+        completedEpisodes,
+        outputs: project.episodes
+          .filter((item) => item.videoUrl)
+          .map((item) => ({
+            number: item.number,
+            title: item.title,
+            durationSeconds: item.renderedSeconds,
+            videoUrl: item.videoUrl
+          }))
       },
-      projectPatch: { status: "completed", stage: "assemble", progress: 100, completedAt: now(), episodes: [episode] },
-      message: `${targetDurationSeconds} 秒成片已完成并归档`
+      projectPatch: {
+        status: allCompleted ? "completed" : "rendering",
+        stage: allCompleted ? "assemble" : "render",
+        progress: allCompleted ? 100 : 72 + Math.round((completedEpisodes / project.episodes.length) * 26),
+        completedAt: allCompleted ? now() : null,
+        episodes: project.episodes
+      },
+      message: `第 ${episode.number}/${project.episodes.length} 集五分钟成片已完成${allCompleted ? "，全季生产结束" : "，开始下一集"}`
     });
+    if (!allCompleted) {
+      await this.submitNextSequentialShot(project);
+    }
   }
 
   async exportManifest(id) {
@@ -823,4 +1451,4 @@ export class ProductionPipeline {
   }
 }
 
-export { STAGES, buildDemoBible, makeShots, makeShotsForDuration };
+export { STAGES, buildDemoBible, buildSeriesBible, makeShots, makeShotsForDuration };

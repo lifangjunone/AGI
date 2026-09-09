@@ -4,9 +4,14 @@
 
 ### feat
 
+- Rebuilt `lifeyoume.icu` as the LifeYouMe product showroom on the existing `lifeyoume-platform` base. The root now provides a real-product hero, six selected products, five product collections, a searchable/filterable 14-item catalog, standardized detail pages, and Catalog Schema v2 with truthful online, beta, preview, lab, and internal visibility states.
+- Split the production root portal from the audit product at the Nginx virtual-host boundary: `lifeyoume.icu` now routes to platform port `8800`, `audit.lifeyoume.icu` remains on `8787`, legacy audit paths remain compatible, and `/video/`, `/vault/`, Pay Skill, operations, auth, and billing routes keep their independent owners.
+- Replaced Novel Video Studio's short-output creation flow with a season production model: users choose 1, 3, 6, or 12 episodes; the system completes every episode outline and script before rendering; each episode is fixed at five minutes and split into ten ordered 30-second Seedance segments.
+- Added production continuity and recovery for Novel Video Studio: each segment uses the prior segment's persisted last frame, episode openings can continue from the previous episode, FFmpeg assembles one episode before the next begins, season video spend requires explicit confirmation, and retries preserve completed work.
 - Redesigned Novel Video Studio's recommendation catalog as a responsive cinematic selection shelf with 3–4 desktop columns, compact mobile cards, stronger typography, clearer adaptation signals, and production-oriented actions.
 - Deployed Personal Privacy Vault to `https://lifeyoume.icu/vault/` from `/data/app/personal-privacy-vault/current`, using the existing HTTPS Nginx container with a read-only static mount and dedicated security headers while preserving the root portal and `/video/` routes.
 - Added a Playwright-based WeChat official-account publisher for twice-daily structured article generation at 08:30 and 17:30, cover upload, persistent login, publish logging, slot-level deduplication, and macOS launchd scheduling. The first login or platform risk confirmation remains an explicit one-time prerequisite.
+- Added Markdown-first official-account authoring with a WeChat-compatible styled HTML renderer, a structured first article, a 900x383 cover asset, and a default-disabled publish gate for preview-before-publish review.
 - Added master-password rotation to the Personal Privacy Vault lock screen and unlocked toolbar. The user must verify the current password before the vault is re-encrypted with a new random salt and derived AES key; no password is written to source or configuration.
 - Promoted Novel Video Studio to production-first behavior: fresh installs enter formal production with explicit credential and budget gates, while non-billable planning is available only through an intentional `PRODUCTION_MODE=planning` setting.
 - Added `personal-privacy-vault` (“隐匣”), a serverless personal privacy archive with six record categories, custom masked fields, favorites, in-memory search, five-minute automatic locking, and encrypted `.pvault` backup/restore. The master password is never persisted; PBKDF2-SHA-256 derives an AES-256-GCM key and the complete vault payload is encrypted before IndexedDB storage.
@@ -58,6 +63,8 @@
 
 ### verify
 
+- Verified the LifeYouMe product showroom with 10 passing platform tests, Python/JavaScript/shell syntax checks, Catalog Schema v2 and visual-asset validation, category filtering, detail CTA behavior, no console errors, and overflow-free 1120×720, 390×844, and public-browser layouts. Production checks confirm 200 responses for the portal, catalog, product details, product assets, `/video/`, `/vault/`, `audit.lifeyoume.icu`, and legacy audit routes.
+- Verified Novel Video Studio's season workflow with 39 passing tests, including all-content-before-video ordering, one-at-a-time segment submission, within-episode and cross-episode last-frame handoff, budget approval, failed-segment reset, and restart recovery.
 - Verified the redesigned recommendation catalog in the packaged Electron app at 1320×828 and an emulated 390×844 viewport: 16 cards rendered, no horizontal or button-text overflow, and no provider placeholder text exposed.
 - Verified Personal Privacy Vault with four cryptography tests covering plaintext exclusion, correct-password round trips, wrong-password rejection, fresh-IV updates, and master-password rotation. The production build and dependency audit pass; the public HTTPS route serves HTML and hashed assets, provides Web Crypto and IndexedDB in a secure context, emits no browser console errors, and leaves the root portal and `/video/` healthy.
 - Completed a real 5-second Seedance 2.5 run for `西游记`: remote task `cgt-20260909215437-nrn78`, H.264/AAC 1280×720 output, 5.024-second duration, local archival and HTTP Range delivery verified.
@@ -92,6 +99,7 @@
 
 ### fix
 
+- Versioned Novel Video Studio's frontend assets under PWA cache v18 so a newly deployed HTML shell cannot execute stale JavaScript or CSS from an older product flow.
 - Hid unfinished generated-image responses behind designed title covers and added timed cover refresh, preventing white “image is generating” service placeholders from dominating Novel Video Studio's recommendation UI.
 - Removed user-facing demo semantics from Novel Video Studio and added a dedicated production-configuration gate so missing Ark credentials cannot be mistaken for a successful production run.
 - Fixed the packaged Novel Video Studio app remaining stuck at the render node when a demo preview should be promoted to live generation; retry now upgrades the project runtime, and a missing optional image model no longer blocks Seedance video submission.

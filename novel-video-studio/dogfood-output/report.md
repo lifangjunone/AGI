@@ -36,7 +36,7 @@
 - Verified restart recovery for interrupted, queued, and remotely rendering projects.
 - Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
 - Verified desktop and 390×844 mobile layouts with six working mobile destinations.
-- Automated suite: 35 passing tests.
+- Automated suite: 39 passing tests.
 
 ![Task center desktop](screenshots/task-center-desktop.png)
 
@@ -92,16 +92,40 @@
 
 ![Audited free-source registry](screenshots/free-source-registry-desktop.png)
 
-## Selectable Duration Acceptance
+## Season Production Acceptance
 
-- Verified project creation offers `5s`, `10s`, `15s`, `30s`, and `60s`, with 5 seconds selected by default.
-- Verified the projected 720P cost updates with the selected duration before submission.
-- Verified 5/10/15/30-second projects create one Seedance task with the exact selected duration.
-- Verified 60-second projects create two ordered 30-second tasks and use the existing FFmpeg assembly path.
-- Verified unsupported durations are rejected by the server instead of being rounded or silently accepted.
-- Automated suite: 35 passing tests.
+- Verified project creation offers `1`, `3`, `6`, and `12` episode seasons; every episode is fixed at five minutes and represented as ten ordered 30-second segments.
+- Verified the default 6-episode project shows a `¥2721.60` season reference cost before submission.
+- Verified all episode outlines and scripts are persisted before any Seedance task is submitted.
+- Verified one-at-a-time segment submission, local last-frame persistence, within-episode handoff, and previous-episode-to-next-episode handoff.
+- Verified a failed render retry preserves succeeded segments and resets only failed or expired segments.
+- Verified desktop `1120×720` and mobile `390×844` create-project layouts have no horizontal or button overflow.
+- Verified the final packaged Electron app exposes the same season controls and reference budget.
+- Automated suite: 39 passing tests.
 
-![Selectable duration dialog on 390x844 mobile viewport](screenshots/selectable-duration-mobile.png)
+![Season project creation on desktop](screenshots/series-create-desktop.png)
+
+![Season project creation on mobile](screenshots/series-create-mobile.png)
+
+![Season project creation in the packaged Electron app](screenshots/series-create-electron.png)
+
+## Episode Center and Budget Gate Acceptance
+
+- Verified the episode center reports full-season content readiness, completed delivery count, completed segment count, and the sequential last-frame strategy.
+- Verified completed, actively rendering, and script-locked episodes expose distinct states and five-minute durations.
+- Verified a 3-episode budget gate displays `¥453.60` per episode and `¥1360.80` for the season before rendering.
+- Verified the explicit budget approval action is visible on desktop and mobile; it was not clicked, so no billable Seedance task was created.
+- Verified desktop `1120×720` and mobile `390×844` layouts have no horizontal or button overflow and emit no browser console errors.
+- Fixed a stale PWA asset mix discovered during acceptance by versioning `app.js` and `styles.css` under cache v18.
+- Opened the historical real 5-second project in the final Electron package and verified its player, download action, six-node history, and legacy duration remain accessible.
+
+![Episode center on desktop](screenshots/series-center-desktop.png)
+
+![Episode center on mobile](screenshots/series-center-mobile.png)
+
+![Season budget gate on desktop](screenshots/series-budget-gate-desktop.png)
+
+![Season budget gate on mobile](screenshots/series-budget-gate-mobile.png)
 
 ## Real Seedance Production Acceptance
 
@@ -124,7 +148,7 @@
 - Verified desktop rendering and an emulated 390×844 mobile viewport. The mobile layout has no horizontal overflow, and the recommendation count, all three card actions, and all seven navigation destinations remain within the viewport.
 - Redesigned the catalog as a 3-column cinematic shelf at 1320×828 and a compact single-column list at 390×844.
 - Verified unfinished generated covers remain hidden behind designed title artwork; the provider's white generation placeholder is not visible.
-- Automated suite: 35 passing tests.
+- Automated suite: 39 passing tests.
 
 ![Public-domain recommendations desktop](screenshots/public-domain-recommendations-desktop.png)
 
