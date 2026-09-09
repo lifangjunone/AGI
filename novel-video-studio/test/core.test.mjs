@@ -83,12 +83,15 @@ test("production capacity derives 15-minute episodes and 30-second shots", () =>
   const previous = {
     hours: process.env.DAILY_OUTPUT_HOURS,
     minutes: process.env.EPISODE_DURATION_MINUTES,
-    seconds: process.env.SHOT_DURATION_SECONDS
+    seconds: process.env.SHOT_DURATION_SECONDS,
+    mode: process.env.PRODUCTION_MODE
   };
   process.env.DAILY_OUTPUT_HOURS = "72";
   process.env.EPISODE_DURATION_MINUTES = "15";
   process.env.SHOT_DURATION_SECONDS = "30";
+  delete process.env.PRODUCTION_MODE;
   const config = makeConfig("/tmp/novel-video-studio");
+  assert.equal(config.mode, "live");
   assert.equal(config.production.episodesPerDay, 288);
   assert.equal(config.production.shotsPerEpisode, 30);
   assert.equal(config.production.videoTasksPerDay, 8640);
@@ -99,7 +102,12 @@ test("production capacity derives 15-minute episodes and 30-second shots", () =>
   assert.deepEqual(config.production.outputDurationOptions, [5, 10, 15, 30, 60]);
   assert.equal(config.production.outputsPerDay, 51840);
   for (const [key, value] of Object.entries(previous)) {
-    const envKey = { hours: "DAILY_OUTPUT_HOURS", minutes: "EPISODE_DURATION_MINUTES", seconds: "SHOT_DURATION_SECONDS" }[key];
+    const envKey = {
+      hours: "DAILY_OUTPUT_HOURS",
+      minutes: "EPISODE_DURATION_MINUTES",
+      seconds: "SHOT_DURATION_SECONDS",
+      mode: "PRODUCTION_MODE"
+    }[key];
     if (value === undefined) delete process.env[envKey];
     else process.env[envKey] = value;
   }
@@ -237,7 +245,7 @@ test("live production stops before model calls when cost authorization is missin
     const config = {
       mode: "live",
       dataDirectory: directory,
-      ark: { planningModel: "glm-test" },
+      ark: { apiKey: "test-key", planningModel: "glm-test" },
       search: {},
       production: {
         episodeMinutes: 15,
@@ -288,14 +296,14 @@ test("live production stops before model calls when cost authorization is missin
   }
 });
 
-test("a demo preview can be upgraded to the current live runtime", async () => {
+test("a legacy planning preview can be upgraded to the current live runtime", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "novel-live-upgrade-"));
   try {
     const store = new ProjectStore(directory);
     const pipeline = new ProductionPipeline({
       mode: "live",
       dataDirectory: directory,
-      ark: { planningModel: "glm-test" },
+      ark: { apiKey: "test-key", planningModel: "glm-test" },
       search: {},
       production: {
         episodeMinutes: 15,
@@ -347,7 +355,7 @@ test("a demo preview can be upgraded to the current live runtime", async () => {
   }
 });
 
-test("pipeline pauses for source confirmation and labels demo output as a non-video preview", async () => {
+test("pipeline pauses for source confirmation and labels planning output as non-video", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "novel-source-gate-"));
   try {
     const store = new ProjectStore(directory);
@@ -356,7 +364,7 @@ test("pipeline pauses for source confirmation and labels demo output as a non-vi
       { id: "candidate-b", title: "目标原著", authors: "作者乙", source: "目录 B", rights: "public-domain", score: 88, description: "正文梗概" }
     ];
     const config = {
-      mode: "demo",
+      mode: "planning",
       dataDirectory: directory,
       ark: {},
       search: {},
@@ -398,7 +406,7 @@ test("pipeline pauses for source confirmation and labels demo output as a non-vi
     assert.equal(project.nodes.discover.output.searchCount, 1);
 
     await pipeline.confirmSource(created.id, "candidate-b");
-    await waitFor(async () => (await store.get(created.id)).status === "demo-preview");
+    await waitFor(async () => (await store.get(created.id)).status === "planning-ready");
     project = await store.get(created.id);
     assert.equal(project.source.id, "candidate-b");
     assert.equal(project.sourceConfirmed, true);
@@ -432,7 +440,7 @@ test("authorized full-text import persists content and resumes the pipeline", as
       sourceUrl: "https://www.qidian.com/book/2070910/"
     };
     const config = {
-      mode: "demo",
+      mode: "planning",
       dataDirectory: directory,
       ark: {},
       search: {},
@@ -466,7 +474,7 @@ test("authorized full-text import persists content and resumes the pipeline", as
       fileName: "求魔-授权正文.txt",
       rightsConfirmed: true
     });
-    await waitFor(async () => (await store.get(created.id)).status === "demo-preview");
+    await waitFor(async () => (await store.get(created.id)).status === "planning-ready");
     const project = await store.get(created.id);
     assert.equal(project.source.rights, "user-provided");
     assert.equal(project.authorizedContent.characterCount, content.length);

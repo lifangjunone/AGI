@@ -36,7 +36,7 @@
 - Verified restart recovery for interrupted, queued, and remotely rendering projects.
 - Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
 - Verified desktop and 390×844 mobile layouts with six working mobile destinations.
-- Automated suite: 33 passing tests.
+- Automated suite: 35 passing tests.
 
 ![Task center desktop](screenshots/task-center-desktop.png)
 
@@ -99,9 +99,21 @@
 - Verified 5/10/15/30-second projects create one Seedance task with the exact selected duration.
 - Verified 60-second projects create two ordered 30-second tasks and use the existing FFmpeg assembly path.
 - Verified unsupported durations are rejected by the server instead of being rounded or silently accepted.
-- Automated suite: 33 passing tests.
+- Automated suite: 35 passing tests.
 
 ![Selectable duration dialog on 390x844 mobile viewport](screenshots/selectable-duration-mobile.png)
+
+## Real Seedance Production Acceptance
+
+- Verified the packaged app reports `正式生产 · 计费已开启`; no user-visible demo wording remains in the active product flow.
+- Verified fresh installs default to production and stop at explicit configuration or budget gates when prerequisites are missing.
+- Upgraded the legacy 5-second `西游记` planning preview to the live runtime through the same project ID.
+- Verified planning model `glm-5-2-260617` and Seedance model `doubao-seedance-2-5-260628`.
+- Verified remote task `cgt-20260909215437-nrn78` reached `succeeded` and was downloaded before the temporary URL expired.
+- Verified FFmpeg output is H.264/AAC, 1280×720, 5.024 seconds, and 2,096,254 bytes.
+- Verified the archived MP4 supports HTTP Range delivery and is exposed through the project player and download action.
+
+![Real Seedance output in final Electron package](screenshots/real-seedance-output-electron.png)
 
 ## Public-Domain Recommendation Acceptance
 
@@ -110,13 +122,19 @@
 - Verified language filters return eight Chinese and eight English works; keyword search matches title, author, genre, and tags.
 - Verified every card exposes rights evidence, the original source, and one-click project creation; the created title re-enters the existing source-confirmation and six-node audit workflow.
 - Verified desktop rendering and an emulated 390×844 mobile viewport. The mobile layout has no horizontal overflow, and the recommendation count, all three card actions, and all seven navigation destinations remain within the viewport.
-- Automated suite: 33 passing tests.
+- Redesigned the catalog as a 3-column cinematic shelf at 1320×828 and a compact single-column list at 390×844.
+- Verified unfinished generated covers remain hidden behind designed title artwork; the provider's white generation placeholder is not visible.
+- Automated suite: 35 passing tests.
 
 ![Public-domain recommendations desktop](screenshots/public-domain-recommendations-desktop.png)
 
 ![Public-domain recommendations in final Electron package](screenshots/public-domain-recommendations-electron.png)
 
 ![Public-domain recommendations mobile](screenshots/public-domain-recommendations-mobile.png)
+
+![Redesigned recommendation catalog on desktop](screenshots/recommendations-redesign-desktop.png)
+
+![Redesigned recommendation catalog on mobile](screenshots/recommendations-redesign-mobile.png)
 
 ## Authorized Full-Text Import Acceptance
 
@@ -267,7 +285,7 @@ axe-core 指出资产筛选和生产阶段容器在普通 `div` 上使用 `aria-
 
 ---
 
-### ISSUE-007: 演示任务被错误显示为真实视频已完成
+### ISSUE-007: 旧版规划任务被错误显示为真实视频已完成
 
 | Field | Value |
 |-------|-------|
@@ -278,10 +296,10 @@ axe-core 指出资产筛选和生产阶段容器在普通 `div` 上使用 `aria-
 
 **Description**
 
-演示模式没有调用 Seedance，镜头没有远端任务 ID、视频 URL 或本地 MP4，但旧状态机仍把 30 个镜头和成片装配标记为完成。
+旧版非计费规划流程没有调用 Seedance，镜头没有远端任务 ID、视频 URL 或本地 MP4，但旧状态机仍把 30 个镜头和成片装配标记为完成。
 
 **Resolution**
 
-演示模式现在停在“演示预览”，显示“片段已规划 · 0 个视频已生成”，渲染节点暂停且装配节点不再完成。真实模式会在任何 Ark 调用前检查 API Key、计费授权和所选时长的预算估算。
+应用现在默认进入正式生产。缺少 Ark Key 或计费授权时分别停在明确的配置/预算门禁；只有显式设置 `PRODUCTION_MODE=planning` 才会生成规划预览，且不会把它标记为真实成片。
 
 ---

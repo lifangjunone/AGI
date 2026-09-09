@@ -3,6 +3,7 @@
 data/jobs/*
 data/videos/*
 data/payments/*.json
+data/official-account-publisher/*
 !data/jobs/.gitkeep
 !data/videos/.gitkeep
 npm-debug.log*

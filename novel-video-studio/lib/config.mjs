@@ -9,9 +9,9 @@ export const OUTPUT_DURATION_OPTIONS = Object.freeze([5, 10, 15, 30, 60]);
 
 export async function loadEnv(root) {
   const files = [
-    path.join(root, ".env"),
+    process.env.NOVEL_STUDIO_CONFIG_FILE,
     path.join(root, ".env.local"),
-    process.env.NOVEL_STUDIO_CONFIG_FILE
+    path.join(root, ".env")
   ].filter(Boolean);
   for (const file of files) {
     try {
@@ -55,7 +55,9 @@ export function makeConfig(root) {
   return Object.freeze({
     root,
     port: positiveNumber(process.env.PORT, 4321),
-    mode: process.env.PRODUCTION_MODE === "live" ? "live" : "demo",
+    mode: ["demo", "planning"].includes(process.env.PRODUCTION_MODE)
+      ? "planning"
+      : "live",
     dataDirectory,
     ark: {
       apiKey: process.env.ARK_API_KEY || "",

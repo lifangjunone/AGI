@@ -4,6 +4,13 @@
 
 ### feat
 
+- Redesigned Novel Video Studio's recommendation catalog as a responsive cinematic selection shelf with 3–4 desktop columns, compact mobile cards, stronger typography, clearer adaptation signals, and production-oriented actions.
+- Deployed Personal Privacy Vault to `https://lifeyoume.icu/vault/` from `/data/app/personal-privacy-vault/current`, using the existing HTTPS Nginx container with a read-only static mount and dedicated security headers while preserving the root portal and `/video/` routes.
+- Added a Playwright-based WeChat official-account publisher for twice-daily structured article generation at 08:30 and 17:30, cover upload, persistent login, publish logging, slot-level deduplication, and macOS launchd scheduling. The first login or platform risk confirmation remains an explicit one-time prerequisite.
+- Added master-password rotation to the Personal Privacy Vault lock screen and unlocked toolbar. The user must verify the current password before the vault is re-encrypted with a new random salt and derived AES key; no password is written to source or configuration.
+- Promoted Novel Video Studio to production-first behavior: fresh installs enter formal production with explicit credential and budget gates, while non-billable planning is available only through an intentional `PRODUCTION_MODE=planning` setting.
+- Added `personal-privacy-vault` (“隐匣”), a serverless personal privacy archive with six record categories, custom masked fields, favorites, in-memory search, five-minute automatic locking, and encrypted `.pvault` backup/restore. The master password is never persisted; PBKDF2-SHA-256 derives an AES-256-GCM key and the complete vault payload is encrypted before IndexedDB storage.
+- Added a direct "start real generation" upgrade path for Novel Video Studio planning previews, plus in-project MP4 playback and download after FFmpeg assembly.
 - Added project-level 5/10/15/30/60-second output duration selection to Novel Video Studio. Seedance receives supported durations up to 30 seconds, while 60-second outputs use two continuous 30-second tasks followed by FFmpeg assembly.
 - Replaced Model Operations Studio's long scrolling task history with filter-aware pagination: five rows on standard desktop heights, eight on tall screens, global row numbering, compact page navigation, and a single-screen desktop layout without the redundant recent-output strip.
 - Added 5/10/30/60-second video generation presets to Model Operations Studio. Long durations use five-second continuation segments with last-frame handoff and FFmpeg assembly, while generated videos now play in an in-app modal backed by seekable HTTP Range responses.
@@ -51,6 +58,9 @@
 
 ### verify
 
+- Verified the redesigned recommendation catalog in the packaged Electron app at 1320×828 and an emulated 390×844 viewport: 16 cards rendered, no horizontal or button-text overflow, and no provider placeholder text exposed.
+- Verified Personal Privacy Vault with four cryptography tests covering plaintext exclusion, correct-password round trips, wrong-password rejection, fresh-IV updates, and master-password rotation. The production build and dependency audit pass; the public HTTPS route serves HTML and hashed assets, provides Web Crypto and IndexedDB in a secure context, emits no browser console errors, and leaves the root portal and `/video/` healthy.
+- Completed a real 5-second Seedance 2.5 run for `西游记`: remote task `cgt-20260909215437-nrn78`, H.264/AAC 1280×720 output, 5.024-second duration, local archival and HTTP Range delivery verified.
 - Verified all five duration options, rejected unsupported values, and confirmed 60-second projects split into exactly two 30-second clips; Novel Video Studio now passes 33 automated tests.
 - Verified the preflight budget gate prevents every Ark model call when billing is not authorized; Novel Video Studio now passes 31 automated tests.
 - Verified pagination across 18 persisted tasks: page two renders rows 06-10, status filtering resets to page one, and 1120×720 plus 2048×1022 layouts keep the task controls and node status visible without desktop page scrolling.
@@ -82,6 +92,9 @@
 
 ### fix
 
+- Hid unfinished generated-image responses behind designed title covers and added timed cover refresh, preventing white “image is generating” service placeholders from dominating Novel Video Studio's recommendation UI.
+- Removed user-facing demo semantics from Novel Video Studio and added a dedicated production-configuration gate so missing Ark credentials cannot be mistaken for a successful production run.
+- Fixed the packaged Novel Video Studio app remaining stuck at the render node when a demo preview should be promoted to live generation; retry now upgrades the project runtime, and a missing optional image model no longer blocks Seedance video submission.
 - Fixed Novel Video Studio demo projects falsely reporting 30 completed videos and a completed assembly despite having no remote task IDs or MP4. Demo runs now stop as explicit previews with zero generated videos, while live runs enforce billing authorization and the estimated episode budget before any model call.
 - Aligned the mini-program build dependency with Taro 4.1.9 by upgrading Webpack from 5.78.0 to 5.91.0.
 - Aligned React Refresh with Taro 4.1.9 by upgrading it from 0.11.x to 0.14.x.

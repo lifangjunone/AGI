@@ -45,6 +45,15 @@ test("public-domain recommendations API exposes verified popular works", async (
   assert.ok(catalog.items.some((item) => item.title === "Frankenstein"));
 });
 
+test("recommendation UI hides provider placeholders behind designed covers", async () => {
+  const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
+  assert.match(source, /data-generated-cover/);
+  assert.match(source, /scheduleRecommendationCoverRefresh/);
+  assert.match(styles, /\.recommendation-cover img\.is-ready/);
+  assert.match(styles, /\.recommendation-cover-fallback/);
+});
+
 test("project center is the default entry before project-scoped tools", async () => {
   const source = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
   assert.match(source, /let activeView = "projects"/);
@@ -109,7 +118,7 @@ test("mobile PWA assets are valid and served with correct types", async () => {
 
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
-  assert.match(await workerResponse.text(), /novel-picture-works-v14/);
+  assert.match(await workerResponse.text(), /novel-picture-works-v17/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {

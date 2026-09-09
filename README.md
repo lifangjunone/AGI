@@ -25,6 +25,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台和 Taro 小程序 | Node.js、FFmpeg、PWA、Electron、Taro |
 | [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验来源发现作品，并提供 16 部作品级公版热门推荐，经版权门禁后生成 5–60 秒可选时长成片，支持三端、历史任务与持久化排队 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
+| [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 无账号、无服务端的个人隐私档案，支持分类记录、本地全文搜索、自动锁定和加密备份恢复 | React、TypeScript、Web Crypto、IndexedDB |
 
 ## 产品协作链路
 
@@ -60,6 +61,7 @@ cd ../hover-translator && npm install && npm run dev
 cd ../short-video-studio && npm install && npm run web
 cd ../novel-video-studio && npm start
 cd ../model-operations-studio && npm install && npm run dev
+cd ../personal-privacy-vault && npm install && npm run dev
 ```
 
 平台服务运行：
@@ -107,9 +109,12 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 
 ## 新增功能说明
 
+- `personal-privacy-vault`：新增本地优先个人隐私档案“隐匣”，主密码经 PBKDF2-SHA-256 310,000 次迭代派生 AES-256-GCM 密钥；标题、分类、字段与备注整体加密写入 IndexedDB，支持六类记录、私密字段遮蔽、常用标记、内存搜索、主密码轮换、5 分钟自动锁定及 `.pvault` 加密备份恢复，不连接业务服务器；已部署至 `https://lifeyoume.icu/vault/`。
 - `novel-video-studio`：新增“推荐小说”目录，首批提供 16 部作品级公版核验的中英文热门经典，支持语言/关键词筛选、版权依据、原文来源和一键创建制片项目。
-- `novel-video-studio`：演示任务不再伪装为真实成片，统一显示“演示预览 / 0 个视频已生成”；真实模式在任何模型调用前校验计费授权和单集预算。
+- `novel-video-studio`：重构推荐页为响应式影视选题书架，修复超宽屏信息稀疏、字号过小及第三方生成占位图直接暴露的问题。
+- `novel-video-studio`：默认运行正式生产模式；缺少凭据或计费授权时进入明确门禁，不会用模拟结果冒充真实成片。
 - `novel-video-studio`：创建项目新增 5/10/15/30/60 秒成片时长选择；60 秒自动拆分为两个 30 秒 Seedance 任务并由 FFmpeg 合成。
+- `novel-video-studio`：规划预览可升级为真实生成，成片完成后支持项目内播放和 MP4 下载；已跑通 5 秒 Seedance 2.5 真实生产链路。
 - `english-immersion-studio`：新增沉浸式英语桌面训练产品，覆盖固定/推荐场景、CEFR 难度、语言分析、字幕模式、VRM/GLB 角色、MediaPipe 本地头像烘焙、Microsoft 神经语音和 MetaHuman 5.7 生产级数字人接入。
 - `english-immersion-studio`：补充 [MetaHuman 资产重建说明](english-immersion-studio/docs/METAHUMAN_ASSET_REBUILD.md)，明确公共仓库边界、私有备份、角色重建和视觉验收要求。
 - `avatar-generator-service`：新增 Apple Silicon 本地头像材质生成服务，基于 Hunyuan3D-Swift/MLX Paint 生成 GLB PBR 材质，并保留骨骼、权重和面部 Morph Targets。
@@ -145,6 +150,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - 已完成小程序订阅消息与公众号模板消息的服务端接入和任务完成触发；微信凭证、模板 ID 与用户授权仍需按平台要求配置，未配置时系统明确跳过通知。
 - `short-video-studio` 已开始打通“智助乖乖”公众号和小程序入口：共享配置接口统一下发价格与渠道链接，小程序提供公众号文章助手 WebView 入口，公众号菜单可按工具参数直达共享工作台。
 - `short-video-studio` 已完成小程序管理员扫码验证并更新 Taro `project.config.json` / `project.tt.json`；小程序订阅模板已配置，真实用户授权和完成消息发送仍需在真机小程序中验收。
+- `short-video-studio` 新增公众号 Playwright 自动发布器，每天北京时间 08:30、17:30 各生成并发布一篇结构化文章；首次登录/二维码与平台风控确认仍需一次人工完成，失败会记录日志，不伪造发布成功。
 - `short-video-studio` 小程序构建依赖已对齐 Taro 4.1.9 要求的 Webpack 5.91.0，准备导入微信开发者工具上传新版本。
 - `short-video-studio` 小程序构建依赖进一步对齐 Taro 4.1.9 要求的 React Refresh 0.14.x，避免开发者工具构建时产生 peer 依赖冲突。
 - `short-video-studio` 修复微信开发者工具不支持 SVG TabBar 图标的问题，改为兼容真机的文字 TabBar 配置。

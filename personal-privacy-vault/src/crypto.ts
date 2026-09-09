@@ -4,6 +4,12 @@ export const KDF_ITERATIONS = 310_000
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 
+function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength)
+  copy.set(bytes)
+  return copy.buffer
+}
+
 function toBase64(bytes: Uint8Array): string {
   let binary = ''
   bytes.forEach((byte) => {
@@ -31,7 +37,7 @@ export async function deriveKey(
   )
 
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', hash: 'SHA-256', salt, iterations },
+    { name: 'PBKDF2', hash: 'SHA-256', salt: toArrayBuffer(salt), iterations },
     keyMaterial,
     { name: 'AES-GCM', length: 256 },
     false,
@@ -57,9 +63,9 @@ export async function decryptValue<T>(
   payload: EncryptedPayload,
 ): Promise<T> {
   const plaintext = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: fromBase64(payload.iv) },
+    { name: 'AES-GCM', iv: toArrayBuffer(fromBase64(payload.iv)) },
     key,
-    fromBase64(payload.ciphertext),
+    toArrayBuffer(fromBase64(payload.ciphertext)),
   )
   return JSON.parse(decoder.decode(plaintext)) as T
 }
@@ -125,5 +131,13 @@ export function isVaultEnvelope(value: unknown): value is VaultEnvelope {
   return candidate.format === 'personal-privacy-vault'
     && candidate.version === 1
     && candidate.kdf?.name === 'PBKDF2'
+    && candidate.kdf.hash === 'SHA-256'
+    && typeof candidate.kdf.iterations === 'number'
+    && candidate.kdf.iterations >= 100_000
+    && candidate.kdf.iterations <= 1_000_000
+    && typeof candidate.kdf.salt === 'string'
+    && typeof candidate.verifier?.iv === 'string'
+    && typeof candidate.verifier.ciphertext === 'string'
+    && typeof candidate.vault?.iv === 'string'
     && typeof candidate.vault?.ciphertext === 'string'
 }

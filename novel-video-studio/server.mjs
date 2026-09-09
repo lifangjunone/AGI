@@ -43,8 +43,8 @@ function projectSummary(project) {
     || Number(project.episodes?.[0]?.durationSeconds)
     || Number(project.episodes?.[0]?.durationMinutes) * 60
     || config.production.defaultOutputDurationSeconds;
-  const demoPreview = project.mode === "demo"
-    && ["completed", "demo-preview"].includes(project.status)
+  const demoPreview = ["demo", "planning"].includes(project.mode)
+    && ["completed", "demo-preview", "planning-ready"].includes(project.status)
     && project.episodes?.some((episode) => (episode.shots || []).length > 0)
     && !project.episodes?.some((episode) => episode.videoUrl);
   const displayedSource = project.source
@@ -52,7 +52,7 @@ function projectSummary(project) {
   return {
     id: project.id,
     novelName: project.novelName,
-    status: demoPreview ? "demo-preview" : project.status,
+    status: demoPreview ? "planning-ready" : project.status,
     stage: demoPreview ? "render" : project.stage,
     progress: demoPreview ? 72 : project.progress,
     mode: project.mode,
@@ -279,8 +279,11 @@ export const server = createServer(async (request, response) => {
         sendJson(response, 404, { error: "项目不存在" });
         return;
       }
-      const retryable = ["failed", "rights-review", "budget-gate"].includes(project.status)
-        || (["demo-preview", "completed"].includes(project.status) && project.mode === "demo");
+      const retryable = ["failed", "rights-review", "budget-gate", "configuration-gate"].includes(project.status)
+        || (
+          ["planning-ready", "demo-preview", "completed"].includes(project.status)
+          && ["planning", "demo"].includes(project.mode)
+        );
       if (!retryable) {
         sendJson(response, 409, { error: "只有失败或暂停的任务可以重试" });
         return;

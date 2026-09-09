@@ -289,8 +289,11 @@ export class ProductionPipeline {
   async retry(id) {
     const project = await this.store.get(id);
     if (!project) throw new Error("项目不存在");
-    const retryable = ["failed", "rights-review", "budget-gate"].includes(project.status)
-      || (["demo-preview", "completed"].includes(project.status) && project.mode === "demo");
+    const retryable = ["failed", "rights-review", "budget-gate", "configuration-gate"].includes(project.status)
+      || (
+        ["planning-ready", "demo-preview", "completed"].includes(project.status)
+        && ["planning", "demo"].includes(project.mode)
+      );
     if (!retryable) throw new Error("当前任务不能重新生成");
 
     project.mode = this.config.mode;
@@ -312,7 +315,7 @@ export class ProductionPipeline {
     await this.store.save(project);
     return this.scheduler.enqueue(id, {
       message: this.config.mode === "live"
-        ? "演示预览已升级为真实生成任务"
+        ? "规划预览已升级为真实生成任务"
         : "任务已重新进入生产队列"
     });
   }
@@ -482,6 +485,25 @@ export class ProductionPipeline {
       const billableEnabled = this.config.production.billableGenerationEnabled === true;
       const budgetOverrunAllowed = this.config.production.budgetOverrunAllowed === true;
       const overBudget = estimatedCost > this.config.production.dailyBudgetCny;
+      if (this.config.mode === "live" && !this.config.ark.apiKey) {
+        const reason = "生产环境尚未配置 ARK_API_KEY；完成用户级配置后重试";
+        await this.updateNode(project, "adapt", "paused", {
+          input: {
+            targetDurationSeconds,
+            estimatedVideoCostCny: estimatedCost
+          },
+          error: reason,
+          projectPatch: {
+            status: "configuration-gate",
+            stage: "adapt",
+            progress: 34,
+            completedAt: now(),
+            error: reason
+          },
+          message: "生产配置门禁在模型调用前暂停了任务"
+        });
+        return false;
+      }
       if (
         this.config.mode === "live"
         && (!billableEnabled || (overBudget && !budgetOverrunAllowed))
@@ -515,7 +537,7 @@ export class ProductionPipeline {
           targetDurationSeconds,
           model: this.config.mode === "live"
             ? this.config.ark.planningModel || this.config.ark.textModel
-            : "demo"
+            : "planning"
         }
       });
       let bible;
@@ -582,7 +604,7 @@ export class ProductionPipeline {
           shotCount: episode.shots.length,
           shotDurations: episode.shots.map((shot) => shot.duration),
           maxConcurrency: this.config.production.maxVideoConcurrency,
-          model: this.config.mode === "live" ? this.config.ark.videoModel : "demo"
+          model: this.config.mode === "live" ? this.config.ark.videoModel : "planning"
         }
       });
       if (this.config.mode === "live") {
@@ -593,7 +615,7 @@ export class ProductionPipeline {
           shot.status = "simulated";
           shot.progress = 0;
         }
-        episode.status = "demo-preview";
+        episode.status = "planning-ready";
         episode.renderedSeconds = 0;
         await this.updateNode(project, "render", "paused", {
           output: {
@@ -601,21 +623,21 @@ export class ProductionPipeline {
             completedShots: 0,
             simulatedShots: episode.shots.length,
             failedShots: 0,
-            mode: "demo",
+            mode: "planning",
             shots: episode.shots.map(({ id: shotId, order, duration, status, progress, prompt, videoUrl }) => ({
               id: shotId, order, duration, status, progress, prompt, videoUrl
             }))
           },
-          error: "演示模式只生成镜头规划，不调用 Seedance，也不会产出 MP4",
+          error: "规划模式只生成镜头规划，不调用 Seedance，也不会产出 MP4",
           projectPatch: {
-            status: "demo-preview",
+            status: "planning-ready",
             stage: "render",
             progress: 72,
             completedAt: now(),
             episodes: [episode],
             error: null
           },
-          message: "演示预览已完成；未调用 Seedance，未生成视频文件"
+          message: "规划预览已完成；未调用 Seedance，未生成视频文件"
         });
       }
     } catch (error) {

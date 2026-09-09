@@ -92,12 +92,13 @@
 
       <section class="recommendations-view page-view hidden" data-page-view="recommendations">
         <header class="recommendations-hero">
-          <div>
-            <p class="eyebrow">PUBLIC DOMAIN PICKS</p>
-            <h1>推荐小说</h1>
-            <p>经作品级公版核验的热门经典，可直接创建制片项目。</p>
+          <div class="recommendations-hero-copy">
+            <p class="eyebrow">PUBLIC DOMAIN LIBRARY</p>
+            <h1>从经典开始，直接开拍</h1>
+            <p>精选高认知度公版作品，版权依据已核验，可直接进入自动制片流水线。</p>
+            <div class="recommendation-trust"><i data-lucide="shield-check"></i><span>作品级版权核验</span><i data-lucide="film"></i><span>适配短片与连续剧集</span></div>
           </div>
-          <div class="recommendation-stat"><strong id="recommendationCount">0</strong><span>部可用作品</span><small id="recommendationVerifiedAt">等待核验数据</small></div>
+          <div class="recommendation-stat"><span>本期书单</span><strong id="recommendationCount">0</strong><small>部可制片经典</small><time id="recommendationVerifiedAt">等待核验数据</time></div>
         </header>
         <div class="recommendation-toolbar">
           <div class="segmented-control" id="recommendationLanguageFilters" role="group" aria-label="推荐小说语言筛选">
@@ -105,7 +106,7 @@
             <button data-recommendation-language="中文">中文</button>
             <button data-recommendation-language="英文">英文</button>
           </div>
-          <label class="project-search" aria-label="搜索推荐小说"><i data-lucide="search"></i><input id="recommendationSearch" placeholder="搜索书名、作者或题材"></label>
+          <div class="recommendation-toolbar-meta"><span><b id="recommendationVisibleCount">0</b> 部符合筛选</span><label class="project-search" aria-label="搜索推荐小说"><i data-lucide="search"></i><input id="recommendationSearch" placeholder="搜索书名、作者或题材"></label></div>
         </div>
         <div class="recommendation-grid" id="recommendationGrid">
           <div class="view-empty"><i data-lucide="book-open-check"></i><p>正在加载公版推荐。</p></div>
@@ -159,6 +160,13 @@
               <div class="shot-grid" id="shotGrid"></div>
               <div class="episode-progress"><span id="episodeProgressBar"></span></div>
               <div class="episode-meta"><span id="episodeMeta">等待镜头拆解</span><span id="episodePercent">0%</span></div>
+              <div class="episode-output hidden" id="episodeOutput">
+                <video id="episodeVideo" controls playsinline preload="metadata"></video>
+                <a class="command-button" id="episodeDownload" download>
+                  <i data-lucide="download"></i>
+                  <span>下载 MP4</span>
+                </a>
+              </div>
             </div>
           </div>
         </div>
