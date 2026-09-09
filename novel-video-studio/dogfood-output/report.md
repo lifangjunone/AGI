@@ -12,10 +12,10 @@
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
-| High | 2 |
+| High | 3 |
 | Medium | 3 |
 | Low | 1 |
-| **Total** | **6** |
+| **Total** | **7** |
 
 ## Remediation
 
@@ -27,6 +27,7 @@
 | ISSUE-004 | Fixed | Final desktop WCAG 2 A/AA audit: 0 violations; only contrast checks for partially obscured, scroll-clipped rows remain inconclusive. |
 | ISSUE-005 | Fixed | Retry clears the previous error before discovery restarts. |
 | ISSUE-006 | Fixed | Restored projects synchronize the title input unless the user is actively editing it. |
+| ISSUE-007 | Fixed | Demo projects now show zero generated videos and stop before assembly; a preflight gate blocks unauthorized or over-budget model calls. |
 
 ## Task Center Acceptance
 
@@ -35,7 +36,7 @@
 - Verified restart recovery for interrupted, queued, and remotely rendering projects.
 - Verified status filters, title/source search, historical-project restoration, and failed-task retry entry.
 - Verified desktop and 390×844 mobile layouts with six working mobile destinations.
-- Automated suite: 28 passing tests.
+- Automated suite: 31 passing tests.
 
 ![Task center desktop](screenshots/task-center-desktop.png)
 
@@ -90,6 +91,21 @@
 ![Search trace mobile](screenshots/search-trace-mobile.png)
 
 ![Audited free-source registry](screenshots/free-source-registry-desktop.png)
+
+## Public-Domain Recommendation Acceptance
+
+- Verified 16 curated works: eight Chinese classics and eight English classics.
+- Verified every item is normalized to `public-domain`, requires no additional authorization, and links only to the trusted recommendation-source allowlist.
+- Verified language filters return eight Chinese and eight English works; keyword search matches title, author, genre, and tags.
+- Verified every card exposes rights evidence, the original source, and one-click project creation; the created title re-enters the existing source-confirmation and six-node audit workflow.
+- Verified desktop rendering and an emulated 390×844 mobile viewport. The mobile layout has no horizontal overflow, and the recommendation count, all three card actions, and all seven navigation destinations remain within the viewport.
+- Automated suite: 30 passing tests.
+
+![Public-domain recommendations desktop](screenshots/public-domain-recommendations-desktop.png)
+
+![Public-domain recommendations in final Electron package](screenshots/public-domain-recommendations-electron.png)
+
+![Public-domain recommendations mobile](screenshots/public-domain-recommendations-mobile.png)
 
 ## Authorized Full-Text Import Acceptance
 
@@ -237,5 +253,24 @@ axe-core 指出资产筛选和生产阶段容器在普通 `div` 上使用 `aria-
 1. 创建其他作品项目并重新打开桌面 App。
 2. **观察：** 当前项目标题与书名输入框内容不一致。
    ![Result](screenshots/regression-assets-refreshed.png)
+
+---
+
+### ISSUE-007: 演示任务被错误显示为真实视频已完成
+
+| Field | Value |
+|-------|-------|
+| **Severity** | high |
+| **Category** | functional / trust |
+| **URL** | `/desktop/`、`/mobile/`、`/web/` |
+| **Repro Video** | N/A |
+
+**Description**
+
+演示模式没有调用 Seedance，镜头没有远端任务 ID、视频 URL 或本地 MP4，但旧状态机仍把 30 个镜头和成片装配标记为完成。
+
+**Resolution**
+
+演示模式现在停在“演示预览”，显示“30 个镜头已规划 · 0 个视频已生成”，渲染节点暂停且装配节点不再完成。真实模式会在任何 Ark 调用前检查 API Key、计费授权和单集预算；15 分钟 720P 当前参考估算约为 `¥1,360.80`。
 
 ---

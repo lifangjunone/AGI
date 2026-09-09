@@ -3,7 +3,7 @@
   "cloudfunctionRoot": "cloudfunctions/",
   "projectname": "zhizhu-guagua",
   "description": "智助乖乖 C 端内容工作台",
-  "appid": "touristappid",
+  "appid": "wxa087f03ad52dd2bf",
   "setting": {
     "urlCheck": true,
     "es6": false,

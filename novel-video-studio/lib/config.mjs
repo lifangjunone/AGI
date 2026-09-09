@@ -39,6 +39,7 @@ export function makeConfig(root) {
   const episodeMinutes = positiveNumber(process.env.EPISODE_DURATION_MINUTES, 15);
   const shotSeconds = positiveNumber(process.env.SHOT_DURATION_SECONDS, 30);
   const dailyHours = positiveNumber(process.env.DAILY_OUTPUT_HOURS, 72);
+  const videoCostPerSecondCny = positiveNumber(process.env.VIDEO_COST_PER_SECOND_CNY, 1.512);
   const dataDirectory = process.env.NOVEL_STUDIO_DATA_DIRECTORY || path.join(root, "data");
   const planningModel = process.env.ARK_PLANNING_MODEL
     || process.env.ARK_TEXT_MODEL
@@ -72,7 +73,11 @@ export function makeConfig(root) {
       videoTasksPerDay: Math.ceil((dailyHours * 3600) / shotSeconds),
       maxProjectConcurrency: positiveNumber(process.env.MAX_PROJECT_CONCURRENCY, 2),
       maxVideoConcurrency: positiveNumber(process.env.MAX_VIDEO_CONCURRENCY, 4),
-      dailyBudgetCny: positiveNumber(process.env.DAILY_BUDGET_CNY, 200)
+      dailyBudgetCny: positiveNumber(process.env.DAILY_BUDGET_CNY, 200),
+      videoCostPerSecondCny,
+      estimatedEpisodeVideoCostCny: Number((episodeMinutes * 60 * videoCostPerSecondCny).toFixed(2)),
+      billableGenerationEnabled: process.env.ALLOW_BILLABLE_GENERATION === "true",
+      budgetOverrunAllowed: process.env.ALLOW_BUDGET_OVERRUN === "true"
     },
     ffmpeg: process.env.FFMPEG_PATH || "ffmpeg",
     ffprobe: process.env.FFPROBE_PATH || "ffprobe"

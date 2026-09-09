@@ -28,9 +28,21 @@ test("web, mobile and desktop entrypoints share the production UI", async () => 
     const html = await response.text();
     assert.match(html, /长卷制片厂/);
     assert.match(html, /项目工作台/);
+    assert.match(html, /推荐小说/);
     assert.match(html, /创建小说项目/);
     assert.match(html, /导入已授权正文/);
   }
+});
+
+test("public-domain recommendations API exposes verified popular works", async () => {
+  const response = await fetch(`${origin}/api/recommendations`);
+  assert.equal(response.status, 200);
+  const catalog = await response.json();
+  assert.equal(catalog.items.length, 16);
+  assert.equal(catalog.verifiedAt, "2026-09-09");
+  assert.ok(catalog.items.every((item) => item.requiresAuthorization === false));
+  assert.ok(catalog.items.some((item) => item.title === "西游记"));
+  assert.ok(catalog.items.some((item) => item.title === "Frankenstein"));
 });
 
 test("project center is the default entry before project-scoped tools", async () => {
@@ -81,6 +93,8 @@ test("task history and queue telemetry are exposed as lightweight summaries", as
   assert.equal(status.queue.maxConcurrency, 2);
   assert.equal(status.models.planning, "glm-5-2-260617");
   assert.equal(status.models.video, "doubao-seedance-2-5-260628");
+  assert.equal(status.production.videoCostPerSecondCny, 1.512);
+  assert.equal(status.production.estimatedEpisodeVideoCostCny, 1360.8);
   assert.equal(queue.queue.queuedCount, 0);
   assert.equal(projects.projects[0].novelName, "西游记");
   assert.equal("assets" in projects.projects[0], false);
@@ -95,7 +109,7 @@ test("mobile PWA assets are valid and served with correct types", async () => {
 
   const workerResponse = await fetch(`${origin}/mobile-sw.js`);
   assert.equal(workerResponse.status, 200);
-  assert.match(await workerResponse.text(), /novel-picture-works-v9/);
+  assert.match(await workerResponse.text(), /novel-picture-works-v12/);
 });
 
 test("desktop runtime keeps node integration disabled", async () => {

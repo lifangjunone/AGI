@@ -21,21 +21,15 @@ export default defineAppConfig({
     list: [
       {
         pagePath: 'pages/index/index',
-        text: '工作台',
-        iconPath: 'assets/tabbar/home.svg',
-        selectedIconPath: 'assets/tabbar/home-selected.svg'
+        text: '工作台'
       },
       {
         pagePath: 'pages/records/index',
-        text: '记录',
-        iconPath: 'assets/tabbar/records.svg',
-        selectedIconPath: 'assets/tabbar/records-selected.svg'
+        text: '记录'
       },
       {
         pagePath: 'pages/profile/index',
-        text: '我的',
-        iconPath: 'assets/tabbar/profile.svg',
-        selectedIconPath: 'assets/tabbar/profile-selected.svg'
+        text: '我的'
       }
     ]
   }

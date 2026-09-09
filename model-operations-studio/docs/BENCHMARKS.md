@@ -42,6 +42,19 @@ The fixed-seed warm run passed automated frame decoding, black-frame detection, 
 
 The same deployment also passed an image-to-video API smoke test using a PNG reference: 512x288, 9 frames, 4 steps, Euler, CFG 4 completed in 41.44 seconds and produced a decodable 0.563-second WebM.
 
+## Duration Orchestration
+
+Verified 2026-09-09:
+
+| Requested duration | Plan | Result |
+| --- | --- | --- |
+| 5 seconds | 1 x 81-frame segment | 5.063-second WebM |
+| 10 seconds | 2 x 81-frame continuation segments | 10.000-second merged WebM |
+| 30 seconds | 6 x 81-frame continuation segments | Planner and validation passed |
+| 60 seconds | 12 x 81-frame continuation segments | Planner and validation passed |
+
+The 10-second run completed both segments, extracted the first segment's final frame for continuity, and concatenated the two VP9 outputs. Full 30/60-second renders were not run because they scale to approximately 6/12 times the five-second generation cost.
+
 Evidence:
 
 - Machine-readable report: `runtime/outputs/wan22-benchmark-1788948655012.json`

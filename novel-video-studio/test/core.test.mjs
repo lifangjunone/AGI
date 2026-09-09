@@ -7,6 +7,7 @@ import { ArkClient } from "../lib/ark-client.mjs";
 import { DEFAULT_ARK_MODELS, makeConfig } from "../lib/config.mjs";
 import { buildDemoBible, makeShots, ProductionPipeline } from "../lib/pipeline.mjs";
 import { searchNovel, titleScore } from "../lib/novel-search.mjs";
+import { loadRecommendations, sanitizeRecommendations } from "../lib/recommendations.mjs";
 import { BLOCKED_SOURCE_DOMAINS, loadSourceRegistry, sanitizeSources } from "../lib/source-registry.mjs";
 import { ProjectStore } from "../lib/store.mjs";
 
@@ -22,6 +23,23 @@ test("title matching tolerates book-title punctuation", () => {
   assert.equal(titleScore("《西游记》", "西游记"), 100);
   assert.ok(titleScore("Journey to the West", "Journey to the West: Volume I") >= 80);
   assert.equal(titleScore("", "西游记"), 0);
+});
+
+test("recommendation catalog contains only trusted public-domain works", async () => {
+  const catalog = await loadRecommendations();
+  assert.equal(catalog.items.length, 16);
+  assert.ok(catalog.items.some((item) => item.language === "中文"));
+  assert.ok(catalog.items.some((item) => item.language === "英文"));
+  assert.ok(catalog.items.every((item) => item.rights === "public-domain" && item.requiresAuthorization === false));
+  assert.throws(() => sanitizeRecommendations({
+    items: [{
+      id: "unsafe",
+      title: "Unsafe",
+      author: "Unknown",
+      sourceUrl: "https://example.com/book",
+      rightsEvidenceUrl: "https://example.com/rights"
+    }]
+  }), /未受信任来源/);
 });
 
 test("default source registry includes audited free sources and blocks unsafe domains", async () => {
@@ -53,6 +71,9 @@ test("known Qiu Mo sources survive upstream search blocking", async () => {
     assert.ok(result.candidates.some((candidate) => candidate.sourceUrl === "https://book.qq.com/book-detail/481326"));
     assert.equal(result.candidates.some((candidate) => candidate.sourceUrl.includes("hetushu.com")), false);
     assert.equal(result.searches.find((run) => run.provider === "起点免费频道").status, "degraded");
+    const classic = await searchNovel("聊斋志异", makeConfig(process.cwd()).search);
+    assert.equal(classic.candidates[0].source, "中文维基文库");
+    assert.equal(classic.candidates[0].rights, "public-domain");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -72,6 +93,8 @@ test("production capacity derives 15-minute episodes and 30-second shots", () =>
   assert.equal(config.production.shotsPerEpisode, 30);
   assert.equal(config.production.videoTasksPerDay, 8640);
   assert.equal(config.production.maxProjectConcurrency, 2);
+  assert.equal(config.production.videoCostPerSecondCny, 1.512);
+  assert.equal(config.production.estimatedEpisodeVideoCostCny, 1360.8);
   for (const [key, value] of Object.entries(previous)) {
     const envKey = { hours: "DAILY_OUTPUT_HOURS", minutes: "EPISODE_DURATION_MINUTES", seconds: "SHOT_DURATION_SECONDS" }[key];
     if (value === undefined) delete process.env[envKey];
@@ -193,7 +216,65 @@ test("live video submission fills only the configured per-project shot slots", a
   }
 });
 
-test("pipeline pauses for explicit source confirmation and records every node artifact", async () => {
+test("live production stops before model calls when cost authorization is missing", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "novel-budget-gate-"));
+  try {
+    const store = new ProjectStore(directory);
+    const config = {
+      mode: "live",
+      dataDirectory: directory,
+      ark: { planningModel: "glm-test" },
+      search: {},
+      production: {
+        episodeMinutes: 15,
+        shotsPerEpisode: 30,
+        shotSeconds: 30,
+        maxProjectConcurrency: 1,
+        maxVideoConcurrency: 4,
+        dailyBudgetCny: 200,
+        estimatedEpisodeVideoCostCny: 1360.8,
+        billableGenerationEnabled: false,
+        budgetOverrunAllowed: false
+      }
+    };
+    const pipeline = new ProductionPipeline(config, store, {
+      loadText: async () => "公版正文"
+    });
+    pipeline.ark.generateJson = async () => {
+      throw new Error("预算门禁前不应调用模型");
+    };
+    await store.save({
+      id: "budget-gate",
+      novelName: "西游记",
+      status: "queued",
+      stage: "ingest",
+      progress: 18,
+      mode: "live",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      activity: [],
+      sourceConfirmed: true,
+      source: {
+        id: "public-domain",
+        title: "西游记",
+        authors: "吴承恩",
+        source: "中文维基文库",
+        rights: "public-domain"
+      }
+    });
+
+    await pipeline.run("budget-gate");
+    const project = await store.get("budget-gate");
+    assert.equal(project.status, "budget-gate");
+    assert.equal(project.stage, "adapt");
+    assert.equal(project.nodes.adapt.status, "paused");
+    assert.match(project.error, /未获计费授权/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("pipeline pauses for source confirmation and labels demo output as a non-video preview", async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), "novel-source-gate-"));
   try {
     const store = new ProjectStore(directory);
@@ -244,16 +325,19 @@ test("pipeline pauses for explicit source confirmation and records every node ar
     assert.equal(project.nodes.discover.output.searchCount, 1);
 
     await pipeline.confirmSource(created.id, "candidate-b");
-    await waitFor(async () => (await store.get(created.id)).status === "completed");
+    await waitFor(async () => (await store.get(created.id)).status === "demo-preview");
     project = await store.get(created.id);
     assert.equal(project.source.id, "candidate-b");
     assert.equal(project.sourceConfirmed, true);
-    assert.ok(["discover", "ingest", "adapt", "design", "render", "assemble"].every(
+    assert.ok(["discover", "ingest", "adapt", "design"].every(
       (id) => project.nodes[id].status === "completed"
     ));
+    assert.equal(project.nodes.render.status, "paused");
+    assert.equal(project.nodes.assemble.status, "pending");
     assert.equal(project.nodes.ingest.output.contentCharacters, 4);
-    assert.equal(project.nodes.render.output.completedShots, 30);
-    assert.equal(project.nodes.assemble.output.durationSeconds, 900);
+    assert.equal(project.nodes.render.output.completedShots, 0);
+    assert.equal(project.nodes.render.output.simulatedShots, 30);
+    assert.equal(project.episodes[0].videoUrl, undefined);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -307,7 +391,7 @@ test("authorized full-text import persists content and resumes the pipeline", as
       fileName: "求魔-授权正文.txt",
       rightsConfirmed: true
     });
-    await waitFor(async () => (await store.get(created.id)).status === "completed");
+    await waitFor(async () => (await store.get(created.id)).status === "demo-preview");
     const project = await store.get(created.id);
     assert.equal(project.source.rights, "user-provided");
     assert.equal(project.authorizedContent.characterCount, content.length);

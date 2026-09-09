@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnv, makeConfig } from "./lib/config.mjs";
 import { ProductionPipeline } from "./lib/pipeline.mjs";
+import { loadRecommendations } from "./lib/recommendations.mjs";
 import { BLOCKED_SOURCE_DOMAINS, loadSourceRegistry, saveSourceRegistry } from "./lib/source-registry.mjs";
 import { ProjectStore } from "./lib/store.mjs";
 
@@ -38,14 +39,18 @@ function sendJson(response, status, payload) {
 
 function projectSummary(project) {
   const shots = project.episodes?.flatMap((episode) => episode.shots || []) || [];
+  const demoPreview = project.mode === "demo"
+    && ["completed", "demo-preview"].includes(project.status)
+    && project.episodes?.some((episode) => (episode.shots || []).length > 0)
+    && !project.episodes?.some((episode) => episode.videoUrl);
   const displayedSource = project.source
     || project.sources?.find((source) => source.id === project.suggestedSourceId);
   return {
     id: project.id,
     novelName: project.novelName,
-    status: project.status,
-    stage: project.stage,
-    progress: project.progress,
+    status: demoPreview ? "demo-preview" : project.status,
+    stage: demoPreview ? "render" : project.stage,
+    progress: demoPreview ? 72 : project.progress,
     mode: project.mode,
     queuePosition: project.queuePosition,
     estimatedWaitMinutes: project.estimatedWaitMinutes,
@@ -58,7 +63,8 @@ function projectSummary(project) {
     sourceConfirmed: Boolean(project.sourceConfirmed),
     episodeCount: project.episodes?.length || 0,
     shotCount: shots.length,
-    completedShots: shots.filter((shot) => shot.status === "succeeded").length,
+    completedShots: demoPreview ? 0 : shots.filter((shot) => shot.status === "succeeded").length,
+    hasVideo: project.episodes?.some((episode) => Boolean(episode.videoUrl)) || false,
     error: project.error
   };
 }
@@ -182,7 +188,8 @@ export const server = createServer(async (request, response) => {
         ffmpegReady: ffmpegReady && ffprobeReady,
         production: config.production,
         queue,
-        billableGenerationEnabled: process.env.ALLOW_BILLABLE_GENERATION === "true"
+        billableGenerationEnabled: config.production.billableGenerationEnabled,
+        budgetOverrunAllowed: config.production.budgetOverrunAllowed
       });
       return;
     }
@@ -202,6 +209,11 @@ export const server = createServer(async (request, response) => {
         domesticWebSearch: config.search.domesticWebSearch,
         blockedDomains: BLOCKED_SOURCE_DOMAINS
       });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/recommendations") {
+      sendJson(response, 200, await loadRecommendations());
       return;
     }
 

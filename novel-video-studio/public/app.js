@@ -15,11 +15,12 @@ const STATUS_LABELS = {
   "source-review": "待确认来源",
   "rights-review": "版权复核",
   "budget-gate": "预算门禁",
+  "demo-preview": "演示预览",
   rendering: "渲染中"
 };
 const ASSET_TYPES = { character: "角色", weapon: "武器", location: "场景" };
 const NODE_STATUS_LABELS = { pending: "未开始", running: "处理中", completed: "已完成", failed: "失败", paused: "已暂停" };
-const VALID_VIEWS = new Set(["projects", "overview", "tasks", "sources", "assets", "episodes"]);
+const VALID_VIEWS = new Set(["projects", "recommendations", "overview", "tasks", "sources", "assets", "episodes"]);
 const PROJECT_VIEWS = new Set(["overview", "sources", "assets", "episodes"]);
 const pathname = window.location.pathname;
 const platform = pathname.startsWith("/mobile")
@@ -44,6 +45,10 @@ let projectQuery = "";
 let sourceRegistry = [];
 let authorizedTextDraft = "";
 let authorizedFileName = "";
+let recommendations = [];
+let recommendationLanguage = "all";
+let recommendationQuery = "";
+let runtimeStatus = null;
 
 document.documentElement.dataset.platform = platform;
 
@@ -69,6 +74,28 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function isDemoPreview(project) {
+  return project?.mode === "demo"
+    && (
+      project.status === "demo-preview"
+      || (
+        project.status === "completed"
+        && (
+          project.episodes?.some((episode) => (episode.shots || []).length > 0)
+          || project.episodeCount > 0
+        )
+        && project.hasVideo !== true
+        && !project.episodes?.some((episode) => episode.videoUrl)
+      )
+    );
+}
+
+function projectStatusLabel(project) {
+  return isDemoPreview(project)
+    ? "演示预览"
+    : STATUS_LABELS[project?.status] || project?.status || "未知";
+}
+
 async function api(path, options) {
   const response = await fetch(path, {
     ...options,
@@ -80,13 +107,14 @@ async function api(path, options) {
 }
 
 function renderStatus(status) {
+  runtimeStatus = status;
   queueState = status.queue;
   const queueSuffix = status.queue
     ? ` · ${status.queue.activeCount}/${status.queue.maxConcurrency} 项目槽 · ${status.queue.queuedCount} 排队`
     : "";
   $("#modeLabel").textContent = status.mode === "live"
-    ? `${PLATFORM_LABELS[platform]} · 方舟生产模式 · ${status.billableGenerationEnabled ? "计费已开启" : "预算门禁开启"}${queueSuffix}`
-    : `${PLATFORM_LABELS[platform]} · 演示生产模式 · 不产生模型费用${queueSuffix}`;
+    ? `${PLATFORM_LABELS[platform]} · 方舟生产模式 · ${!status.arkConfigured ? "API Key 未配置" : status.billableGenerationEnabled ? "计费已开启" : "预算门禁开启"}${queueSuffix}`
+    : `${PLATFORM_LABELS[platform]} · 演示预览 · 未调用生成模型${queueSuffix}`;
   $("#dailyTarget").textContent = `${status.production.dailyHours}h`;
   $("#dailyEpisodes").textContent = `${status.production.episodesPerDay} 集 / 日`;
   $("#metricMinutes").textContent = status.production.episodeMinutes;
@@ -98,11 +126,17 @@ function renderStatus(status) {
 
 function renderStages(project) {
   const activeIndex = STAGES.findIndex(([id]) => id === project.stage);
+  const demoPreview = isDemoPreview(project);
   $("#stageTrack").innerHTML = STAGES.map(([id, label], index) => {
-    const fallbackState = index < activeIndex || project.status === "completed"
+    const fallbackState = index < activeIndex || (project.status === "completed" && !demoPreview)
       ? "done"
       : index === activeIndex ? "active" : "";
-    const nodeStatus = project.nodes?.[id]?.status
+    const persistedStatus = project.nodes?.[id]?.status;
+    const nodeStatus = demoPreview && id === "render"
+      ? "paused"
+      : demoPreview && id === "assemble"
+        ? "pending"
+        : persistedStatus
       || (fallbackState === "done" ? "completed" : fallbackState === "active" ? "running" : "pending");
     const state = nodeStatus === "completed" ? "done" : ["running", "paused", "failed"].includes(nodeStatus) ? "active" : "";
     return `<span class="stage-item ${state}" role="listitem">
@@ -119,12 +153,26 @@ function coverUrl(title) {
   return `https://copilot-cn.bytedance.net/api/ide/v1/text_to_image?prompt=${encodeURIComponent(prompt)}&image_size=portrait_4_3`;
 }
 
-function renderShots(episode) {
+function recommendationCoverUrl(item) {
+  const prompt = `Pure cinematic scene inspired by ${item.title}, ${item.genre}, realistic film still, atmospheric environment, dramatic natural lighting, not a book cover, no people holding signs, no letters, no symbols, no typography, no text`;
+  return `https://copilot-cn.bytedance.net/api/ide/v1/text_to_image?prompt=${encodeURIComponent(prompt)}&image_size=portrait_4_3`;
+}
+
+function renderShots(episode, project) {
   const shots = episode?.shots || [];
+  const demoPreview = isDemoPreview(project);
   $("#shotGrid").innerHTML = shots.map((shot) => {
     const height = 14 + ((shot.order * 11) % 25);
-    return `<span class="shot ${escapeHtml(shot.status)}" style="--height:${height}px;--progress:${shot.progress || 0}%" title="${escapeHtml(shot.id)} · ${escapeHtml(shot.status)}"></span>`;
+    const status = demoPreview ? "simulated" : shot.status;
+    const progress = demoPreview ? 0 : shot.progress || 0;
+    return `<span class="shot ${escapeHtml(status)}" style="--height:${height}px;--progress:${progress}%" title="${escapeHtml(shot.id)} · ${demoPreview ? "仅规划，未生成视频" : escapeHtml(shot.status)}"></span>`;
   }).join("");
+  if (demoPreview && shots.length) {
+    $("#episodeProgressBar").style.width = "0%";
+    $("#episodePercent").textContent = "0%";
+    $("#episodeMeta").textContent = `${shots.length} 个镜头已规划 · 0 个视频已生成`;
+    return;
+  }
   const totalProgress = shots.length
     ? Math.round(shots.reduce((sum, shot) => sum + (shot.progress || 0), 0) / shots.length)
     : 0;
@@ -304,14 +352,15 @@ function renderEpisodeQueue(project) {
   const episodes = project?.episodes || [];
   $("#episodeTable").innerHTML = episodes.length ? episodes.map((episode) => {
     const shots = episode.shots || [];
-    const done = shots.filter((shot) => shot.status === "succeeded").length;
+    const demoPreview = isDemoPreview(project);
+    const done = demoPreview ? 0 : shots.filter((shot) => shot.status === "succeeded").length;
     const percent = shots.length ? Math.round((done / shots.length) * 100) : 0;
     return `<article class="episode-row">
       <span class="episode-number">E${String(episode.number || 1).padStart(2, "0")}</span>
       <div><strong>${escapeHtml(episode.title || "未命名分集")}</strong><small>${escapeHtml(episode.logline || "等待剧本")}</small></div>
       <div><strong>${episode.durationMinutes || 15}:00</strong><small>目标时长</small></div>
-      <div><strong>${done}/${shots.length}</strong><small>${escapeHtml(episode.status || project.status)}</small></div>
-      <div><div class="mini-progress"><span style="width:${percent}%"></span></div><small>${percent}% 镜头完成</small></div>
+      <div><strong>${done}/${shots.length}</strong><small>${demoPreview ? "仅规划，未生成" : escapeHtml(episode.status || project.status)}</small></div>
+      <div><div class="mini-progress"><span style="width:${percent}%"></span></div><small>${percent}% 视频已生成</small></div>
     </article>`;
   }).join("") : `<div class="view-empty"><i data-lucide="film"></i><p>暂无分集任务。</p></div>`;
   $("#exportButton").disabled = !project;
@@ -321,7 +370,8 @@ function renderEpisodeQueue(project) {
 function taskMatches(project, filter) {
   if (filter === "all") return true;
   if (filter === "active") return ["running", "rendering"].includes(project.status);
-  if (filter === "review") return project.status === "source-review";
+  if (filter === "review") return project.status === "source-review" || isDemoPreview(project);
+  if (filter === "completed") return project.status === "completed" && !isDemoPreview(project);
   if (filter === "failed") return ["failed", "rights-review", "budget-gate"].includes(project.status);
   return project.status === filter;
 }
@@ -339,14 +389,19 @@ function formatTaskTime(value) {
 function projectMatches(project, filter) {
   if (filter === "all") return true;
   if (filter === "active") return ["queued", "running", "rendering"].includes(project.status);
-  if (filter === "review") return ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status);
+  if (filter === "review") {
+    return isDemoPreview(project)
+      || ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status);
+  }
+  if (filter === "completed") return project.status === "completed" && !isDemoPreview(project);
   return project.status === filter;
 }
 
 function renderProjectCatalog() {
   $("#metricProjectCount").textContent = allProjects.length;
   $("#metricReviewProjects").textContent = allProjects.filter((project) =>
-    ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status)
+    isDemoPreview(project)
+      || ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status)
   ).length;
   const projects = allProjects.filter((project) => {
     const queryMatch = !projectQuery || `${project.novelName} ${project.sourceTitle || ""} ${project.id}`.toLowerCase().includes(projectQuery);
@@ -354,28 +409,70 @@ function renderProjectCatalog() {
   });
   $("#projectCatalogCount").textContent = `${projects.length} 个项目`;
   $("#projectGrid").innerHTML = projects.length ? projects.map((project) => {
-    const stageIndex = Math.max(0, STAGES.findIndex(([id]) => id === project.stage));
+    const demoPreview = isDemoPreview(project);
+    const stageIndex = demoPreview
+      ? STAGES.findIndex(([id]) => id === "render")
+      : Math.max(0, STAGES.findIndex(([id]) => id === project.stage));
     const stageLabel = STAGES[stageIndex]?.[1] || "等待调度";
-    const needsAction = ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status);
-    const statusDetail = project.status === "queued"
+    const needsAction = demoPreview || ["source-review", "rights-review", "budget-gate", "failed"].includes(project.status);
+    const statusDetail = demoPreview
+      ? "尚未调用 Seedance"
+      : project.status === "queued"
       ? `队列第 ${project.queuePosition || "-"} 位`
       : needsAction ? "需要处理" : stageLabel;
     return `<button class="project-card" data-project-id="${escapeHtml(project.id)}">
       <span class="project-cover">
         <img src="${escapeHtml(coverUrl(project.novelName))}" alt="${escapeHtml(project.novelName)} 项目封面" loading="lazy">
-        <span class="task-state ${escapeHtml(project.status)}">${escapeHtml(STATUS_LABELS[project.status] || project.status)}</span>
+        <span class="task-state ${escapeHtml(isDemoPreview(project) ? "demo-preview" : project.status)}">${escapeHtml(projectStatusLabel(project))}</span>
       </span>
       <span class="project-card-body">
         <span class="project-card-title"><strong>${escapeHtml(project.novelName)}</strong><small>${escapeHtml(project.sourceTitle || "等待确认内容来源")}</small></span>
         <span class="project-card-progress"><span><b style="width:${Number(project.progress || 0)}%"></b></span><strong>${Number(project.progress || 0)}%</strong></span>
         <span class="project-stage-rail" aria-label="六节点进度">${STAGES.map((_, index) =>
-          `<i class="${index < stageIndex || project.status === "completed" ? "done" : index === stageIndex ? "current" : ""}"></i>`
+          `<i class="${index < stageIndex || (project.status === "completed" && !demoPreview) ? "done" : index === stageIndex ? "current" : ""}"></i>`
         ).join("")}</span>
-        <span class="project-card-meta"><small>${escapeHtml(statusDetail)}</small><small>${project.episodeCount || 0} 集 · ${project.completedShots || 0}/${project.shotCount || 0} 镜头</small></span>
+        <span class="project-card-meta"><small>${escapeHtml(statusDetail)}</small><small>${project.episodeCount || 0} 集 · ${demoPreview ? 0 : project.completedShots || 0}/${project.shotCount || 0} 视频</small></span>
         <span class="project-card-footer"><time>${formatTaskTime(project.updatedAt || project.createdAt)}</time><span>进入项目 <i data-lucide="arrow-right"></i></span></span>
       </span>
     </button>`;
   }).join("") : `<div class="view-empty"><i data-lucide="folders"></i><p>${allProjects.length ? "当前筛选下没有项目。" : "还没有项目，创建第一个小说制片项目。"}</p></div>`;
+  icons();
+}
+
+function renderRecommendations() {
+  const query = recommendationQuery.toLocaleLowerCase();
+  const items = recommendations.filter((item) => {
+    const languageMatch = recommendationLanguage === "all" || item.language === recommendationLanguage;
+    const text = `${item.title} ${item.author} ${item.genre} ${(item.tags || []).join(" ")}`.toLocaleLowerCase();
+    return languageMatch && (!query || text.includes(query));
+  });
+  $("#recommendationCount").textContent = recommendations.length;
+  $("#recommendationGrid").innerHTML = items.length ? items.map((item) => `
+    <article class="recommendation-card">
+      <div class="recommendation-cover">
+        <img src="${escapeHtml(recommendationCoverUrl(item))}" alt="${escapeHtml(item.title)} 概念场景" loading="lazy">
+        <span class="recommendation-rank">NO.${String(item.rank).padStart(2, "0")}</span>
+        <span class="recommendation-language">${escapeHtml(item.language)}</span>
+      </div>
+      <div class="recommendation-body">
+        <div class="recommendation-kicker"><span>${escapeHtml(item.genre)}</span><span>${escapeHtml(item.year)}</span></div>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p class="recommendation-author">${escapeHtml(item.author)} · ${escapeHtml(item.source)}</p>
+        <p class="recommendation-summary">${escapeHtml(item.summary)}</p>
+        <div class="recommendation-tags">${item.tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+        <div class="recommendation-popularity"><span><b style="width:${item.popularityScore}%"></b></span><small>策展热度 ${item.popularityScore}</small></div>
+        <p class="recommendation-reason">${escapeHtml(item.popularReason)}</p>
+        <footer>
+          <span class="rights-badge approved"><i data-lucide="badge-check"></i>公版已核验</span>
+          <div>
+            <a class="icon-button" href="${escapeHtml(item.rightsEvidenceUrl)}" target="_blank" rel="noopener noreferrer" title="查看版权依据" aria-label="查看 ${escapeHtml(item.title)} 版权依据"><i data-lucide="shield-check"></i></a>
+            <a class="icon-button" href="${escapeHtml(item.sourceUrl)}" target="_blank" rel="noopener noreferrer" title="打开原文来源" aria-label="打开 ${escapeHtml(item.title)} 原文来源"><i data-lucide="external-link"></i></a>
+            <button class="primary-command" data-start-recommendation="${escapeHtml(item.id)}"><i data-lucide="play"></i><span>创建项目</span></button>
+          </div>
+        </footer>
+      </div>
+    </article>
+  `).join("") : `<div class="view-empty"><i data-lucide="search-x"></i><p>当前筛选下没有推荐作品。</p></div>`;
   icons();
 }
 
@@ -472,18 +569,25 @@ function renderTaskCenter() {
   const projects = matchingProjects.slice(0, taskDisplayLimit);
   $("#taskList").innerHTML = projects.length ? projects.map((project) => {
     const queued = project.status === "queued";
-    const stage = STAGES.find(([id]) => id === project.stage)?.[1] || project.stage || "等待调度";
-    const statusDetail = queued
+    const demoPreview = isDemoPreview(project);
+    const stage = demoPreview
+      ? "镜头规划"
+      : STAGES.find(([id]) => id === project.stage)?.[1] || project.stage || "等待调度";
+    const statusDetail = demoPreview
+      ? `${stage} · 0/${project.shotCount || 0} 视频`
+      : queued
       ? `第 ${project.queuePosition || "-"}/${queue.queuedCount} 位 · 预计 ${project.estimatedWaitMinutes || queue.averageDurationMinutes} 分钟`
       : `${stage} · ${project.completedShots || 0}/${project.shotCount || 0} 镜头`;
-    const timeDetail = project.completedAt
+    const timeDetail = demoPreview
+      ? `预览 ${formatTaskTime(project.completedAt || project.updatedAt)}`
+      : project.completedAt
       ? `完成 ${formatTaskTime(project.completedAt)}`
       : project.startedAt
         ? `启动 ${formatTaskTime(project.startedAt)}`
         : queued ? "等待生产槽" : `更新 ${formatTaskTime(project.updatedAt)}`;
     return `<button class="task-row ${project.id === activeProjectId ? "active-project" : ""}" data-project-id="${escapeHtml(project.id)}">
       <span class="task-title"><strong>${escapeHtml(project.novelName)}</strong><small>${escapeHtml(project.sourceTitle || project.id.slice(0, 8))}</small></span>
-      <span class="task-state ${escapeHtml(project.status)}">${escapeHtml(STATUS_LABELS[project.status] || project.status)}</span>
+      <span class="task-state ${escapeHtml(isDemoPreview(project) ? "demo-preview" : project.status)}">${escapeHtml(projectStatusLabel(project))}</span>
       <span class="task-stage"><strong>${escapeHtml(statusDetail)}</strong><span class="task-progress"><span style="width:${Number(project.progress || 0)}%"></span></span><small>${Number(project.progress || 0)}% 完成</small></span>
       <span class="task-time"><time>${formatTaskTime(project.createdAt)}</time><small>${timeDetail}</small></span>
       <i data-lucide="chevron-right"></i>
@@ -534,6 +638,7 @@ function showView(name) {
     else button.removeAttribute("aria-current");
   });
   if (name === "projects") renderProjectCatalog();
+  if (name === "recommendations") renderRecommendations();
   if (name === "tasks") renderTaskCenter();
   if (name === "sources") renderSourceLibrary(activeProject);
   if (name === "assets") renderAssetGallery(activeProject);
@@ -591,16 +696,29 @@ function renderProject(project) {
   $("#contextProjectTitle").textContent = project.novelName;
   $("#contextProjectId").textContent = `ID ${project.id.slice(0, 8)} · 更新 ${formatTaskTime(project.updatedAt)}`;
   const contextBadge = $("#contextProjectStatus");
-  contextBadge.textContent = STATUS_LABELS[project.status] || project.status;
-  contextBadge.className = `state-badge ${project.status}`;
+  const displayedStatus = isDemoPreview(project) ? "demo-preview" : project.status;
+  contextBadge.textContent = projectStatusLabel(project);
+  contextBadge.className = `state-badge ${displayedStatus}`;
   const badge = $("#projectStatus");
-  badge.textContent = STATUS_LABELS[project.status] || project.status;
-  badge.className = `state-badge ${project.status}`;
+  badge.textContent = projectStatusLabel(project);
+  badge.className = `state-badge ${displayedStatus}`;
+  const notice = $("#productionNotice");
+  const estimatedCost = Number(runtimeStatus?.production?.estimatedEpisodeVideoCostCny || 0);
+  if (isDemoPreview(project)) {
+    notice.textContent = `当前项目只完成了剧本、资产和 ${project.episodes?.[0]?.shots?.length || 0} 个镜头规划，没有调用 Seedance，也没有生成 MP4。按当前 720P 参考单价，15 分钟整集视频预估约 ¥${estimatedCost.toFixed(2)}。`;
+    notice.classList.remove("hidden");
+  } else if (project.status === "budget-gate") {
+    notice.textContent = `真实视频已被预算门禁暂停。15 分钟整集预估约 ¥${estimatedCost.toFixed(2)}，当前日预算上限为 ¥${Number(runtimeStatus?.production?.dailyBudgetCny || 0).toFixed(2)}。`;
+    notice.classList.remove("hidden");
+  } else {
+    notice.classList.add("hidden");
+    notice.textContent = "";
+  }
   renderStages(project);
   const coverSource = coverUrl(project.novelName);
   $("#projectCover").src = coverSource;
   $("#projectCover").dataset.generatedSrc = coverSource;
-  $("#coverProgress").textContent = `${project.progress}%`;
+  $("#coverProgress").textContent = isDemoPreview(project) ? "仅预览" : `${project.progress}%`;
   const displayedSource = project.source
     || project.sources?.find((source) => source.id === project.suggestedSourceId);
   $("#sourceTitle").textContent = displayedSource?.title || "正在检索";
@@ -615,7 +733,7 @@ function renderProject(project) {
     : rights === "public-domain-candidate" ? "公版候选，已进入核验" : "等待授权或来源核验";
   const episode = project.episodes?.[0];
   $("#episodeTitle").textContent = episode?.title || "脚本生成中";
-  renderShots(episode);
+  renderShots(episode, project);
   renderAssets(project.assets);
   renderActivity(project.activity);
   renderSourceLibrary(project);
@@ -635,9 +753,16 @@ function syncPolling() {
 
 async function refreshAll({ notify = false } = {}) {
   try {
-    const [status, projectsPayload] = await Promise.all([api("/api/status"), api("/api/projects")]);
+    const [status, projectsPayload, recommendationPayload] = await Promise.all([
+      api("/api/status"),
+      api("/api/projects"),
+      api("/api/recommendations")
+    ]);
     renderStatus(status);
     allProjects = projectsPayload.projects;
+    recommendations = recommendationPayload.items;
+    $("#recommendationVerifiedAt").textContent = `核验于 ${recommendationPayload.verifiedAt}`;
+    renderRecommendations();
     renderProjectCatalog();
     if (activeProjectId && allProjects.some((project) => project.id === activeProjectId)) {
       const { project } = await api(`/api/projects/${activeProjectId}`);
@@ -923,6 +1048,38 @@ $("#projectFilters").addEventListener("click", (event) => {
 $("#projectSearch").addEventListener("input", (event) => {
   projectQuery = event.target.value.trim().toLowerCase();
   renderProjectCatalog();
+});
+$("#recommendationLanguageFilters").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-recommendation-language]");
+  if (!button) return;
+  recommendationLanguage = button.dataset.recommendationLanguage;
+  document.querySelectorAll("#recommendationLanguageFilters button").forEach((item) => item.classList.toggle("active", item === button));
+  renderRecommendations();
+});
+$("#recommendationSearch").addEventListener("input", (event) => {
+  recommendationQuery = event.target.value.trim().toLocaleLowerCase();
+  renderRecommendations();
+});
+$("#recommendationGrid").addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-start-recommendation]");
+  if (!button) return;
+  const recommendation = recommendations.find((item) => item.id === button.dataset.startRecommendation);
+  if (!recommendation) return;
+  button.disabled = true;
+  try {
+    const { project } = await api("/api/projects", {
+      method: "POST",
+      body: JSON.stringify({ novelName: recommendation.title })
+    });
+    renderProject(project);
+    showView("overview");
+    await refreshAll();
+    showToast(`《${recommendation.title}》项目已创建`);
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    button.disabled = false;
+  }
 });
 $("#projectGrid").addEventListener("click", async (event) => {
   const card = event.target.closest("[data-project-id]");

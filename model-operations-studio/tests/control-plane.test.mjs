@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import { test } from 'node:test'
+import { normalizeVideoRequest, supportedDurations } from '../server/video-planner.mjs'
 
 const root = path.resolve(import.meta.dirname, '..')
 
@@ -26,6 +27,18 @@ test('Wan workflow uses FP16, Euler and tiled VAE decode', async () => {
     [workflow['55'].inputs.width, workflow['55'].inputs.height, workflow['55'].inputs.length],
     [832, 480, 49],
   )
+})
+
+test('video duration plans use safe five-second segments', () => {
+  assert.deepEqual(supportedDurations, [5, 10, 30, 60])
+  for (const duration of supportedDurations) {
+    const plan = normalizeVideoRequest({ duration, fps: 16 })
+    assert.equal(plan.duration, duration)
+    assert.equal(plan.segmentCount, duration / 5)
+    assert.equal(plan.frames, 81)
+  }
+  assert.equal(normalizeVideoRequest({ duration: 60, fps: 30 }).fps, 24)
+  assert.equal(normalizeVideoRequest({ duration: 60, fps: 30 }).frames, 121)
 })
 
 test('control plane exposes host and model state', async (context) => {

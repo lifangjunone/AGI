@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Boxes, CheckCircle2, CircleStop, Clock3, Copy,
-  Cpu, Database, Download, ExternalLink, Film, ImagePlus, Layers3, ListTodo,
+  Boxes, CheckCircle2, ChevronLeft, ChevronRight, CircleStop, Clock3, Copy,
+  Cpu, Database, Download, Film, ImagePlus, Layers3, ListTodo,
   MemoryStick, MessageSquareText, Play, RefreshCw, RotateCcw, Rocket, Settings,
   Sparkles, Square, TerminalSquare, Timer, Video, Workflow, X,
 } from 'lucide-react'
@@ -39,7 +39,7 @@ type Job = {
   totalSteps?: number
   legacy?: boolean
   output?: { filename: string; subfolder: string; type: string }
-  request?: { width?: number; height?: number; frames?: number; fps?: number; steps?: number; cfg?: number }
+  request?: { width?: number; height?: number; frames?: number; duration?: number; segmentCount?: number; fps?: number; steps?: number; cfg?: number }
 }
 type AppState = {
   system: {
@@ -96,6 +96,11 @@ const formatElapsed = (job: Job) => {
   const seconds = Math.max(0, Math.round((end - start) / 1000))
   return seconds < 60 ? `${seconds} 秒` : `${Math.floor(seconds / 60)}分${seconds % 60}秒`
 }
+const paginationItems = (current: number, total: number) => {
+  if (total <= 5) return Array.from({ length: total }, (_, index) => index + 1)
+  const pages = [...new Set([1, total, current - 1, current, current + 1].filter((page) => page >= 1 && page <= total))].sort((a, b) => a - b)
+  return pages.flatMap((page, index) => index > 0 && page - pages[index - 1] > 1 ? [`gap-${page}`, page] : [page])
+}
 
 function App() {
   const [active, setActive] = useState('overview')
@@ -105,11 +110,14 @@ function App() {
   const [selected, setSelected] = useState<Model | null>(null)
   const [prompt, setPrompt] = useState('请用清晰的结构解释本地部署大模型时，模型注册、运行时和服务端点之间的关系。')
   const [videoPrompt, setVideoPrompt] = useState('雨后的上海街道，一辆复古电车缓慢驶过，电影级光影，镜头平稳向前推进')
-  const [videoConfig, setVideoConfig] = useState({ width: 832, height: 480, frames: 49, fps: 16, steps: 20, cfg: 5 })
+  const [videoConfig, setVideoConfig] = useState({ width: 832, height: 480, duration: 5, fps: 16, steps: 20, cfg: 5 })
   const [referenceImage, setReferenceImage] = useState('')
+  const [playingJob, setPlayingJob] = useState<Job | null>(null)
   const [memoryLimit, setMemoryLimit] = useState(40)
   const [result, setResult] = useState('')
   const [jobFilter, setJobFilter] = useState<'all' | 'active' | 'completed' | 'failed'>('all')
+  const [jobPage, setJobPage] = useState(1)
+  const [jobPageSize, setJobPageSize] = useState(() => window.innerWidth > 920 && window.innerHeight >= 960 ? 8 : 5)
 
   const refresh = async () => {
     try {
@@ -127,9 +135,12 @@ function App() {
   useEffect(() => {
     const initial = window.setTimeout(refresh, 0)
     const timer = window.setInterval(refresh, 1500)
+    const resize = () => setJobPageSize(window.innerWidth > 920 && window.innerHeight >= 960 ? 8 : 5)
+    window.addEventListener('resize', resize)
     return () => {
       window.clearTimeout(initial)
       window.clearInterval(timer)
+      window.removeEventListener('resize', resize)
     }
   }, [])
 
@@ -147,13 +158,16 @@ function App() {
   const finishedJobs = jobs.filter((job) => job.status === 'completed' || job.status === 'failed')
   const successRate = finishedJobs.length ? Math.round((jobs.filter((job) => job.status === 'completed').length / finishedJobs.length) * 100) : 100
   const focusJob = activeJobs[0] || jobs.find((job) => job.status === 'completed') || jobs[0]
-  const recentOutputs = jobs.filter((job) => job.status === 'completed' && job.output).slice(0, 4)
   const filteredJobs = jobs.filter((job) => {
     if (jobFilter === 'active') return job.status === 'running' || job.status === 'queued'
     if (jobFilter === 'completed') return job.status === 'completed'
     if (jobFilter === 'failed') return job.status === 'failed'
     return true
-  }).slice(0, 10)
+  })
+  const jobPageCount = Math.max(1, Math.ceil(filteredJobs.length / jobPageSize))
+  const currentJobPage = Math.min(jobPage, jobPageCount)
+  const jobPageStart = (currentJobPage - 1) * jobPageSize
+  const visibleJobs = filteredJobs.slice(jobPageStart, jobPageStart + jobPageSize)
   const modelDisk = data.models.reduce((sum, model) => sum + (model.installed ? model.estimatedDiskBytes : 0), 0)
 
   const action = async (model: Model, command: 'install' | 'start' | 'stop') => {
@@ -212,7 +226,7 @@ function App() {
       <div className="profile"><div>LY</div><span><b>本地管理员</b><small>127.0.0.1</small></span></div>
     </aside>
 
-    <main>
+    <main className={active === 'overview' ? 'task-main' : ''}>
       <header>
         <div><span className="eyebrow">CONTROL PLANE / {active === 'overview' ? 'TASKS' : active.toUpperCase()}</span><h1>{nav.find((item) => item.id === active)?.label}</h1></div>
         <div className="header-actions">
@@ -237,26 +251,37 @@ function App() {
               <div><span className="eyebrow">WORKLOAD QUEUE</span><h2>生成任务队列</h2></div>
               <div className="segmented" aria-label="任务筛选">
                 {([['all', '全部'], ['active', '执行中'], ['completed', '已完成'], ['failed', '失败']] as const).map(([id, label]) =>
-                  <button key={id} className={jobFilter === id ? 'active' : ''} onClick={() => setJobFilter(id)}>{label}</button>,
+                  <button key={id} className={jobFilter === id ? 'active' : ''} onClick={() => { setJobFilter(id); setJobPage(1) }}>{label}</button>,
                 )}
               </div>
             </div>
             <div className="queue-columns"><span>任务</span><span>配置</span><span>进度</span><span>状态</span><span /></div>
             <div className="job-list">
-              {filteredJobs.length ? filteredJobs.map((job, index) => <article className={`job-row ${job.status}`} key={job.id}>
-                <span className="job-index">{String(index + 1).padStart(2, '0')}</span>
+              {visibleJobs.length ? visibleJobs.map((job, index) => <article className={`job-row ${job.status}`} key={job.id}>
+                <span className="job-index">{String(jobPageStart + index + 1).padStart(2, '0')}</span>
                 <div className={`job-kind ${job.type}`}>{job.type === 'video' ? <Video size={17} /> : <MessageSquareText size={17} />}</div>
                 <div className="job-copy"><b>{job.title}</b><p>{job.prompt || '未记录提示词'}</p><small>{formatClock(job.createdAt)} · {job.modelId.includes('wan') ? 'Wan2.2 5B' : 'Qwen3.5 9B'}</small></div>
-                <div className="job-config">{job.type === 'video' ? <><b>{job.request?.width || 832}×{job.request?.height || 480}</b><small>{job.request?.frames || 49} 帧 · {job.request?.steps || 20} steps</small></> : <><b>TEXT</b><small>本地推理</small></>}</div>
+                <div className="job-config">{job.type === 'video' ? <><b>{job.request?.width || 832}×{job.request?.height || 480}</b><small>{job.request?.duration || Math.max(1, Math.round(((job.request?.frames || 49) - 1) / (job.request?.fps || 16)))} 秒 · {job.request?.steps || 20} steps</small></> : <><b>TEXT</b><small>本地推理</small></>}</div>
                 <div className="job-progress"><div><span>{job.phase}</span><b>{Math.round(job.progress || 0)}%</b></div><div className="job-progress-track"><i style={{ width: `${job.progress || 0}%` }} /></div><small>{job.status === 'running' ? `已运行 ${formatElapsed(job)}` : job.finishedAt ? `耗时 ${formatElapsed(job)}` : '等待执行'}</small></div>
                 <span className={`job-status ${job.status}`}><i />{jobStatusLabel[job.status]}</span>
                 <div className="job-actions">
                   {!terminalJobs.has(job.status) && <button className="icon-btn" title="取消任务" disabled={busy.startsWith(job.id)} onClick={() => jobAction(job, 'cancel')}><Square size={14} /></button>}
-                  {job.status === 'completed' && job.output && <button className="icon-btn" title="打开产物" onClick={() => window.open(`/api/jobs/${job.id}/output`, '_blank')}><ExternalLink size={15} /></button>}
+                  {job.status === 'completed' && job.output && <button className="icon-btn" title="播放视频" onClick={() => setPlayingJob(job)}><Play size={15} /></button>}
                   {terminalJobs.has(job.status) && !job.legacy && <button className="icon-btn" title="重新运行" disabled={busy.startsWith(job.id)} onClick={() => jobAction(job, 'retry')}><RotateCcw size={14} /></button>}
                 </div>
               </article>) : <div className="empty-queue"><ListTodo size={28} /><b>当前没有生成任务</b><p>从在线测试创建第一条文本或视频任务。</p><button onClick={() => setActive('playground')}><Sparkles size={15} />创建任务</button></div>}
             </div>
+            {filteredJobs.length > 0 && <footer className="queue-footer">
+              <div className="page-summary"><b>{jobPageStart + 1}-{Math.min(jobPageStart + jobPageSize, filteredJobs.length)}</b><span>共 {filteredJobs.length} 个任务</span></div>
+              <nav className="pagination" aria-label="任务分页">
+                <button className="icon-btn" title="上一页" disabled={currentJobPage === 1} onClick={() => setJobPage(Math.max(1, currentJobPage - 1))}><ChevronLeft size={15} /></button>
+                {paginationItems(currentJobPage, jobPageCount).map((item) => typeof item === 'string'
+                  ? <span className="page-gap" key={item}>···</span>
+                  : <button key={item} className={currentJobPage === item ? 'active' : ''} aria-label={`第 ${item} 页`} aria-current={currentJobPage === item ? 'page' : undefined} onClick={() => setJobPage(item)}>{item}</button>,
+                )}
+                <button className="icon-btn" title="下一页" disabled={currentJobPage === jobPageCount} onClick={() => setJobPage(Math.min(jobPageCount, currentJobPage + 1))}><ChevronRight size={15} /></button>
+              </nav>
+            </footer>}
           </section>
 
           <aside className="task-rail">
@@ -273,7 +298,7 @@ function App() {
                 <div className="focus-meta"><span><Clock3 size={13} />{formatElapsed(focusJob)}</span><span>{focusJob.phase}</span></div>
                 <div className="focus-actions">
                   {!terminalJobs.has(focusJob.status) && <button onClick={() => jobAction(focusJob, 'cancel')}><Square size={14} />取消任务</button>}
-                  {focusJob.status === 'completed' && focusJob.output && <button className="primary" onClick={() => window.open(`/api/jobs/${focusJob.id}/output`, '_blank')}><ExternalLink size={15} />打开产物</button>}
+                  {focusJob.status === 'completed' && focusJob.output && <button className="primary" onClick={() => setPlayingJob(focusJob)}><Play size={15} />播放视频</button>}
                   {terminalJobs.has(focusJob.status) && !focusJob.legacy && <button onClick={() => jobAction(focusJob, 'retry')}><RotateCcw size={14} />再次运行</button>}
                 </div>
               </> : <div className="focus-empty"><Film size={28} /><h2>等待新任务</h2><p>生成任务会在这里显示实时阶段和采样进度。</p></div>}
@@ -288,13 +313,6 @@ function App() {
           </aside>
         </div>
 
-        {recentOutputs.length > 0 && <section className="recent-section">
-          <div className="recent-heading"><div><span className="eyebrow">RECENT OUTPUTS</span><h2>最近产物</h2></div><span>{recentOutputs.length} 个可用文件</span></div>
-          <div className="output-grid">{recentOutputs.map((job) => <article key={job.id}>
-            <div className="output-mark"><Film size={18} /><span>WEBM</span></div><div><b>{job.output?.filename}</b><p>{job.prompt}</p><small>{formatClock(job.finishedAt)} · {formatElapsed(job)}</small></div>
-            <button className="icon-btn" title="打开产物" onClick={() => window.open(`/api/jobs/${job.id}/output`, '_blank')}><ExternalLink size={15} /></button>
-          </article>)}</div>
-        </section>}
       </div>}
 
       {active === 'models' && <div className="page">
@@ -349,9 +367,15 @@ function App() {
             reader.onload = () => setReferenceImage(String(reader.result || ''))
             reader.readAsDataURL(file)
           }} /></label>
+          <div className="duration-field">
+            <div className="duration-label"><span>生成时长</span><small>{videoConfig.duration === 5 ? '单段生成' : `${videoConfig.duration / 5} 段续接并自动合并`}</small></div>
+            <div className="duration-options" aria-label="生成时长">
+              {[5, 10, 30, 60].map((seconds) => <button key={seconds} className={videoConfig.duration === seconds ? 'active' : ''} onClick={() => setVideoConfig({ ...videoConfig, duration: seconds })}>{seconds}s</button>)}
+            </div>
+          </div>
           <div className="video-controls">
             {([
-              ['width', '宽'], ['height', '高'], ['frames', '帧'], ['fps', 'FPS'], ['steps', '步数'], ['cfg', 'CFG'],
+              ['width', '宽'], ['height', '高'], ['fps', 'FPS'], ['steps', '步数'], ['cfg', 'CFG'],
             ] as const).map(([key, label]) => <label key={key}>{label}<input type="number" value={videoConfig[key]} onChange={(event) => setVideoConfig({ ...videoConfig, [key]: Number(event.target.value) })} /></label>)}
           </div>
           <div className="param-row"><span>Euler</span><span>Simple</span><span>FP16</span><span>Tiled VAE</span></div>
@@ -394,6 +418,13 @@ function App() {
       <h3>模型文件</h3>{selected.files.map((file) => <div className="file-row" key={file.name}><div><b>{file.name}</b><small>{file.absolute}</small></div><span>{formatBytes(file.size)}</span></div>)}
       <h3>能力</h3><div className="tags">{selected.capabilities.map((item) => <span key={item}>{item}</span>)}</div>
     </aside></div>}
+    {playingJob && <div className="video-modal-backdrop" onClick={() => setPlayingJob(null)}>
+      <section className="video-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="video-modal-head"><div><span className="eyebrow">GENERATED OUTPUT</span><h2>{playingJob.title}</h2></div><button className="icon-btn" title="关闭播放器" onClick={() => setPlayingJob(null)}><X size={18} /></button></div>
+        <video src={`/api/jobs/${playingJob.id}/output`} controls autoPlay playsInline />
+        <div className="video-modal-meta"><div><b>{playingJob.output?.filename}</b><p>{playingJob.prompt}</p></div><a href={`/api/jobs/${playingJob.id}/output`} download><Download size={15} />下载视频</a></div>
+      </section>
+    </div>}
   </div>
 }
 

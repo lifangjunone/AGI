@@ -404,6 +404,35 @@ export class ProductionPipeline {
         projectPatch: { stage: "adapt", progress: 34 },
         message: "正文与梗概已进入改编引擎"
       });
+      const billableEnabled = this.config.production.billableGenerationEnabled === true;
+      const budgetOverrunAllowed = this.config.production.budgetOverrunAllowed === true;
+      const estimatedCost = this.config.production.estimatedEpisodeVideoCostCny || 0;
+      const overBudget = estimatedCost > this.config.production.dailyBudgetCny;
+      if (
+        this.config.mode === "live"
+        && (!billableEnabled || (overBudget && !budgetOverrunAllowed))
+      ) {
+        const reason = !billableEnabled
+          ? "真实生成未获计费授权；设置 ALLOW_BILLABLE_GENERATION=true 后重试"
+          : `单集预估 ¥${estimatedCost.toFixed(2)}，超过日预算 ¥${this.config.production.dailyBudgetCny.toFixed(2)}；如确认超额，设置 ALLOW_BUDGET_OVERRUN=true`;
+        await this.updateNode(project, "adapt", "paused", {
+          input: {
+            model: this.config.ark.planningModel || this.config.ark.textModel,
+            estimatedEpisodeVideoCostCny: estimatedCost,
+            dailyBudgetCny: this.config.production.dailyBudgetCny
+          },
+          error: reason,
+          projectPatch: {
+            status: "budget-gate",
+            stage: "adapt",
+            progress: 34,
+            completedAt: now(),
+            error: reason
+          },
+          message: "预算门禁在任何生成模型调用前暂停了任务"
+        });
+        return false;
+      }
       await this.updateNode(project, "adapt", "running", {
         input: {
           sourceCharacters: sourceText.length,
@@ -475,22 +504,6 @@ export class ProductionPipeline {
         message: "角色、武器与场景视觉资产已就绪"
       });
 
-      const billableEnabled = process.env.ALLOW_BILLABLE_GENERATION === "true";
-      if (this.config.mode === "live" && !billableEnabled) {
-        await this.updateNode(project, "render", "paused", {
-          input: { shotCount: episode.shots.length, maxConcurrency: this.config.production.maxVideoConcurrency },
-          error: "真实视频生成已停在预算门禁；设置 ALLOW_BILLABLE_GENERATION=true 后重启任务",
-          projectPatch: {
-            status: "budget-gate",
-            progress: 72,
-            completedAt: now(),
-            error: "真实视频生成已停在预算门禁；设置 ALLOW_BILLABLE_GENERATION=true 后重启任务"
-          },
-          message: "预算门禁阻止了批量付费调用"
-        });
-        return false;
-      }
-
       await this.updateNode(project, "render", "running", {
         input: {
           shotCount: episode.shots.length,
@@ -504,36 +517,32 @@ export class ProductionPipeline {
         retainSlot = true;
       } else {
         for (const shot of episode.shots) {
-          shot.status = "succeeded";
-          shot.progress = 100;
+          shot.status = "simulated";
+          shot.progress = 0;
         }
-        episode.status = "preview-ready";
-        episode.renderedSeconds = this.config.production.episodeMinutes * 60;
-        await this.updateNode(project, "render", "completed", {
+        episode.status = "demo-preview";
+        episode.renderedSeconds = 0;
+        await this.updateNode(project, "render", "paused", {
           output: {
             totalShots: episode.shots.length,
-            completedShots: episode.shots.length,
+            completedShots: 0,
+            simulatedShots: episode.shots.length,
             failedShots: 0,
             mode: "demo",
             shots: episode.shots.map(({ id: shotId, order, duration, status, progress, prompt, videoUrl }) => ({
               id: shotId, order, duration, status, progress, prompt, videoUrl
             }))
           },
-          projectPatch: { stage: "assemble", progress: 98, episodes: [episode] },
-          message: "全部演示镜头已生成"
-        });
-        await this.updateNode(project, "assemble", "running", {
-          input: { clipCount: episode.shots.length, targetDurationSeconds: this.config.production.episodeMinutes * 60 }
-        });
-        await this.updateNode(project, "assemble", "completed", {
-          output: {
-            episodeTitle: episode.title,
-            durationSeconds: episode.renderedSeconds,
-            status: episode.status,
-            videoUrl: episode.videoUrl || null
+          error: "演示模式只生成镜头规划，不调用 Seedance，也不会产出 MP4",
+          projectPatch: {
+            status: "demo-preview",
+            stage: "render",
+            progress: 72,
+            completedAt: now(),
+            episodes: [episode],
+            error: null
           },
-          projectPatch: { status: "completed", stage: "assemble", progress: 100, completedAt: now(), episodes: [episode] },
-          message: "演示生产链路已完成，切换 live 可提交真实镜头"
+          message: "演示预览已完成；未调用 Seedance，未生成视频文件"
         });
       }
     } catch (error) {

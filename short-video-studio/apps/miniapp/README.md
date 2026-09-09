@@ -24,4 +24,4 @@ src/
 └── assets/tabbar/     # 原生 TabBar SVG 图标
 ```
 
-项目模板使用 Taro 4.1.9，当前 `project.config.json` 仍使用模板 `touristappid`，接入用户小程序时需要替换为真实 AppID。
+项目使用 Taro 4.1.9、Webpack 5.91.0 与 React Refresh 0.14.x，开发者工具配置已绑定真实小程序 AppID `wxa087f03ad52dd2bf`。AppSecret 只通过生产服务器环境变量注入，不写入仓库。

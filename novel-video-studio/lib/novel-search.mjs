@@ -1,4 +1,5 @@
 import { loadSourceRegistry } from "./source-registry.mjs";
+import { findRecommendation } from "./recommendations.mjs";
 
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -304,7 +305,34 @@ const BUILTIN_CLASSICS = [
   ["Frankenstein", "Mary Shelley", "Victor Frankenstein creates life and confronts the consequences of abandoning his creation.", ["弗兰肯斯坦"], "https://www.gutenberg.org/ebooks/84"]
 ];
 
-function builtinClassic(title) {
+async function builtinClassic(title) {
+  const recommendation = await findRecommendation(title);
+  if (recommendation) {
+    return {
+      candidates: [{
+        id: `recommendation-${recommendation.id}`,
+        title: recommendation.title,
+        authors: recommendation.author,
+        source: recommendation.source,
+        sourceId: "public-domain-recommendations",
+        rights: "public-domain",
+        score: 100,
+        contentUrl: recommendation.contentUrl,
+        sourceUrl: recommendation.sourceUrl,
+        description: recommendation.summary
+      }],
+      run: {
+        id: "public-domain-recommendations",
+        provider: "公版热门推荐",
+        kind: "curated-catalog",
+        queryUrl: recommendation.sourceUrl,
+        status: "completed",
+        candidateCount: 1,
+        durationMs: 0,
+        error: null
+      }
+    };
+  }
   const classic = BUILTIN_CLASSICS.find(([name, , , aliases]) =>
     [name, ...aliases].some((candidate) => titleScore(title, candidate) >= 80)
   );
@@ -352,7 +380,7 @@ export async function searchNovel(title, options = {}) {
     )
   ]);
   const settled = [...baseResults, ...configuredResults];
-  const classic = builtinClassic(title);
+  const classic = await builtinClassic(title);
   if (classic.run) settled.push(classic);
   const candidates = settled.flatMap((result) => result.candidates)
     .sort((a, b) => b.score - a.score)

@@ -23,7 +23,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
 | [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台和 Taro 小程序 | Node.js、FFmpeg、PWA、Electron、Taro |
-| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验正版、公版、原创及图书馆来源发现作品，经版权门禁后生成 15 分钟分集，支持三端、历史任务与持久化排队 | Node.js、Electron、PWA、火山方舟、FFmpeg |
+| [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验来源发现作品，并提供 16 部作品级公版热门推荐，经版权门禁后生成 15 分钟分集，支持三端、历史任务与持久化排队 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
 
 ## 产品协作链路
@@ -107,6 +107,8 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 
 ## 新增功能说明
 
+- `novel-video-studio`：新增“推荐小说”目录，首批提供 16 部作品级公版核验的中英文热门经典，支持语言/关键词筛选、版权依据、原文来源和一键创建制片项目。
+- `novel-video-studio`：演示任务不再伪装为真实成片，统一显示“演示预览 / 0 个视频已生成”；真实模式在任何模型调用前校验计费授权和单集预算。
 - `english-immersion-studio`：新增沉浸式英语桌面训练产品，覆盖固定/推荐场景、CEFR 难度、语言分析、字幕模式、VRM/GLB 角色、MediaPipe 本地头像烘焙、Microsoft 神经语音和 MetaHuman 5.7 生产级数字人接入。
 - `english-immersion-studio`：补充 [MetaHuman 资产重建说明](english-immersion-studio/docs/METAHUMAN_ASSET_REBUILD.md)，明确公共仓库边界、私有备份、角色重建和视觉验收要求。
 - `avatar-generator-service`：新增 Apple Silicon 本地头像材质生成服务，基于 Hunyuan3D-Swift/MLX Paint 生成 GLB PBR 材质，并保留骨骼、权重和面部 Morph Targets。
@@ -130,7 +132,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `short-video-studio` 修复响应式 CSS 顺序问题，统一收口内容包布局覆盖规则。
 - `short-video-studio` 内容包页完成 UI 重构，参考 Runway/CapCut/Canva 的任务工作区模式，强化步骤层级、空状态和主操作。
 - `short-video-studio` 新增“智助乖乖”共享 Web 工作台 `/zhizhu/`，接入商品内容包、公众号文章助手、朋友圈与社群助手三类本地模板预览；当前支付按钮保持验证版禁用态，等待小程序虚拟支付和小程序源码接入。
-- `short-video-studio` 新增 `apps/miniapp/` Taro 小程序，和 Web、Mobile、Desktop 入口并列，包含工作台、生成记录、我的三 Tab，并通过 HTTPS 复用共享生成接口；当前保留微信虚拟支付接入位，模板 AppID 仍需替换为用户真实 AppID。
+- `short-video-studio` 新增 `apps/miniapp/` Taro 小程序，和 Web、Mobile、Desktop 入口并列，包含工作台、生成记录、我的三 Tab，并通过 HTTPS 复用共享生成接口；开发者工具配置已绑定真实 AppID `wxa087f03ad52dd2bf`，AppSecret 仅通过生产服务器受限环境注入。
 - `short-video-studio` 新增 `/video/admin/` 后台管理，使用账号密码和 HttpOnly 会话保护，可动态修改三类内容工具价格，并查看支付宝订单状态；生产账号通过服务器受限环境文件注入。
 - `short-video-studio` 支付回跳已补齐履约：支付宝异步通知或交易查询确认成功后，订单幂等标记为已履约，回跳页直接展示已购买的完整商品内容包。
 - `short-video-studio` 移动端支付改为支付宝手机网站支付接口，优先唤起支付宝 App；支付结果页增加异步状态轮询和返回商品页面入口，后台仍提供退出登录。
@@ -141,8 +143,14 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - 生产环境已配置火山方舟 Seedance 2.5（`doubao-seedance-2-5-260628`），真实 5 秒 16:9 任务已完成并返回可访问 MP4。
 - 已完成小程序订阅消息与公众号模板消息的服务端接入和任务完成触发；微信凭证、模板 ID 与用户授权仍需按平台要求配置，未配置时系统明确跳过通知。
 - `short-video-studio` 已开始打通“智助乖乖”公众号和小程序入口：共享配置接口统一下发价格与渠道链接，小程序提供公众号文章助手 WebView 入口，公众号菜单可按工具参数直达共享工作台。
+- `short-video-studio` 已完成小程序管理员扫码验证并更新 Taro `project.config.json` / `project.tt.json`；小程序订阅模板已配置，真实用户授权和完成消息发送仍需在真机小程序中验收。
+- `short-video-studio` 小程序构建依赖已对齐 Taro 4.1.9 要求的 Webpack 5.91.0，准备导入微信开发者工具上传新版本。
+- `short-video-studio` 小程序构建依赖进一步对齐 Taro 4.1.9 要求的 React Refresh 0.14.x，避免开发者工具构建时产生 peer 依赖冲突。
+- `short-video-studio` 修复微信开发者工具不支持 SVG TabBar 图标的问题，改为兼容真机的文字 TabBar 配置。
+- `short-video-studio` 已通过官方微信开发者工具上传小程序体验版 `1.0.4`；代码上传成功，尚未提交审核或正式发布。
+- 已尝试在微信公众平台提交体验版 `1.0.4` 审核；平台因小程序主体尚未完成微信认证而拦截，当前仍处于体验版状态。
 - `novel-video-studio`：新增“长卷制片厂”自动生产控制台及 Web、可安装手机 PWA、Electron 桌面 App 三端入口；默认从项目工作台创建、筛选和打开小说项目，进入具体项目后再管理来源、六节点、资产与分集。小说检索支持 360 国内全网、9 个可配置站点和逐源审计；商业作品支持导入已授权 TXT/Markdown 全文、内容指纹与预览，任务规划使用 `glm-5-2-260617`，视频生成使用 Seedance 2.5。
-- `model-operations-studio`：新增任务中心优先的跨平台本地 MaaS 控制面，支持持久化生成队列、ComfyUI WebSocket 实时阶段/采样进度、取消、失败重试、重启恢复和历史产物访问；Wan2.2-TI2V-5B FP16 与 Qwen3.5-9B Q4_K_M 已在 M5 Pro 上真实部署。
+- `model-operations-studio`：新增任务中心优先的跨平台本地 MaaS 控制面，支持自适应分页任务队列、ComfyUI WebSocket 实时阶段/采样进度、取消、失败重试和重启恢复；视频可选择 5/10/30/60 秒，长视频采用 5 秒分段续接与自动合并，产物直接在应用内播放。
 
 ## 远端仓库
 

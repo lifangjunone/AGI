@@ -6,6 +6,7 @@
 
 - 同时执行 360 国内全网、已配置小说站点、Project Gutenberg、Open Library、Google Books，以及可选 Brave Search；每次检索记录实际查询地址、状态、命中数、耗时与错误。
 - 默认配置 23 个已核验来源，覆盖中文网文、公版名著、海外原创和数字图书馆；每项记录免费模式、注册要求、下载格式、广告、版权边界和当前可用性。
+- 提供“推荐小说”目录，首批收录 16 部作品级公版核验的中英文热门经典；支持语言/关键词筛选、版权依据与原文跳转，并可一键创建制片项目。
 - 自动读取公版正文；商业作品可导入已获授权的 TXT/Markdown 全文，系统持久化原文件、SHA-256、字数和预览后自动继续流水线。
 - 只找到作品信息或普通网页时停在版权门禁，不绕过 WAF、登录、付费机制或抓取未授权正文。
 - 生成故事圣经、角色连续性 ID、武器道具、地点设定和第一集脚本。
@@ -22,7 +23,7 @@
 - 小说检索完成后进入来源确认门禁，可按作品名、作者、年份、语言、来源、匹配度和版权状态核对版本；确认前不会处理正文。
 - 固定六节点均可点击查看结构化输入、完整产物摘要、起止时间和错误，历史任务同样支持回看。
 
-默认是 `demo` 模式：可以完整体验界面和流水线，不会产生模型费用。演示成片状态是流程模拟，不包含真实 MP4。
+默认是 `demo` 模式：可以体验来源、剧本、资产和镜头规划，不会调用生成模型，也不会产生 MP4。界面会明确显示“演示预览 / 0 个视频已生成”，不会再把模拟镜头标记为真实完成。
 
 ## 启动
 
@@ -78,19 +79,25 @@ ARK_IMAGE_MODEL=your-seedream-model-id
 ARK_VIDEO_MODEL=doubao-seedance-2-5-260628
 PRODUCTION_MODE=live
 ALLOW_BILLABLE_GENERATION=false
+ALLOW_BUDGET_OVERRUN=false
 MAX_PROJECT_CONCURRENCY=2
 MAX_VIDEO_CONCURRENCY=4
+VIDEO_COST_PER_SECOND_CNY=1.512
 ```
 
 任务规划默认调用方舟 Chat Completions 的 `glm-5-2-260617`；视频镜头默认调用 Seedance 2.5 的 `doubao-seedance-2-5-260628`。旧配置项 `ARK_TEXT_MODEL` 仍可作为规划模型的兼容回退。
 
-先保持 `ALLOW_BILLABLE_GENERATION=false` 验证文本和图片结果。确认账户额度、模型单价、并发配额及日预算后，再改为 `true` 提交批量视频任务。
+真实生产必须同时满足 API Key、`PRODUCTION_MODE=live` 和计费授权。预算门禁会在任何生成模型调用前执行；当单集预估费用超过 `DAILY_BUDGET_CNY` 时，即使已设置 `ALLOW_BILLABLE_GENERATION=true` 也不会提交任务，除非再次显式设置 `ALLOW_BUDGET_OVERRUN=true`。
+
+按 2026-09-09 方舟 720P 文生视频参考价约 `¥1.512/秒` 估算，15 分钟整集约 `¥1,360.80`，不包含文本、图片、失败重试等额外费用。实际费用以方舟账单为准。
 
 API Key 仅由 Node.js 服务读取，不会发送到浏览器。`.env.local` 已被 Git 忽略。聊天中出现过的 Key 应先在方舟控制台轮换，不建议继续使用。
 
 ## 小说来源配置
 
 默认来源位于 `config/novel-sources.json`。应用内“小说源库 → 配置来源”可维护来源名称、域名、启停状态和版权策略，修改结果保存在数据目录的 `search-sources.json`；也可通过 `NOVEL_SOURCE_CONFIG` 指定其他配置文件。设置 `DOMESTIC_WEB_SEARCH=false` 可关闭国内全网检索。完整核验表见 [`docs/FREE_NOVEL_SOURCES.md`](docs/FREE_NOVEL_SOURCES.md)。
+
+推荐目录位于 `config/public-domain-recommendations.json`。当前 16 部作品只采用中文维基文库、Project Gutenberg 和 Standard Ebooks 等受信任来源的作品级公版依据；“策展热度”基于长期文化影响、读者认知和影视改编价值，不代表任何平台的实时榜单。实际使用仍需遵守来源条款并确认作品在使用地区的公版状态。
 
 商业小说站点和未知网页只参与书名、作者、版本及原始地址核验，统一进入版权门禁，不会自动下载正文。公版来源也必须完成单书和使用地区核验。`求魔`已内置以下正版精确候选：
 
@@ -126,6 +133,7 @@ data/
 
 - `GET /api/status`：模式、模型、FFmpeg 与产能配置
 - `GET /api/projects`：项目列表
+- `GET /api/recommendations`：读取作品级公版热门推荐目录
 - `GET /api/search-sources`：读取已配置小说检索源
 - `PUT /api/search-sources`：校验并保存小说检索源
 - `POST /api/projects`：创建全自动任务，正文为 `{ "novelName": "西游记" }`
@@ -142,7 +150,7 @@ data/
 npm test
 ```
 
-当前自动化测试覆盖三端入口、PWA、桌面安全配置、输入约束、任务重试、清单下载和媒体 Range 请求。完整交互测试记录见 [`dogfood-output/report.md`](dogfood-output/report.md)。
+当前 31 项自动化测试覆盖三端入口、公版推荐目录与 API、演示/真实生成边界、预算门禁、PWA、桌面安全配置、输入约束、任务重试、清单下载和媒体 Range 请求。完整交互测试记录见 [`dogfood-output/report.md`](dogfood-output/report.md)。
 
 任务状态机和并发策略见 [`docs/TASK_CENTER.md`](docs/TASK_CENTER.md)。
 来源确认与节点数据契约见 [`docs/PIPELINE_NODES.md`](docs/PIPELINE_NODES.md)。

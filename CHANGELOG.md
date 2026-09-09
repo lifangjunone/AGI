@@ -4,6 +4,9 @@
 
 ### feat
 
+- Replaced Model Operations Studio's long scrolling task history with filter-aware pagination: five rows on standard desktop heights, eight on tall screens, global row numbering, compact page navigation, and a single-screen desktop layout without the redundant recent-output strip.
+- Added 5/10/30/60-second video generation presets to Model Operations Studio. Long durations use five-second continuation segments with last-frame handoff and FFmpeg assembly, while generated videos now play in an in-app modal backed by seekable HTTP Range responses.
+- Added a curated Novel Video Studio recommendation catalog with 16 work-level verified public-domain Chinese and English classics, language/search filters, rights evidence, original-source links, and one-click project creation.
 - Rebuilt the Model Operations Studio home screen around generation work: persisted text/video jobs, live ComfyUI workflow and sampling progress, queue filtering, elapsed time, cancellation, retry, restart recovery, recent output discovery, and direct artifact access now replace the previous host-metrics-first dashboard.
 - Expanded `novel-video-studio` to 23 verified sources across Chinese web fiction, public-domain classics, overseas originals, and digital libraries; each source now records its official URL, free mode, registration, Web/download support, advertising, copyright boundary, automation policy, and 2026 availability.
 - Added exact licensed-platform `求魔` candidates for Qidian (`2070910`) and QQ Reading, removed Hetushu after it failed the authorized-source review, and blocked `cn-qidianzww.com.cn`, `hetushu.com`, and `www.hetushu.com` from being re-added through configuration.
@@ -47,6 +50,10 @@
 
 ### verify
 
+- Verified the preflight budget gate prevents every Ark model call when billing is not authorized; Novel Video Studio now passes 31 automated tests.
+- Verified pagination across 18 persisted tasks: page two renders rows 06-10, status filtering resets to page one, and 1120×720 plus 2048×1022 layouts keep the task controls and node status visible without desktop page scrolling.
+- Verified an 81-frame five-second output at 5.063 seconds, a two-segment ten-second output at exactly 10.000 seconds, application-level video playback with a ready media element, and `206 Partial Content` seeking support.
+- Verified the recommendation catalog and API with 30 passing Novel Video Studio tests; desktop and emulated 390×844 layouts expose all 16 works without horizontal overflow, including the complete three-action card controls and seven-destination mobile navigation.
 - Verified the task center against real Wan2.2 runs: live progress advanced through prompt parsing, model loading, `3/20` sampling, tiled VAE decode and completion; a running task cancelled cleanly with an empty downstream ComfyUI queue, and a failed task retried to a valid WebM output.
 - Rechecked 23 accepted official source domains on 2026-09-09, including redirects and bot protection; the source registry, rejection rules, fallback candidates, rescan endpoint, and platform APIs pass all 28 Novel Video Studio tests.
 - Retried the formerly failed `求魔` project and verified two official exact candidates plus 26 source-level traces; source-registry persistence, upstream-block fallback, desktop/mobile trace views, and WCAG checks pass.
@@ -73,6 +80,13 @@
 
 ### fix
 
+- Fixed Novel Video Studio demo projects falsely reporting 30 completed videos and a completed assembly despite having no remote task IDs or MP4. Demo runs now stop as explicit previews with zero generated videos, while live runs enforce billing authorization and the estimated episode budget before any model call.
+- Aligned the mini-program build dependency with Taro 4.1.9 by upgrading Webpack from 5.78.0 to 5.91.0.
+- Aligned React Refresh with Taro 4.1.9 by upgrading it from 0.11.x to 0.14.x.
+- Fixed the mini-program TabBar build by removing unsupported SVG icon paths; the native TabBar now uses the supported text-only configuration.
+- Uploaded mini-program experience version `1.0.4` successfully through the official WeChat DevTools; review and production release remain separate steps.
+- Attempted to submit experience version `1.0.4` for review; WeChat blocked submission because the mini-program account has not completed主体 verification.
+- Updated the Taro mini-program developer-tool configurations from `touristappid` to the verified production AppID `wxa087f03ad52dd2bf`; no AppSecret was added to the repository.
 - Added a production-safe fallback for Alipay mobile checkout: when `alipay.trade.wap.pay` is not authorized (`insufficient-isv-permissions`), mobile orders use the working page-payment flow instead of sending customers to an Alipay error page.
 - Switched mobile checkout to Alipay `alipay.trade.wap.pay` with `QUICK_WAP_WAP_PAY`, added return-page status polling and a clear return-to-product action; desktop checkout remains on `alipay.trade.page.pay`.
 - Added idempotent paid-order fulfillment: Alipay return handling and async notifications now mark successful orders as fulfilled, and the payment return page directly renders the purchased content pack.
