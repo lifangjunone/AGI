@@ -4,6 +4,7 @@
 
 ### fix
 
+- Rebuilt `short-video-studio/apps/miniapp/dist/` after a temporary WeChat DevTools editor buffer was accidentally written into `dist/project.config.json`; the generated file was revalidated as valid JSON with project `zhizhu-guagua` and AppID `wxa087f03ad52dd2bf`. No corrupted config was retained.
 - Read the official WeChat mini-program rejection guidance for version `1.0.4`. The generation failure was reproducible with a four-character selling-point value (`1231`): the server correctly requires at least eight characters, while the mini-program only checked for two. The mini-program now applies the same minimum length before sending the request and shows the actionable validation message.
 - Recorded the second rejection cause: the submitted package was identified as providing AI Q&A, face-swap video, and AI drawing deep-synthesis services, which are not available to the current individual主体. The current source does not expose those tools; the next submission must use the rebuilt `dist/` package and must not reuse the old package.
 
