@@ -34,7 +34,10 @@ Markdown 不是直接粘到公众号编辑器里，而是作为结构化写作�
 - 引用使用浅色背景和左侧强调线，不把整篇文章做成密集卡片。
 - 列表只承载可执行步骤，避免为了“炫”堆叠装饰。
 - 正文至少插入 3 张与内容相关的图片，分别承担场景、解释和行动清单的视觉分段作用，避免连续文字造成阅读疲劳。
+- 正文图片必须是 3 张不同图片；渲染器和发布器同时校验总数与去重后的数量。
 - 文章结尾只保留一个低压力 CTA，先交付内容，再介绍工具。
+- 首篇 CTA 必须同时提供产品目录和直接体验入口：
+  `https://lifeyoume.icu/products` 与 `https://lifeyoume.icu/video/`。
 
 ## 参考
 
@@ -48,6 +51,6 @@ Markdown 不是直接粘到公众号编辑器里，而是作为结构化写作�
 - 原稿：`content/official-account/*.md`
 - 渲染器：`lib/official-account-markdown.mjs`
 - 首篇样稿：`content/official-account/001-normal-product-7-videos.md`
-- 首篇头图：`public/official-covers/001-normal-product-7-videos.png`
+- 首篇头图：`public/official-covers/001-normal-product-7-videos-hero.png`
 - 发布器：`scripts/official-account-publisher.mjs`
 - 发布默认关闭，必须通过预览验收后显式开启。

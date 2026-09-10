@@ -2063,6 +2063,139 @@ th {
     min-height: 430px;
   }
 
+  .admin-table-wrap {
+    overflow-x: hidden;
+  }
+
+  .admin-table {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    display: block;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .admin-table thead {
+    display: none;
+  }
+
+  .admin-table tbody {
+    width: 100%;
+    display: block;
+  }
+
+  .admin-table tr {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .admin-table tr[hidden] {
+    display: none !important;
+  }
+
+  .admin-table td {
+    height: auto;
+    min-width: 0;
+    display: block;
+    box-sizing: border-box;
+    border-bottom: 0;
+  }
+
+  [data-admin-table="products"] .admin-table tr {
+    min-height: 76px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 70px 76px;
+    grid-template-areas:
+      "product category action"
+      "product policy action";
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+  }
+
+  [data-admin-table="products"] .admin-table td:nth-child(1) {
+    grid-area: product;
+    padding: 12px 8px 12px 12px;
+  }
+
+  [data-admin-table="products"] .admin-table td:nth-child(2) {
+    grid-area: category;
+    align-self: end;
+    padding: 10px 4px 2px;
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  [data-admin-table="products"] .admin-table td:nth-child(3) {
+    grid-area: policy;
+    align-self: start;
+    padding: 2px 4px 10px;
+  }
+
+  [data-admin-table="products"] .admin-table td:nth-child(4) {
+    grid-area: action;
+    padding: 0 10px 0 4px;
+  }
+
+  [data-admin-table="products"] .admin-status {
+    gap: 5px;
+    font-size: 9px;
+  }
+
+  [data-admin-table="products"] .table-button {
+    width: 66px;
+    padding: 0 6px;
+  }
+
+  [data-admin-table="users"] .admin-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  [data-admin-table="users"] .admin-table td {
+    padding: 0;
+  }
+
+  [data-admin-table="users"] .admin-table td:nth-child(3) {
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  [data-admin-table="users"] .admin-actions {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    padding-top: 8px;
+    border-top: 1px solid #e0e1dc;
+  }
+
+  [data-admin-table="users"] .password-reset-form {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  [data-admin-table="users"] .password-reset-form input {
+    width: min(150px, 38vw);
+  }
+
+  [data-admin-table="audit"] .admin-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  [data-admin-table="audit"] .admin-table td {
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .auth-copy h1 {
     font-size: 39px;
   }

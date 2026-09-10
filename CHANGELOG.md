@@ -4,6 +4,10 @@
 
 ### feat
 
+- Rebuilt the LifeYouMe management backend as a fixed-viewport control plane with
+  dedicated overview, account, product-policy, and audit views. Long tables now
+  use scoped search, pagination, internal scrolling, and mobile record layouts
+  instead of stacking every module into one continuously scrolling page.
 - Added `https://lifeyoume.icu/admin/` as the LifeYouMe control-plane management backend. Operators can enable or disable end-user accounts, reset passwords with immediate session/token revocation, inspect recent management actions, and dynamically turn unified login on or off for each registered product.
 - Replaced fixed Nginx SSO gates with database-backed product access policies. When login is disabled, a product homepage opens directly; when enabled, anonymous users are redirected to `auth.lifeyoume.icu`. Policy changes take effect immediately without reloading Nginx.
 - Added LifeYouMe unified end-user identity to `lifeyoume-platform`: email registration/login, PBKDF2 password hashing, SQLite users, revocable cross-subdomain HttpOnly sessions, account/logout pages, authenticated user resolution, CSRF protection, login throttling, trusted-return validation, and product-scoped device authorization for Electron, Tauri, PWA, mini-program, and native clients.
@@ -14,6 +18,9 @@
 
 ### verify
 
+- Verified the redesigned backend at 1120x720 and 390x844: the document remains
+  viewport-bound, product policy shows seven records per page, and mobile users
+  can see policy state and its action without horizontal scrolling.
 - Verified the management backend and unified identity with 16 platform tests, including account enable/disable behavior, password replacement, session revocation, policy persistence, audit recording, protected admin controls, and truthful product-detail links.
 - Verified the production policy path by changing `privacy-vault` from login-required to anonymous access and back: the public response changed from `302` to `200` and returned to `302` immediately, without an Nginx reload. FRAME/60, audit entry, public reports, and payment callbacks retained their expected behavior.
 - Verified unified identity with a temporary production account: registration issued the shared session, `/api/v1/me` resolved the same stable user, and the session opened `/vault/`, `/video/`, and `audit.lifeyoume.icu`; the test user and cascaded sessions were removed afterward.
@@ -38,6 +45,8 @@
 - Added a Playwright-based WeChat official-account publisher for twice-daily structured article generation at 08:30 and 17:30, cover upload, persistent login, publish logging, slot-level deduplication, and macOS launchd scheduling. The first login or platform risk confirmation remains an explicit one-time prerequisite.
 - Added Markdown-first official-account authoring with a WeChat-compatible styled HTML renderer, a structured first article, a 900x383 cover asset, and a default-disabled publish gate for preview-before-publish review.
 - Added a hard three-image minimum for every official-account article, with scene, explanation, and actionable-list visuals included in the first Markdown article; publishing now fails closed when the requirement is not met.
+- Fixed the first official-account article to include the LifeYouMe product directory and direct content-pack entry, and added unique-image validation so repeated body images block publishing.
+- Upgraded the first official-account cover to a high-quality three-panel editorial visual with a result-led headline and deployed the asset to production.
 - Added master-password rotation to the Personal Privacy Vault lock screen and unlocked toolbar. The user must verify the current password before the vault is re-encrypted with a new random salt and derived AES key; no password is written to source or configuration.
 - Promoted Novel Video Studio to production-first behavior: fresh installs enter formal production with explicit credential and budget gates, while non-billable planning is available only through an intentional `PRODUCTION_MODE=planning` setting.
 - Added `personal-privacy-vault` (“隐匣”), a serverless personal privacy archive with six record categories, custom masked fields, favorites, in-memory search, five-minute automatic locking, and encrypted `.pvault` backup/restore. The master password is never persisted; PBKDF2-SHA-256 derives an AES-256-GCM key and the complete vault payload is encrypted before IndexedDB storage.

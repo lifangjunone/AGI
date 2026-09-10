@@ -155,6 +155,12 @@ class PlatformTests(unittest.TestCase):
         self.assertIn('action="/admin/users/status"', document)
         self.assertIn('action="/admin/users/password"', document)
         self.assertIn('action="/admin/products/login-policy"', document)
+        self.assertIn('class="admin-app" data-admin-app', document)
+        self.assertIn('data-admin-view="overview"', document)
+        self.assertIn('data-admin-view="products" hidden', document)
+        self.assertIn('data-admin-table="products" data-page-size="7"', document)
+        self.assertIn('data-admin-search="products"', document)
+        self.assertNotIn('class="site-header"', document)
         self.assertIn("privacy-vault", document)
         self.assertNotIn("not used by this render", document)
 

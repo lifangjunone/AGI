@@ -13,6 +13,9 @@ test("renders the first official-account Markdown article as styled WeChat HTML"
   });
   assert.equal(article.title, "我把一个普通商品拆成7条视频，第3条最容易带来咨询");
   assert.equal(article.imageCount, 3);
+  assert.equal(article.uniqueImageCount, 3);
+  assert.match(article.html, /https:\/\/lifeyoume\.icu\/products/);
+  assert.match(article.html, /https:\/\/lifeyoume\.icu\/video\//);
   assert.match(article.html, /<h2/);
   assert.match(article.html, /<ol/);
   assert.match(article.html, /<img/);

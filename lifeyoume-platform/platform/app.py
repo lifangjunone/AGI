@@ -246,11 +246,11 @@ def page(
 <meta name="description" content="LifeYouMe 产品展厅：把 AI 变成真正可使用的个人工具与生产系统。">
 <meta name="theme-color" content="#111411">
 <title>{esc(title)} · LifeYouMe</title>
-<link rel="stylesheet" href="/assets/portal.css?v=3">
+<link rel="stylesheet" href="/assets/portal.css?v=4">
 </head><body class="{body_class}">
 {header}
 {content}
-{'<script src="/assets/portal.js?v=3" defer></script>' if portal else ''}
+{'<script src="/assets/portal.js?v=4" defer></script>' if portal else ''}
 </body></html>"""
     return document.encode("utf-8")
 

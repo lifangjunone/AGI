@@ -41,6 +41,8 @@ FRAME/60 是一个本地优先的 AI 短视频生成工作台，并新增面向 
 - 新增公众号自动发布器：使用 Playwright 持久化登录态，每天北京时间 08:30、17:30 各生成并发布一篇结构化文章，自动填写编辑器和上传封面；首次运行需完成一次微信登录/扫码，运行说明见 [`docs/OFFICIAL-ACCOUNT-AUTOPUBLISH.md`](docs/OFFICIAL-ACCOUNT-AUTOPUBLISH.md)。
 - 公众号文章现在以 Markdown 源文件维护，通过主题渲染器转换为微信兼容 HTML；首篇样稿位于 [`content/official-account/001-normal-product-7-videos.md`](content/official-account/001-normal-product-7-videos.md)，包含留白、章节标题、重点引用、列表和统一品牌色。发布器默认关闭，先预览再显式开启。
 - 公众号正文设置硬门槛：每篇至少 3 张与文章内容相关的图片，图片不足时自动发布器拒绝继续。
+- 正文图片还必须去重；文章结尾同时提供产品目录 `https://lifeyoume.icu/products` 和直接体验入口 `https://lifeyoume.icu/video/`。
+- 首篇封面升级为三联场景编辑型视觉，包含结果型标题、真实拍摄画面和“先解决问题，再介绍商品”点击钩子。
 
 ## 启动
 

@@ -2,7 +2,7 @@
 title: 我把一个普通商品拆成7条视频，第3条最容易带来咨询
 digest: 没有大预算、没有专业团队，也可以先用一个商品做出一周内容。关键不是每天硬想选题，而是把同一个问题讲清楚。
 author: 智助乖乖
-cover: public/official-covers/001-normal-product-7-videos.png
+cover: public/official-covers/001-normal-product-7-videos-hero.png
 ---
 
 > 内容不是把商品夸得更大，而是让用户更快判断：这是不是我现在需要的东西。
@@ -13,7 +13,7 @@ cover: public/official-covers/001-normal-product-7-videos.png
 
 **不再从产品开始，而是从用户每天遇到的麻烦开始。**
 
-![把商品放进真实拍摄场景](public/official-covers/001-scene-wide.jpg)
+![把商品放进真实拍摄场景](https://lifeyoume.icu/video/official-covers/001-scene-wide.jpg)
 
 ## 01 · 先把一个商品拆成 7 个问题
 
@@ -39,7 +39,7 @@ cover: public/official-covers/001-normal-product-7-videos.png
 
 镜头里要有动作和变化，不要只拍商品旋转。
 
-![拍摄时先观察用户动作](public/official-covers/001-screen-closeup.jpg)
+![拍摄时先观察用户动作](https://lifeyoume.icu/video/official-covers/001-screen-closeup.jpg)
 
 ## 04 · 第 3 条：回答客户最常问的一句话
 
@@ -62,6 +62,16 @@ cover: public/official-covers/001-normal-product-7-videos.png
 
 > 先让用户看见自己的问题，再让他看见你的解决方法。商品只需要在最后出现。
 
-![把一周内容拆成可执行清单](public/official-covers/001-action-detail.jpg)
+![把一周内容拆成可执行清单](https://lifeyoume.icu/video/official-covers/001-action-detail.jpg)
 
-如果你也想把一个商品拆成一周内容，可以进入“智助乖乖”小程序，免费生成一份内容预览。
+## 07 · 从内容到工具，下一步怎么做
+
+如果你想继续看我们正在做的产品，可以先看
+[LifeYouMe 产品目录](https://lifeyoume.icu/products)：
+这里汇总了当前在线产品、AI 创作工具和真实可用状态。
+
+如果你现在就想把自己的商品拆成一周内容，直接进入
+[商品内容包生成器](https://lifeyoume.icu/video/)：
+输入商品、目标客户和卖点，先免费生成标题、口播和分镜预览，再决定是否解锁完整内容包。
+
+先解决一个具体问题，再给用户一个可以马上行动的入口。这样内容才不会变成硬广告。

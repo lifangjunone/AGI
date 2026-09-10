@@ -56,10 +56,14 @@ gateway behavior, and client integration.
 `https://lifeyoume.icu/admin/` uses the existing platform operator credential
 from `OPS_ADMIN_USER` and `OPS_ADMIN_PASSWORD_HASH`. It provides:
 
+- a fixed-viewport control-plane shell with separate overview, account, product
+  policy, and audit views instead of one continuously scrolling page;
 - end-user account enable and disable actions;
 - administrator password reset with immediate session and device-token revocation;
 - per-product login-required switches that take effect without an Nginx reload;
-- an audit trail for account and product-policy changes.
+- an audit trail for account and product-policy changes;
+- in-view search, pagination, and responsive mobile record layouts for long data
+  sets.
 
 Product access checks are performed by `GET /api/v1/access/check`. Nginx sends
 the registered product ID to this endpoint. A disabled login requirement allows

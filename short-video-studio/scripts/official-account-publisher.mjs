@@ -295,8 +295,15 @@ if (process.env.WECHAT_PUBLISHER_ENABLE !== "1") {
   }));
   process.exit(0);
 }
-if (!Number.isInteger(article.imageCount) || article.imageCount < 3) {
-  throw new Error(`公众号正文必须至少包含 3 张图片，当前为 ${article.imageCount || 0} 张`);
+if (
+  !Number.isInteger(article.imageCount) ||
+  article.imageCount < 3 ||
+  (Number.isInteger(article.uniqueImageCount) && article.uniqueImageCount < 3)
+) {
+  throw new Error(
+    `公众号正文必须包含至少 3 张不同图片，当前为 ${article.imageCount || 0} 张，` +
+    `不同图片 ${article.uniqueImageCount || 0} 张`
+  );
 }
 if (await alreadyPublished(dateKey, slot)) {
   console.log(JSON.stringify({ status: "skipped", dateKey, slot, reason: "already published for this slot" }));

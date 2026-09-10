@@ -32,6 +32,9 @@ renderer.list = function list(token) {
 renderer.strong = function strong(token) {
   return `<strong style="color:${colors.accent};font-weight:700;">${this.parser.parseInline(token.tokens)}</strong>`;
 };
+renderer.link = function link(token) {
+  return `<a href="${token.href}" style="color:${colors.accent};text-decoration:none;font-weight:700;">${this.parser.parseInline(token.tokens)}</a>`;
+};
 renderer.image = function image(token) {
   return `<img src="${token.href}" alt="${token.text || ""}" style="display:block;width:100%;max-width:900px;margin:26px auto;border-radius:14px;">`;
 };
@@ -71,10 +74,13 @@ export async function renderOfficialMarkdown(source, { rootDirectory = process.c
     );
   }
   const html = marked.parse(preparedMarkdown);
-  const imageCount = (html.match(/<img\b/g) || []).length;
+  const imageSources = [...html.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/g)].map((match) => match[1]);
+  const imageCount = imageSources.length;
+  const uniqueImageCount = new Set(imageSources).size;
   return {
     ...metadata,
     imageCount,
+    uniqueImageCount,
     html: `<section style="padding:24px 18px 34px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;color:${colors.ink};">${html}<p style="margin:30px 0 0;padding-top:18px;border-top:1px solid ${colors.line};color:${colors.muted};font-size:13px;line-height:1.7;">智助乖乖 · 把想法变成可发布的内容</p></section>`
   };
 }
