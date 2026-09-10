@@ -4,6 +4,8 @@
 
 ### fix
 
+- Fixed the approved mini-program's production-only `Generation failed` error: WeChat allowed `https://www.lifeyoume.icu`, while the client requested the bare domain and was blocked before reaching the server. All mini-program API, notification, channel, and WebView URLs now use the allowed `www` host; development version `1.0.7` was uploaded successfully.
+- Added a regression test that rejects bare-domain mini-program endpoints and verifies all network entrypoints use the configured WeChat request domain.
 - Updated the production price policy for the mini-program funnel: the product content pack is now `¥1.00` to satisfy the iOS virtual-payment minimum, while the article and social tools remain `¥0.10`. Verified both the config and generation APIs return the intended per-tool prices.
 - Confirmed the remaining WeChat virtual-payment blocker: the mini-program has no OfferID, published ProductID, or live AppKey, and the current account still needs the certified enterprise/individual-business qualification required by WeChat.
 - Fixed the mini-program dynamic-price mismatch: the homepage configuration returned the admin value `¥0.10`, while the generation endpoint and result card could still return/display the old `¥9.90` fallback. The production `assistant-tools.mjs` was synchronized to the actual `/lib/` path, the service was restarted, and both endpoints now return `0.10`.

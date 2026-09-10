@@ -1,10 +1,29 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 process.env.ADMIN_USERNAME = "test-admin";
 process.env.ADMIN_PASSWORD = "test-password";
 process.env.ALIPAY_MOBILE_WAP_ENABLED = "true";
 const { startServer } = await import("../server.mjs");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+test("uses the production mini-program request domain allowed by WeChat", async () => {
+  const files = [
+    "apps/miniapp/src/services/assistant.ts",
+    "apps/miniapp/src/services/notifications.ts",
+    "apps/miniapp/src/pages/webview/index.tsx",
+    "apps/miniapp/src/data/getAssistantConfig.ts"
+  ];
+
+  for (const file of files) {
+    const source = await readFile(path.join(ROOT, file), "utf8");
+    assert.doesNotMatch(source, /https:\/\/lifeyoume\.icu\/video/);
+    assert.match(source, /https:\/\/www\.lifeyoume\.icu\/video/);
+  }
+});
 
 test("serves the web, mobile, and desktop entrypoints", async (t) => {
   const instance = await startServer({ host: "127.0.0.1", port: 0, quiet: true });
