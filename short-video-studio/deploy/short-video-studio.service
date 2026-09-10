@@ -14,6 +14,7 @@ Environment=HOST=127.0.0.1
 Environment=FRAME60_PUBLIC_BASE_PATH=/video
 Environment=FRAME60_PUBLIC_ORIGIN=https://lifeyoume.icu/video
 EnvironmentFile=-/data/app/short-video-studio/.admin.env
+EnvironmentFile=-/data/app/short-video-studio/.env.local
 Environment=ALIPAY_ENV=production
 Environment=ALIPAY_APP_ID=2021006197631772
 Environment=ALIPAY_PRIVATE_KEY_FILE=/data/app/opportunity-factory/private/alipay-app-private-key.pem
@@ -22,7 +23,7 @@ Environment=ALIPAY_SELLER_ID=2088122111133366
 Environment=ALIPAY_GATEWAY=https://openapi.alipay.com/gateway.do
 Environment=ALIPAY_NOTIFY_URL=https://lifeyoume.icu/video/api/alipay/notify
 Environment=ALIPAY_MOBILE_WAP_ENABLED=true
-Environment=CONTENT_PACK_PRICE=9.90
+Environment=CONTENT_PACK_PRICE=1.00
 ExecStart=/opt/node20/bin/node /data/app/short-video-studio/server.mjs
 Restart=always
 RestartSec=5

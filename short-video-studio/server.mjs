@@ -17,6 +17,7 @@ import {
   generateAssistantTool
 } from "./lib/assistant-tools.mjs";
 import { createWechatNotifications } from "./lib/wechat-notifications.mjs";
+import { createWechatVirtualPay } from "./lib/wechat-virtual-pay.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIRECTORY = path.join(ROOT, "public");
@@ -68,6 +69,10 @@ const alipayWebPay = createAlipayWebPay({
   getPrice: () => adminStore.getPrices().product
 });
 const wechatNotifications = createWechatNotifications({ dataDirectory: DATA_DIRECTORY });
+const wechatVirtualPay = createWechatVirtualPay({
+  dataDirectory: DATA_DIRECTORY,
+  getPrice: (type) => adminStore.getPrices()[type] || adminStore.getPrices().product
+});
 const generationJobsDirectory = path.join(DATA_DIRECTORY, "generation-jobs");
 
 async function writeGenerationJob(job) {
@@ -291,6 +296,17 @@ async function readJson(request) {
   }
 }
 
+async function readBody(request, maxSize = 128 * 1024) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxSize) throw new Error("请求内容过大");
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 async function readForm(request) {
   const chunks = [];
   let size = 0;
@@ -399,6 +415,57 @@ export const server = createServer(async (request, response) => {
             social: `${base}/zhizhu/?from=official-account&tool=social`
           }
         }
+      });
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/wechat-pay/config") {
+      sendJson(response, 200, wechatVirtualPay.status());
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/wechat-pay/order") {
+      const input = await readJson(request);
+      try {
+        const payment = await wechatVirtualPay.createOrder({
+          code: readText(input.code, "微信登录凭证", { max: 512 }),
+          type: String(input.type || "product"),
+          input: input.input || {}
+        });
+        sendJson(response, 201, payment);
+      } catch (error) {
+        const status = error.code === "WECHAT_VIRTUAL_PAY_NOT_CONFIGURED" ? 503 : 400;
+        sendJson(response, status, { error: error.message || "微信支付下单失败" });
+      }
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/wechat-pay/notify") {
+      try {
+        const xml = await readBody(request);
+        await wechatVirtualPay.handleNotify(xml);
+        response.writeHead(200, { "Content-Type": "application/xml; charset=utf-8" });
+        response.end("<xml><ErrCode>0</ErrCode><ErrMsg><![CDATA[success]]></ErrMsg></xml>");
+      } catch (error) {
+        console.error("[WechatVirtualPay] notify failed", error);
+        response.writeHead(400, { "Content-Type": "application/xml; charset=utf-8" });
+        response.end(`<xml><ErrCode>1</ErrCode><ErrMsg><![CDATA[${escapeHtml(error.message || "notify failed")}]]></ErrMsg></xml>`);
+      }
+      return;
+    }
+
+    const wechatOrderMatch = /^\/api\/wechat-pay\/orders\/([A-Za-z0-9_-]+)$/.exec(url.pathname);
+    if (request.method === "GET" && wechatOrderMatch) {
+      const order = await wechatVirtualPay.getOrder(wechatOrderMatch[1]);
+      if (!order) {
+        sendJson(response, 404, { error: "微信支付订单不存在" });
+        return;
+      }
+      sendJson(response, 200, {
+        orderId: order.orderId,
+        status: order.status,
+        wxOrderId: order.wxOrderId || null,
+        deliveredAt: order.deliveredAt || null
       });
       return;
     }

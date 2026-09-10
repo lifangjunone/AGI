@@ -4,6 +4,9 @@
 
 ### fix
 
+- 修正微信虚拟支付发货回调解析：兼容官方 `WeChatPayInfo.MchOrderNo` 嵌套字段；支付参数增加必需的 `short_series_goods` 模式，并增加订单签名与回调回归测试。
+- 更新生产 systemd 模板：加载独立微信凭据文件，并将商品内容包默认价同步为 `¥1.00`。
+- Added the WeChat Mini Program virtual-payment direct-purchase flow for digital content: server-side code2Session, dual HMAC payment signing, `requestVirtualPayment`, idempotent delivery notification handling, and order status polling. Added production configuration placeholders and `docs/WECHAT-VIRTUAL-PAYMENT.md`; the flow remains disabled until WeChat supplies OfferID, live AppKey, ProductID, and delivery-notification configuration.
 - Fixed the approved mini-program's production-only `Generation failed` error: WeChat allowed `https://www.lifeyoume.icu`, while the client requested the bare domain and was blocked before reaching the server. All mini-program API, notification, channel, and WebView URLs now use the allowed `www` host; development version `1.0.7` was uploaded successfully.
 - Added a regression test that rejects bare-domain mini-program endpoints and verifies all network entrypoints use the configured WeChat request domain.
 - Updated the production price policy for the mini-program funnel: the product content pack is now `¥1.00` to satisfy the iOS virtual-payment minimum, while the article and social tools remain `¥0.10`. Verified both the config and generation APIs return the intended per-tool prices.

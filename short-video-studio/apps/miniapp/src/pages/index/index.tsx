@@ -1,14 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Input, Text, Textarea, View } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import { generateAssistant, getAssistantConfig } from '@/services/assistant';
+import { unlockWithWechatPayment } from '@/services/wechatPayment';
 import { AssistantInput, AssistantResult, AssistantType } from '@/types/assistant';
 import styles from './index.module.scss';
 
 const toolOptions: Array<{ type: AssistantType; index: string; title: string; caption: string; price: string }> = [
-  { type: 'product', index: '01', title: '商品内容包', caption: '标题 · 口播 · 分镜', price: '¥9.90' },
-  { type: 'article', index: '02', title: '公众号文章', caption: '标题 · 大纲 · 开头', price: '¥9.90' },
-  { type: 'social', index: '03', title: '朋友圈与社群', caption: '文案 · 公告 · 跟进', price: '¥4.90' }
+  { type: 'product', index: '01', title: '商品内容包', caption: '标题 · 口播 · 分镜', price: '¥1.00' },
+  { type: 'article', index: '02', title: '公众号文章', caption: '标题 · 大纲 · 开头', price: '¥0.10' },
+  { type: 'social', index: '03', title: '朋友圈与社群', caption: '文案 · 公告 · 跟进', price: '¥0.10' }
 ];
 
 const initialValues: Record<string, string> = {
@@ -43,17 +44,21 @@ const fields: Record<AssistantType, Array<{ key: keyof AssistantInput; label: st
   ]
 };
 
+function payloadForType(values: Record<string, string>, type: AssistantType): AssistantInput {
+  return { type, ...values } as AssistantInput;
+}
+
 const IndexPage: React.FC = () => {
   const [type, setType] = useState<AssistantType>('product');
   const [values, setValues] = useState<Record<string, string>>(initialValues);
   const [result, setResult] = useState<AssistantResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [prices, setPrices] = useState<Record<AssistantType, string>>({
-    product: '9.90',
-    article: '9.90',
-    social: '4.90'
+    product: '1.00',
+    article: '0.10',
+    social: '0.10'
   });
-  const definition = useMemo(() => toolOptions.find((item) => item.type === type) || toolOptions[0], [type]);
+  const [paying, setPaying] = useState(false);
 
   useEffect(() => {
     getAssistantConfig()
@@ -71,7 +76,7 @@ const IndexPage: React.FC = () => {
   };
 
   const submit = async () => {
-    const payload = { type, ...values } as AssistantInput;
+    const payload = payloadForType(values, type);
     const invalid = fields[type].find((field) => {
       const value = String(payload[field.key] || '').trim();
       return value.length < (field.minLength || 2);
@@ -97,6 +102,20 @@ const IndexPage: React.FC = () => {
       Taro.showToast({ title: error instanceof Error ? error.message : '生成失败', icon: 'none' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const unlock = async () => {
+    if (!result) return;
+    setPaying(true);
+    try {
+      await unlockWithWechatPayment(type, payloadForType(values, type));
+      Taro.showToast({ title: '支付成功，内容已解锁', icon: 'success' });
+    } catch (error) {
+      console.error('[HomePage] payment failed', error);
+      Taro.showToast({ title: error instanceof Error ? error.message : '微信支付失败', icon: 'none' });
+    } finally {
+      setPaying(false);
     }
   };
 
@@ -173,7 +192,7 @@ const IndexPage: React.FC = () => {
             ))}
             <View className={styles.unlockRow}>
               <View><Text className={styles.unlockLabel}>完整内容包</Text><Text className={styles.unlockPrice}>¥{prices[type] || result.price}</Text></View>
-              <Button className={styles.lockButton} onClick={() => Taro.showToast({ title: '微信虚拟支付接入中', icon: 'none' })}>支付解锁</Button>
+              <Button className={styles.lockButton} loading={paying} disabled={paying} onClick={unlock}>{paying ? '支付中' : '支付解锁'}</Button>
             </View>
           </View>
         ) : (

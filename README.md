@@ -4,6 +4,10 @@
 
 Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与投标应答审计”Pay Skill；旧网站保留用于历史数据，不再作为主要商业方向。
 
+微信虚拟支付当前已完成服务端签名、`short_series_goods` 道具直购、订单持久化和
+`WeChatPayInfo.MchOrderNo` 发货回调解析。真实收款仍需完成微信后台开通、ProductID
+发布、生产凭据配置和一笔小额真单验证，当前不宣称已完成真实收款闭环。
+
 当前生产状态：支付宝应用 `2021006197631772` 已上线，服务 `API_4BAB0CE91B3743BE` 已激活，卖家 ID 已配置，Pay Skill 在 `8788` 运行并由 `audit.lifeyoume.icu/api/pay-skills/` 暴露。已通过不付款的输入校验检查；真实付款和陌生用户收入仍待验证。
 
 ## 项目目录
@@ -69,6 +73,8 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 智助乖乖小程序当前生产价格为：商品内容包 `¥1.00`，公众号文章和朋友圈社群各 `¥0.10`；配置接口、生成接口和结果展示已统一读取后台价格。小程序虚拟支付仍需已认证企业/个体工商户主体、OfferID、ProductID 和现网 AppKey，当前尚未开通。
 
 正式版生成请求曾因微信仅放行 `https://www.lifeyoume.icu`、客户端却请求裸域名而被本地拦截。修复版 `1.0.7` 已统一使用已放行的 `www` 域名并上传开发版本，等待重新提交审核和发布。
+
+小程序数字内容包已接入微信虚拟支付道具直购代码：服务端下单签名、`requestVirtualPayment`、发货通知幂等记录和订单状态查询均已实现。生产仍需在微信后台填写 `OfferID`、现网 `AppKey`、已发布 `ProductID` 并配置发货推送地址，详见 [`WECHAT-VIRTUAL-PAYMENT.md`](short-video-studio/docs/WECHAT-VIRTUAL-PAYMENT.md)。
 
 ## 产品协作链路
 
@@ -173,7 +179,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `opportunity-factory`：修复支付宝 discovery 并发调用 `alipay-cli` 导致本地凭据状态竞争、间歇返回 `Not logged in` 的问题；签约、服务和应用查询现按串行顺序执行。
 - `opportunity-factory`：支付宝生产签约已提交，AI 按量付费服务 `API_4BAB0CE91B3743BE` 已为 `ACTIVE`，应用 `2021006197631772` 已为 `ON_LINE`；生产服务器已部署 Pay Skill 代码、代理路由及受限密钥文件，当前仅等待卖家 ID 注入后启动真实生产支付服务。
 - `short-video-studio`：FRAME/60 扩展为同目录三端产品，包含可安装移动 PWA、Electron 桌面应用和 Web 工作台；三端共享模型代理、作品库及 FFmpeg 精确时长与画幅交付。
-- `short-video-studio`：新增“商品短视频内容包”C 端验证入口，桌面 App、手机端 PWA、Web 共用生成与订单服务；支持免费标题预览、本地模板生成 10 个标题/3 条口播/3 套分镜/7 天计划；完整包定价 ¥9.90，已接入支付宝网页收款下单、回跳、异步通知、查询、退款、退款查询和关单代码，并部署到 `https://lifeyoume.icu/video/`。生产签约和真实付款仍待验证。
+- `short-video-studio`：新增“商品短视频内容包”C 端验证入口，桌面 App、手机端 PWA、Web 共用生成与订单服务；支持免费标题预览、本地模板生成 10 个标题/3 条口播/3 套分镜/7 天计划；当前商品内容包定价 ¥1.00，已接入支付宝网页收款下单、回跳、异步通知、查询、退款、退款查询和关单代码，并部署到 `https://lifeyoume.icu/video/`。微信虚拟支付代码已完成但现网后端尚未部署，真实支付仍待配置和验证。
 - `short-video-studio` 内容包页已修正滚动体验：撤销会截断表单的卡片内部滚动，改为完整页面滚动并压缩首屏标题与表单间距，确保输入和预览内容完整可访问。
 - `short-video-studio` 页面继续支持滚轮和触摸滚动，同时隐藏原生滚动条视觉。
 - `short-video-studio` 为样式资源增加版本参数，避免公网缓存导致旧滚动条样式残留。

@@ -25,7 +25,12 @@ export async function subscribeGenerationNotification(jobId: string): Promise<'s
   if (process.env.TARO_ENV !== 'weapp') return 'not-configured';
   const config = await getNotificationConfig();
   if (!config.miniapp.enabled || !config.miniapp.templateId) return 'not-configured';
-  const result = await Taro.requestSubscribeMessage({ tmplIds: [config.miniapp.templateId] });
+  const requestSubscribeMessage = Taro.requestSubscribeMessage as unknown as (
+    options: { tmplIds: string[] }
+  ) => Promise<{ [key: string]: string }>;
+  const result = await requestSubscribeMessage({
+    tmplIds: [config.miniapp.templateId]
+  });
   if (result[config.miniapp.templateId] !== 'accept') return 'rejected';
   const login = await Taro.login();
   const response = await Taro.request({
