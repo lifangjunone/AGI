@@ -2,8 +2,22 @@
 
 ## 2026-09-10
 
+### fix
+
+- Read the official WeChat mini-program rejection guidance for version `1.0.4`. The generation failure was reproducible with a four-character selling-point value (`1231`): the server correctly requires at least eight characters, while the mini-program only checked for two. The mini-program now applies the same minimum length before sending the request and shows the actionable validation message.
+- Recorded the second rejection cause: the submitted package was identified as providing AI Q&A, face-swap video, and AI drawing deep-synthesis services, which are not available to the current individual主体. The current source does not expose those tools; the next submission must use the rebuilt `dist/` package and must not reuse the old package.
+
+### verify
+
+- `npm run build:weapp` completed successfully in `short-video-studio/apps/miniapp`.
+- Production API verification confirmed the original failure response: `400 {"error":"核心卖点至少需要 8 个字符"}`.
+- Production API verification with valid input returned `201` and a content preview successfully.
+
 ### feat
 
+- Uploaded `short-video-studio/public/official-covers/001-normal-product-7-videos-hero.png` to the official WeChat account material library through the official media API; verified the returned WeChat image URL with HTTP 200. The article remains unsaved and unpublished.
+- Created the first official-account article as a WeChat draft with the uploaded cover bound through `thumb_media_id`; verified the draft title, author, body, and cover reference through `draft/get`. No publication was triggered.
+- Attempted to publish the verified draft through both the official API and the logged-in web console. The API returned `48001 api unauthorized`; the web console showed “未授权使用切换账号能力”. The article remains an unpublished draft.
 - Rebuilt the LifeYouMe management backend as a fixed-viewport control plane with
   dedicated overview, account, product-policy, and audit views. Long tables now
   use scoped search, pagination, internal scrolling, and mobile record layouts

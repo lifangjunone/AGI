@@ -25,16 +25,16 @@ const initialValues: Record<string, string> = {
   voice: ''
 };
 
-const fields: Record<AssistantType, Array<{ key: keyof AssistantInput; label: string; placeholder: string; multiline?: boolean }>> = {
+const fields: Record<AssistantType, Array<{ key: keyof AssistantInput; label: string; placeholder: string; multiline?: boolean; minLength?: number }>> = {
   product: [
     { key: 'productName', label: '商品或服务名称', placeholder: '例如：轻薄防晒外套' },
     { key: 'audience', label: '目标客户', placeholder: '例如：通勤、怕晒又不想闷热的女生' },
-    { key: 'sellingPoints', label: '核心卖点', placeholder: '材质、功能、体验、价格优势，至少 8 个字', multiline: true }
+    { key: 'sellingPoints', label: '核心卖点', placeholder: '材质、功能、体验、价格优势，至少 8 个字', multiline: true, minLength: 8 }
   ],
   article: [
     { key: 'topic', label: '文章主题', placeholder: '例如：新手如何挑选防晒衣' },
     { key: 'reader', label: '目标读者', placeholder: '例如：第一次购买的上班族' },
-    { key: 'angle', label: '文章角度', placeholder: '例如：从真实通勤场景出发，讲清楚选择方法', multiline: true }
+    { key: 'angle', label: '文章角度', placeholder: '例如：从真实通勤场景出发，讲清楚选择方法', multiline: true, minLength: 4 }
   ],
   social: [
     { key: 'scene', label: '使用场景', placeholder: '例如：新品上架、老客回访、社群活动' },
@@ -72,9 +72,16 @@ const IndexPage: React.FC = () => {
 
   const submit = async () => {
     const payload = { type, ...values } as AssistantInput;
-    const missing = fields[type].find((field) => String(payload[field.key] || '').trim().length < 2);
-    if (missing) {
-      Taro.showToast({ title: `请填写${missing.label}`, icon: 'none' });
+    const invalid = fields[type].find((field) => {
+      const value = String(payload[field.key] || '').trim();
+      return value.length < (field.minLength || 2);
+    });
+    if (invalid) {
+      const minLength = invalid.minLength || 2;
+      Taro.showToast({
+        title: invalid.minLength ? `${invalid.label}至少需要${minLength}个字符` : `请填写${invalid.label}`,
+        icon: 'none'
+      });
       return;
     }
     setLoading(true);
