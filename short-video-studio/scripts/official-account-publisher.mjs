@@ -265,6 +265,15 @@ async function fillArticle(page, article, { previewOnly = false } = {}) {
   await page.waitForTimeout(1000);
   const confirm = page.getByText("确认发表", { exact: true });
   if (await confirm.count()) await confirm.click();
+  await page.waitForTimeout(1800);
+  const failureText = page.locator("text=/失败|错误|不能为空|请先/");
+  if (await failureText.count()) {
+    throw new Error(`微信编辑器未确认发布：${await failureText.first().innerText()}`);
+  }
+  const publishedText = page.locator("text=/发布成功|已发表|提交成功|群发成功/");
+  if (!(await publishedText.count())) {
+    throw new Error("未检测到微信发布成功提示，未记录为已发布");
+  }
 }
 
 const dateKey = beijingDateKey();

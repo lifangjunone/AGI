@@ -215,7 +215,14 @@ def esc(value: Any) -> str:
     return html.escape(str(value), quote=True)
 
 
-def page(title: str, body: str, *, ops: bool = False, portal: bool = False) -> bytes:
+def page(
+    title: str,
+    body: str,
+    *,
+    ops: bool = False,
+    portal: bool = False,
+    admin: bool = False,
+) -> bytes:
     if ops:
         nav = (
             '<a href="https://lifeyoume.icu/products">产品目录</a>'
@@ -228,20 +235,22 @@ def page(title: str, body: str, *, ops: bool = False, portal: bool = False) -> b
             '<a href="https://auth.lifeyoume.icu/account">账号</a>'
         )
     content = body if portal else f"<main>{body}</main>"
+    body_class = "admin-page" if admin else ("portal-page" if portal else "service-page")
+    header = "" if admin else f"""<header class="site-header">
+  <a class="brand" href="/"><span class="brand-glyph">LY</span><span>LifeYouMe<small>PRODUCT STUDIO</small></span></a>
+  <nav aria-label="主导航">{nav}</nav>
+</header>"""
     document = f"""<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="LifeYouMe 产品展厅：把 AI 变成真正可使用的个人工具与生产系统。">
 <meta name="theme-color" content="#111411">
 <title>{esc(title)} · LifeYouMe</title>
-<link rel="stylesheet" href="/assets/portal.css?v=2">
-</head><body class="{'portal-page' if portal else 'service-page'}">
-<header class="site-header">
-  <a class="brand" href="/"><span class="brand-glyph">LY</span><span>LifeYouMe<small>PRODUCT STUDIO</small></span></a>
-  <nav aria-label="主导航">{nav}</nav>
-</header>
+<link rel="stylesheet" href="/assets/portal.css?v=3">
+</head><body class="{body_class}">
+{header}
 {content}
-{'<script src="/assets/portal.js?v=2" defer></script>' if portal else ''}
+{'<script src="/assets/portal.js?v=3" defer></script>' if portal else ''}
 </body></html>"""
     return document.encode("utf-8")
 
@@ -494,7 +503,7 @@ def admin_dashboard(
         status_label = "已启用" if active else "已禁用"
         action_label = "禁用" if active else "启用"
         user_rows.append(
-            f"""<tr>
+            f"""<tr data-admin-row data-search="{esc(user["display_name"] + " " + user["email"])}">
 <td><strong>{esc(user["display_name"])}</strong><small>{esc(user["email"])}</small></td>
 <td><span class="admin-status {'active' if active else 'disabled'}"><i></i>{status_label}</span></td>
 <td>{esc(format_admin_time(user["last_login_at"]))}</td>
@@ -524,7 +533,7 @@ def admin_dashboard(
         required = AUTH_STORE.login_required(product.id)
         next_required = "false" if required else "true"
         policy_rows.append(
-            f"""<tr>
+            f"""<tr data-admin-row data-search="{esc(product.name + " " + product.id + " " + product.category)}">
 <td><strong>{esc(product.name)}</strong><small>{esc(product.id)}</small></td>
 <td>{esc(product.category)}</td>
 <td><span class="admin-status {'required' if required else 'optional'}"><i></i>
@@ -537,11 +546,12 @@ def admin_dashboard(
 </form></td></tr>"""
         )
 
+    audit_items = AUTH_STORE.recent_admin_audit()
     audit_rows = "".join(
-        f"""<tr><td>{esc(format_admin_time(item["created_at"]))}</td>
+        f"""<tr data-admin-row data-search="{esc(item["actor"] + " " + item["action"] + " " + item["target_id"])}"><td>{esc(format_admin_time(item["created_at"]))}</td>
 <td>{esc(item["actor"])}</td><td><code>{esc(item["action"])}</code></td>
 <td>{esc(item["target_id"])}</td></tr>"""
-        for item in AUTH_STORE.recent_admin_audit()
+        for item in audit_items
     )
     if not audit_rows:
         audit_rows = '<tr><td colspan="4" class="admin-empty">暂无管理操作</td></tr>'
@@ -552,44 +562,96 @@ def admin_dashboard(
         "product-policy": "产品登录策略已生效，无需重载服务。",
     }
     notice_text = notice_map.get(notice, "")
-    body = f"""<main class="admin-main">
-<section class="admin-heading">
-  <div><p class="eyebrow">LIFEYOUME CONTROL PLANE</p><h1>底座管理后台</h1>
-  <p>账号、访问策略与审计记录统一由 LifeYouMe Platform 管理。</p></div>
-  <form method="post" action="/admin/logout"><button class="button" type="submit">退出管理</button></form>
-</section>
-{f'<div class="admin-notice" role="status">{esc(notice_text)}</div>' if notice_text else ''}
-<section class="admin-metrics" aria-label="平台摘要">
-  <div><strong>{len(users)}</strong><span>注册账号</span></div>
-  <div><strong>{active_users}</strong><span>已启用账号</span></div>
-  <div><strong>{len(products)}</strong><span>已注册产品</span></div>
-  <div><strong>{sum(AUTH_STORE.login_required(item.id) for item in products)}</strong><span>启用登录</span></div>
-</section>
-<nav class="admin-tabs" aria-label="后台分区">
-  <a href="#users">账号管理</a><a href="#products">产品登录</a><a href="#audit">操作审计</a>
-</nav>
-<section class="admin-section" id="users">
-  <div class="admin-section-head"><div><p class="eyebrow">ACCOUNTS</p><h2>账号管理</h2></div>
-  <p>禁用或改密会立即撤销该账号全部会话。</p></div>
-  <div class="admin-table-wrap"><table class="admin-table">
-  <thead><tr><th>账号</th><th>状态</th><th>最近登录</th><th>操作</th></tr></thead>
-  <tbody>{''.join(user_rows)}</tbody></table></div>
-</section>
-<section class="admin-section" id="products">
-  <div class="admin-section-head"><div><p class="eyebrow">ACCESS POLICY</p><h2>子产品登录策略</h2></div>
-  <p>关闭后产品主入口直接打开；开启后先进入统一登录。</p></div>
-  <div class="admin-table-wrap"><table class="admin-table">
-  <thead><tr><th>产品</th><th>分类</th><th>当前策略</th><th>操作</th></tr></thead>
-  <tbody>{''.join(policy_rows)}</tbody></table></div>
-</section>
-<section class="admin-section" id="audit">
-  <div class="admin-section-head"><div><p class="eyebrow">AUDIT TRAIL</p><h2>最近管理操作</h2></div></div>
-  <div class="admin-table-wrap"><table class="admin-table">
-  <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>目标</th></tr></thead>
-  <tbody>{audit_rows}</tbody></table></div>
+    login_required_count = sum(
+        AUTH_STORE.login_required(item.id) for item in products
+    )
+    latest_actions = "".join(
+        f"""<li><span>{esc(format_admin_time(item["created_at"]))}</span>
+<strong>{esc(item["action"])}</strong><small>{esc(item["target_id"])}</small></li>"""
+        for item in audit_items[:5]
+    ) or "<li class=\"admin-empty\">暂无管理操作</li>"
+    body = f"""<main class="admin-app" data-admin-app>
+<aside class="admin-rail">
+  <a class="admin-brand" href="/admin/"><span>LY</span><strong>LifeYouMe<small>CONTROL PLANE</small></strong></a>
+  <div class="admin-rail-label">工作区</div>
+  <nav class="admin-nav" aria-label="后台分区">
+    <a href="#overview" data-admin-target="overview"><b>01</b><span>总览</span></a>
+    <a href="#users" data-admin-target="users"><b>02</b><span>账号管理</span><em>{len(users)}</em></a>
+    <a href="#products" data-admin-target="products"><b>03</b><span>产品登录</span><em>{len(products)}</em></a>
+    <a href="#audit" data-admin-target="audit"><b>04</b><span>操作审计</span></a>
+  </nav>
+  <div class="admin-rail-footer">
+    <div><span>当前管理员</span><strong>{esc(username)}</strong></div>
+    <form method="post" action="/admin/logout"><button type="submit">退出</button></form>
+  </div>
+</aside>
+<section class="admin-console">
+  <header class="admin-console-header">
+    <div><span>LIFEYOUME PLATFORM</span><h1 data-admin-title>平台总览</h1></div>
+    <a href="https://lifeyoume.icu/" target="_blank" rel="noopener">打开产品门户 ↗</a>
+  </header>
+  {f'<div class="admin-notice" role="status">{esc(notice_text)}</div>' if notice_text else ''}
+  <div class="admin-view-stack">
+    <section class="admin-view" data-admin-view="overview">
+      <div class="admin-metrics" aria-label="平台摘要">
+        <div><strong>{len(users):02d}</strong><span>注册账号</span><small>{active_users} 个正常使用</small></div>
+        <div><strong>{active_users:02d}</strong><span>已启用账号</span><small>{len(users) - active_users} 个已禁用</small></div>
+        <div><strong>{len(products):02d}</strong><span>注册产品</span><small>统一目录管理</small></div>
+        <div><strong>{login_required_count:02d}</strong><span>启用登录</span><small>{len(products) - login_required_count} 个免登录</small></div>
+      </div>
+      <div class="admin-overview-grid">
+        <section class="admin-overview-panel">
+          <div class="admin-panel-title"><span>访问策略</span><a href="#products" data-admin-target="products">管理策略</a></div>
+          <div class="policy-gauge"><strong>{login_required_count}/{len(products)}</strong><span>产品当前要求统一登录</span></div>
+          <progress class="policy-bar" value="{login_required_count}" max="{max(len(products), 1)}">{login_required_count}/{len(products)}</progress>
+          <p>策略由身份服务实时判断，修改后立即生效，无需重新部署。</p>
+        </section>
+        <section class="admin-overview-panel">
+          <div class="admin-panel-title"><span>最近操作</span><a href="#audit" data-admin-target="audit">查看全部</a></div>
+          <ol class="admin-activity">{latest_actions}</ol>
+        </section>
+      </div>
+    </section>
+    <section class="admin-view" data-admin-view="users" hidden>
+      <div class="admin-view-head">
+        <div><p class="eyebrow">ACCOUNTS</p><h2>账号管理</h2><p>禁用或改密会立即撤销该账号全部会话。</p></div>
+        <label class="admin-search"><span>搜索账号</span><input type="search" data-admin-search="users" placeholder="姓名或邮箱"></label>
+      </div>
+      <div class="admin-data-panel" data-admin-table="users" data-page-size="7">
+        <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>账号</th><th>状态</th><th>最近登录</th><th>操作</th></tr></thead>
+        <tbody>{''.join(user_rows)}</tbody></table></div>
+        <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
+      </div>
+    </section>
+    <section class="admin-view" data-admin-view="products" hidden>
+      <div class="admin-view-head">
+        <div><p class="eyebrow">ACCESS POLICY</p><h2>子产品登录策略</h2><p>关闭后直接进入产品首页，开启后进入统一登录。</p></div>
+        <label class="admin-search"><span>搜索产品</span><input type="search" data-admin-search="products" placeholder="名称、分类或 ID"></label>
+      </div>
+      <div class="admin-data-panel" data-admin-table="products" data-page-size="7">
+        <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>产品</th><th>分类</th><th>当前策略</th><th>操作</th></tr></thead>
+        <tbody>{''.join(policy_rows)}</tbody></table></div>
+        <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
+      </div>
+    </section>
+    <section class="admin-view" data-admin-view="audit" hidden>
+      <div class="admin-view-head">
+        <div><p class="eyebrow">AUDIT TRAIL</p><h2>操作审计</h2><p>账号和访问策略变更均保留可追踪记录。</p></div>
+        <label class="admin-search"><span>搜索记录</span><input type="search" data-admin-search="audit" placeholder="操作者、动作或目标"></label>
+      </div>
+      <div class="admin-data-panel" data-admin-table="audit" data-page-size="8">
+        <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>时间</th><th>操作者</th><th>动作</th><th>目标</th></tr></thead>
+        <tbody>{audit_rows}</tbody></table></div>
+        <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
+      </div>
+    </section>
+  </div>
 </section>
 </main>"""
-    return page("底座管理后台", body, portal=True)
+    return page("底座管理后台", body, portal=True, admin=True)
 
 
 def service_page(service: str) -> bytes:
