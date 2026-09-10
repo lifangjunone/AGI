@@ -5,7 +5,7 @@ export default function generateAssistant(input?: AssistantInput): AssistantResp
   const topic = input?.topic || '你的主题';
   const product = input?.productName || '你的商品';
   const label = type === 'article' ? '公众号文章助手' : type === 'social' ? '朋友圈与社群助手' : '商品内容包';
-  const price = type === 'social' ? '4.90' : '9.90';
+  const price = '0.10';
 
   return {
     result: {

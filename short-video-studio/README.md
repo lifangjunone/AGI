@@ -29,7 +29,7 @@ FRAME/60 是一个本地优先的 AI 短视频生成工作台，并新增面向 
 - 使用 FFmpeg 裁剪或循环原始视频，并按所选比例居中裁切，交付精确时长与画幅。
 - 提供生成进度、视频预览、下载和本地作品库。
 - 提供商品内容包 MVP：桌面 App、手机端 PWA 和 Web 三端共享商品、客群、卖点、平台和风格输入，生成 10 个标题、3 条口播、3 套分镜、标签和 7 天发布计划。
-- 内容包目前使用本地模板引擎生成预览，默认完整包价格为 `¥9.90`；支付宝网页收款代码已接入，后台可动态修改商品、文章和社群工具价格。
+- 内容包目前使用本地模板引擎生成预览，生产商品内容包价格为 `¥1.00`；支付宝网页收款代码已接入，后台可动态修改商品、文章和社群工具价格。
 - 支付宝手机网站支付已审核通过并在生产环境启用；移动端新订单优先唤起支付宝 App，回跳和异步履约链路保持不变。
 - API Key 仅在 Node.js 服务端读取，不发送到浏览器。
 - 视频生成已改为后台任务：接口返回任务号，生成过程持久化状态，前端显示进度并在重新打开页面时恢复轮询；生成任务不会因用户离开页面而取消。
@@ -58,7 +58,7 @@ cd /Users/bytedance/Desktop/agi/short-video-studio
 npm install
 ```
 
-微信渠道接入说明见 [`docs/WECHAT-CHANNEL-INTEGRATION.md`](docs/WECHAT-CHANNEL-INTEGRATION.md)：公众号菜单、文章和小程序统一进入共享内容工作台，价格由 `/api/assistant/config` 统一下发。
+微信渠道接入说明见 [`docs/WECHAT-CHANNEL-INTEGRATION.md`](docs/WECHAT-CHANNEL-INTEGRATION.md)：公众号菜单、文章和小程序统一进入共享内容工作台，价格由 `/api/assistant/config` 统一下发；小程序虚拟支付仍需完成微信侧资质与 OfferID/ProductID/AppKey 配置。
 
 Web 版：
 

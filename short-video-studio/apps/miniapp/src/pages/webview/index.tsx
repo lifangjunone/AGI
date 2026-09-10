@@ -3,7 +3,7 @@ import { View, WebView } from '@tarojs/components';
 import { useLoad } from '@tarojs/taro';
 import styles from './index.module.scss';
 
-const WEB_BASE = 'https://lifeyoume.icu/video/zhizhu/?from=miniapp';
+const WEB_BASE = 'https://www.lifeyoume.icu/video/zhizhu/?from=miniapp';
 
 const WebviewPage: React.FC = () => {
   const [source, setSource] = React.useState(`${WEB_BASE}&tool=article`);

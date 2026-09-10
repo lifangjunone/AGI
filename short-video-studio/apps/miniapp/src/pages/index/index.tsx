@@ -172,7 +172,7 @@ const IndexPage: React.FC = () => {
               <View className={styles.previewItem} key={item}><Text className={styles.itemNumber}>0{index + 1}</Text><Text className={styles.itemText}>{item}</Text></View>
             ))}
             <View className={styles.unlockRow}>
-              <View><Text className={styles.unlockLabel}>完整内容包</Text><Text className={styles.unlockPrice}>¥{result.price}</Text></View>
+              <View><Text className={styles.unlockLabel}>完整内容包</Text><Text className={styles.unlockPrice}>¥{prices[type] || result.price}</Text></View>
               <Button className={styles.lockButton} onClick={() => Taro.showToast({ title: '微信虚拟支付接入中', icon: 'none' })}>支付解锁</Button>
             </View>
           </View>

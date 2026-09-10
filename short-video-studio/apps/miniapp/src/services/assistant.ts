@@ -2,7 +2,7 @@ import Taro from '@tarojs/taro';
 import generateAssistantMock from '@/data/generateAssistant';
 import { AssistantConfig, AssistantInput, AssistantResponse } from '@/types/assistant';
 
-const API_BASE = 'https://lifeyoume.icu/video';
+const API_BASE = 'https://www.lifeyoume.icu/video';
 
 export async function generateAssistant(input: AssistantInput): Promise<AssistantResponse> {
   if (process.env.TARO_ENV !== 'weapp') {
@@ -25,7 +25,10 @@ export async function generateAssistant(input: AssistantInput): Promise<Assistan
     return response.data;
   } catch (error) {
     console.error('[Assistant] request error', error);
-    throw error;
+    const message = error instanceof Error
+      ? error.message
+      : String((error as { errMsg?: string })?.errMsg || '网络请求失败，请稍后重试');
+    throw new Error(message);
   }
 }
 
@@ -44,6 +47,9 @@ export async function getAssistantConfig(): Promise<AssistantConfig> {
     return response.data;
   } catch (error) {
     console.error('[Assistant] config request error', error);
-    throw error;
+    const message = error instanceof Error
+      ? error.message
+      : String((error as { errMsg?: string })?.errMsg || '配置读取失败，请稍后重试');
+    throw new Error(message);
   }
 }

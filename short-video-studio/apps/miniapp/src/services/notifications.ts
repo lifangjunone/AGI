@@ -1,6 +1,6 @@
 import Taro from '@tarojs/taro';
 
-const API_BASE = 'https://lifeyoume.icu/video';
+const API_BASE = 'https://www.lifeyoume.icu/video';
 
 export interface NotificationConfig {
   miniapp: { enabled: boolean; templateId: string | null };

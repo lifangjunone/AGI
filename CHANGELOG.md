@@ -4,12 +4,17 @@
 
 ### fix
 
+- Updated the production price policy for the mini-program funnel: the product content pack is now `¥1.00` to satisfy the iOS virtual-payment minimum, while the article and social tools remain `¥0.10`. Verified both the config and generation APIs return the intended per-tool prices.
+- Confirmed the remaining WeChat virtual-payment blocker: the mini-program has no OfferID, published ProductID, or live AppKey, and the current account still needs the certified enterprise/individual-business qualification required by WeChat.
+- Fixed the mini-program dynamic-price mismatch: the homepage configuration returned the admin value `¥0.10`, while the generation endpoint and result card could still return/display the old `¥9.90` fallback. The production `assistant-tools.mjs` was synchronized to the actual `/lib/` path, the service was restarted, and both endpoints now return `0.10`.
+- Updated the mini-program result card to render the current server configuration price and aligned local fallback data to `¥0.10` for all three tools.
 - Rebuilt `short-video-studio/apps/miniapp/dist/` after a temporary WeChat DevTools editor buffer was accidentally written into `dist/project.config.json`; the generated file was revalidated as valid JSON with project `zhizhu-guagua` and AppID `wxa087f03ad52dd2bf`. No corrupted config was retained.
 - Read the official WeChat mini-program rejection guidance for version `1.0.4`. The generation failure was reproducible with a four-character selling-point value (`1231`): the server correctly requires at least eight characters, while the mini-program only checked for two. The mini-program now applies the same minimum length before sending the request and shows the actionable validation message.
 - Recorded the second rejection cause: the submitted package was identified as providing AI Q&A, face-swap video, and AI drawing deep-synthesis services, which are not available to the current individual主体. The current source does not expose those tools; the next submission must use the rebuilt `dist/` package and must not reuse the old package.
 
 ### verify
 
+- Production verification: `/api/assistant/config` and `/api/assistant/generate` both return `0.10`; `npm test` passes all 13 tests; `npm run build:weapp` completes successfully.
 - `npm run build:weapp` completed successfully in `short-video-studio/apps/miniapp`.
 - Production API verification confirmed the original failure response: `400 {"error":"核心卖点至少需要 8 个字符"}`.
 - Production API verification with valid input returned `201` and a content preview successfully.
