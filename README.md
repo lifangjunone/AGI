@@ -74,7 +74,7 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 正式版生成请求曾因微信仅放行 `https://www.lifeyoume.icu`、客户端却请求裸域名而被本地拦截。修复版 `1.0.7` 已统一使用已放行的 `www` 域名并上传开发版本，等待重新提交审核和发布。
 
-小程序数字内容包已接入微信虚拟支付道具直购代码：服务端下单签名、`requestVirtualPayment`、发货通知幂等记录、订单状态查询和微信消息推送 GET Token 校验均已实现。微信后台已创建并发布 `zhizhu_content_pack`（¥1.00），消息推送配置已完成，公网配置接口已确认 `enabled=true`；下一步是真机发起一笔 ¥1.00 小额真单并核对发货回调，详见 [`WECHAT-VIRTUAL-PAYMENT.md`](short-video-studio/docs/WECHAT-VIRTUAL-PAYMENT.md)。
+小程序数字内容包已接入微信虚拟支付道具直购代码：服务端下单签名、`requestVirtualPayment`、发货通知幂等记录、订单状态查询和微信消息推送 GET Token 校验均已实现。微信后台已创建并发布 `zhizhu_content_pack`（¥1.00），消息推送配置已完成，公网配置接口已确认 `enabled=true`，最新支付代码已上传体验版 `1.0.8`；下一步是真机发起一笔 ¥1.00 小额真单并核对发货回调，详见 [`WECHAT-VIRTUAL-PAYMENT.md`](short-video-studio/docs/WECHAT-VIRTUAL-PAYMENT.md)。
 
 ## 产品协作链路
 
