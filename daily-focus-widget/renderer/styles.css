@@ -545,14 +545,16 @@ h2 {
   font-size: 10px;
 }
 
-.paper-picker {
+.paper-picker,
+.corner-picker {
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.paper-picker legend {
+.paper-picker legend,
+.corner-picker legend {
   margin-bottom: 9px;
   color: var(--muted);
   font-size: 11px;
@@ -609,8 +611,46 @@ h2 {
   outline-offset: 3px;
 }
 
+.corner-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.corner-option {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.48);
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.corner-option svg {
+  width: 15px;
+  height: 15px;
+}
+
+.corner-option.selected {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-soft);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+  font-weight: 700;
+}
+
+.corner-option:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
 .is-collapsed {
-  padding: 8px;
+  padding: 3px;
 }
 
 .is-collapsed .app-shell {
@@ -620,29 +660,30 @@ h2 {
 .is-collapsed .topbar {
   height: 100%;
   align-items: center;
-  padding: 12px 18px;
+  padding: 5px 8px 5px 10px;
 }
 
 .is-collapsed .date-block {
   display: flex;
   min-width: 0;
   align-items: baseline;
-  gap: 9px;
+  gap: 6px;
+  cursor: pointer;
 }
 
 .is-collapsed .collapsed-summary {
   display: inline-flex;
   align-items: center;
-  margin-left: 3px;
+  margin-left: 1px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 10px;
   white-space: nowrap;
 }
 
 .is-collapsed .collapsed-summary::before {
   width: 3px;
   height: 3px;
-  margin-right: 9px;
+  margin-right: 6px;
   border-radius: 50%;
   background: var(--green);
   content: "";
@@ -655,7 +696,7 @@ h2 {
 .is-collapsed h1 {
   overflow: hidden;
   font-family: "Avenir Next", "PingFang SC", sans-serif;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -672,6 +713,17 @@ h2 {
 
 .is-collapsed .window-actions {
   flex: none;
+  gap: 2px;
+}
+
+.is-collapsed .window-actions .icon-button {
+  width: 26px;
+  height: 26px;
+}
+
+.is-collapsed .window-actions svg {
+  width: 14px;
+  height: 14px;
 }
 
 dialog {

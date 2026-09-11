@@ -1,0 +1,31 @@
+@use '@/styles/variables.scss' as *;
+
+.page { min-height: 100vh; padding: 32rpx; background: $color-bg-page; }
+.heading { padding: 16rpx 0 32rpx; }
+.eyebrow { display: block; color: $color-primary-dark; font-size: 20rpx; letter-spacing: 2rpx; }
+.title { display: block; margin-top: 16rpx; color: $color-text-primary; font-size: 42rpx; font-weight: $font-weight-bold; }
+.subtitle { display: block; margin-top: 12rpx; color: $color-text-secondary; font-size: 24rpx; line-height: 1.6; }
+.photoCard, .resultCard, .tipCard { padding: 28rpx; border-radius: $radius-lg; background: $color-bg-card; box-shadow: $shadow-card; }
+.photoGrid { display: flex; flex-wrap: wrap; gap: 12rpx; }
+.photo, .emptyPhoto, .addPhoto { width: 196rpx; height: 196rpx; border-radius: $radius-md; }
+.photo { background: #e8efeb; }
+.emptyPhoto, .addPhoto { display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2rpx dashed $color-border; color: $color-primary-dark; font-size: 24rpx; }
+.addPhoto { width: 128rpx; height: 128rpx; border-style: solid; }
+.plus { font-size: 46rpx; line-height: 1; }
+.photoHint, .orderHint { margin-top: 12rpx; color: $color-text-tertiary; font-size: 21rpx; }
+.orderHint { display: block; }
+.sectionTitle { margin: 34rpx 4rpx 16rpx; color: $color-text-primary; font-size: 28rpx; font-weight: $font-weight-semibold; }
+.styleRow { display: flex; gap: 12rpx; }
+.styleItem { flex: 1; padding: 22rpx 8rpx; border: 2rpx solid $color-border; border-radius: $radius-md; background: $color-bg-card; color: $color-text-secondary; text-align: center; font-size: 23rpx; }
+.styleActive { border-color: $color-primary; background: #e7f4ed; color: $color-primary-dark; }
+.primaryButton, .copyButton { @include button-reset; width: 100%; height: $button-height-lg; margin-top: 30rpx; border-radius: $radius-button; background: $color-primary; color: #fff; font-size: 27rpx; font-weight: $font-weight-semibold; }
+.primaryButton:active, .copyButton:active { background: $color-primary-dark; transform: scale(.985); }
+.resultCard { margin-top: 28rpx; }
+.resultTop { display: flex; justify-content: space-between; align-items: center; }
+.resultTitle { color: $color-text-primary; font-size: 29rpx; font-weight: $font-weight-semibold; }
+.resultBadge { padding: 8rpx 12rpx; border-radius: $radius-xs; background: $color-accent-soft; color: #987b22; font-size: 20rpx; }
+.copy { display: block; margin-top: 24rpx; color: $color-text-primary; font-size: 29rpx; line-height: 1.7; }
+.copyButton { height: $button-height-md; margin-top: 24rpx; background: $color-text-primary; }
+.tipCard { display: flex; align-items: center; gap: 16rpx; margin-top: 28rpx; }
+.tipMark { color: $color-accent; font-size: 32rpx; }
+.tipText { color: $color-text-secondary; font-size: 23rpx; line-height: 1.5; }

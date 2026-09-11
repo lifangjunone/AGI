@@ -3,7 +3,9 @@ const state = {
   settings: {},
   filter: "active",
   editingTaskId: null,
-  collapsed: false
+  collapsed: false,
+  collapseTransitioning: false,
+  lastExpandedAt: 0
 };
 
 const elements = {
@@ -159,6 +161,7 @@ function applyDockPosition(dockPosition = "right") {
 
 function setCollapsedState(collapsed) {
   state.collapsed = collapsed;
+  if (!collapsed) state.lastExpandedAt = Date.now();
   document.body.classList.toggle("is-collapsed", collapsed);
   elements.collapseButton.setAttribute("aria-label", collapsed ? "展开便笺" : "折叠便笺");
   elements.collapseButton.title = collapsed ? "展开便笺" : "折叠便笺";
@@ -167,8 +170,14 @@ function setCollapsedState(collapsed) {
 }
 
 async function toggleCollapse() {
-  const collapsed = await window.dailyFocus.toggleCollapse();
-  setCollapsedState(collapsed);
+  if (state.collapseTransitioning) return;
+  state.collapseTransitioning = true;
+  try {
+    const collapsed = await window.dailyFocus.toggleCollapse();
+    setCollapsedState(collapsed);
+  } finally {
+    state.collapseTransitioning = false;
+  }
 }
 
 function setDateHeader() {
@@ -290,7 +299,7 @@ elements.titleToggle.addEventListener("click", () => {
   if (state.collapsed) toggleCollapse();
 });
 elements.titleToggle.addEventListener("dblclick", () => {
-  if (!state.collapsed) toggleCollapse();
+  if (!state.collapsed && Date.now() - state.lastExpandedAt > 450) toggleCollapse();
 });
 elements.settingsButton.addEventListener("click", () => elements.settingsDialog.showModal());
 elements.reminderSummary.addEventListener("click", () => elements.settingsDialog.showModal());

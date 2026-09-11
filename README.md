@@ -79,6 +79,12 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 ## 产品协作链路
 
+智助乖乖小程序已开始按“今日生活助手”布局：今日天气与出门提醒、心情、今日待办、照片写朋友圈、琐事拆解；完整商品内容包和视频生产继续由 Web/PWA/Electron 承载。
+
+当前双端架构已开始落地：Web/PWA 新增 `/life/` 生活助手入口，小程序通过共享 `lifeAssistant` 服务读取今日快照、同步待办和心情；后端统一提供 `/api/life/*` 数据契约，后续可替换真实天气、照片视觉识别和身份同步实现。
+
+2026-09-11 功能验收记录见 [`short-video-studio/docs/QA-20260911-LIFE-AND-ZHIZHU.md`](short-video-studio/docs/QA-20260911-LIFE-AND-ZHIZHU.md)。
+
 ```text
 Technology Intelligence
   ├─ 技术信号与需求匹配 ──> Opportunity Factory
@@ -161,7 +167,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 
 ## 新增功能说明
 
-- `daily-focus-widget`：新增 macOS 每日待办桌面小工具“今日小记”，支持回车快速添加、完成进度、定时与置顶、菜单栏常驻、`Command + Shift + Space` 全局呼出、`Esc` 隐藏、标题区双击折叠、五种便笺纸张颜色、开机启动及 11:00/15:00/19:00 节奏提醒；任务和外观设置仅写入本机 Application Support。
+- `daily-focus-widget`：新增 macOS 每日待办桌面小工具“今日小记”，支持回车快速添加、完成进度、定时与置顶、菜单栏常驻、`Command + Shift + Space` 全局呼出、`Esc` 隐藏、左上/右上边缘单行折叠、五种便笺纸张颜色、开机启动及 11:00/15:00/19:00 节奏提醒；任务和外观设置仅写入本机 Application Support。
 - `personal-privacy-vault`：新增本地优先个人隐私档案“隐匣”，主密码经 PBKDF2-SHA-256 310,000 次迭代派生 AES-256-GCM 密钥；标题、分类、字段与备注整体加密写入 IndexedDB，支持六类记录、私密字段遮蔽、常用标记、内存搜索、主密码轮换、5 分钟自动锁定及 `.pvault` 加密备份恢复，不连接业务服务器；已部署至 `https://lifeyoume.icu/vault/`。
 - `novel-video-studio`：新增“推荐小说”目录，首批提供 16 部作品级公版核验的中英文热门经典，支持语言/关键词筛选、版权依据、原文来源和一键创建制片项目。
 - `novel-video-studio`：重构推荐页为响应式影视选题书架，修复超宽屏信息稀疏、字号过小及第三方生成占位图直接暴露的问题。

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f8f5" />
+    <title>智助乖乖 · 今天</title>
+    <link rel="stylesheet" href="/life.css?v=20260911-life" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <a class="brand" href="/life/"><span class="mark">✦</span><span><b>智助乖乖</b><small>今天的生活助手</small></span></a>
+        <a class="content-link" href="/zhizhu/">内容工作台 ↗</a>
+      </header>
+      <section class="hero">
+        <div><span class="eyebrow">TODAY / 01</span><h1>今天，先把一件事做好。</h1><p>天气、待办和照片内容，集中在一个轻量工作台里。</p></div>
+        <time id="today-date"></time>
+      </section>
+      <section class="grid">
+        <article class="weather card"><div><span class="label">今日天气</span><h2 id="weather-title">读取中…</h2><p id="weather-advice"></p></div><span class="weather-icon">☂</span></article>
+        <article class="card mood-card"><div class="card-head"><h2>今天的状态</h2><span id="mood-status">选一个</span></div><div class="moods" id="moods"></div></article>
+        <article class="card tasks-card"><div class="card-head"><h2>今日待办</h2><span id="task-progress"></span></div><div id="tasks"></div><form id="task-form"><input id="task-input" placeholder="添加一件要做的事" maxlength="120" /><button>添加</button></form></article>
+        <article class="card photo-card"><span class="label">CONTENT / PHOTO</span><h2>照片写朋友圈</h2><p>选择照片、语气和图片顺序，先得到一版自然草稿。</p><a href="/zhizhu/?tool=social">打开内容工作台 ↗</a></article>
+        <article class="card chore-card"><span class="label">LIFE / UNSTUCK</span><h2>整理一件烦事</h2><p>把脑子里混成一团的事情拆成可以开始的下一步。</p><form id="chore-form"><input id="chore-input" placeholder="例如：周末要搬家" maxlength="200" /><button>拆开它</button></form><ol id="steps"></ol></article>
+      </section>
+    </main>
+    <div class="toast" id="toast"></div>
+    <script type="module" src="/life.js?v=20260911-life"></script>
+  </body>
+</html>

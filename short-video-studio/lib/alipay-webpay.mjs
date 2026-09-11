@@ -101,13 +101,13 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     return operation;
   }
 
-  async function createPending(input, origin) {
+  async function createPending(input, origin, priceOverride, subjectOverride) {
     const orderId = `FRAME60_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     const order = {
       orderId,
       status: "WAIT_BUYER_PAY",
-      amount: normalizeAmount(getPrice()),
-      subject: "商品短视频内容包",
+      amount: normalizeAmount(priceOverride ?? getPrice()),
+      subject: subjectOverride || "商品短视频内容包",
       input,
       createdAt: new Date().toISOString(),
       returnUrl: `${origin}/payment/return`,
@@ -120,14 +120,14 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     return order;
   }
 
-  async function buildPaymentForm({ input, origin, mobile = false }) {
+  async function buildPaymentForm({ input, origin, mobile = false, price, subject }) {
     const { config, sdk } = await sdkOrNull();
     if (!sdk) {
       const error = new Error("支付宝网页收款配置未完成，请配置 ALIPAY_APP_ID、ALIPAY_PRIVATE_KEY、ALIPAY_PUBLIC_KEY");
       error.code = "ALIPAY_CONFIG_MISSING";
       throw error;
     }
-    const order = await createPending(input, origin);
+    const order = await createPending(input, origin, price, subject);
     const notifyUrl = String(process.env.ALIPAY_NOTIFY_URL || "").trim();
     const useMobileWap = mobile && process.env.ALIPAY_MOBILE_WAP_ENABLED === "true";
     const request = {

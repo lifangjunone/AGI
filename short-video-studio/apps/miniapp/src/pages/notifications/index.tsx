@@ -9,7 +9,7 @@ const NotificationsPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useLoad((options) => {
-    setJobId(options?.jobId || '');
+    setJobId(options?.jobId || Taro.getStorageSync('zhizhu:last-job-id') || '');
   });
 
   const subscribe = async () => {
@@ -38,9 +38,10 @@ const NotificationsPage: React.FC = () => {
         <Text className={styles.eyebrow}>VIDEO NOTIFICATION</Text>
         <Text className={styles.title}>视频生成完成后通知我</Text>
         <Text className={styles.text}>允许一次订阅后，视频在后台生成完成时，小程序会通过服务通知提醒你，不需要一直停留在页面。</Text>
-        <Button className={styles.button} loading={loading} disabled={loading} onClick={subscribe}>
-          开启完成通知
+        <Button className={styles.button} loading={loading} disabled={loading || !jobId} onClick={subscribe}>
+          {jobId ? '开启完成通知' : '请从视频任务进入'}
         </Button>
+        {!jobId ? <Text className={styles.disabledHint}>当前没有可订阅的视频任务，请先生成一个视频任务。</Text> : null}
       </View>
     </View>
   );

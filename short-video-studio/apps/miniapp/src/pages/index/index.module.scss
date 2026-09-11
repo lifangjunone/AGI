@@ -1,58 +1,44 @@
 @use '@/styles/variables.scss' as *;
 
-.page { min-height: 100vh; padding: 32rpx; padding-bottom: 48rpx; background: linear-gradient(180deg, #f4f6f2 0%, #edf3ef 100%); }
-.hero { padding: 18rpx 0 20rpx; }
-.brandLine { display: flex; align-items: center; gap: 16rpx; }
-.logoMark { display: flex; align-items: end; gap: 4rpx; width: 42rpx; height: 38rpx; }
-.logoMark view { width: 9rpx; border-radius: 4rpx 4rpx 0 0; background: $color-accent; }
-.logoMark view:nth-child(1) { height: 20rpx; }
-.logoMark view:nth-child(2) { height: 34rpx; background: $color-primary; }
-.logoMark view:nth-child(3) { height: 26rpx; }
-.kicker { color: $color-primary-dark; font-size: 20rpx; letter-spacing: 2rpx; }
-.title { display: block; margin-top: 28rpx; color: $color-text-primary; font-size: 48rpx; font-weight: $font-weight-bold; line-height: 1.18; }
-.titleAccent { color: $color-primary; }
-.subtitle { display: block; max-width: 620rpx; margin-top: 20rpx; color: $color-text-secondary; font-size: 25rpx; line-height: 1.7; }
-.toolList { display: flex; flex-direction: column; gap: 12rpx; margin: 18rpx 0 32rpx; }
-.toolItem { display: flex; align-items: flex-start; min-height: 116rpx; padding: 24rpx; border: 2rpx solid $color-border; border-radius: $radius-md; background: $color-bg-card; transition: all $transition-base; }
-.toolItem:active { transform: scale(.99); opacity: .94; }
-.toolItemActive { border-color: $color-primary; background: #f1faf6; }
-.toolIndex { width: 48rpx; color: $color-primary; font-size: 22rpx; font-weight: $font-weight-bold; }
-.toolCopy { display: flex; flex: 1; flex-direction: column; gap: 8rpx; }
-.toolTitle { color: $color-text-primary; font-size: 28rpx; font-weight: $font-weight-semibold; }
-.toolCaption { color: $color-text-tertiary; font-size: 22rpx; }
-.toolPrice { color: $color-accent; font-size: 26rpx; font-weight: $font-weight-bold; }
-.sectionLabel { display: flex; justify-content: space-between; margin: 0 4rpx 16rpx; color: $color-text-tertiary; font-size: 21rpx; }
-.sectionLabel text:first-child { color: $color-primary-dark; font-weight: $font-weight-semibold; }
-.formCard, .resultCard { padding: 32rpx; border-radius: $radius-lg; background: $color-bg-card; box-shadow: $shadow-card; }
-.formTitle { display: block; margin-bottom: 28rpx; color: $color-text-primary; font-size: 34rpx; font-weight: $font-weight-semibold; }
-.field { display: flex; flex-direction: column; gap: 12rpx; margin-bottom: 22rpx; }
-.fieldLabel { color: $color-text-secondary; font-size: 23rpx; }
-.input, .textarea { width: 100%; padding: 0 20rpx; border: 2rpx solid $color-border; border-radius: $radius-sm; background: #fbfdfb; color: $color-text-primary; font-size: 25rpx; box-sizing: border-box; }
-.input { height: 76rpx; }
-.textarea { min-height: 150rpx; padding-top: 18rpx; }
-.optionRow { display: flex; gap: 16rpx; }
-.option { flex: 1; }
-.option .input { margin-top: 12rpx; }
-.primaryButton { @include button-reset; width: 100%; min-width: 0; height: $button-height-lg; margin-top: 30rpx; padding: 0 28rpx; border-radius: $radius-button; background: $color-primary; color: #fff; font-size: 28rpx; font-weight: $font-weight-semibold; }
+.page { min-height: 100vh; padding: 32rpx 32rpx 56rpx; background: linear-gradient(180deg, #f4f8f5 0%, #edf3ef 100%); }
+.header { display: flex; align-items: flex-start; justify-content: space-between; padding: 16rpx 0 32rpx; }
+.eyebrow { display: block; color: $color-primary-dark; font-size: 20rpx; letter-spacing: 2rpx; }
+.title { display: block; max-width: 520rpx; margin-top: 18rpx; color: $color-text-primary; font-size: 42rpx; font-weight: $font-weight-bold; line-height: 1.25; }
+.subtitle { display: block; margin-top: 12rpx; color: $color-text-secondary; font-size: 24rpx; }
+.dateBadge { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 88rpx; height: 88rpx; border-radius: 24rpx; background: $color-surface-dark; color: #fff; }
+.dateNumber { font-size: 34rpx; font-weight: $font-weight-bold; line-height: 1; }
+.dateLabel { margin-top: 8rpx; color: #bdd0c7; font-size: 20rpx; }
+.weatherCard { display: flex; align-items: center; justify-content: space-between; padding: 30rpx; border-radius: $radius-lg; background: $color-surface-dark; box-shadow: $shadow-card; }
+.cardKicker { display: block; color: #bdd0c7; font-size: 22rpx; }
+.weatherTitle { display: block; margin-top: 12rpx; color: #fff; font-size: 31rpx; font-weight: $font-weight-semibold; }
+.weatherTip { display: block; max-width: 520rpx; margin-top: 12rpx; color: #d8e6df; font-size: 22rpx; line-height: 1.5; }
+.weatherIcon { color: $color-accent; font-size: 62rpx; }
+.sectionHeading { display: flex; align-items: baseline; justify-content: space-between; margin: 34rpx 4rpx 16rpx; }
+.sectionTitle { color: $color-text-primary; font-size: 29rpx; font-weight: $font-weight-semibold; }
+.sectionHint, .sectionLink { color: $color-text-tertiary; font-size: 22rpx; }
+.sectionLink { color: $color-primary-dark; }
+.moodRow { display: flex; gap: 12rpx; }
+.moodItem { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; min-height: 92rpx; border: 2rpx solid $color-border; border-radius: $radius-md; background: $color-bg-card; color: $color-text-secondary; font-size: 22rpx; }
+.moodItem:active, .actionCard:active { transform: scale(.98); opacity: .9; }
+.moodActive { border-color: $color-primary; background: #e7f4ed; color: $color-primary-dark; }
+.moodDot { height: 34rpx; color: $color-accent; font-size: 28rpx; font-weight: $font-weight-bold; }
+.taskCard { padding: 12rpx 28rpx 24rpx; border-radius: $radius-lg; background: $color-bg-card; box-shadow: $shadow-card; }
+.taskRow { display: flex; align-items: center; min-height: 78rpx; border-bottom: 2rpx solid $color-divider; }
+.checkbox { display: flex; align-items: center; justify-content: center; width: 34rpx; height: 34rpx; margin-right: 18rpx; border: 2rpx solid $color-border; border-radius: $radius-round; color: #fff; font-size: 22rpx; }
+.checkboxDone { border-color: $color-primary; background: $color-primary; }
+.taskTitle { color: $color-text-primary; font-size: 25rpx; }
+.taskDone { color: $color-text-tertiary; text-decoration: line-through; }
+.progressLine { display: flex; align-items: center; gap: 16rpx; margin-top: 22rpx; }
+.progressTrack { flex: 1; height: 10rpx; overflow: hidden; border-radius: $radius-round; background: #e8efeb; }
+.progressValue { height: 100%; border-radius: $radius-round; background: $color-primary; }
+.progressText { color: $color-text-tertiary; font-size: 21rpx; }
+.actionGrid { display: flex; gap: 16rpx; }
+.actionCard { flex: 1; min-height: 190rpx; padding: 24rpx; border-radius: $radius-lg; box-shadow: $shadow-card; transition: all $transition-base; }
+.actionPhoto { background: #fff5d8; }
+.actionChore { background: #e5f3ef; }
+.actionIcon { display: block; color: $color-primary-dark; font-size: 36rpx; font-weight: $font-weight-bold; }
+.actionTitle { display: block; margin-top: 20rpx; color: $color-text-primary; font-size: 27rpx; font-weight: $font-weight-semibold; }
+.actionText { display: block; margin-top: 10rpx; color: $color-text-secondary; font-size: 21rpx; line-height: 1.5; }
+.primaryButton { @include button-reset; width: 100%; height: $button-height-lg; margin-top: 32rpx; border-radius: $radius-button; background: $color-primary; color: #fff; font-size: 27rpx; font-weight: $font-weight-semibold; }
 .primaryButton:active { background: $color-primary-dark; transform: scale(.985); }
-.primaryButton text:last-child { font-size: 34rpx; }
-.privacy { display: block; margin-top: 18rpx; color: $color-text-tertiary; text-align: center; font-size: 21rpx; }
-.resultCard { min-height: 340rpx; }
-.emptyState { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 320rpx; text-align: center; }
-.emptyIcon { display: flex; align-items: center; justify-content: center; width: 86rpx; height: 86rpx; margin-bottom: 24rpx; border: 2rpx solid #efdb92; border-radius: 24rpx; background: $color-accent-soft; color: $color-accent; font-size: 40rpx; }
-.emptyTitle { color: $color-text-primary; font-size: 30rpx; font-weight: $font-weight-semibold; }
-.emptyText { margin-top: 12rpx; color: $color-text-tertiary; font-size: 23rpx; }
-.emptyFlow { margin-top: 34rpx; color: $color-primary-dark; font-size: 21rpx; }
-.resultHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12rpx; }
-.resultTitle { flex: 1; color: $color-text-primary; font-size: 30rpx; font-weight: $font-weight-semibold; line-height: 1.4; }
-.resultBadge { padding: 8rpx 12rpx; border-radius: $radius-xs; background: #e5f5ed; color: $color-primary-dark; font-size: 20rpx; white-space: nowrap; }
-.resultSummary { display: block; margin: 18rpx 0 20rpx; color: $color-text-secondary; font-size: 24rpx; line-height: 1.6; }
-.previewItem { display: flex; align-items: center; min-height: 76rpx; margin-bottom: 12rpx; padding: 0 16rpx; border: 2rpx solid $color-divider; border-radius: $radius-sm; background: #fbfdfb; }
-.itemNumber { width: 46rpx; color: $color-accent; font-size: 21rpx; font-weight: $font-weight-bold; }
-.itemText { flex: 1; color: $color-text-primary; font-size: 23rpx; line-height: 1.45; }
-.unlockRow { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-top: 26rpx; padding-top: 24rpx; border-top: 2rpx solid $color-divider; }
-.unlockRow view { display: flex; flex-direction: column; gap: 5rpx; }
-.unlockLabel { color: $color-text-tertiary; font-size: 21rpx; }
-.unlockPrice { color: $color-accent; font-size: 30rpx; font-weight: $font-weight-bold; }
-.lockButton { @include button-reset; min-width: 190rpx; height: $button-height-md; padding: 0 24rpx; border-radius: $radius-button; background: $color-text-primary; color: #fff; font-size: 24rpx; }
-.lockButton:active { opacity: .85; }
+.primaryButton text:last-child { margin-left: 16rpx; font-size: 32rpx; }

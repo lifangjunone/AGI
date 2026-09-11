@@ -18,6 +18,7 @@ import {
 } from "./lib/assistant-tools.mjs";
 import { createWechatNotifications } from "./lib/wechat-notifications.mjs";
 import { createWechatVirtualPay } from "./lib/wechat-virtual-pay.mjs";
+import { createLifeAssistant } from "./lib/life-assistant.mjs";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIRECTORY = path.join(ROOT, "public");
@@ -73,6 +74,7 @@ const wechatVirtualPay = createWechatVirtualPay({
   dataDirectory: DATA_DIRECTORY,
   getPrice: (type) => adminStore.getPrices()[type] || adminStore.getPrices().product
 });
+const lifeAssistant = createLifeAssistant({ dataDirectory: DATA_DIRECTORY });
 const generationJobsDirectory = path.join(DATA_DIRECTORY, "generation-jobs");
 
 async function writeGenerationJob(job) {
@@ -427,6 +429,43 @@ export const server = createServer(async (request, response) => {
       return;
     }
 
+    if (request.method === "GET" && url.pathname === "/api/life/today") {
+      sendJson(response, 200, await lifeAssistant.today(request.headers["x-zhizhu-user-id"]));
+      return;
+    }
+
+    if (request.method === "PUT" && url.pathname === "/api/life/tasks") {
+      const input = await readJson(request);
+      sendJson(
+        response,
+        200,
+        { tasks: await lifeAssistant.saveTasks(request.headers["x-zhizhu-user-id"], input.tasks) }
+      );
+      return;
+    }
+
+    if (request.method === "PUT" && url.pathname === "/api/life/mood") {
+      const input = await readJson(request);
+      sendJson(
+        response,
+        200,
+        { mood: await lifeAssistant.saveMood(request.headers["x-zhizhu-user-id"], input.mood) }
+      );
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/life/photo-copy") {
+      const input = await readJson(request);
+      sendJson(response, 200, lifeAssistant.createPhotoCopy(input));
+      return;
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/life/chore") {
+      const input = await readJson(request);
+      sendJson(response, 200, lifeAssistant.splitChore(input.title));
+      return;
+    }
+
     if (request.method === "GET" && url.pathname === "/api/wechat-pay/config") {
       sendJson(response, 200, wechatVirtualPay.status());
       return;
@@ -639,7 +678,19 @@ export const server = createServer(async (request, response) => {
 
     if (request.method === "POST" && url.pathname === "/api/content-pack/checkout") {
       const input = await readJson(request);
-      const pack = makeContentPack(input);
+      const type = ["product", "article", "social"].includes(input.type) ? input.type : "product";
+      const tool = assistantToolConfig(type, adminStore.getPrices());
+      const packInput = type === "product"
+        ? input
+        : {
+          productName: input.topic || input.scene || tool.label,
+          audience: input.reader || input.offer || "内容创作者",
+          sellingPoints: input.angle || input.voice || "围绕真实场景，清晰表达价值并给出行动建议",
+          platform: type === "article" ? "公众号" : "朋友圈",
+          tone: input.voice || "自然真诚",
+          offer: input.offer || "欢迎了解"
+        };
+      const pack = makeContentPack(packInput);
       const payment = await alipayWebPay.buildPaymentForm({
         input: {
           productName: pack.product,
@@ -647,10 +698,13 @@ export const server = createServer(async (request, response) => {
           sellingPoints: pack.sellingPoints,
           platform: pack.platform,
           tone: pack.tone,
-          offer: pack.offer
+          offer: pack.offer,
+          type
         },
         origin: requestOrigin(request, url),
-        mobile: isMobileRequest(request)
+        mobile: isMobileRequest(request),
+        price: tool.price,
+        subject: tool.label
       });
       sendJson(response, 201, {
         orderId: payment.order.orderId,
@@ -819,11 +873,11 @@ export const server = createServer(async (request, response) => {
       }
       const appEntrypoints = new Set([
         "/", "/web", "/web/", "/mobile", "/mobile/", "/desktop", "/desktop/",
-        "/zhizhu", "/zhizhu/"
+        "/zhizhu", "/zhizhu/", "/life", "/life/"
         , "/admin", "/admin/"
       ]);
       const requestedPath = appEntrypoints.has(url.pathname)
-        ? (url.pathname.startsWith("/zhizhu") ? "zhizhu.html" : url.pathname.startsWith("/admin") ? "admin.html" : "index.html")
+        ? (url.pathname.startsWith("/zhizhu") ? "zhizhu.html" : url.pathname.startsWith("/life") ? "life.html" : url.pathname.startsWith("/admin") ? "admin.html" : "index.html")
         : url.pathname.slice(1);
       const filePath = path.resolve(PUBLIC_DIRECTORY, requestedPath);
       if (!filePath.startsWith(`${PUBLIC_DIRECTORY}${path.sep}`)) {

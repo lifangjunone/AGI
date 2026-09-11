@@ -4,15 +4,21 @@
 
 ### feat
 
+- `short-video-studio/apps/miniapp` 首页从单一内容工作台升级为“今日生活助手”入口，新增天气/出门提醒、心情、待办摘要和快捷操作。
+- 新增照片写朋友圈页面与本地优先图片选择、风格化文案模板、图片选择顺序提示和复制能力；新增今日待办/琐事拆解页面，支持本地保存和步骤生成。
+- 新增产品设计文档 [`short-video-studio/docs/PRODUCT-DESIGN-ZHIZHU-GUAGUA.md`](short-video-studio/docs/PRODUCT-DESIGN-ZHIZHU-GUAGUA.md)，包含 Mermaid 产品架构图、端侧分工、审核边界和验证指标。
+- 新增共享生活助手服务 `lib/life-assistant.mjs`、`/api/life/*` 数据契约和 Web/PWA `/life/` 入口；小程序 `lifeAssistant` 服务开始接入今日快照、待办和心情同步。
+- Aliyun 生产服务已部署并验证 `/video/life/`、`/video/api/life/today`、`/video/api/status` 均返回 HTTP 200；小程序重新构建并上传体验版 `1.0.9`，上传结果为成功。
+- 完成功能验收：Web 三类内容工具均生成成功；修复 `zhizhu.css` 和图标在 `/video/zhizhu/` 下的生产路径 404；记录小程序“我的”页面中 WebView 业务域名未配置、完成通知缺少 `jobId`、Web 支付按钮仍禁用三个剩余问题。详见 [`docs/QA-20260911-LIFE-AND-ZHIZHU.md`](short-video-studio/docs/QA-20260911-LIFE-AND-ZHIZHU.md)。
 - 新增 `daily-focus-widget` macOS 桌面小工具“今日小记”：提供回车快速添加、完成/编辑/删除、定时与置顶、今日进度、菜单栏常驻、全局快捷键呼出、快速隐藏、窗口置顶和开机启动；智能提醒在隐藏窗口后仍由主进程按到期时间及 11:00/15:00/19:00 节奏运行，任务只保存在本机。
-- `daily-focus-widget` 新增标题日期区双击折叠：窗口可在完整 `420×620` 待办视图与 `420×118` 状态条间切换，并保留日期和未完成数量；同时新增青绿、暖黄、雾粉、浅蓝、白色五种带纸张纹理的持久化配色。
+- `daily-focus-widget` 新增屏幕边缘便签条：窗口可在完整 `420×620` 待办视图与 `286×46` 单行状态条间切换，状态条按设置固定到当前显示器左上角或右上角，并保留日期和未完成数量；同时新增青绿、暖黄、雾粉、浅蓝、白色五种带纸张纹理的持久化配色。
 - `short-video-studio` 新增微信消息推送服务器 `GET` Token 校验，回调地址已通过微信后台验证；OfferID `1450645427`、ProductID `zhizhu_content_pack`、推送 Token 和现网 AppKey 已分别配置到服务器受限环境，不进入仓库或聊天。
 - 已通过微信公众平台后台创建并发布“商品内容包”虚拟支付道具，价格为 `¥1.00`；生产服务已部署并确认 `enabled=true`，待真机完成真实小额支付和发货回调验收。
 - 小程序最新支付代码已通过微信开发者工具上传体验版 `1.0.8`，当前可用开发者工具二维码进行真机体验。
 
 ### verify
 
-- `daily-focus-widget` 通过 5 项提醒与设置持久化测试、Electron 真实交互测试及展开/折叠视觉检查；添加、编辑、定时、置顶、完成、筛选、删除、纸张换色和双击折叠链路可用，页面无溢出或控制台错误，并成功生成未签名 macOS arm64 应用。
+- `daily-focus-widget` 通过 7 项提醒、设置持久化与窗口定位测试，以及 Electron 真实交互和展开/折叠视觉检查；左右上角停靠、单行展开、纸张换色及完整待办链路可用，页面无溢出或控制台错误，并成功生成未签名 macOS arm64 应用。
 
 ## 2026-09-10
 

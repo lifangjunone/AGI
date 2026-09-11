@@ -30,6 +30,10 @@ FRAME/60 是一个本地优先的 AI 短视频生成工作台，并新增面向 
 - 提供生成进度、视频预览、下载和本地作品库。
 - 提供商品内容包 MVP：桌面 App、手机端 PWA 和 Web 三端共享商品、客群、卖点、平台和风格输入，生成 10 个标题、3 条口播、3 套分镜、标签和 7 天发布计划。
 - 微信虚拟支付服务端和小程序端已接入 `short_series_goods` 道具直购，发货通知兼容官方 `WeChatPayInfo.MchOrderNo`。微信后台已开通虚拟支付并发布 `zhizhu_content_pack`（¥1.00），消息推送配置和现网 AppKey 已完成，支付代码已上传体验版 `1.0.8`，待真机进行小额真单。
+- 小程序产品矩阵新增“今日生活助手”首期功能：今日天气与出门提醒、心情记录、今日待办、照片写朋友圈、琐事拆解；相关产品设计与架构见 [`docs/PRODUCT-DESIGN-ZHIZHU-GUAGUA.md`](docs/PRODUCT-DESIGN-ZHIZHU-GUAGUA.md)。
+- 双端架构首期已落地：Web/PWA 入口 `/life/` 与小程序共享 `/api/life/today`、`/api/life/tasks`、`/api/life/mood`、`/api/life/photo-copy`、`/api/life/chore` 数据契约；当前使用本地模板源，后续替换数据源不改变端侧协议。
+- Aliyun 已部署共享生活助手服务并重启 `short-video-studio` systemd 服务；公网 `/video/life/`、`/video/api/life/today` 和 `/video/api/status` 均已验证 HTTP 200。小程序已用本轮新构建覆盖体验版 `1.0.9`，微信开发者工具显示“代码上传成功”。
+- 2026-09-11 验收结果见 [`docs/QA-20260911-LIFE-AND-ZHIZHU.md`](docs/QA-20260911-LIFE-AND-ZHIZHU.md)：Web 三类内容生成和静态资源已通过；小程序“我的”中的文章 WebView 仍需在微信后台配置业务域名，完成通知入口仍需从视频任务携带 `jobId`。
 - 内容包目前使用本地模板引擎生成预览，生产商品内容包价格为 `¥1.00`；支付宝网页收款代码已接入，后台可动态修改商品、文章和社群工具价格。
 - 微信小程序虚拟支付道具直购已完成代码接入：`/api/wechat-pay/order`、`/api/wechat-pay/notify` 和订单状态查询已实现；配置未完成前按钮会明确提示未开通。
 - 支付宝手机网站支付已审核通过并在生产环境启用；移动端新订单优先唤起支付宝 App，回跳和异步履约链路保持不变。

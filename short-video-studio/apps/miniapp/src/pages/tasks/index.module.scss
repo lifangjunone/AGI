@@ -1,0 +1,29 @@
+@use '@/styles/variables.scss' as *;
+
+.page { min-height: 100vh; padding: 32rpx; background: $color-bg-page; }
+.heading { padding: 16rpx 0 34rpx; }
+.eyebrow { display: block; color: $color-primary-dark; font-size: 20rpx; letter-spacing: 2rpx; }
+.title { display: block; margin-top: 16rpx; color: $color-text-primary; font-size: 42rpx; font-weight: $font-weight-bold; }
+.subtitle { display: block; margin-top: 12rpx; color: $color-text-secondary; font-size: 24rpx; line-height: 1.6; }
+.addRow { display: flex; gap: 12rpx; }
+.input { flex: 1; height: $button-height-md; padding: 0 24rpx; border: 2rpx solid $color-border; border-radius: $radius-button; background: $color-bg-card; color: $color-text-primary; font-size: 24rpx; box-sizing: border-box; }
+.addButton { @include button-reset; width: 128rpx; height: $button-height-md; border-radius: $radius-button; background: $color-primary; color: #fff; font-size: 23rpx; }
+.addButton:active, .primaryButton:active { background: $color-primary-dark; }
+.taskCard, .inputCard, .stepsCard, .tipCard { margin-top: 24rpx; padding: 28rpx; border-radius: $radius-lg; background: $color-bg-card; box-shadow: $shadow-card; }
+.taskRow { display: flex; align-items: center; min-height: 82rpx; border-bottom: 2rpx solid $color-divider; }
+.taskRow:last-child { border-bottom: 0; }
+.checkbox { display: flex; align-items: center; justify-content: center; width: 36rpx; height: 36rpx; margin-right: 18rpx; border: 2rpx solid $color-border; border-radius: $radius-round; color: #fff; font-size: 22rpx; }
+.checkboxDone { border-color: $color-primary; background: $color-primary; }
+.taskTitle { color: $color-text-primary; font-size: 26rpx; }
+.taskDone { color: $color-text-tertiary; text-decoration: line-through; }
+.tipCard { display: flex; align-items: center; gap: 14rpx; }
+.tipMark { color: $color-accent; font-size: 32rpx; font-weight: $font-weight-bold; }
+.tipText { color: $color-text-secondary; font-size: 23rpx; line-height: 1.5; }
+.fieldLabel { display: block; color: $color-text-primary; font-size: 28rpx; font-weight: $font-weight-semibold; }
+.textarea { width: 100%; min-height: 180rpx; margin-top: 18rpx; padding: 18rpx; border: 2rpx solid $color-border; border-radius: $radius-md; background: #fbfdfb; color: $color-text-primary; font-size: 25rpx; box-sizing: border-box; }
+.primaryButton { @include button-reset; width: 100%; height: $button-height-lg; margin-top: 24rpx; border-radius: $radius-button; background: $color-primary; color: #fff; font-size: 27rpx; font-weight: $font-weight-semibold; }
+.cardTitle { display: block; color: $color-text-primary; font-size: 29rpx; font-weight: $font-weight-semibold; }
+.stepRow { display: flex; gap: 16rpx; padding: 22rpx 0; border-bottom: 2rpx solid $color-divider; }
+.stepRow:last-child { border-bottom: 0; }
+.stepNumber { color: $color-accent; font-size: 22rpx; font-weight: $font-weight-bold; }
+.stepText { flex: 1; color: $color-text-secondary; font-size: 24rpx; line-height: 1.5; }

@@ -103,11 +103,16 @@ function showToast(message, error = false) {
 
 function renderResult(result) {
   state.result = result;
+  state.result.input = Object.fromEntries(new FormData($("#assistant-form")).entries());
   $("#result-empty").hidden = true;
   $("#result-content").hidden = false;
   $("#result-title").textContent = result.title;
   $("#result-summary").textContent = result.summary;
   $("#result-price").textContent = `¥${result.price}`;
+  const unlock = $("#unlock-button");
+  unlock.disabled = false;
+  unlock.querySelector("span").textContent = "支付解锁";
+  $("#payment-note").textContent = "支持支付宝网页支付，支付后自动确认订单。";
   $("#preview-list").innerHTML = result.items.map((item, index) => `
     <div class="preview-item"><span>0${index + 1}</span><strong>${item}</strong></div>
   `).join("");
@@ -149,8 +154,30 @@ document.querySelectorAll(".tool-tab").forEach((tab) => {
 });
 
 $("#assistant-form").addEventListener("submit", generate);
-$("#unlock-button").addEventListener("click", () => {
-  showToast("当前为 Web 验证版，支付接入将在小程序虚拟支付完成后开放");
+$("#unlock-button").addEventListener("click", async () => {
+  if (!state.result) return;
+  const button = $("#unlock-button");
+  button.disabled = true;
+  button.querySelector("span").textContent = "正在创建订单…";
+  try {
+    const response = await fetch(apiUrl("/api/content-pack/checkout"), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        type: state.tool,
+        ...state.result.input
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "支付订单创建失败");
+    document.open();
+    document.write(data.paymentHtml);
+    document.close();
+  } catch (error) {
+    button.disabled = false;
+    button.querySelector("span").textContent = "支付解锁";
+    showToast(error.message || "支付订单创建失败", true);
+  }
 });
 
 const requestedTool = new URLSearchParams(location.search).get("tool");

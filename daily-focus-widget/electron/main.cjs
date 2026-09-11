@@ -12,6 +12,7 @@ const {
 } = require("electron");
 const { createStore } = require("./store.cjs");
 const { getReminderCandidates } = require("./reminders.cjs");
+const { getDockedBounds } = require("./window-layout.cjs");
 
 let mainWindow;
 let tray;
@@ -24,23 +25,16 @@ let expandedBounds = { width: 420, height: 620 };
 const COLLAPSED_WIDTH = 286;
 const COLLAPSED_HEIGHT = 46;
 const EXPANDED_MIN_HEIGHT = 520;
-const EDGE_MARGIN = 8;
 
-function getDockedBounds(width, height, position) {
+function getBoundsForDock(width, height, position) {
   const display = screen.getDisplayMatching(mainWindow.getBounds());
-  const { x, y, width: workWidth } = display.workArea;
-  return {
-    x: position === "left" ? x + EDGE_MARGIN : x + workWidth - width - EDGE_MARGIN,
-    y: y + EDGE_MARGIN,
-    width,
-    height
-  };
+  return getDockedBounds(display.workArea, width, height, position);
 }
 
 function dockWindow(position = store.read().settings.dockPosition) {
   if (!mainWindow) return;
   const [width, height] = mainWindow.getSize();
-  mainWindow.setBounds(getDockedBounds(width, height, position), true);
+  mainWindow.setBounds(getBoundsForDock(width, height, position), true);
 }
 
 function createTrayIcon() {
@@ -76,7 +70,7 @@ function setWindowCollapsed(collapsed) {
     mainWindow.setMaximumSize(COLLAPSED_WIDTH, COLLAPSED_HEIGHT);
     mainWindow.setResizable(false);
     mainWindow.setBounds(
-      getDockedBounds(COLLAPSED_WIDTH, COLLAPSED_HEIGHT, store.read().settings.dockPosition),
+      getBoundsForDock(COLLAPSED_WIDTH, COLLAPSED_HEIGHT, store.read().settings.dockPosition),
       true
     );
   } else {
@@ -84,7 +78,7 @@ function setWindowCollapsed(collapsed) {
     mainWindow.setMinimumSize(380, EXPANDED_MIN_HEIGHT);
     mainWindow.setResizable(true);
     mainWindow.setBounds(
-      getDockedBounds(expandedBounds.width, expandedBounds.height, store.read().settings.dockPosition),
+      getBoundsForDock(expandedBounds.width, expandedBounds.height, store.read().settings.dockPosition),
       true
     );
   }

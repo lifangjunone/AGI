@@ -3,6 +3,8 @@ export default defineAppConfig({
     'pages/index/index',
     'pages/records/index',
     'pages/profile/index',
+    'pages/photo/index',
+    'pages/tasks/index',
     'pages/webview/index',
     'pages/notifications/index'
   ],
@@ -25,7 +27,7 @@ export default defineAppConfig({
       },
       {
         pagePath: 'pages/records/index',
-        text: '记录'
+        text: '内容'
       },
       {
         pagePath: 'pages/profile/index',
