@@ -30,6 +30,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验来源发现作品，按正文与章节动态规划全书分集，用户选定本季范围后再生产五分钟连续成片 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
 | [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 使用统一账号进入、业务数据仍无服务端的个人隐私档案，支持本地搜索、自动锁定和加密备份 | React、TypeScript、Web Crypto、IndexedDB |
+| [`daily-focus-widget/`](daily-focus-widget/README.md) | 今日小记 | 菜单栏常驻的轻量每日待办，支持全局呼出、快速隐藏、本地持久化和智能系统提醒 | Electron、原生 HTML/CSS/JS |
 
 ## 门户信息架构
 
@@ -64,7 +65,7 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 ## README 状态
 
-当前 16 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
+当前 17 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
 定位、真实运行状态、构建测试方式、数据边界和统一身份接入方式；根 README 只
 维护产品地图、门户架构和跨项目约束。
 
@@ -112,6 +113,7 @@ cd ../short-video-studio && npm install && npm run web
 cd ../novel-video-studio && npm start
 cd ../model-operations-studio && npm install && npm run dev
 cd ../personal-privacy-vault && npm install && npm run dev
+cd ../daily-focus-widget && npm install && npm start
 ```
 
 平台服务运行：
@@ -159,6 +161,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 
 ## 新增功能说明
 
+- `daily-focus-widget`：新增 macOS 每日待办桌面小工具“今日小记”，支持回车快速添加、完成进度、定时与置顶、菜单栏常驻、`Command + Shift + Space` 全局呼出、`Esc` 隐藏、标题区双击折叠、五种便笺纸张颜色、开机启动及 11:00/15:00/19:00 节奏提醒；任务和外观设置仅写入本机 Application Support。
 - `personal-privacy-vault`：新增本地优先个人隐私档案“隐匣”，主密码经 PBKDF2-SHA-256 310,000 次迭代派生 AES-256-GCM 密钥；标题、分类、字段与备注整体加密写入 IndexedDB，支持六类记录、私密字段遮蔽、常用标记、内存搜索、主密码轮换、5 分钟自动锁定及 `.pvault` 加密备份恢复，不连接业务服务器；已部署至 `https://lifeyoume.icu/vault/`。
 - `novel-video-studio`：新增“推荐小说”目录，首批提供 16 部作品级公版核验的中英文热门经典，支持语言/关键词筛选、版权依据、原文来源和一键创建制片项目。
 - `novel-video-studio`：重构推荐页为响应式影视选题书架，修复超宽屏信息稀疏、字号过小及第三方生成占位图直接暴露的问题。

@@ -1,0 +1,40 @@
+{
+  "name": "daily-focus-widget",
+  "version": "0.1.0",
+  "private": true,
+  "author": "LifeYouMe",
+  "description": "A lightweight macOS daily task widget with local smart reminders.",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "pack": "CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac --arm64 --dir",
+    "dist": "electron-builder --mac --arm64"
+  },
+  "dependencies": {
+    "lucide": "^0.544.0"
+  },
+  "devDependencies": {
+    "electron": "^44.2.0",
+    "electron-builder": "^26.0.12",
+    "playwright-core": "^1.63.0"
+  },
+  "build": {
+    "appId": "com.lifeyoume.dailyfocus",
+    "productName": "今日小记",
+    "files": [
+      "electron/**/*",
+      "renderer/**/*",
+      "node_modules/lucide/dist/umd/lucide.min.js",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    }
+  }
+}
