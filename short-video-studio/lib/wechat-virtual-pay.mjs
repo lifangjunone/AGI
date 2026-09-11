@@ -23,7 +23,27 @@ function createOrderId() {
 function xmlValue(xml, name) {
   const tag = name.split(".").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(">[\\s\\S]*?<");
   const match = new RegExp(`<${tag}>(?:<!\\[CDATA\\[)?([^<\\]]+)(?:\\]\\]>)?</${name.split(".").at(-1)}>`, "i").exec(xml);
-  return match?.[1] || "";
+  return match?.[1]?.trim() || "";
+}
+
+function parseNotifyPayload(body) {
+  const text = String(body || "").trim();
+  if (!text) return {};
+
+  try {
+    const payload = JSON.parse(text);
+    const nested = payload?.MiniGame?.Payload;
+    if (typeof nested === "string") {
+      try {
+        return { ...payload, ...JSON.parse(nested) };
+      } catch {
+        return payload;
+      }
+    }
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 export function createWechatVirtualPay({
@@ -125,14 +145,21 @@ export function createWechatVirtualPay({
     };
   }
 
-  async function handleNotify(xml) {
-    const event = xmlValue(xml, "Event");
+  async function handleNotify(body) {
+    const json = parseNotifyPayload(body);
+    const event = json
+      ? json.Event
+      : xmlValue(body, "Event");
     if (event !== "xpay_goods_deliver_notify") throw new Error("不是微信虚拟支付发货通知");
-    if (notifyToken && xmlValue(xml, "Token") !== notifyToken) throw new Error("微信发货通知令牌无效");
-    const orderId = xmlValue(xml, "OutTradeNo");
+    if (notifyToken && !json && xmlValue(body, "Token") !== notifyToken) {
+      throw new Error("微信发货通知令牌无效");
+    }
+    const orderId = json?.OutTradeNo || xmlValue(body, "OutTradeNo");
     const wxOrderId =
-      xmlValue(xml, "WeChatPayInfo.MchOrderNo") ||
-      xmlValue(xml, "MchOrderNo");
+      json?.WeChatPayInfo?.MchOrderNo ||
+      json?.MchOrderNo ||
+      xmlValue(body, "WeChatPayInfo.MchOrderNo") ||
+      xmlValue(body, "MchOrderNo");
     if (!orderId || !wxOrderId) throw new Error("微信发货通知缺少订单号");
     await updateOrders((orders) => {
       const order = orders[orderId];

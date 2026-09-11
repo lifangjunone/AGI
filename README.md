@@ -4,9 +4,10 @@
 
 Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与投标应答审计”Pay Skill；旧网站保留用于历史数据，不再作为主要商业方向。
 
-微信虚拟支付当前已完成服务端签名、`short_series_goods` 道具直购、订单持久化和
-`WeChatPayInfo.MchOrderNo` 发货回调解析。真实收款仍需完成微信后台开通、ProductID
-发布、生产凭据配置和一笔小额真单验证，当前不宣称已完成真实收款闭环。
+微信虚拟支付已完成服务端签名、`short_series_goods` 道具直购、订单持久化和回调解析。
+2026-09-11 已完成一笔 `¥1.00` 真实付款，微信回调到达生产服务，但因发货通知令牌
+不匹配被拒绝，订单仍为 `PENDING`；在修正微信后台 Token 与服务器受限配置前，不宣称
+微信收款闭环已完成。
 
 当前生产状态：支付宝应用 `2021006197631772` 已上线，服务 `API_4BAB0CE91B3743BE` 已激活，卖家 ID 已配置，Pay Skill 在 `8788` 运行并由 `audit.lifeyoume.icu/api/pay-skills/` 暴露。已通过不付款的输入校验检查；真实付款和陌生用户收入仍待验证。
 
@@ -74,7 +75,7 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 智助乖乖小程序已将“我的 → 公众号文章助手”从受个人主体限制的 `web-view`
 入口替换为原生小程序页面 `pages/article/index`，直接调用
 `https://www.lifeyoume.icu/video/api/assistant/generate`。本地 `npm run build:weapp`
-已成功完成；修复版体验包待在微信开发者工具中上传为 `1.0.11` 后验收。
+已成功完成；体验版 `1.0.11` 已通过微信开发者工具上传，模拟器已进入原生页面并完成视觉验收。
 
 ### 小程序审核整改
 
@@ -82,7 +83,11 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 正式版生成请求曾因微信仅放行 `https://www.lifeyoume.icu`、客户端却请求裸域名而被本地拦截。修复版 `1.0.7` 已统一使用已放行的 `www` 域名并上传开发版本，等待重新提交审核和发布。
 
-小程序数字内容包已接入微信虚拟支付道具直购代码：服务端下单签名、`requestVirtualPayment`、发货通知幂等记录、订单状态查询和微信消息推送 GET Token 校验均已实现。微信后台已创建并发布 `zhizhu_content_pack`（¥1.00），消息推送配置已完成，公网配置接口已确认 `enabled=true`，最新支付代码已上传体验版 `1.0.8`；下一步是真机发起一笔 ¥1.00 小额真单并核对发货回调，详见 [`WECHAT-VIRTUAL-PAYMENT.md`](short-video-studio/docs/WECHAT-VIRTUAL-PAYMENT.md)。
+小程序数字内容包已接入微信虚拟支付道具直购代码：服务端下单签名、`requestVirtualPayment`、
+发货通知幂等记录、订单状态查询和回调兼容解析均已实现。真实付款已发生，生产日志确认
+`xpay_goods_deliver_notify` 到达，但 Token 校验失败；最新修复已部署，下一步需将微信后台
+发货推送 Token 与服务器 `WECHAT_VIRTUAL_NOTIFY_TOKEN` 对齐后重新触发测试推送，并确认
+订单变为 `DELIVERED`。详见 [`WECHAT-VIRTUAL-PAYMENT.md`](short-video-studio/docs/WECHAT-VIRTUAL-PAYMENT.md)。
 
 ## 产品协作链路
 
@@ -204,7 +209,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - `short-video-studio` 修复窄屏端首屏堆叠问题：生成前隐藏空预览区，让移动端直接完成输入和预览操作。
 - `short-video-studio` 修复响应式 CSS 顺序问题，统一收口内容包布局覆盖规则。
 - `short-video-studio` 内容包页完成 UI 重构，参考 Runway/CapCut/Canva 的任务工作区模式，强化步骤层级、空状态和主操作。
-- `short-video-studio` 新增“智助乖乖”共享 Web 工作台 `/zhizhu/`，接入商品内容包、公众号文章助手、朋友圈与社群助手三类本地模板预览；当前支付按钮保持验证版禁用态，等待小程序虚拟支付和小程序源码接入。
+- `short-video-studio` 新增“智助乖乖”共享 Web 工作台 `/zhizhu/`，接入商品内容包、公众号文章助手、朋友圈与社群助手三类本地模板预览；Web 支付按钮已可创建支付宝订单，真实付款仍需单独验收。
 - `short-video-studio` 新增 `apps/miniapp/` Taro 小程序，和 Web、Mobile、Desktop 入口并列，包含工作台、生成记录、我的三 Tab，并通过 HTTPS 复用共享生成接口；开发者工具配置已绑定真实 AppID `wxa087f03ad52dd2bf`，AppSecret 仅通过生产服务器受限环境注入。
 - `short-video-studio` 新增 `/video/admin/` 后台管理，使用账号密码和 HttpOnly 会话保护，可动态修改三类内容工具价格，并查看支付宝订单状态；生产账号通过服务器受限环境文件注入。
 - `short-video-studio` 支付回跳已补齐履约：支付宝异步通知或交易查询确认成功后，订单幂等标记为已履约，回跳页直接展示已购买的完整商品内容包。
@@ -215,7 +220,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 - 当前生产视频接口仍要求配置视频模型服务；未配置时返回明确 `503`，不会创建假任务或误报生成成功。
 - 生产环境已配置火山方舟 Seedance 2.5（`doubao-seedance-2-5-260628`），真实 5 秒 16:9 任务已完成并返回可访问 MP4。
 - 已完成小程序订阅消息与公众号模板消息的服务端接入和任务完成触发；微信凭证、模板 ID 与用户授权仍需按平台要求配置，未配置时系统明确跳过通知。
-- `short-video-studio` 已开始打通“智助乖乖”公众号和小程序入口：共享配置接口统一下发价格与渠道链接，小程序提供公众号文章助手 WebView 入口，公众号菜单可按工具参数直达共享工作台。
+- `short-video-studio` 已完成“智助乖乖”公众号和小程序入口打通：共享配置接口统一下发价格与渠道链接；个人主体小程序的公众号文章助手改为原生页面，公众号菜单仍可按工具参数直达共享工作台。
 - `short-video-studio` 已完成小程序管理员扫码验证并更新 Taro `project.config.json` / `project.tt.json`；小程序订阅模板已配置，真实用户授权和完成消息发送仍需在真机小程序中验收。
 - `short-video-studio` 新增公众号 Playwright 自动发布器，每天北京时间 08:30、17:30 各生成并发布一篇结构化文章；首次登录/二维码与平台风控确认仍需一次人工完成，失败会记录日志，不伪造发布成功。
 - `short-video-studio` 公众号内容改为 Markdown 源文件 + 微信主题 HTML 渲染，首篇样稿加入 900×383 头图、段落留白、章节层级、重点引用和列表；发布闸门默认关闭，未通过预览验收不会发布。
