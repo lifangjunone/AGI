@@ -5,6 +5,7 @@ export default defineAppConfig({
     'pages/profile/index',
     'pages/photo/index',
     'pages/tasks/index',
+    'pages/article/index',
     'pages/webview/index',
     'pages/notifications/index'
   ],

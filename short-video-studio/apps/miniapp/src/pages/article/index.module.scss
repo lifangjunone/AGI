@@ -1,0 +1,23 @@
+@use '@/styles/variables.scss' as *;
+
+.page { min-height: 100vh; padding: 32rpx; background: $color-bg-page; }
+.heading { padding: 16rpx 0 30rpx; }
+.eyebrow, .resultLabel { display: block; color: $color-primary-dark; font-size: 20rpx; letter-spacing: 2rpx; }
+.title { display: block; margin-top: 16rpx; color: $color-text-primary; font-size: 40rpx; font-weight: $font-weight-bold; }
+.subtitle { display: block; margin-top: 12rpx; color: $color-text-secondary; font-size: 23rpx; line-height: 1.6; }
+.formCard, .resultCard { padding: 28rpx; border-radius: $radius-lg; background: $color-bg-card; box-shadow: $shadow-card; }
+.label { display: block; margin: 4rpx 0 12rpx; color: $color-text-primary; font-size: 25rpx; font-weight: $font-weight-semibold; }
+.input, .textarea { width: 100%; margin-bottom: 22rpx; padding: 18rpx; border: 2rpx solid $color-border; border-radius: $radius-md; background: #fbfdfb; color: $color-text-primary; font-size: 24rpx; box-sizing: border-box; }
+.input { height: 76rpx; }
+.textarea { min-height: 170rpx; }
+.button { @include button-reset; width: 100%; height: $button-height-lg; border-radius: $radius-button; background: $color-primary; color: #fff; font-size: 27rpx; font-weight: $font-weight-semibold; }
+.button:active { background: $color-primary-dark; }
+.resultCard { margin-top: 24rpx; }
+.resultTitle { display: block; margin-top: 14rpx; color: $color-text-primary; font-size: 30rpx; font-weight: $font-weight-semibold; line-height: 1.4; }
+.summary { display: block; margin: 16rpx 0; color: $color-text-secondary; font-size: 23rpx; line-height: 1.6; }
+.item { display: flex; gap: 16rpx; align-items: center; min-height: 72rpx; border-top: 2rpx solid $color-divider; }
+.number { color: $color-accent; font-size: 22rpx; font-weight: $font-weight-bold; }
+.itemText { color: $color-text-primary; font-size: 23rpx; line-height: 1.4; }
+.priceRow { display: flex; justify-content: space-between; margin-top: 22rpx; padding-top: 18rpx; border-top: 2rpx solid $color-divider; color: $color-text-secondary; font-size: 23rpx; }
+.price { color: $color-accent; font-size: 28rpx; font-weight: $font-weight-bold; }
+.note { display: block; margin-top: 16rpx; color: $color-text-tertiary; font-size: 20rpx; line-height: 1.5; }

@@ -22,7 +22,7 @@ const ProfilePage: React.FC = () => {
       </View>
       <View className={styles.menu}>
         <View className={styles.menuItem} onClick={() => Taro.showToast({ title: '微信虚拟支付接入中', icon: 'none' })}><Text>支付与订单</Text><Text className={styles.arrow}>›</Text></View>
-        <View className={styles.menuItem} onClick={() => Taro.navigateTo({ url: '/pages/webview/index?tool=article' })}><Text>公众号文章助手</Text><Text className={styles.arrow}>›</Text></View>
+        <View className={styles.menuItem} onClick={() => Taro.navigateTo({ url: '/pages/article/index' })}><Text>公众号文章助手</Text><Text className={styles.arrow}>›</Text></View>
         <View className={styles.menuItem} onClick={() => Taro.navigateTo({ url: '/pages/notifications/index' })}><Text>视频完成通知</Text><Text className={styles.arrow}>›</Text></View>
         <View className={styles.menuItem} onClick={() => Taro.showToast({ title: '更多设置即将开放', icon: 'none' })}><Text>使用说明</Text><Text className={styles.arrow}>›</Text></View>
       </View>
