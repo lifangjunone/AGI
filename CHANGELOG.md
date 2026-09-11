@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-11
+
+### feat
+
+- `short-video-studio` 新增微信消息推送服务器 `GET` Token 校验，回调地址已通过微信后台验证；OfferID `1450645427`、ProductID `zhizhu_content_pack`、推送 Token 和现网 AppKey 已分别配置到服务器受限环境，不进入仓库或聊天。
+- 已通过微信公众平台后台创建并发布“商品内容包”虚拟支付道具，价格为 `¥1.00`；生产服务已部署并确认 `enabled=true`，待真机完成真实小额支付和发货回调验收。
+
 ## 2026-09-10
 
 ### fix

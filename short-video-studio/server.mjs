@@ -1,6 +1,6 @@
 import { createReadStream } from "node:fs";
 import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -273,6 +273,14 @@ function escapeHtml(value) {
   })[character]);
 }
 
+function verifyWechatCallback(signature, timestamp, nonce, token) {
+  if (!signature || !timestamp || !nonce || !token) return false;
+  const expected = createHash("sha1")
+    .update([token, timestamp, nonce].sort().join(""), "utf8")
+    .digest("hex");
+  return expected === signature;
+}
+
 function renderPaidContent(pack, order) {
   const titles = pack.titles.map((title, index) => `<li><b>${String(index + 1).padStart(2, "0")}</b>${escapeHtml(title)}</li>`).join("");
   const scripts = pack.scripts.map((script) => `<article><h3>${escapeHtml(script.title)}</h3><p>${escapeHtml(script.voiceover)}</p><small>${script.shots.map(escapeHtml).join(" · ")}</small></article>`).join("");
@@ -437,6 +445,25 @@ export const server = createServer(async (request, response) => {
         const status = error.code === "WECHAT_VIRTUAL_PAY_NOT_CONFIGURED" ? 503 : 400;
         sendJson(response, status, { error: error.message || "微信支付下单失败" });
       }
+      return;
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/wechat-pay/notify") {
+      const signatureValid = verifyWechatCallback(
+        url.searchParams.get("signature"),
+        url.searchParams.get("timestamp"),
+        url.searchParams.get("nonce"),
+        process.env.WECHAT_VIRTUAL_NOTIFY_TOKEN || ""
+      );
+
+      response.writeHead(signatureValid ? 200 : 403, {
+        "Content-Type": "text/plain; charset=utf-8"
+      });
+      response.end(
+        signatureValid
+          ? url.searchParams.get("echostr") || ""
+          : "invalid signature"
+      );
       return;
     }
 

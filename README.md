@@ -70,11 +70,11 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 ### 小程序审核整改
 
-智助乖乖小程序当前生产价格为：商品内容包 `¥1.00`，公众号文章和朋友圈社群各 `¥0.10`；配置接口、生成接口和结果展示已统一读取后台价格。小程序虚拟支付仍需已认证企业/个体工商户主体、OfferID、ProductID 和现网 AppKey，当前尚未开通。
+智助乖乖小程序当前生产价格为：商品内容包 `¥1.00`，公众号文章和朋友圈社群各 `¥0.10`；配置接口、生成接口和结果展示已统一读取后台价格。小程序虚拟支付已开通，OfferID 为 `1450645427`，现网 ProductID 为 `zhizhu_content_pack`；现网 AppKey 已写入服务器受限环境，不进入仓库或聊天。
 
 正式版生成请求曾因微信仅放行 `https://www.lifeyoume.icu`、客户端却请求裸域名而被本地拦截。修复版 `1.0.7` 已统一使用已放行的 `www` 域名并上传开发版本，等待重新提交审核和发布。
 
-小程序数字内容包已接入微信虚拟支付道具直购代码：服务端下单签名、`requestVirtualPayment`、发货通知幂等记录和订单状态查询均已实现。生产仍需在微信后台填写 `OfferID`、现网 `AppKey`、已发布 `ProductID` 并配置发货推送地址，详见 [`WECHAT-VIRTUAL-PAYMENT.md`](short-video-studio/docs/WECHAT-VIRTUAL-PAYMENT.md)。
+小程序数字内容包已接入微信虚拟支付道具直购代码：服务端下单签名、`requestVirtualPayment`、发货通知幂等记录、订单状态查询和微信消息推送 GET Token 校验均已实现。微信后台已创建并发布 `zhizhu_content_pack`（¥1.00），消息推送配置已完成，公网配置接口已确认 `enabled=true`；下一步是真机发起一笔 ¥1.00 小额真单并核对发货回调，详见 [`WECHAT-VIRTUAL-PAYMENT.md`](short-video-studio/docs/WECHAT-VIRTUAL-PAYMENT.md)。
 
 ## 产品协作链路
 
