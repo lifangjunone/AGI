@@ -12,24 +12,32 @@ import {
   Download,
   Eye,
   LayoutTemplate,
+  Link2,
   Lightbulb,
   Menu,
   PencilLine,
+  Plus,
   RotateCcw,
   Save,
   Share2,
+  ShieldCheck,
   Sparkles,
   Store,
   Target,
+  Trash2,
   Users,
   WalletCards,
   X,
 } from "lucide-react";
 import {
+  conversionScore,
+  decodeOffer,
   emptyOffer,
+  encodeOffer,
   exportHtml,
   normalizeOffer,
   Offer,
+  priceRecommendation,
   pricingHealth,
   readiness,
   revenueProjection,
@@ -39,7 +47,7 @@ import {
 
 const STORAGE_KEY = "kaidan-page-offer-v1";
 
-type EditorTab = "offer" | "pricing" | "money";
+type EditorTab = "offer" | "pricing" | "convert" | "money";
 type MobileView = "edit" | "preview";
 
 function loadOffer(): Offer {
@@ -73,8 +81,156 @@ const currency = new Intl.NumberFormat("zh-CN", {
   maximumFractionDigits: 0,
 });
 
+function readSharedOffer() {
+  if (!location.hash.startsWith("#offer=")) return null;
+  return decodeOffer(location.hash.slice("#offer=".length));
+}
+
+function BuyerPage({ offer }: { offer: Offer }) {
+  const [selectedPackage, setSelectedPackage] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const faqs = offer.faqs.filter((item) => item.question.trim() && item.answer.trim());
+
+  const copyContact = async () => {
+    try {
+      await writeClipboard(offer.contactValue);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <main className="buyer-page">
+      <nav className="buyer-nav">
+        <div className="brand-mark">
+          <div className="brand-symbol">开</div>
+          <div>
+            <strong>开单页</strong>
+            <span>BUYER PREVIEW</span>
+          </div>
+        </div>
+        <button
+          className="secondary-button"
+          onClick={() => {
+            history.replaceState(null, "", location.pathname);
+            location.reload();
+          }}
+        >
+          返回编辑
+        </button>
+      </nav>
+
+      <section className="buyer-hero">
+        <div>
+          <span className="buyer-kicker">{offer.sellerName} · 专业服务</span>
+          <h1>{offer.serviceName}</h1>
+          <p>{offer.promise}</p>
+          <div className="buyer-meta">
+            <span>{offer.deliveryDays} 天交付</span>
+            <span>每月限量 {offer.monthlyCapacity} 单</span>
+          </div>
+        </div>
+        <div className="buyer-seal">
+          <span>{offer.sellerName.slice(0, 1) || "开"}</span>
+          <small>ONE PERSON BUSINESS</small>
+        </div>
+      </section>
+
+      <section className="buyer-section buyer-fit">
+        <span className="section-number">01</span>
+        <div>
+          <h2>这项服务适合你吗？</h2>
+          <p>{offer.audience}</p>
+        </div>
+      </section>
+
+      <section className="buyer-section">
+        <span className="section-number">02</span>
+        <div>
+          <h2>你会得到</h2>
+          <ul className="buyer-deliverables">
+            {offer.deliverables.filter(Boolean).map((item) => (
+              <li key={item}>
+                <CheckCircle2 size={18} />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {(offer.caseStudy || offer.guarantee) && (
+        <section className="buyer-proof-grid">
+          {offer.caseStudy && (
+            <article>
+              <span>真实结果</span>
+              <p>{offer.caseStudy}</p>
+            </article>
+          )}
+          {offer.guarantee && (
+            <article>
+              <ShieldCheck size={22} />
+              <span>服务保障</span>
+              <p>{offer.guarantee}</p>
+            </article>
+          )}
+        </section>
+      )}
+
+      <section className="buyer-pricing">
+        <span className="section-number">03</span>
+        <h2>选择适合你的方案</h2>
+        <div>
+          {offer.packages.map((item, index) => (
+            <button
+              key={`${item.name}-${index}`}
+              className={selectedPackage === index ? "selected" : ""}
+              onClick={() => setSelectedPackage(index)}
+            >
+              {index === 1 && <em>多数人选择</em>}
+              <span>{item.name}</span>
+              <strong>{currency.format(item.price)}</strong>
+              <p>{item.description}</p>
+              <i>{selectedPackage === index ? "已选择" : "选择方案"}</i>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {faqs.length > 0 && (
+        <section className="buyer-faq">
+          <span className="section-number">04</span>
+          <h2>下单前常见问题</h2>
+          {faqs.map((item) => (
+            <details key={item.question}>
+              <summary>{item.question}</summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
+        </section>
+      )}
+
+      <section className="buyer-cta">
+        <div>
+          <span>{offer.packages[selectedPackage].name}</span>
+          <strong>{currency.format(offer.packages[selectedPackage].price)}</strong>
+        </div>
+        <button onClick={() => void copyContact()}>
+          {copied ? "联系方式已复制" : offer.ctaText}
+        </button>
+        <small>
+          {offer.contactLabel} · {offer.contactValue}
+        </small>
+      </section>
+    </main>
+  );
+}
+
 function App() {
-  const [offer, setOffer] = useState<Offer>(loadOffer);
+  const [sharedOffer] = useState(readSharedOffer);
+  const [offer, setOffer] = useState<Offer>(() => sharedOffer ?? loadOffer());
   const [tab, setTab] = useState<EditorTab>("offer");
   const [orders, setOrders] = useState(10);
   const [pro, setPro] = useState(false);
@@ -87,12 +243,15 @@ function App() {
   const [savedAt, setSavedAt] = useState("刚刚");
   const ready = useMemo(() => readiness(offer), [offer]);
   const priceHealth = useMemo(() => pricingHealth(offer), [offer]);
+  const conversion = useMemo(() => conversionScore(offer), [offer]);
+  const recommendedPrice = useMemo(() => priceRecommendation(offer), [offer]);
   const revenue = useMemo(
     () => revenueProjection(offer, orders, pro),
     [offer, orders, pro],
   );
 
   useEffect(() => {
+    if (sharedOffer) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(offer));
     setSavedAt(
       new Intl.DateTimeFormat("zh-CN", {
@@ -101,7 +260,7 @@ function App() {
         hour12: false,
       }).format(new Date()),
     );
-  }, [offer]);
+  }, [offer, sharedOffer]);
 
   useEffect(() => {
     if (!toast) return;
@@ -123,6 +282,15 @@ function App() {
         itemIndex === index ? { ...item, [key]: value } : item,
       ) as Offer["packages"];
       return { ...current, packages };
+    });
+  };
+
+  const updateFaq = (index: number, key: "question" | "answer", value: string) => {
+    setOffer((current) => {
+      const faqs = current.faqs.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [key]: value } : item,
+      );
+      return { ...current, faqs };
     });
   };
 
@@ -161,6 +329,25 @@ function App() {
     setShowResetConfirm(false);
     setToast("已开始一项新服务");
   };
+
+  const copyPreviewLink = async () => {
+    if (ready.score < 100) {
+      setReadinessOpen(true);
+      setToast("补齐发布信息后才能生成买家预览链接");
+      return;
+    }
+    const url = `${location.origin}${location.pathname}#offer=${encodeOffer(offer)}`;
+    try {
+      await writeClipboard(url);
+      setToast("买家预览链接已复制");
+    } catch {
+      setToast("复制失败，请检查浏览器剪贴板权限");
+    }
+  };
+
+  if (sharedOffer) {
+    return <BuyerPage offer={sharedOffer} />;
+  }
 
   return (
     <div className="app-shell">
@@ -232,6 +419,14 @@ function App() {
             <button className="secondary-button" onClick={copyLaunch}>
               <Share2 size={16} />
               <span>复制首发文案</span>
+            </button>
+            <button
+              className="secondary-button"
+              onClick={() => void copyPreviewLink()}
+              title="复制买家预览链接"
+            >
+              <Link2 size={16} />
+              <span>买家链接</span>
             </button>
             <button className="primary-button" onClick={downloadPage}>
               <Download size={16} />
@@ -353,6 +548,31 @@ function App() {
           </span>
         </div>
 
+        <section className="action-dock">
+          <div>
+            <Sparkles size={18} />
+            <span>
+              <strong>{ready.score === 100 ? "今天拿首单" : "先完成售卖页"}</strong>
+              {ready.score === 100
+                ? "发给 3 位曾向你请教过这项技能的人"
+                : `还有 ${ready.missing.length} 项发布信息需要补齐`}
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              if (ready.score === 100) {
+                void copyLaunch();
+              } else {
+                setReadinessOpen(true);
+                setMobileView("edit");
+              }
+            }}
+          >
+            {ready.score === 100 ? <Copy size={16} /> : <ChevronRight size={16} />}
+            {ready.score === 100 ? "复制行动文案" : "查看缺项"}
+          </button>
+        </section>
+
         <div className="workspace">
           <section
             className={
@@ -396,11 +616,19 @@ function App() {
               </button>
               <button
                 role="tab"
+                aria-selected={tab === "convert"}
+                className={tab === "convert" ? "active" : ""}
+                onClick={() => setTab("convert")}
+              >
+                3 成交增强
+              </button>
+              <button
+                role="tab"
                 aria-selected={tab === "money"}
                 className={tab === "money" ? "active" : ""}
                 onClick={() => setTab("money")}
               >
-                3 收入测算
+                4 收入测算
               </button>
             </div>
 
@@ -492,8 +720,33 @@ function App() {
                         }}
                         placeholder={`交付项 ${index + 1}`}
                       />
+                      {offer.deliverables.length > 2 && (
+                        <button
+                          className="icon-button"
+                          onClick={() =>
+                            update(
+                              "deliverables",
+                              offer.deliverables.filter((_, itemIndex) => itemIndex !== index),
+                            )
+                          }
+                          aria-label={`删除交付内容 ${index + 1}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   ))}
+                  {offer.deliverables.length < 6 && (
+                    <button
+                      className="add-row-button"
+                      onClick={() =>
+                        update("deliverables", [...offer.deliverables, ""])
+                      }
+                    >
+                      <Plus size={15} />
+                      添加交付内容
+                    </button>
+                  )}
                 </fieldset>
                 <button className="next-button" onClick={() => setTab("pricing")}>
                   设置三档报价
@@ -573,6 +826,90 @@ function App() {
                     />
                   </label>
                 </div>
+                <button className="next-button" onClick={() => setTab("convert")}>
+                  补强成交信任
+                  <ChevronRight size={17} />
+                </button>
+              </div>
+            )}
+
+            {tab === "convert" && (
+              <div className="form-body conversion-panel">
+                <div className="conversion-score">
+                  <div
+                    className="score-ring"
+                    style={{ "--score": `${conversion * 3.6}deg` } as React.CSSProperties}
+                  >
+                    <span>{conversion}</span>
+                  </div>
+                  <span>
+                    <strong>成交说服力</strong>
+                    案例、保障与问答越具体，买家的决策成本越低。
+                  </span>
+                </div>
+                <label>
+                  <span>一个真实结果</span>
+                  <textarea
+                    value={offer.caseStudy}
+                    onChange={(event) => update("caseStudy", event.target.value)}
+                    placeholder="写清客户原来的问题、你的动作和可验证结果"
+                  />
+                </label>
+                <label>
+                  <span>服务保障</span>
+                  <textarea
+                    value={offer.guarantee}
+                    onChange={(event) => update("guarantee", event.target.value)}
+                    placeholder="例如：7 天内可免费补充一次调整"
+                  />
+                </label>
+                <fieldset className="faq-editor">
+                  <legend>常见问题</legend>
+                  {offer.faqs.map((item, index) => (
+                    <article key={index}>
+                      <div>
+                        <span>Q{index + 1}</span>
+                        {offer.faqs.length > 1 && (
+                          <button
+                            className="icon-button"
+                            onClick={() =>
+                              update(
+                                "faqs",
+                                offer.faqs.filter((_, itemIndex) => itemIndex !== index),
+                              )
+                            }
+                            aria-label={`删除常见问题 ${index + 1}`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        value={item.question}
+                        onChange={(event) => updateFaq(index, "question", event.target.value)}
+                        placeholder="买家最担心什么？"
+                        aria-label={`常见问题 ${index + 1}`}
+                      />
+                      <textarea
+                        value={item.answer}
+                        onChange={(event) => updateFaq(index, "answer", event.target.value)}
+                        placeholder="用一句明确的话消除顾虑"
+                        aria-label={`常见问题答案 ${index + 1}`}
+                      />
+                    </article>
+                  ))}
+                  {offer.faqs.length < 5 && (
+                    <button
+                      className="add-row-button"
+                      onClick={() =>
+                        update("faqs", [...offer.faqs, { question: "", answer: "" }])
+                      }
+                    >
+                      <Plus size={15} />
+                      添加常见问题
+                    </button>
+                  )}
+                </fieldset>
                 <button className="next-button" onClick={() => setTab("money")}>
                   测算能赚多少
                   <ChevronRight size={17} />
@@ -582,6 +919,37 @@ function App() {
 
             {tab === "money" && (
               <div className="form-body money-panel">
+                <div className="pricing-baseline">
+                  <label>
+                    <span>目标时薪</span>
+                    <div className="money-input">
+                      <b>¥</b>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10"
+                        value={offer.targetHourlyRate}
+                        onChange={(event) =>
+                          update("targetHourlyRate", Number(event.target.value))
+                        }
+                      />
+                    </div>
+                  </label>
+                  <div>
+                    <span>成本底价</span>
+                    <strong>{currency.format(recommendedPrice.costFloor)}</strong>
+                  </div>
+                  <div>
+                    <span>建议主推价</span>
+                    <strong>{currency.format(recommendedPrice.recommended)}</strong>
+                  </div>
+                </div>
+                {recommendedPrice.underpriced && (
+                  <div className="warning">
+                    <AlertTriangle size={18} />
+                    当前主推价低于按目标时薪计算的成本底价，建议减少交付或提高价格。
+                  </div>
+                )}
                 <div className="orders-control">
                   <label htmlFor="orders">每月预计成交</label>
                   <strong>{orders} 单</strong>
@@ -712,6 +1080,12 @@ function App() {
                   <p className="delivery-line">
                     {offer.deliveryDays} 天内交付 · 每月限量 {offer.monthlyCapacity} 单
                   </p>
+                  {offer.guarantee && (
+                    <p className="guarantee-line">
+                      <ShieldCheck size={13} />
+                      {offer.guarantee}
+                    </p>
+                  )}
                   <div className="package-tabs" aria-label="方案选择">
                     {offer.packages.map((item, index) => (
                       <button
@@ -746,30 +1120,6 @@ function App() {
           </aside>
         </div>
 
-        <section className="action-dock">
-          <div>
-            <Sparkles size={18} />
-            <span>
-              <strong>{ready.score === 100 ? "今天拿首单" : "先完成售卖页"}</strong>
-              {ready.score === 100
-                ? "发给 3 位曾向你请教过这项技能的人"
-                : `还有 ${ready.missing.length} 项发布信息需要补齐`}
-            </span>
-          </div>
-          <button
-            onClick={() => {
-              if (ready.score === 100) {
-                void copyLaunch();
-              } else {
-                setReadinessOpen(true);
-                setMobileView("edit");
-              }
-            }}
-          >
-            {ready.score === 100 ? <Copy size={16} /> : <ChevronRight size={16} />}
-            {ready.score === 100 ? "复制行动文案" : "查看缺项"}
-          </button>
-        </section>
       </main>
 
       {showResetConfirm && (

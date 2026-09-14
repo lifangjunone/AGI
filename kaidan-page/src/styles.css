@@ -193,7 +193,7 @@ textarea:focus-visible {
 .main-area {
   grid-column: 2;
   min-width: 0;
-  padding: 0 24px 88px;
+  padding: 0 24px 28px;
 }
 
 .topbar {
@@ -500,7 +500,7 @@ textarea:focus-visible {
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border-bottom: 1px solid var(--line);
 }
 
@@ -607,6 +607,25 @@ fieldset {
   color: var(--green);
 }
 
+.deliverable .icon-button {
+  width: 36px;
+  border-color: #dedcd4;
+  color: #8d4a3e;
+}
+
+.add-row-button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px dashed #aaa89f;
+  color: var(--green);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .next-button {
   justify-self: end;
   min-width: 150px;
@@ -667,6 +686,96 @@ fieldset {
 
 .price-health svg {
   flex: 0 0 auto;
+}
+
+.conversion-panel textarea {
+  min-height: 66px;
+}
+
+.conversion-score {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--line);
+  padding: 11px;
+  background: white;
+}
+
+.conversion-score > span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.conversion-score strong {
+  display: block;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.faq-editor article {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 7px;
+  border: 1px solid var(--line);
+  padding: 9px;
+  background: white;
+}
+
+.faq-editor article > div {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.faq-editor article > div > span {
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.faq-editor article .icon-button {
+  width: 28px;
+  height: 28px;
+  color: #8d4a3e;
+}
+
+.faq-editor textarea {
+  min-height: 44px;
+}
+
+.pricing-baseline {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 8px;
+}
+
+.pricing-baseline > label,
+.pricing-baseline > div {
+  border: 1px solid var(--line);
+  padding: 10px;
+  background: white;
+}
+
+.pricing-baseline > label {
+  padding: 8px 10px;
+}
+
+.pricing-baseline > div span,
+.pricing-baseline > div strong {
+  display: block;
+}
+
+.pricing-baseline > div span {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.pricing-baseline > div strong {
+  margin-top: 6px;
+  font-family: "Noto Serif SC", serif;
+  font-size: 17px;
 }
 
 .money-input {
@@ -1063,6 +1172,22 @@ fieldset {
   font-weight: 700;
 }
 
+.guarantee-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 9px 0 0;
+  padding: 8px;
+  color: #15543e;
+  background: #e4f2ea;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.guarantee-line svg {
+  flex: 0 0 auto;
+}
+
 .package-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1165,22 +1290,336 @@ fieldset {
   text-align: center;
 }
 
-.action-dock {
+.buyer-page {
+  min-height: 100vh;
+  padding: 0 max(22px, calc((100vw - 1080px) / 2)) 150px;
+  color: var(--ink);
+  background:
+    linear-gradient(rgba(24, 24, 21, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 24, 21, 0.04) 1px, transparent 1px),
+    #efeee8;
+  background-size: 28px 28px;
+}
+
+.buyer-nav {
+  min-height: 78px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #c7c5bc;
+}
+
+.buyer-nav .brand-mark {
+  padding: 0;
+}
+
+.buyer-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) 0.5fr;
+  gap: 40px;
+  align-items: end;
+  min-height: 440px;
+  border-bottom: 1px solid var(--ink);
+  padding: 70px 0 48px;
+}
+
+.buyer-kicker {
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.buyer-hero h1 {
+  max-width: 760px;
+  margin: 14px 0 18px;
+  font-family: "Noto Serif SC", serif;
+  font-size: clamp(44px, 7vw, 88px);
+  line-height: 1.04;
+}
+
+.buyer-hero p {
+  max-width: 680px;
+  margin: 0;
+  color: #4f4e48;
+  font-size: 20px;
+  line-height: 1.65;
+}
+
+.buyer-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 26px;
+}
+
+.buyer-meta span {
+  border: 1px solid #9d9b92;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.buyer-seal {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--ink);
+  padding: 20px;
+  background:
+    linear-gradient(rgba(24, 24, 21, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 24, 21, 0.09) 1px, transparent 1px),
+    var(--acid);
+  background-size: 18px 18px;
+}
+
+.buyer-seal span {
+  font-family: "Noto Serif SC", serif;
+  font-size: clamp(70px, 10vw, 132px);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.buyer-seal small {
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.buyer-section {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 30px;
+  border-bottom: 1px solid #c7c5bc;
+  padding: 48px 0;
+}
+
+.section-number {
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.buyer-section h2,
+.buyer-pricing h2,
+.buyer-faq h2 {
+  margin: 0 0 16px;
+  font-family: "Noto Serif SC", serif;
+  font-size: 28px;
+}
+
+.buyer-section p {
+  max-width: 760px;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.buyer-deliverables {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buyer-deliverables li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #ceccc3;
+  padding: 13px;
+  background: white;
+}
+
+.buyer-deliverables svg {
+  flex: 0 0 auto;
+  color: var(--green);
+}
+
+.buyer-proof-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 48px 0 0;
+}
+
+.buyer-proof-grid article {
+  min-height: 160px;
+  border: 1px solid var(--ink);
+  padding: 22px;
+  background: var(--paper);
+}
+
+.buyer-proof-grid article:last-child {
+  color: white;
+  background: var(--green);
+}
+
+.buyer-proof-grid span {
+  display: block;
+  margin: 12px 0 8px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.buyer-proof-grid p {
+  margin: 0;
+  font-family: "Noto Serif SC", serif;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.buyer-pricing,
+.buyer-faq {
+  padding: 56px 0;
+}
+
+.buyer-pricing > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.buyer-pricing button {
+  min-height: 230px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid #bdbbb2;
+  padding: 22px;
+  color: var(--ink);
+  background: white;
+  text-align: left;
+}
+
+.buyer-pricing button.selected {
+  color: white;
+  background: var(--ink);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow);
+}
+
+.buyer-pricing em {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 5px 8px;
+  color: var(--ink);
+  background: var(--acid);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.buyer-pricing button > span {
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.buyer-pricing button > strong {
+  margin: 13px 0 8px;
+  font-family: "Noto Serif SC", serif;
+  font-size: 34px;
+}
+
+.buyer-pricing button > p {
+  margin: 0;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.buyer-pricing button > i {
+  margin-top: auto;
+  color: var(--green);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.buyer-pricing button.selected > i {
+  color: var(--acid);
+}
+
+.buyer-faq {
+  border-top: 1px solid #c7c5bc;
+}
+
+.buyer-faq details {
+  border-bottom: 1px solid #c7c5bc;
+  padding: 15px 0;
+}
+
+.buyer-faq summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.buyer-faq details p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.buyer-cta {
   position: fixed;
-  right: 24px;
-  bottom: 16px;
-  left: 250px;
+  right: 22px;
+  bottom: 18px;
+  left: 22px;
   z-index: 20;
+  max-width: 760px;
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 5px 16px;
+  margin: auto;
+  padding: 11px 13px;
+  color: white;
+  background: var(--ink);
+  box-shadow: 0 18px 44px rgba(24, 24, 21, 0.25);
+}
+
+.buyer-cta div span,
+.buyer-cta div strong {
+  display: block;
+}
+
+.buyer-cta div span,
+.buyer-cta small {
+  color: #b8b7af;
+  font-size: 9px;
+}
+
+.buyer-cta div strong {
+  font-family: "Noto Serif SC", serif;
+  font-size: 21px;
+}
+
+.buyer-cta button {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  min-width: 170px;
+  height: 48px;
+  border: 0;
+  color: var(--ink);
+  background: var(--acid);
+  font-weight: 800;
+}
+
+.action-dock {
   min-height: 58px;
   display: flex;
   align-items: center;
   gap: 12px;
   max-width: 1380px;
-  margin: auto;
+  margin: 12px auto 0;
   padding: 9px 12px;
   color: white;
   background: #181815;
-  box-shadow: 0 12px 32px rgba(24, 24, 21, 0.22);
 }
 
 .action-dock > div {
@@ -1311,6 +1750,11 @@ fieldset {
   .pricing-editor article label > span {
     min-height: 14px;
   }
+
+  .buyer-page {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1430,6 +1874,77 @@ fieldset {
     height: 490px;
   }
 
+  .buyer-page {
+    padding: 0 14px 125px;
+  }
+
+  .buyer-nav {
+    min-height: 66px;
+  }
+
+  .buyer-nav .brand-mark {
+    padding: 0;
+  }
+
+  .buyer-hero {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    min-height: auto;
+    padding: 44px 0 34px;
+  }
+
+  .buyer-hero h1 {
+    font-size: 43px;
+  }
+
+  .buyer-hero p {
+    font-size: 16px;
+  }
+
+  .buyer-seal {
+    width: 100%;
+    aspect-ratio: 16 / 5;
+  }
+
+  .buyer-seal span {
+    font-size: 58px;
+  }
+
+  .buyer-section {
+    grid-template-columns: 42px 1fr;
+    gap: 10px;
+    padding: 34px 0;
+  }
+
+  .buyer-deliverables,
+  .buyer-proof-grid,
+  .buyer-pricing > div {
+    grid-template-columns: 1fr;
+  }
+
+  .buyer-proof-grid {
+    padding-top: 34px;
+  }
+
+  .buyer-pricing,
+  .buyer-faq {
+    padding: 40px 0;
+  }
+
+  .buyer-pricing button {
+    min-height: 170px;
+  }
+
+  .buyer-pricing button.selected {
+    transform: none;
+  }
+
+  .buyer-cta {
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+  }
+
   .action-dock {
     display: none;
   }
@@ -1461,7 +1976,12 @@ fieldset {
 
   .field-grid,
   .contact-grid,
+  .pricing-baseline,
   .money-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .faq-editor article {
     grid-template-columns: 1fr;
   }
 
@@ -1475,7 +1995,7 @@ fieldset {
   }
 
   .tabs button {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .phone-frame {
@@ -1484,5 +2004,18 @@ fieldset {
 
   .confirm-modal {
     padding: 24px 18px 18px;
+  }
+
+  .buyer-nav .secondary-button {
+    width: auto;
+    padding: 0 10px;
+  }
+
+  .buyer-cta {
+    grid-template-columns: 1fr 132px;
+  }
+
+  .buyer-cta button {
+    min-width: 132px;
   }
 }

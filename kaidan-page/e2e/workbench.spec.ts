@@ -1,4 +1,5 @@
 import { expect, Page, test } from "@playwright/test";
+import { encodeOffer, templates } from "../src/domain";
 
 function captureRuntimeErrors(page: Page) {
   const errors: string[] = [];
@@ -18,9 +19,16 @@ test("desktop creator flow is complete and exportable", async ({ page }) => {
   await expect(page.getByText("可以开卖")).toBeVisible();
   await expect(page.getByText("¥1,930")).toBeVisible();
 
+  await page.getByRole("button", { name: "添加交付内容" }).click();
+  await expect(page.getByRole("textbox", { name: "交付内容 4" })).toBeVisible();
+  await page.getByRole("button", { name: "删除交付内容 4" }).click();
+  await expect(page.getByRole("textbox", { name: "交付内容 4" })).toHaveCount(0);
+  await page.getByRole("tab", { name: "3 成交增强" }).click();
+  await expect(page.getByText("成交说服力")).toBeVisible();
+
   await page.getByRole("tab", { name: "2 报价方案" }).click();
   await page.getByLabel("价格").nth(1).fill("299");
-  await page.getByRole("tab", { name: "3 收入测算" }).click();
+  await page.getByRole("tab", { name: "4 收入测算" }).click();
   await expect(page.locator(".money-grid .net-card strong")).toContainText("¥2,900");
 
   const downloadPromise = page.waitForEvent("download");
@@ -85,6 +93,33 @@ test("mobile layout and local draft persistence work", async ({ page }) => {
 
   await page.screenshot({
     path: "test-results/kaidan-mobile.png",
+    fullPage: true,
+  });
+});
+
+test("buyer share view presents conversion content and package choice", async ({ page }) => {
+  const runtimeErrors = captureRuntimeErrors(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/#offer=${encodeOffer(templates.career)}`);
+
+  await expect(
+    page.getByRole("heading", { name: "大厂产品经理简历诊断" }),
+  ).toBeVisible();
+  await expect(page.getByText("真实结果")).toBeVisible();
+  await expect(page.getByText("服务保障")).toBeVisible();
+  await page.getByRole("button", { name: /快速诊断/ }).click();
+  await expect(page.locator(".buyer-cta")).toContainText("¥39");
+  await expect(page.getByText("需要准备什么？")).toBeVisible();
+
+  const layout = await page.evaluate(() => ({
+    width: document.documentElement.scrollWidth,
+    viewport: window.innerWidth,
+  }));
+  expect(layout.width).toBeLessThanOrEqual(layout.viewport);
+  expect(runtimeErrors).toEqual([]);
+
+  await page.screenshot({
+    path: "test-results/kaidan-buyer-mobile.png",
     fullPage: true,
   });
 });

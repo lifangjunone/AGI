@@ -11,6 +11,7 @@
 - [x] **OFFER-02**: 用户可以编辑服务名称、目标客户、结果承诺、交付内容、周期与名额。
 - [x] **OFFER-03**: 用户可以配置体验、主推、高阶三档报价。
 - [x] **OFFER-04**: 系统根据完整度给出发布准备度和明确缺项。
+- [x] **OFFER-05**: 用户可以增删交付项，并补充案例、服务保障和常见问题。
 
 ### 售卖页
 
@@ -19,12 +20,15 @@
 - [x] **PAGE-03**: 用户可以将完整售卖页导出为独立 HTML 文件。
 - [x] **PAGE-04**: 免费导出页包含“用开单页创建”归因入口。
 - [x] **PAGE-05**: 用户可以配置联系方式、行动按钮和交付周期，并在预览与导出页中展示。
+- [x] **PAGE-06**: 用户可以复制包含完整服务数据的买家预览链接，无需服务端存储。
+- [x] **PAGE-07**: 买家预览页支持三档方案选择、案例、保障、FAQ 和联系方式复制。
 
 ### 经营测算
 
 - [x] **MONEY-01**: 用户可以看到不同月销量下的收入、平台费和预计到手金额。
 - [x] **MONEY-02**: 系统根据交付时长和月度产能提示不可兑现的销量目标。
 - [x] **MONEY-03**: 用户可以比较免费抽成与 Pro 订阅的盈亏平衡点。
+- [x] **MONEY-04**: 用户可以按目标时薪和每单工时获得成本底价与建议主推价。
 
 ### 增长行动
 
@@ -65,14 +69,14 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OFFER-01..04 | Phase 1 | Complete |
-| PAGE-01..05 | Phase 1 | Complete |
-| MONEY-01..03 | Phase 1 | Complete |
+| OFFER-01..05 | Phase 1 | Complete |
+| PAGE-01..07 | Phase 1 | Complete |
+| MONEY-01..04 | Phase 1 | Complete |
 | GROW-01..02 | Phase 1 | Complete |
 | DATA-01..02 | Phase 1 | Complete |
 | UX-01..04 | Phase 1 | Complete |
 
-**Coverage:** 20 v1 requirements, 20 mapped, 0 unmapped.
+**Coverage:** 24 v1 requirements, 24 mapped, 0 unmapped.
 
 ---
 *Last updated: 2026-09-14 after initial definition*

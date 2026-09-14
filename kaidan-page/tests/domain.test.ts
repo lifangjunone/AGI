@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  conversionScore,
+  decodeOffer,
   emptyOffer,
+  encodeOffer,
   exportHtml,
   normalizeOffer,
+  priceRecommendation,
   pricingHealth,
   readiness,
   revenueProjection,
@@ -53,6 +57,13 @@ describe("pricing health", () => {
     } as typeof templates.career;
     expect(pricingHealth(inverted).ascending).toBe(false);
   });
+
+  it("calculates a sustainable price floor from time and target rate", () => {
+    const recommendation = priceRecommendation(templates.automation);
+    expect(recommendation.costFloor).toBe(1200);
+    expect(recommendation.recommended).toBe(1620);
+    expect(recommendation.underpriced).toBe(false);
+  });
 });
 
 describe("revenue projection", () => {
@@ -88,6 +99,20 @@ describe("share and export", () => {
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain("linxiao-career");
     expect(html).toContain("2 天内交付");
+    expect(html).toContain("真实结果");
+    expect(html).toContain("需要准备什么");
     expect(html).toContain("用「开单页」创建");
+  });
+
+  it("round trips a Unicode offer through a share token", () => {
+    const token = encodeOffer(templates.design);
+    const decoded = decodeOffer(token);
+    expect(decoded?.serviceName).toBe("小红书首图焕新");
+    expect(decoded?.faqs).toHaveLength(2);
+  });
+
+  it("scores conversion support content", () => {
+    expect(conversionScore(templates.career)).toBe(100);
+    expect(conversionScore(emptyOffer)).toBe(0);
   });
 });
