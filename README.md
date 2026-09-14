@@ -32,6 +32,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
 | [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 使用统一账号进入、业务数据仍无服务端的个人隐私档案，支持本地搜索、自动锁定和加密备份 | React、TypeScript、Web Crypto、IndexedDB |
 | [`daily-focus-widget/`](daily-focus-widget/README.md) | 今日小记 | 菜单栏常驻的轻量每日待办，支持全局呼出、快速隐藏、本地持久化和智能系统提醒 | Electron、原生 HTML/CSS/JS |
+| [`kaidan-page/`](kaidan-page/README.md) | 开单页 Kaidan | 把个人技能商品化为三档报价、收入测算和可独立分享的服务售卖页 | React、TypeScript、Vite、Playwright |
 
 ## 门户信息架构
 
@@ -66,7 +67,7 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 ## README 状态
 
-当前 17 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
+当前 18 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
 定位、真实运行状态、构建测试方式、数据边界和统一身份接入方式；根 README 只
 维护产品地图、门户架构和跨项目约束。
 
@@ -132,6 +133,7 @@ cd ../novel-video-studio && npm start
 cd ../model-operations-studio && npm install && npm run dev
 cd ../personal-privacy-vault && npm install && npm run dev
 cd ../daily-focus-widget && npm install && npm start
+cd ../kaidan-page && npm install && npm run dev
 ```
 
 平台服务运行：
@@ -179,6 +181,7 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 
 ## 新增功能说明
 
+- `kaidan-page`：新增 ToC 变现产品“开单页”，支持从高频模板或空白服务开始，定义客户、结果承诺、交付边界和三档报价，实时预览移动端售卖页，测算营收、3% 平台费、Pro 盈亏平衡点与交付产能，并在浏览器本地保存草稿、复制首发文案和导出可独立打开的 HTML 售卖页；当前未接入真实公网发布、支付和订单。
 - `daily-focus-widget`：新增 macOS 每日待办桌面小工具“今日小记”，支持回车快速添加、完成进度、定时与置顶、菜单栏常驻、`Command + Shift + Space` 全局呼出、`Esc` 隐藏、左上/右上边缘单行折叠、五种便笺纸张颜色、开机启动及 11:00/15:00/19:00 节奏提醒；任务和外观设置仅写入本机 Application Support。
 - `personal-privacy-vault`：新增本地优先个人隐私档案“隐匣”，主密码经 PBKDF2-SHA-256 310,000 次迭代派生 AES-256-GCM 密钥；标题、分类、字段与备注整体加密写入 IndexedDB，支持六类记录、私密字段遮蔽、常用标记、内存搜索、主密码轮换、5 分钟自动锁定及 `.pvault` 加密备份恢复，不连接业务服务器；已部署至 `https://lifeyoume.icu/vault/`。
 - `novel-video-studio`：新增“推荐小说”目录，首批提供 16 部作品级公版核验的中英文热门经典，支持语言/关键词筛选、版权依据、原文来源和一键创建制片项目。
