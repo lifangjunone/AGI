@@ -10,14 +10,15 @@ See: `.planning/PROJECT.md`
 ## Status
 
 - Phase: 1 of 4 complete
-- Requirements: 15 of 15 complete
+- Requirements: 20 of 20 complete
 - Current task: Validate the MVP with real prospective sellers
 - Last updated: 2026-09-14
 
 ## Verification
 
-- 6 domain tests pass.
+- 9 domain tests pass.
 - 2 Playwright desktop/mobile journeys pass.
+- Desktop, mobile edit and mobile preview screenshots pass visual inspection.
 - Production TypeScript/Vite build passes.
 - Dependency audit reports 0 known vulnerabilities.
 

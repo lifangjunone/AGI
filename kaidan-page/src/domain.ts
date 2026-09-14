@@ -10,6 +10,9 @@ export type Offer = {
   audience: string;
   promise: string;
   proof: string;
+  contactLabel: string;
+  contactValue: string;
+  ctaText: string;
   deliverables: string[];
   deliveryDays: number;
   hoursPerOrder: number;
@@ -24,6 +27,9 @@ export const templates: Record<string, Offer> = {
     audience: "准备冲刺大厂产品岗位、投递后反馈少的 1-5 年职场人",
     promise: "把经历改写成招聘方 30 秒能看懂的业务价值",
     proof: "8 年互联网产品经验，参与筛选 300+ 份产品简历",
+    contactLabel: "微信",
+    contactValue: "linxiao-career",
+    ctaText: "预约一个名额",
     deliverables: ["逐段问题批注", "一版结构重排建议", "30 分钟语音复盘"],
     deliveryDays: 2,
     hoursPerOrder: 1.5,
@@ -40,6 +46,9 @@ export const templates: Record<string, Offer> = {
     audience: "内容稳定但点击率偏低的知识型博主",
     promise: "48 小时交付 3 套更清晰、更有辨识度的首图方案",
     proof: "专注内容视觉设计，熟悉知识类账号的信息层级",
+    contactLabel: "微信",
+    contactValue: "design-with-me",
+    ctaText: "咨询档期",
     deliverables: ["3 套首图方案", "可编辑源文件", "1 次免费修改"],
     deliveryDays: 2,
     hoursPerOrder: 2,
@@ -56,6 +65,9 @@ export const templates: Record<string, Offer> = {
     audience: "每天被重复表格、周报和资料整理占用 2 小时以上的团队",
     promise: "找出 3 个可自动化环节，并交付一条能立即运行的工作流",
     proof: "专注 AI 自动化落地，以可运行结果而非概念报告交付",
+    contactLabel: "邮箱",
+    contactValue: "hello@example.com",
+    ctaText: "预约诊断",
     deliverables: ["60 分钟流程访谈", "自动化机会清单", "1 条可运行工作流"],
     deliveryDays: 5,
     hoursPerOrder: 4,
@@ -74,6 +86,9 @@ export const emptyOffer: Offer = {
   audience: "",
   promise: "",
   proof: "",
+  contactLabel: "微信",
+  contactValue: "",
+  ctaText: "咨询下单",
   deliverables: ["", "", ""],
   deliveryDays: 3,
   hoursPerOrder: 2,
@@ -85,19 +100,48 @@ export const emptyOffer: Offer = {
   ],
 };
 
+export function normalizeOffer(value: Partial<Offer> | null | undefined): Offer {
+  return {
+    ...templates.career,
+    ...value,
+    deliverables: value?.deliverables ?? templates.career.deliverables,
+    packages: value?.packages ?? templates.career.packages,
+    contactLabel: value?.contactLabel ?? "微信",
+    contactValue: value?.contactValue ?? "",
+    ctaText: value?.ctaText ?? "咨询下单",
+  };
+}
+
 export function readiness(offer: Offer) {
   const checks = [
+    ["卖家称呼", offer.sellerName.trim()],
     ["服务名称", offer.serviceName.trim()],
     ["目标客户", offer.audience.trim()],
     ["结果承诺", offer.promise.trim()],
     ["可信依据", offer.proof.trim()],
+    ["联系方式", offer.contactValue.trim()],
+    ["行动按钮", offer.ctaText.trim()],
     ["至少两项交付", offer.deliverables.filter((item) => item.trim()).length >= 2],
     ["三档价格", offer.packages.every((item) => item.price > 0 && item.description.trim())],
+    ["交付周期", offer.deliveryDays > 0],
   ] as const;
   const completed = checks.filter(([, passed]) => Boolean(passed)).length;
   return {
     score: Math.round((completed / checks.length) * 100),
     missing: checks.filter(([, passed]) => !passed).map(([label]) => label),
+  };
+}
+
+export function pricingHealth(offer: Offer) {
+  const prices = offer.packages.map((item) => Math.max(0, item.price));
+  const ascending = prices[0] < prices[1] && prices[1] < prices[2];
+  const mainToEntryRatio = prices[0] > 0 ? prices[1] / prices[0] : 0;
+  return {
+    ascending,
+    mainToEntryRatio,
+    message: ascending
+      ? `价格梯度清晰，主推方案是体验方案的 ${mainToEntryRatio.toFixed(1)} 倍`
+      : "建议保持体验价 < 主推价 < 高阶价，避免买家难以判断",
   };
 }
 
@@ -146,7 +190,12 @@ export function exportHtml(offer: Offer) {
       </article>`,
     )
     .join("");
+  const contactHref = offer.contactLabel.includes("邮箱")
+    ? `mailto:${encodeURIComponent(offer.contactValue)}?subject=${encodeURIComponent(offer.serviceName)}`
+    : offer.contactLabel.includes("电话")
+      ? `tel:${encodeURIComponent(offer.contactValue)}`
+      : "#contact";
 
   return `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(offer.serviceName)}</title><style>
-  *{box-sizing:border-box}body{margin:0;background:#f2f0e9;color:#171714;font-family:ui-sans-serif,system-ui;line-height:1.6}.wrap{max-width:720px;margin:auto;padding:48px 20px}header{border-top:8px solid #d8ff3e;padding:38px 0 24px}h1{font-size:clamp(34px,8vw,64px);line-height:1.04;margin:8px 0 18px}h2{margin-top:38px}.tag{font-weight:800;text-transform:uppercase}.lead{font-size:20px;max-width:600px}.proof{border-left:3px solid #171714;padding-left:16px}.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.tiers article{background:#fff;border:1px solid #cbc9c0;padding:18px}.tiers .featured{background:#171714;color:white}.tiers strong{display:block;font-size:28px;margin:8px 0}.cta{display:block;background:#d8ff3e;color:#171714;padding:16px;text-align:center;font-weight:900;text-decoration:none;margin:26px 0}.brand{text-align:center;font-size:12px;color:#68675f}@media(max-width:600px){.tiers{grid-template-columns:1fr}.wrap{padding-top:20px}}</style><main class="wrap"><header><span class="tag">${escapeHtml(offer.sellerName)}</span><h1>${escapeHtml(offer.serviceName)}</h1><p class="lead">${escapeHtml(offer.promise)}</p></header><p>适合 ${escapeHtml(offer.audience)}</p><h2>你会得到</h2><ul>${deliverables}</ul><p class="proof">${escapeHtml(offer.proof)}</p><h2>选择适合你的方案</h2><section class="tiers">${packages}</section><a class="cta" href="mailto:?subject=${encodeURIComponent(offer.serviceName)}">预约一个名额</a><p class="brand">用「开单页」创建你的第一张售卖页</p></main></html>`;
+  *{box-sizing:border-box}body{margin:0;background:#f2f0e9;color:#171714;font-family:ui-sans-serif,system-ui;line-height:1.6}.wrap{max-width:720px;margin:auto;padding:48px 20px}header{border-top:8px solid #d8ff3e;padding:38px 0 24px}h1{font-size:clamp(34px,8vw,64px);line-height:1.04;margin:8px 0 18px}h2{margin-top:38px}.tag{font-weight:800;text-transform:uppercase}.lead{font-size:20px;max-width:600px}.proof{border-left:3px solid #171714;padding-left:16px}.delivery{font-weight:700}.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.tiers article{background:#fff;border:1px solid #cbc9c0;padding:18px}.tiers .featured{background:#171714;color:white}.tiers strong{display:block;font-size:28px;margin:8px 0}.cta{display:block;background:#d8ff3e;color:#171714;padding:16px;text-align:center;font-weight:900;text-decoration:none;margin:26px 0}.contact{text-align:center;border:1px solid #cbc9c0;background:#fff;padding:18px}.contact strong{display:block;font-size:20px}.brand{text-align:center;font-size:12px;color:#68675f}@media(max-width:600px){.tiers{grid-template-columns:1fr}.wrap{padding-top:20px}}</style><main class="wrap"><header><span class="tag">${escapeHtml(offer.sellerName)}</span><h1>${escapeHtml(offer.serviceName)}</h1><p class="lead">${escapeHtml(offer.promise)}</p></header><p>适合 ${escapeHtml(offer.audience)}</p><h2>你会得到</h2><ul>${deliverables}</ul><p class="delivery">${offer.deliveryDays} 天内交付 · 每月限量 ${offer.monthlyCapacity} 单</p><p class="proof">${escapeHtml(offer.proof)}</p><h2>选择适合你的方案</h2><section class="tiers">${packages}</section><a class="cta" href="${contactHref}">${escapeHtml(offer.ctaText)}</a><section class="contact" id="contact"><small>${escapeHtml(offer.contactLabel)}</small><strong>${escapeHtml(offer.contactValue)}</strong></section><p class="brand">用「开单页」创建你的第一张售卖页</p></main></html>`;
 }

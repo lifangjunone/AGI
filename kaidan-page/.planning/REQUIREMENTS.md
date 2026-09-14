@@ -18,6 +18,7 @@
 - [x] **PAGE-02**: 售卖页清楚展示适用人群、交付结果、套餐和行动按钮。
 - [x] **PAGE-03**: 用户可以将完整售卖页导出为独立 HTML 文件。
 - [x] **PAGE-04**: 免费导出页包含“用开单页创建”归因入口。
+- [x] **PAGE-05**: 用户可以配置联系方式、行动按钮和交付周期，并在预览与导出页中展示。
 
 ### 经营测算
 
@@ -31,6 +32,13 @@
 - [x] **GROW-02**: 系统提供三个可在当天完成的首单动作。
 - [x] **DATA-01**: 草稿自动保存在当前浏览器，刷新后继续编辑。
 - [x] **DATA-02**: 用户可以恢复示例或清空为新服务。
+
+### 体验与安全
+
+- [x] **UX-01**: 手机用户可以在编辑和买家预览之间切换，默认进入编辑。
+- [x] **UX-02**: 清空当前草稿前必须经过确认。
+- [x] **UX-03**: 发布缺项以持久清单展示，并可跳转到对应编辑步骤。
+- [x] **UX-04**: 用户可以看到最近保存时间与复制失败反馈。
 
 ## v2 Requirements
 
@@ -58,12 +66,13 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | OFFER-01..04 | Phase 1 | Complete |
-| PAGE-01..04 | Phase 1 | Complete |
+| PAGE-01..05 | Phase 1 | Complete |
 | MONEY-01..03 | Phase 1 | Complete |
 | GROW-01..02 | Phase 1 | Complete |
 | DATA-01..02 | Phase 1 | Complete |
+| UX-01..04 | Phase 1 | Complete |
 
-**Coverage:** 15 v1 requirements, 15 mapped, 0 unmapped.
+**Coverage:** 20 v1 requirements, 20 mapped, 0 unmapped.
 
 ---
 *Last updated: 2026-09-14 after initial definition*

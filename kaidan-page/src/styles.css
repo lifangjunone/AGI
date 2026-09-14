@@ -33,6 +33,7 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
@@ -43,6 +44,7 @@ button {
 
 button:focus-visible,
 input:focus-visible,
+select:focus-visible,
 textarea:focus-visible {
   outline: 3px solid rgba(31, 107, 79, 0.28);
   outline-offset: 2px;
@@ -227,8 +229,19 @@ textarea:focus-visible {
 
 .top-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+
+.save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 3px;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
 }
 
 .primary-button,
@@ -285,6 +298,28 @@ textarea:focus-visible {
   gap: 10px;
 }
 
+.readiness-button {
+  border: 0;
+  padding: 0;
+  color: var(--ink);
+  background: transparent;
+  text-align: left;
+}
+
+.readiness-button:hover strong {
+  color: var(--green);
+}
+
+.disclosure {
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform 160ms ease;
+}
+
+.disclosure.open {
+  transform: rotate(90deg);
+}
+
 .score-ring {
   --score: 0deg;
   width: 42px;
@@ -326,6 +361,88 @@ textarea:focus-visible {
 
 .status-metric svg {
   color: var(--green);
+}
+
+.readiness-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1380px;
+  margin: 12px auto 0;
+  border: 1px solid #c8c6bd;
+  border-left: 4px solid var(--green);
+  padding: 11px 13px;
+  background: rgba(247, 246, 241, 0.94);
+  animation: reveal 160ms ease-out both;
+}
+
+.readiness-panel > div:first-child {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.readiness-panel > div:first-child svg {
+  flex: 0 0 auto;
+  color: var(--green);
+}
+
+.readiness-panel span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.readiness-panel strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.missing-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.missing-list button,
+.complete-chip {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #c7c5bb;
+  padding: 0 8px;
+  color: var(--ink);
+  background: white;
+  font-size: 10px;
+}
+
+.complete-chip {
+  color: var(--green);
+  border-color: #a8cabc;
+  background: #eef8f3;
+}
+
+.mobile-view-switch {
+  display: none;
+}
+
+.mobile-save-state {
+  display: none;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .workspace {
@@ -413,10 +530,15 @@ textarea:focus-visible {
   padding: 17px;
 }
 
-.field-grid {
+.field-grid,
+.contact-grid {
   display: grid;
   grid-template-columns: 1fr 1.7fr;
   gap: 12px;
+}
+
+.contact-grid {
+  grid-template-columns: 0.65fr 1.2fr 1fr;
 }
 
 label > span,
@@ -429,6 +551,7 @@ fieldset legend {
 }
 
 input,
+select,
 textarea {
   width: 100%;
   border: 1px solid #cfcdc4;
@@ -444,6 +567,15 @@ input {
   height: 36px;
 }
 
+select {
+  height: 36px;
+  appearance: none;
+  background:
+    linear-gradient(45deg, transparent 50%, #56554e 50%) calc(100% - 14px) 15px / 5px 5px no-repeat,
+    linear-gradient(135deg, #56554e 50%, transparent 50%) calc(100% - 9px) 15px / 5px 5px no-repeat,
+    white;
+}
+
 textarea {
   min-height: 54px;
   resize: vertical;
@@ -451,6 +583,7 @@ textarea {
 }
 
 input:hover,
+select:hover,
 textarea:hover {
   border-color: #a5a39b;
 }
@@ -514,6 +647,26 @@ fieldset {
 
 .pricing-editor textarea {
   min-height: 68px;
+}
+
+.price-health {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 11px;
+  color: #7a2f21;
+  background: #ffe3dc;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.price-health.good {
+  color: #15543e;
+  background: #dcefe5;
+}
+
+.price-health svg {
+  flex: 0 0 auto;
 }
 
 .money-input {
@@ -901,11 +1054,51 @@ fieldset {
   color: var(--green);
 }
 
+.delivery-line {
+  margin: 13px 0 0;
+  border-top: 1px solid #dedcd4;
+  padding-top: 9px;
+  color: #5d5b55;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.package-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 14px;
+  border: 1px solid #d8d6ce;
+}
+
+.package-tabs button {
+  min-width: 0;
+  height: 28px;
+  overflow: hidden;
+  border: 0;
+  border-right: 1px solid #d8d6ce;
+  padding: 0 4px;
+  color: #6a6861;
+  background: #f4f3ee;
+  font-size: 7px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.package-tabs button:last-child {
+  border-right: 0;
+}
+
+.package-tabs button.active {
+  color: white;
+  background: var(--ink);
+}
+
 .package-strip {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 3px;
-  margin-top: 17px;
+  margin-top: 9px;
   border-top: 1px solid var(--ink);
   padding-top: 11px;
 }
@@ -943,6 +1136,24 @@ fieldset {
   margin: 11px 0;
   color: var(--muted);
   font-size: 8px;
+}
+
+.contact-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 11px;
+  border: 1px solid #dfddd5;
+  padding: 7px 8px;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.contact-line strong {
+  max-width: 180px;
+  overflow-wrap: anywhere;
+  color: var(--ink);
 }
 
 .powered {
@@ -1003,6 +1214,68 @@ fieldset {
   background: var(--acid);
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(16, 16, 14, 0.68);
+  backdrop-filter: blur(3px);
+}
+
+.confirm-modal {
+  width: min(100%, 390px);
+  position: relative;
+  border-top: 7px solid var(--coral);
+  padding: 27px;
+  background: var(--paper);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  animation: reveal 160ms ease-out both;
+}
+
+.confirm-modal > .icon-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.modal-kicker {
+  color: #9a3928;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.confirm-modal h2 {
+  margin: 8px 0 7px;
+  font-family: "Noto Serif SC", serif;
+  font-size: 24px;
+}
+
+.confirm-modal p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.confirm-modal > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.danger-button {
+  height: 38px;
+  border: 1px solid #8d3021;
+  padding: 0 14px;
+  color: white;
+  background: #9f3b2a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .toast {
   position: fixed;
   top: 18px;
@@ -1018,6 +1291,10 @@ fieldset {
 }
 
 @media (max-width: 980px) {
+  .save-state {
+    display: none;
+  }
+
   .workspace {
     grid-template-columns: minmax(0, 1fr) 320px;
   }
@@ -1068,7 +1345,7 @@ fieldset {
   }
 
   .main-area {
-    padding: 0 14px 88px;
+    padding: 0 14px 22px;
   }
 
   .topbar {
@@ -1093,12 +1370,60 @@ fieldset {
     grid-column: 1 / -1;
   }
 
-  .workspace {
-    grid-template-columns: 1fr;
+  .readiness-panel {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .preview-panel {
-    order: -1;
+  .missing-list {
+    justify-content: flex-start;
+  }
+
+  .mobile-view-switch {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 12px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+  }
+
+  .mobile-view-switch button {
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 0;
+    color: var(--muted);
+    background: transparent;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .mobile-view-switch button.active {
+    color: var(--ink);
+    background: var(--acid);
+  }
+
+  .mobile-save-state {
+    grid-column: 1 / -1;
+    min-height: 27px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 9px;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    margin-top: 9px;
+  }
+
+  .mobile-view-hidden {
+    display: none;
   }
 
   .phone-frame {
@@ -1106,9 +1431,7 @@ fieldset {
   }
 
   .action-dock {
-    right: 14px;
-    bottom: 10px;
-    left: 14px;
+    display: none;
   }
 }
 
@@ -1137,6 +1460,7 @@ fieldset {
   }
 
   .field-grid,
+  .contact-grid,
   .money-grid {
     grid-template-columns: 1fr;
   }
@@ -1158,13 +1482,7 @@ fieldset {
     width: 100%;
   }
 
-  .action-dock span {
-    max-width: 190px;
-  }
-
-  .action-dock > button {
-    width: 38px;
-    padding: 0;
-    font-size: 0;
+  .confirm-modal {
+    padding: 24px 18px 18px;
   }
 }

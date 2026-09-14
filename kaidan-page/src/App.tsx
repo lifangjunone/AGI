@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
+  AlertTriangle,
   BadgeDollarSign,
   BarChart3,
   Check,
@@ -9,10 +10,13 @@ import {
   CircleDollarSign,
   Copy,
   Download,
+  Eye,
   LayoutTemplate,
   Lightbulb,
   Menu,
+  PencilLine,
   RotateCcw,
+  Save,
   Share2,
   Sparkles,
   Store,
@@ -24,7 +28,9 @@ import {
 import {
   emptyOffer,
   exportHtml,
+  normalizeOffer,
   Offer,
+  pricingHealth,
   readiness,
   revenueProjection,
   shareCopy,
@@ -34,14 +40,31 @@ import {
 const STORAGE_KEY = "kaidan-page-offer-v1";
 
 type EditorTab = "offer" | "pricing" | "money";
+type MobileView = "edit" | "preview";
 
 function loadOffer(): Offer {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : templates.career;
+    return saved ? normalizeOffer(JSON.parse(saved)) : templates.career;
   } catch {
     return templates.career;
   }
+}
+
+async function writeClipboard(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("copy failed");
 }
 
 const currency = new Intl.NumberFormat("zh-CN", {
@@ -57,7 +80,13 @@ function App() {
   const [pro, setPro] = useState(false);
   const [toast, setToast] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
+  const [mobileView, setMobileView] = useState<MobileView>("edit");
+  const [readinessOpen, setReadinessOpen] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [previewPackage, setPreviewPackage] = useState(1);
+  const [savedAt, setSavedAt] = useState("刚刚");
   const ready = useMemo(() => readiness(offer), [offer]);
+  const priceHealth = useMemo(() => pricingHealth(offer), [offer]);
   const revenue = useMemo(
     () => revenueProjection(offer, orders, pro),
     [offer, orders, pro],
@@ -65,6 +94,13 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(offer));
+    setSavedAt(
+      new Intl.DateTimeFormat("zh-CN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(new Date()),
+    );
   }, [offer]);
 
   useEffect(() => {
@@ -92,6 +128,10 @@ function App() {
 
   const downloadPage = () => {
     if (ready.score < 100) {
+      const pricingFields = new Set(["三档价格", "交付周期"]);
+      setTab(pricingFields.has(ready.missing[0]) ? "pricing" : "offer");
+      setMobileView("edit");
+      setReadinessOpen(true);
       setToast(`还差：${ready.missing.join("、")}`);
       return;
     }
@@ -105,12 +145,20 @@ function App() {
   };
 
   const copyLaunch = async () => {
-    await navigator.clipboard.writeText(shareCopy(offer));
-    setToast("首发文案已复制");
+    try {
+      await writeClipboard(shareCopy(offer));
+      setToast("首发文案已复制");
+    } catch {
+      setToast("复制失败，请检查浏览器剪贴板权限");
+    }
   };
 
-  const reset = () => {
+  const confirmReset = () => {
     setOffer(structuredClone(emptyOffer));
+    setTab("offer");
+    setMobileView("edit");
+    setReadinessOpen(true);
+    setShowResetConfirm(false);
     setToast("已开始一项新服务");
   };
 
@@ -177,6 +225,10 @@ function App() {
             <h1>{offer.serviceName || "未命名服务"}</h1>
           </div>
           <div className="top-actions">
+            <span className="save-state">
+              <Save size={13} />
+              已保存 {savedAt}
+            </span>
             <button className="secondary-button" onClick={copyLaunch}>
               <Share2 size={16} />
               <span>复制首发文案</span>
@@ -189,7 +241,11 @@ function App() {
         </header>
 
         <section className="status-strip">
-          <div className="readiness">
+          <button
+            className="readiness readiness-button"
+            onClick={() => setReadinessOpen((current) => !current)}
+            aria-expanded={readinessOpen}
+          >
             <div
               className="score-ring"
               style={{ "--score": `${ready.score * 3.6}deg` } as React.CSSProperties}
@@ -204,7 +260,11 @@ function App() {
                   : `还需补齐 ${ready.missing.length} 项`}
               </strong>
             </div>
-          </div>
+            <ChevronRight
+              size={15}
+              className={readinessOpen ? "disclosure open" : "disclosure"}
+            />
+          </button>
           <div className="status-metric">
             <CircleDollarSign size={20} />
             <div>
@@ -219,13 +279,86 @@ function App() {
               <strong>{currency.format(revenue.net)}</strong>
             </div>
           </div>
-          <button className="reset-button" onClick={reset} title="创建新服务">
+          <button
+            className="reset-button"
+            onClick={() => setShowResetConfirm(true)}
+            title="创建新服务"
+            aria-label="创建新服务"
+          >
             <RotateCcw size={16} />
           </button>
         </section>
 
+        {readinessOpen && (
+          <section className="readiness-panel" aria-label="发布检查">
+            <div>
+              {ready.score === 100 ? (
+                <CheckCircle2 size={18} />
+              ) : (
+                <AlertTriangle size={18} />
+              )}
+              <span>
+                <strong>{ready.score === 100 ? "发布信息完整" : "发布前补齐"}</strong>
+                {ready.score === 100
+                  ? "售卖页已经具备价格、交付与联系闭环。"
+                  : "点击缺项可回到对应步骤。"}
+              </span>
+            </div>
+            <div className="missing-list">
+              {ready.score === 100 ? (
+                <span className="complete-chip">
+                  <Check size={13} />
+                  10 项检查通过
+                </span>
+              ) : (
+                ready.missing.map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => {
+                      setTab(
+                        item === "三档价格" || item === "交付周期"
+                          ? "pricing"
+                          : "offer",
+                      );
+                      setMobileView("edit");
+                    }}
+                  >
+                    {item}
+                    <ChevronRight size={13} />
+                  </button>
+                ))
+              )}
+            </div>
+          </section>
+        )}
+
+        <div className="mobile-view-switch" role="group" aria-label="移动端视图">
+          <button
+            className={mobileView === "edit" ? "active" : ""}
+            onClick={() => setMobileView("edit")}
+          >
+            <PencilLine size={15} />
+            编辑
+          </button>
+          <button
+            className={mobileView === "preview" ? "active" : ""}
+            onClick={() => setMobileView("preview")}
+          >
+            <Eye size={15} />
+            预览
+          </button>
+          <span className="mobile-save-state">
+            <Save size={12} />
+            已保存 {savedAt}
+          </span>
+        </div>
+
         <div className="workspace">
-          <section className="editor-panel">
+          <section
+            className={
+              mobileView === "edit" ? "editor-panel" : "editor-panel mobile-view-hidden"
+            }
+          >
             <div className="template-row">
               <span>
                 <LayoutTemplate size={15} />
@@ -246,18 +379,24 @@ function App() {
 
             <div className="tabs" role="tablist">
               <button
+                role="tab"
+                aria-selected={tab === "offer"}
                 className={tab === "offer" ? "active" : ""}
                 onClick={() => setTab("offer")}
               >
                 1 服务定位
               </button>
               <button
+                role="tab"
+                aria-selected={tab === "pricing"}
                 className={tab === "pricing" ? "active" : ""}
                 onClick={() => setTab("pricing")}
               >
                 2 报价方案
               </button>
               <button
+                role="tab"
+                aria-selected={tab === "money"}
                 className={tab === "money" ? "active" : ""}
                 onClick={() => setTab("money")}
               >
@@ -309,6 +448,35 @@ function App() {
                     placeholder="经验、案例、方法或真实数字"
                   />
                 </label>
+                <div className="contact-grid">
+                  <label>
+                    <span>联系方式类型</span>
+                    <select
+                      value={offer.contactLabel}
+                      onChange={(event) => update("contactLabel", event.target.value)}
+                    >
+                      <option>微信</option>
+                      <option>邮箱</option>
+                      <option>电话</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>买家如何联系你</span>
+                    <input
+                      value={offer.contactValue}
+                      onChange={(event) => update("contactValue", event.target.value)}
+                      placeholder="微信号、邮箱或手机号"
+                    />
+                  </label>
+                  <label>
+                    <span>行动按钮文字</span>
+                    <input
+                      value={offer.ctaText}
+                      onChange={(event) => update("ctaText", event.target.value)}
+                      placeholder="例如：预约一个名额"
+                    />
+                  </label>
+                </div>
                 <fieldset>
                   <legend>交付内容</legend>
                   {offer.deliverables.map((item, index) => (
@@ -374,6 +542,14 @@ function App() {
                       </label>
                     </article>
                   ))}
+                </div>
+                <div className={priceHealth.ascending ? "price-health good" : "price-health"}>
+                  {priceHealth.ascending ? (
+                    <CheckCircle2 size={17} />
+                  ) : (
+                    <AlertTriangle size={17} />
+                  )}
+                  <span>{priceHealth.message}</span>
                 </div>
                 <div className="field-grid">
                   <label>
@@ -486,7 +662,13 @@ function App() {
             )}
           </section>
 
-          <aside className="preview-panel">
+          <aside
+            className={
+              mobileView === "preview"
+                ? "preview-panel"
+                : "preview-panel mobile-view-hidden"
+            }
+          >
             <div className="preview-heading">
               <div>
                 <span className="eyebrow">买家视角</span>
@@ -527,15 +709,35 @@ function App() {
                     ))}
                     {!offer.deliverables.some(Boolean) && <li>添加至少两项明确交付</li>}
                   </ul>
-                  <div className="package-strip">
-                    <span>{offer.packages[1].name || "主推方案"}</span>
-                    <strong>¥{offer.packages[1].price || 0}</strong>
-                    <small>{offer.packages[1].description || "说明包含的内容"}</small>
+                  <p className="delivery-line">
+                    {offer.deliveryDays} 天内交付 · 每月限量 {offer.monthlyCapacity} 单
+                  </p>
+                  <div className="package-tabs" aria-label="方案选择">
+                    {offer.packages.map((item, index) => (
+                      <button
+                        key={`${item.name}-${index}`}
+                        className={previewPackage === index ? "active" : ""}
+                        onClick={() => setPreviewPackage(index)}
+                      >
+                        {item.name || `方案 ${index + 1}`}
+                      </button>
+                    ))}
                   </div>
-                  <button>预约一个名额</button>
+                  <div className="package-strip">
+                    <span>{offer.packages[previewPackage].name || "未命名方案"}</span>
+                    <strong>¥{offer.packages[previewPackage].price || 0}</strong>
+                    <small>
+                      {offer.packages[previewPackage].description || "说明包含的内容"}
+                    </small>
+                  </div>
+                  <button>{offer.ctaText || "咨询下单"}</button>
                   <p className="trust-line">
                     <BadgeDollarSign size={13} />
                     {offer.proof || "补充一条可信依据"}
+                  </p>
+                  <p className="contact-line">
+                    <span>{offer.contactLabel || "联系方式"}</span>
+                    <strong>{offer.contactValue || "等待卖家补充"}</strong>
                   </p>
                   <small className="powered">用「开单页」创建你的第一张售卖页</small>
                 </div>
@@ -548,16 +750,60 @@ function App() {
           <div>
             <Sparkles size={18} />
             <span>
-              <strong>今天拿首单</strong>
-              发给 3 位曾向你请教过这项技能的人
+              <strong>{ready.score === 100 ? "今天拿首单" : "先完成售卖页"}</strong>
+              {ready.score === 100
+                ? "发给 3 位曾向你请教过这项技能的人"
+                : `还有 ${ready.missing.length} 项发布信息需要补齐`}
             </span>
           </div>
-          <button onClick={copyLaunch}>
-            <Copy size={16} />
-            复制行动文案
+          <button
+            onClick={() => {
+              if (ready.score === 100) {
+                void copyLaunch();
+              } else {
+                setReadinessOpen(true);
+                setMobileView("edit");
+              }
+            }}
+          >
+            {ready.score === 100 ? <Copy size={16} /> : <ChevronRight size={16} />}
+            {ready.score === 100 ? "复制行动文案" : "查看缺项"}
           </button>
         </section>
       </main>
+
+      {showResetConfirm && (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            className="confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-title"
+          >
+            <button
+              className="icon-button"
+              onClick={() => setShowResetConfirm(false)}
+              aria-label="关闭确认框"
+            >
+              <X size={18} />
+            </button>
+            <span className="modal-kicker">NEW OFFER</span>
+            <h2 id="reset-title">创建新服务？</h2>
+            <p>当前草稿会被清空。已导出的售卖页不受影响。</p>
+            <div>
+              <button
+                className="secondary-button"
+                onClick={() => setShowResetConfirm(false)}
+              >
+                继续编辑
+              </button>
+              <button className="danger-button" onClick={confirmReset}>
+                清空并创建
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
     </div>
