@@ -29,6 +29,7 @@ FRAME/60 是一个本地优先的 AI 短视频生成工作台，并新增面向 
 - 使用 FFmpeg 裁剪或循环原始视频，并按所选比例居中裁切，交付精确时长与画幅。
 - 提供生成进度、视频预览、下载和本地作品库。
 - 提供商品内容包 MVP：桌面 App、手机端 PWA 和 Web 三端共享商品、客群、卖点、平台和风格输入，生成 10 个标题、3 条口播、3 套分镜、标签和 7 天发布计划。
+- Web 产品矩阵新增“开单页”服务变现模块：源码继续由相邻 `kaidan-page` 独立维护，通过 `npm run kaidan:build` 构建到 `public/kaidan/`，共享 `/video/` 公网部署。智助乖乖 `/zhizhu/` 可进入开单页，开单页可将服务名称、结果承诺、主推价格和 CTA 一键带回朋友圈与社群助手。
 - 微信虚拟支付服务端和小程序端已接入 `short_series_goods` 道具直购，发货通知兼容官方 `WeChatPayInfo.MchOrderNo`。微信后台已开通虚拟支付并发布 `zhizhu_content_pack`（¥1.00），消息推送配置和现网 AppKey 已完成，支付代码已上传体验版 `1.0.8`，待真机进行小额真单。
 - 小程序产品矩阵新增“今日生活助手”首期功能：今日天气与出门提醒、心情记录、今日待办、照片写朋友圈、琐事拆解；相关产品设计与架构见 [`docs/PRODUCT-DESIGN-ZHIZHU-GUAGUA.md`](docs/PRODUCT-DESIGN-ZHIZHU-GUAGUA.md)。
 - 双端架构首期已落地：Web/PWA 入口 `/life/` 与小程序共享 `/api/life/today`、`/api/life/tasks`、`/api/life/mood`、`/api/life/photo-copy`、`/api/life/chore` 数据契约；当前使用本地模板源，后续替换数据源不改变端侧协议。
@@ -72,6 +73,16 @@ Web 版：
 npm run web
 # http://127.0.0.1:4317/web/
 ```
+
+构建并体验开单页模块：
+
+```bash
+npm run kaidan:build
+npm run web
+# http://127.0.0.1:4317/kaidan/
+```
+
+开单页当前仍使用浏览器本地草稿和 URL 内嵌买家预览数据，没有服务端账号数据、线索库或交易代收。现有支付宝与微信虚拟支付只用于平台自营数字内容，不用于个人服务订单和平台分账。
 
 公网验证入口：
 
@@ -150,7 +161,7 @@ cp .env.example .env.local
 npm test
 ```
 
-测试覆盖三个平台入口、`/zhizhu/` 工作台、三类助手生成与输入校验、移动端 Manifest、内容包生成、模型提示词、Base64 MP4 解析，以及五档时长和三种画幅的 FFmpeg 处理。
+测试覆盖三个平台入口、`/zhizhu/` 工作台、`/kaidan/` 模块与推广信息预填、三类助手生成与输入校验、移动端 Manifest、内容包生成、模型提示词、Base64 MP4 解析，以及五档时长和三种画幅的 FFmpeg 处理。
 
 ## 数据目录
 

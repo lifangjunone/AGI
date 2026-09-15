@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-15
+
+### feat
+
+- 将 `kaidan-page` 按独立前端模块接入 `short-video-studio`：新增 `npm run kaidan:build`，构建结果同步到 `public/kaidan/`，共享服务新增 `/kaidan/` 入口和 `/api/assistant/config.channels.kaidan`。
+- 智助乖乖 `/zhizhu/` 新增第四个“开单页”模块入口；开单页新增“生成推广内容”，将服务名称、结果承诺、主推价格和 CTA 带入朋友圈与社群助手。
+- 保持交易边界：本轮不复用平台自营数字内容支付代收个人服务订单，开单页继续使用本地草稿和 URL 买家预览。
+
+### verify
+
+- `short-video-studio` 通过 19 项测试，新增 Playwright 集成测试覆盖“智助乖乖 → 开单页 → 推广内容预填”；`kaidan-page` 通过 12 项领域测试、3 项浏览器测试和零漏洞依赖审计。
+- 在 1120×720 验证智助乖乖第四模块卡片和共享服务内开单页，页面无横向溢出或内容遮挡。
+
 ## 2026-09-14
 
 ### feat

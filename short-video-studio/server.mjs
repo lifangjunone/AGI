@@ -417,6 +417,7 @@ export const server = createServer(async (request, response) => {
         ],
         channels: {
           web: `${base}/zhizhu/`,
+          kaidan: `${base}/kaidan/`,
           miniapp: "zhizhu://pages/index/index",
           officialAccount: {
             home: `${base}/zhizhu/?from=official-account`,
@@ -873,11 +874,11 @@ export const server = createServer(async (request, response) => {
       }
       const appEntrypoints = new Set([
         "/", "/web", "/web/", "/mobile", "/mobile/", "/desktop", "/desktop/",
-        "/zhizhu", "/zhizhu/", "/life", "/life/"
+        "/zhizhu", "/zhizhu/", "/life", "/life/", "/kaidan", "/kaidan/"
         , "/admin", "/admin/"
       ]);
       const requestedPath = appEntrypoints.has(url.pathname)
-        ? (url.pathname.startsWith("/zhizhu") ? "zhizhu.html" : url.pathname.startsWith("/life") ? "life.html" : url.pathname.startsWith("/admin") ? "admin.html" : "index.html")
+        ? (url.pathname.startsWith("/zhizhu") ? "zhizhu.html" : url.pathname.startsWith("/life") ? "life.html" : url.pathname.startsWith("/kaidan") ? "kaidan/index.html" : url.pathname.startsWith("/admin") ? "admin.html" : "index.html")
         : url.pathname.slice(1);
       const filePath = path.resolve(PUBLIC_DIRECTORY, requestedPath);
       if (!filePath.startsWith(`${PUBLIC_DIRECTORY}${path.sep}`)) {

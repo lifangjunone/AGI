@@ -128,13 +128,21 @@ test("serves the Zhizhu assistant workspace and generates all three previews", a
 
   const page = await fetch(`http://127.0.0.1:${instance.port}/zhizhu/`);
   assert.equal(page.status, 200);
-  assert.match(await page.text(), /智助乖乖/);
+  const pageHtml = await page.text();
+  assert.match(pageHtml, /智助乖乖/);
+  assert.match(pageHtml, /开单页/);
+  assert.match(pageHtml, /href="\.\.\/kaidan\/"/);
   const config = await fetch(`http://127.0.0.1:${instance.port}/api/assistant/config`);
   assert.equal(config.status, 200);
   const configBody = await config.json();
   assert.equal(configBody.brand, "智助乖乖");
   assert.match(configBody.prices.product, /^\d+\.\d{2}$/);
+  assert.match(configBody.channels.kaidan, /\/kaidan\/$/);
   assert.match(configBody.channels.officialAccount.article, /tool=article/);
+
+  const kaidan = await fetch(`http://127.0.0.1:${instance.port}/kaidan/`);
+  assert.equal(kaidan.status, 200);
+  assert.match(await kaidan.text(), /开单页/);
 
   const payloads = [
     {

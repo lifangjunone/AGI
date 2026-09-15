@@ -1622,14 +1622,14 @@ fieldset {
   background: #181815;
 }
 
-.action-dock > div {
+.action-dock > div:first-child {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
-.action-dock > div svg {
+.action-dock > div:first-child svg {
   color: var(--acid);
 }
 
@@ -1645,12 +1645,22 @@ fieldset {
   font-size: 12px;
 }
 
-.action-dock button {
-  flex: 0 0 auto;
+.action-dock-buttons {
+  display: flex;
+  gap: 7px;
   margin-left: auto;
+}
+
+.action-dock-buttons button {
+  flex: 0 0 auto;
   border-color: var(--acid);
   color: var(--ink);
   background: var(--acid);
+}
+
+.action-dock-buttons .promotion-button {
+  border-color: var(--mint);
+  background: var(--mint);
 }
 
 .modal-backdrop {

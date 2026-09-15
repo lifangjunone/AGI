@@ -13,6 +13,8 @@
     "desktop": "electron apps/desktop/main.mjs",
     "desktop:config": "node apps/desktop/install-config.mjs",
     "desktop:pack": "electron-builder --mac dir --arm64",
+    "kaidan:build": "node scripts/build-kaidan-module.mjs",
+    "kaidan:test": "npm --prefix ../kaidan-page test && npm --prefix ../kaidan-page run test:e2e",
     "official:publish": "node scripts/official-account-publisher.mjs",
     "official:install-schedule": "bash scripts/install-official-account-publisher.sh",
     "dev": "node --watch server.mjs",

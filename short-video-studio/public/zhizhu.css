@@ -58,12 +58,24 @@ button { cursor: pointer; }
 .intro-note strong { display: block; color: #d9ddd5; font-size: 12px; font-weight: 500; line-height: 1.7; }
 .intro-note b { padding: 0 5px; color: var(--yellow); }
 
-.tool-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 42px 0 14px; }
+.tool-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 42px 0 14px; }
 .tool-tab {
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
   min-height: 76px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 7px;
   background: var(--panel); color: var(--text); text-align: left; transition: border-color .16s, background .16s, transform .16s;
 }
+.module-entry {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px;
+  min-height: 76px; padding: 14px 16px; border: 1px solid rgba(115, 230, 186, .52); border-radius: 7px;
+  background: linear-gradient(135deg, rgba(115, 230, 186, .1), rgba(244, 211, 94, .04));
+  color: var(--text); text-align: left; text-decoration: none;
+  transition: border-color .16s, background .16s, transform .16s;
+}
+.module-entry:hover { transform: translateY(-1px); border-color: var(--mint); background: rgba(115, 230, 186, .13); }
+.module-entry span:nth-child(2) { display: grid; gap: 4px; }
+.module-entry b { font-size: 13px; }
+.module-entry small { color: var(--muted); font-size: 11px; }
+.module-entry > svg { width: 17px; color: var(--mint); }
 .tool-tab:hover { transform: translateY(-1px); border-color: #59605a; }
 .tool-tab.is-active { border-color: var(--yellow); background: #22231d; }
 .tab-index { align-self: start; color: var(--yellow); font-family: var(--display); font-size: 11px; }
@@ -135,7 +147,7 @@ button { cursor: pointer; }
   .intro p { font-size: 12px; }
   .intro-note { display: none; }
   .tool-tabs { grid-template-columns: 1fr; gap: 7px; margin-top: 26px; }
-  .tool-tab { min-height: 62px; }
+  .tool-tab, .module-entry { min-height: 62px; }
   .work-area { grid-template-columns: 1fr; }
   .input-panel { min-height: 0; padding: 18px 16px; }
   .result-panel { min-height: 360px; }

@@ -27,7 +27,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`fde-playbook/`](fde-playbook/README.md) | FDE Playbook | FDE 岗位认知、交付方法、能力地图和制造业实战 | React、TypeScript、Vite |
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
-| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈三类内容助手 Web 工作台和 Taro 小程序 | Node.js、FFmpeg、PWA、Electron、Taro |
+| [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈和开单页服务变现模块 | Node.js、FFmpeg、PWA、Electron、Taro、React |
 | [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验来源发现作品，按正文与章节动态规划全书分集，用户选定本季范围后再生产五分钟连续成片 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
 | [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 使用统一账号进入、业务数据仍无服务端的个人隐私档案，支持本地搜索、自动锁定和加密备份 | React、TypeScript、Web Crypto、IndexedDB |
@@ -95,6 +95,8 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 智助乖乖小程序已开始按“今日生活助手”布局：今日天气与出门提醒、心情、今日待办、照片写朋友圈、琐事拆解；完整商品内容包和视频生产继续由 Web/PWA/Electron 承载。
 
 当前双端架构已开始落地：Web/PWA 新增 `/life/` 生活助手入口，小程序通过共享 `lifeAssistant` 服务读取今日快照、同步待办和心情；后端统一提供 `/api/life/*` 数据契约，后续可替换真实天气、照片视觉识别和身份同步实现。
+
+开单页已按“产品入口合并、前端源码独立、部署服务共享”接入智助乖乖：`kaidan-page` 保持独立 React 源码和测试，构建产物由 `short-video-studio` 托管在 `/video/kaidan/`；用户可从 `/video/zhizhu/` 进入开单页，并将服务信息一键带回朋友圈与社群助手生成推广内容。
 
 2026-09-11 功能验收记录见 [`short-video-studio/docs/QA-20260911-LIFE-AND-ZHIZHU.md`](short-video-studio/docs/QA-20260911-LIFE-AND-ZHIZHU.md)。
 

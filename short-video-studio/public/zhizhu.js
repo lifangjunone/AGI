@@ -180,7 +180,22 @@ $("#unlock-button").addEventListener("click", async () => {
   }
 });
 
-const requestedTool = new URLSearchParams(location.search).get("tool");
+function applyInboundPrefill(params) {
+  if (params.get("source") !== "kaidan" || state.tool !== "social") return;
+  const values = {
+    scene: params.get("scene") || "服务首发",
+    offer: params.get("offer") || "",
+    voice: params.get("voice") || "自然、真诚、有行动引导"
+  };
+  for (const [name, value] of Object.entries(values)) {
+    const field = document.querySelector(`[name="${name}"]`);
+    if (field && value) field.value = value.slice(0, Number(field.maxLength) || 240);
+  }
+  showToast("已从开单页带入服务信息");
+}
+
+const queryParams = new URLSearchParams(location.search);
+const requestedTool = queryParams.get("tool");
 if (requestedTool && toolDefinitions[requestedTool]) {
   state.tool = requestedTool;
   document.querySelectorAll(".tool-tab").forEach((tab) => {
@@ -188,4 +203,5 @@ if (requestedTool && toolDefinitions[requestedTool]) {
   });
 }
 renderFields();
+applyInboundPrefill(queryParams);
 loadConfig();

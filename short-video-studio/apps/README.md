@@ -9,6 +9,8 @@ FRAME/60 / 智助乖乖 keeps one generation engine and one UI codebase, with fo
 | `desktop/` | Electron desktop window | `npm run desktop` | `/desktop/` |
 | `miniapp/` | Taro WeChat mini-program | Taro preview/build | Native WeChat pages |
 
+The Web product matrix also hosts the independently maintained Kaidan React module at `/kaidan/`. Its source remains in the sibling `kaidan-page/` package and `npm run kaidan:build` copies the verified Vite output into `public/kaidan/` for shared deployment.
+
 All three modes share the same generation engine and data schema. Web and Mobile use the project `data/` workspace; the packaged Desktop edition uses its writable Application Support directory. Model credentials remain in the Node.js process and are never bundled into browser assets.
 
 The LAN HTTP address is intended for physical-device testing. PWA installation and offline shell behavior require an HTTPS deployment (or browser-localhost exceptions). The packaged desktop edition stores credentials and generated work under `~/Library/Application Support/FRAME 60/`.

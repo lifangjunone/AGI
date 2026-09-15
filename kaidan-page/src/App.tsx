@@ -14,6 +14,7 @@ import {
   LayoutTemplate,
   Link2,
   Lightbulb,
+  Megaphone,
   Menu,
   PencilLine,
   Plus,
@@ -345,6 +346,27 @@ function App() {
     }
   };
 
+  const openPromotionAssistant = () => {
+    if (ready.score < 100) {
+      setReadinessOpen(true);
+      setToast("补齐发布信息后再生成推广内容");
+      return;
+    }
+    const params = new URLSearchParams({
+      tool: "social",
+      source: "kaidan",
+      scene: `${offer.serviceName}首发`,
+      offer: `${offer.promise}；主推方案 ¥${offer.packages[1].price}；${offer.ctaText}`,
+      voice: "自然、真诚、有行动引导",
+    });
+    const base = location.pathname.startsWith("/video/")
+      ? `${location.origin}/video/zhizhu/`
+      : location.port === "5173"
+        ? "http://127.0.0.1:4317/zhizhu/"
+        : `${location.origin}/zhizhu/`;
+    location.assign(`${base}?${params}`);
+  };
+
   if (sharedOffer) {
     return <BuyerPage offer={sharedOffer} />;
   }
@@ -558,19 +580,27 @@ function App() {
                 : `还有 ${ready.missing.length} 项发布信息需要补齐`}
             </span>
           </div>
-          <button
-            onClick={() => {
-              if (ready.score === 100) {
-                void copyLaunch();
-              } else {
-                setReadinessOpen(true);
-                setMobileView("edit");
-              }
-            }}
-          >
-            {ready.score === 100 ? <Copy size={16} /> : <ChevronRight size={16} />}
-            {ready.score === 100 ? "复制行动文案" : "查看缺项"}
-          </button>
+          <div className="action-dock-buttons">
+            <button
+              onClick={() => {
+                if (ready.score === 100) {
+                  void copyLaunch();
+                } else {
+                  setReadinessOpen(true);
+                  setMobileView("edit");
+                }
+              }}
+            >
+              {ready.score === 100 ? <Copy size={16} /> : <ChevronRight size={16} />}
+              {ready.score === 100 ? "复制行动文案" : "查看缺项"}
+            </button>
+            {ready.score === 100 && (
+              <button className="promotion-button" onClick={openPromotionAssistant}>
+                <Megaphone size={16} />
+                生成推广内容
+              </button>
+            )}
+          </div>
         </section>
 
         <div className="workspace">
