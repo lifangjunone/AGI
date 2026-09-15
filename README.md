@@ -33,6 +33,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 使用统一账号进入、业务数据仍无服务端的个人隐私档案，支持本地搜索、自动锁定和加密备份 | React、TypeScript、Web Crypto、IndexedDB |
 | [`daily-focus-widget/`](daily-focus-widget/README.md) | 今日小记 | 菜单栏常驻的轻量每日待办，支持全局呼出、快速隐藏、本地持久化和智能系统提醒 | Electron、原生 HTML/CSS/JS |
 | [`kaidan-page/`](kaidan-page/README.md) | 开单页 Kaidan | 把个人技能商品化为三档报价、收入测算和可独立分享的服务售卖页 | React、TypeScript、Vite、Playwright |
+| [`resume-forge/`](resume-forge/README.md) | ResumeForge / 简历锻造厂 | 将目标岗位 JD 与真实经历转为 ATS 可读、证据充分并可导出的一页简历 | React、TypeScript、Vite、Playwright |
 
 ## 门户信息架构
 
@@ -112,6 +113,9 @@ LifeYouMe Platform
 
 English Speaking Coach / English Immersion Studio / English Foundation / FDE Playbook / Agent Workforce Console
   └─ 独立运行的学习、培训和 Agent 协作产品
+
+ResumeForge
+  └─ 本地岗位匹配、经历证据诊断和 ATS 友好简历导出
 ```
 
 ## 快速开始
