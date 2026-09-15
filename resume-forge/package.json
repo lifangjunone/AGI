@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:portal": "tsc --noEmit && RESUME_PUBLIC_BASE=/resume/ vite build",
+    "deploy": "bash deploy/push-static.sh",
     "test": "vitest run",
     "test:e2e": "playwright test"
   },

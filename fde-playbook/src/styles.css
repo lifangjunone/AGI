@@ -1213,6 +1213,47 @@ input:focus-visible {
   background: var(--teal);
 }
 
+.career-resume-cta {
+  min-height: 156px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  margin-top: 20px;
+  padding: 30px 34px;
+  color: white;
+  background: var(--dark);
+  text-decoration: none;
+}
+
+.career-resume-cta span {
+  color: var(--signal);
+  font-family: "Roboto Mono", monospace;
+  font-size: 9px;
+}
+
+.career-resume-cta h3 {
+  margin: 8px 0 6px;
+  font-size: 24px;
+}
+
+.career-resume-cta p {
+  margin: 0;
+  color: #aeb2ac;
+  font-size: 11px;
+}
+
+.career-resume-cta > strong {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--signal);
+  padding: 9px 0;
+  color: var(--signal);
+  font-size: 11px;
+}
+
 .interview-grid {
   display: grid;
   grid-template-columns: 1.45fr 0.75fr;
@@ -1862,6 +1903,13 @@ footer > span {
 
   .roadmap h3 {
     margin-top: 30px;
+  }
+
+  .career-resume-cta {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 25px 24px;
   }
 
   .interview-grid {

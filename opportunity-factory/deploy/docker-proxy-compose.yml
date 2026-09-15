@@ -11,9 +11,11 @@ services:
       retries: 3
       start_period: 10s
     volumes:
-      - ./proxy.conf:/etc/nginx/conf.d/default.conf:ro
+      - /data/app/lifeyoume-platform/deploy/nginx-platform.conf:/etc/nginx/conf.d/default.conf:ro
       - ./empty.conf:/etc/nginx/conf.d/app.conf:ro
       - /data/app/english-learning/certs:/etc/nginx/certs:ro
       - ../certbot/www:/var/www/certbot:ro
+      - /data/app/personal-privacy-vault/current:/var/www/vault:ro
+      - /data/app/resume-forge/current:/var/www/resume:ro
 
 networks: {}

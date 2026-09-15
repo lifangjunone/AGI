@@ -14,7 +14,8 @@ TLS / host routing / rate limits
    +-- billing.lifeyoume.icu -- billing :8803
    +-- audit.lifeyoume.icu ---- audit product :8787
    +-- lifeyoume.icu/video/ --- content studio :4321
-   `-- lifeyoume.icu/vault/ --- static privacy vault
+   +-- lifeyoume.icu/vault/ --- static privacy vault
+   `-- lifeyoume.icu/resume/ -- static ResumeForge
 ```
 
 The four platform roles run as separate systemd instances. Every product runs
@@ -74,6 +75,10 @@ are in [`SSO.md`](SSO.md).
 6. Add its Nginx route only when a public runtime exists.
 7. Verify process, HTTPS, links, responsive UI, logs, and rollback independently.
 8. Change lifecycle to `live` only after public acceptance passes.
+
+Optional `collection` and `related_ids` metadata create cross-product discovery
+without importing code or sharing product databases. ResumeForge uses this to
+form the career-growth collection with FDE Playbook and the English products.
 
 Allowed lifecycle values:
 

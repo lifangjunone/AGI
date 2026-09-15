@@ -29,6 +29,7 @@ rm -rf "$APP/platform/assets"
 cp -a "$SOURCE/platform/assets" "$APP/platform/assets"
 chown -R lifeyoume:lifeyoume "$APP/platform/assets"
 install -o lifeyoume -g lifeyoume -m 0644 "$SOURCE/config/products.json" "$APP/config/products.json"
+install -o root -g root -m 0644 "$SOURCE/deploy/nginx-platform.conf" "$APP/deploy/nginx-platform.conf"
 install -o root -g root -m 0644 \
   "$SOURCE/deploy/lifeyoume-platform@.service" \
   /etc/systemd/system/lifeyoume-platform@.service

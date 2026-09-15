@@ -15,6 +15,7 @@ test("desktop flow matches a job, builds evidence, reviews, and exports", async 
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "高级产品经理" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "统一账号" })).toBeVisible();
   await page.getByRole("tab", { name: "02 岗位" }).click();
   await expect(page.getByText("关键词覆盖").last()).toBeVisible();
   await expect(page.getByText("产品规划").first()).toBeVisible();
@@ -42,6 +43,12 @@ test("desktop flow matches a job, builds evidence, reviews, and exports", async 
   expect(errors).toEqual([]);
 
   await page.screenshot({ path: "test-results/resume-desktop.png", fullPage: true });
+});
+
+test("FDE entry opens the job targeting step", async ({ page }) => {
+  await page.goto("/?source=fde-playbook");
+  await expect(page.getByText("已从 FDE 手册进入，请粘贴目标岗位 JD")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "对准目标岗位" })).toBeVisible();
 });
 
 test("mobile switches between edit, preview, and review without overflow", async ({ page }) => {

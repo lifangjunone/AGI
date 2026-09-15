@@ -58,6 +58,7 @@ function App() {
   const [savedAt, setSavedAt] = useState("刚刚");
   const [toast, setToast] = useState("");
   const [showReset, setShowReset] = useState(false);
+  const [account, setAccount] = useState<{ displayName: string } | null>(null);
   const [builder, setBuilder] = useState({
     action: "主导",
     task: "",
@@ -92,6 +93,29 @@ function App() {
     const timer = window.setTimeout(() => setToast(""), 2200);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!location.hostname.endsWith("lifeyoume.icu")) return;
+    fetch("https://auth.lifeyoume.icu/api/v1/session/state", {
+      credentials: "include",
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => {
+        if (payload?.authenticated && payload.user) {
+          setAccount({
+            displayName: payload.user.display_name || payload.user.email || "我的账号",
+          });
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get("source") !== "fde-playbook") return;
+    setTab("job");
+    setMobileView("edit");
+    setToast("已从 FDE 手册进入，请粘贴目标岗位 JD");
+  }, []);
 
   const update = <K extends keyof ResumeData>(key: K, value: ResumeData[K]) => {
     setResume((current) => ({ ...current, [key]: value }));
@@ -223,6 +247,12 @@ function App() {
           </button>
         </nav>
 
+        <div className="career-links">
+          <span>求职产品线</span>
+          <a href="https://lifeyoume.icu/products/fde-playbook">FDE 岗位手册</a>
+          <a href="https://lifeyoume.icu/products/english-speaking-coach">英语表达训练</a>
+        </div>
+
         <div className="privacy-note">
           <ShieldCheck size={16} />
           <span>
@@ -253,6 +283,17 @@ function App() {
             <span className="save-state">
               <Save size={13} /> 已保存 {savedAt}
             </span>
+            <a
+              className="account-link"
+              href={
+                account
+                  ? "https://auth.lifeyoume.icu/account"
+                  : `https://auth.lifeyoume.icu/login?return_to=${encodeURIComponent(location.href)}`
+              }
+            >
+              <UserRound size={15} />
+              {account?.displayName || "统一账号"}
+            </a>
             <button
               className="icon-button"
               onClick={() => setShowReset(true)}

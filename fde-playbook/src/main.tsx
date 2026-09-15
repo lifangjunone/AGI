@@ -623,6 +623,15 @@ function App() {
             </article>
           </div>
 
+          <a className="career-resume-cta" href="https://lifeyoume.icu/resume/?source=fde-playbook">
+            <div>
+              <span>RESUME FORGE · 下一步</span>
+              <h3>把这 90 天的交付证据写进岗位简历</h3>
+              <p>带着目标 JD 进入简历锻造厂，检查关键词、量化成果和 ATS 可读性。</p>
+            </div>
+            <strong>制作 FDE 简历 <ArrowRight size={18} /></strong>
+          </a>
+
           <div className="interview-grid">
             <div className="interview-main">
               <p className="micro-label">INTERVIEW SIGNAL</p>

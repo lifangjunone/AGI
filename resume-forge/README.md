@@ -11,6 +11,8 @@
 - 实时生成单栏 A4 预览，判断一页风险并导出可打印 HTML。
 - 手机端在编辑、预览和诊断之间切换。
 - 草稿仅保存在当前浏览器。
+- 公网版可识别 LifeYouMe 统一账号，但不把简历内容上传到账号服务。
+- 与 FDE Playbook、English Speaking Coach、English Immersion Studio 和 English Foundation 组成求职成长产品线。
 
 ## 运行
 
@@ -20,6 +22,13 @@ npm run dev
 ```
 
 默认地址：`http://127.0.0.1:5173/`
+
+构建并部署到 LifeYouMe `/resume/`：
+
+```bash
+npm run build:portal
+npm run deploy
+```
 
 ## 验证
 
@@ -32,7 +41,9 @@ npm run build
 ## 产品边界
 
 - 当前不调用模型 API，不会自动补造工作经历或业绩数据。
-- 当前没有账号、云端存储、招聘网站自动投递或真实支付。
+- 当前没有产品自建账号、云端简历存储、招聘网站自动投递或真实支付。
+- 统一计费服务已预留 `resume-forge` 产品边界，但平台当前
+  `checkout_enabled=false`，不得展示或宣称 Pro 已可购买。
 - HTML 导出可在浏览器中打印为文本可检索的 PDF。
 
 产品定义、需求和路线图位于 [`.planning/`](.planning/)。

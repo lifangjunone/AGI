@@ -837,6 +837,14 @@ input:focus-visible {
   line-height: 1.7;
 }
 
+.related-products {
+  padding: 64px 0 18px;
+}
+
+.related-products .product-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .service-page > main {
   padding-top: 54px;
   padding-bottom: 80px;
@@ -1689,7 +1697,8 @@ th {
 
 @media (max-width: 980px) {
   .product-grid,
-  .catalog-grid {
+  .catalog-grid,
+  .related-products .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1842,6 +1851,7 @@ th {
 
   .product-grid,
   .catalog-grid,
+  .related-products .product-grid,
   .principle-grid {
     grid-template-columns: 1fr;
   }

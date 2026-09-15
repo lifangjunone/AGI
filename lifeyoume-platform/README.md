@@ -17,6 +17,7 @@ Shared control plane for independently deployed products under `lifeyoume.icu`.
 | `audit.lifeyoume.icu` | Independent audit product | 8787 |
 | `lifeyoume.icu/video/` | FRAME/60 / 智助乖乖 | 4321 |
 | `lifeyoume.icu/vault/` | Personal Privacy Vault | Nginx static |
+| `lifeyoume.icu/resume/` | ResumeForge | Nginx static |
 
 The platform never imports product code or reads product databases. Products
 join through `config/products.json`, private health endpoints, and future
@@ -33,7 +34,7 @@ The portal now provides:
 - `/api/v1/products` - public Catalog Schema v2 response without private health URLs;
 - an operations-only view that also includes internal platform components.
 
-The public catalog currently contains 14 products and lab projects across AI
+The public catalog currently contains 15 products and lab projects across AI
 creation, learning, AI engineering, privacy tools, and enterprise services.
 Internal components remain registered for operations but are excluded from the
 public portal.
@@ -125,4 +126,8 @@ online link.
 `lifeyoume.icu` proxies the portal to `127.0.0.1:8800`.
 `audit.lifeyoume.icu` remains isolated on `127.0.0.1:8787`, while historical
 audit paths on the root domain continue to proxy to the audit service.
-`/video/` and `/vault/` preserve their existing production routes.
+`/video/`, `/vault/`, and `/resume/` preserve their independent production routes.
+ResumeForge is registered as `resume-forge`, participates in the career-growth
+collection, and consumes optional SSO identity without storing resume content in
+the platform database. Billing remains capability-reserved until
+`checkout_enabled` is true.

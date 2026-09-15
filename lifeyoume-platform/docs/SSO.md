@@ -13,6 +13,7 @@ create parallel end-user password stores.
 | `https://auth.lifeyoume.icu/account` | Account and global logout |
 | `GET /api/v1/me` | Resolve the current browser or bearer session |
 | `GET /api/v1/session/verify` | Nginx `auth_request` verification |
+| `GET /api/v1/session/state` | Optional browser session state; anonymous requests return HTTP 200 |
 | `GET /api/v1/access/check` | Dynamic per-product login policy check |
 | `POST /api/v1/device/start` | Start desktop/mobile device authorization |
 | `POST /api/v1/device/token` | Poll and exchange an approved device code |
@@ -36,6 +37,11 @@ public reports, health checks, and static assets remain independently routed.
 Products may call `GET https://auth.lifeyoume.icu/api/v1/me` when they need the
 stable LifeYouMe user ID. Product databases should store that ID as an external
 owner key and must not copy the user's password hash.
+
+Public local-first products such as ResumeForge may keep anonymous editing and
+export available while calling `/api/v1/me` only to display the optional shared
+account state. Resume content remains browser-local until a separate,
+product-owned encrypted sync service is explicitly introduced.
 
 ## Desktop, Tauri, PWA, and mini-program clients
 

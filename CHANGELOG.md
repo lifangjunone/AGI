@@ -7,6 +7,9 @@
 - 新增独立 ToC 项目 `resume-forge`（ResumeForge / 简历锻造厂）：用户可编辑个人资料、技能、教育和多段工作经历，粘贴目标岗位 JD 后查看可解释的 ATS 关键词覆盖、资料完整度和匹配得分。
 - 新增事实句锻造器和逐条成果诊断：按动作、数字证据、业务影响与长度检查要点，只组合用户提供的真实信息，不补造经历或业绩。
 - 新增单栏 A4 实时预览、本地草稿、手机编辑/预览/诊断模式，以及文本可选择的独立 HTML 导出；首版不依赖账号、模型 API 或后端。
+- 将 ResumeForge 作为独立产品接入 LifeYouMe：新增 `/resume/` 静态路由、`resume-forge` 产品注册、可选统一账号状态和独立部署脚本，不进入智助乖乖业务模块。
+- 门户新增 `collection` 与 `related_ids` 产品关联能力，ResumeForge、FDE Playbook 和三款英语产品组成“求职成长产品线”；FDE 入行页面新增直达岗位简历的行动入口。
+- 统一生产 Nginx 配置来源：代理容器改为挂载 `lifeyoume-platform/deploy/nginx-platform.conf`，ResumeForge 静态产物以只读卷独立挂载。计费服务仍为 `checkout_enabled=false`，未展示不可用购买入口。
 - 将 `kaidan-page` 按独立前端模块接入 `short-video-studio`：新增 `npm run kaidan:build`，构建结果同步到 `public/kaidan/`，共享服务新增 `/kaidan/` 入口和 `/api/assistant/config.channels.kaidan`。
 - 智助乖乖 `/zhizhu/` 新增第四个“开单页”模块入口；开单页新增“生成推广内容”，将服务名称、结果承诺、主推价格和 CTA 带入朋友圈与社群助手。
 - 保持交易边界：本轮不复用平台自营数字内容支付代收个人服务订单，开单页继续使用本地草稿和 URL 买家预览。
@@ -14,6 +17,8 @@
 ### verify
 
 - `resume-forge` 通过 9 项领域测试、2 项 Playwright 桌面/手机核心旅程、TypeScript/Vite 生产构建与零漏洞依赖审计；1120×720 和 390×844 均无横向溢出。
+- LifeYouMe 接入后，ResumeForge 通过 9 项领域测试和 3 项 Playwright 旅程；平台通过 16 项测试，FDE Playbook 通过 TypeScript/Vite 构建和 1120×720 浏览器入口检查。
+- 生产环境已上线 `https://lifeyoume.icu/resume/` 与产品详情页；浏览器验证统一账号入口、FDE 来源跳转、4 个关联产品、控制台和响应式布局通过，隐匣、智助乖乖与审计旧路由回归均为 HTTP 200。
 - `short-video-studio` 通过 19 项测试，新增 Playwright 集成测试覆盖“智助乖乖 → 开单页 → 推广内容预填”；`kaidan-page` 通过 12 项领域测试、3 项浏览器测试和零漏洞依赖审计。
 - 在 1120×720 验证智助乖乖第四模块卡片和共享服务内开单页，页面无横向溢出或内容遮挡。
 

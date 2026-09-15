@@ -14,6 +14,9 @@ https://audit.lifeyoume.icu/
 ```
 
 根域由 [`lifeyoume-platform`](../lifeyoume-platform/README.md) 产品展厅接管。
+生产代理容器只负责运行 Nginx，根域配置以
+`lifeyoume-platform/deploy/nginx-platform.conf` 为唯一来源；容器通过只读卷
+挂载该文件以及 `/vault/`、`/resume/` 两个静态产品。
 历史 `/reports`、`/compare`、`/r/*`、Badge、RSS、Sitemap 和支付回调继续兼容，
 但新的审计产品链接和 canonical 地址统一使用审计子域。
 

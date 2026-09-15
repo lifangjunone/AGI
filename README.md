@@ -42,9 +42,10 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 ```text
 lifeyoume.icu/
 ├── /                         LifeYouMe 产品展厅
-├── /products                 14 项公开产品与实验项目目录
+├── /products                 15 项公开产品与实验项目目录
 ├── /products/<product-id>    统一产品详情、状态和入口
 ├── /admin/                   账号与子产品登录策略管理后台
+├── /resume/                  ResumeForge 求职简历工作台
 ├── /video/                   FRAME/60 / 智助乖乖
 ├── /vault/                   隐匣
 └── 历史审计兼容路径          转交 Opportunity Factory
@@ -115,7 +116,8 @@ English Speaking Coach / English Immersion Studio / English Foundation / FDE Pla
   └─ 独立运行的学习、培训和 Agent 协作产品
 
 ResumeForge
-  └─ 本地岗位匹配、经历证据诊断和 ATS 友好简历导出
+  ├─ 本地岗位匹配、经历证据诊断和 ATS 友好简历导出
+  └─ 与 FDE Playbook、English Speaking Coach、English Immersion Studio、English Foundation 组成求职成长产品线
 ```
 
 ## 快速开始

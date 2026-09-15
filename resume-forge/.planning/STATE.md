@@ -11,8 +11,8 @@ See: `.planning/PROJECT.md`
 
 - Phase: 1 of 4
 - Requirements: 16 of 16 complete
-- Current task: Validate the local-first MVP with real resume and JD inputs
-- Last updated: 2026-09-15
+- Current task: Validate the public MVP with real resume and JD inputs
+- Last updated: 2026-09-15 after LifeYouMe platform integration
 
 ## Validation Metrics
 

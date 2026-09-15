@@ -17,7 +17,7 @@ SPEC.loader.exec_module(app)
 class PlatformTests(unittest.TestCase):
     def test_registry_loads_independent_products(self):
         products = app.load_products()
-        self.assertEqual(15, len(products))
+        self.assertEqual(16, len(products))
         self.assertEqual(
             ["frame60", "privacy-vault", "audit"],
             [item.id for item in products[:3]],
@@ -104,6 +104,12 @@ class PlatformTests(unittest.TestCase):
         self.assertIn("/products/privacy-vault", portal)
         self.assertIn('href="https://lifeyoume.icu/vault/"', detail)
         self.assertNotIn("avatar-generator-service", portal)
+
+        resume = next(item for item in products if item.id == "resume-forge")
+        resume_detail = app.product_page(resume, products).decode("utf-8")
+        self.assertIn('href="https://lifeyoume.icu/resume/"', resume_detail)
+        self.assertIn("求职成长产品线", resume_detail)
+        self.assertIn("/products/fde-playbook", resume_detail)
 
     def test_live_static_product_does_not_require_fake_health_endpoint(self):
         vault = next(

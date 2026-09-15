@@ -1,7 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;800;900&display=swap");
-
 :root {
-  font-family: "IBM Plex Sans", "PingFang SC", sans-serif;
+  font-family: "Avenir Next", "PingFang SC", sans-serif;
   color: #191918;
   background: #e9e5dc;
   font-synthesis: none;
@@ -161,6 +159,31 @@ textarea:focus-visible {
   background: var(--red);
 }
 
+.career-links {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  border-top: 1px solid #34332f;
+  padding: 13px 4px 0;
+}
+
+.career-links span {
+  color: #77746d;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.career-links a {
+  color: #d8d4cb;
+  font-size: 9px;
+  text-decoration: none;
+}
+
+.career-links a:hover {
+  color: var(--yellow);
+}
+
 .privacy-note {
   display: flex;
   align-items: flex-start;
@@ -266,6 +289,24 @@ textarea:focus-visible {
   background: var(--ink);
   font-size: 11px;
   font-weight: 700;
+}
+
+.account-link {
+  max-width: 150px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  padding: 0 10px;
+  color: var(--ink);
+  background: rgba(248, 246, 239, 0.72);
+  font-size: 9px;
+  font-weight: 700;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .score-strip {
@@ -1122,6 +1163,13 @@ fieldset {
 
   .export-button {
     width: 38px;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .account-link {
+    width: 36px;
+    justify-content: center;
     padding: 0;
     font-size: 0;
   }

@@ -79,6 +79,8 @@ class Product:
     visual: str
     accent: str
     cta: str
+    collection: str = ""
+    related_ids: tuple[str, ...] = ()
 
 
 def load_products(path: Path = REGISTRY_PATH) -> list[Product]:
@@ -109,6 +111,8 @@ def load_products(path: Path = REGISTRY_PATH) -> list[Product]:
             visual=raw.get("visual", ""),
             accent=raw.get("accent", "cobalt"),
             cta=raw.get("cta", "查看产品"),
+            collection=raw.get("collection", ""),
+            related_ids=tuple(raw.get("related_ids", [])),
         )
         if not re.fullmatch(r"[a-z][a-z0-9-]{1,31}", product.id):
             raise ValueError(f"Invalid product id: {product.id}")
@@ -128,6 +132,10 @@ def load_products(path: Path = REGISTRY_PATH) -> list[Product]:
             raise ValueError(f"Invalid visibility: {product.visibility}")
         seen.add(product.id)
         products.append(product)
+    for product in products:
+        unknown = set(product.related_ids) - seen
+        if unknown:
+            raise ValueError(f"Unknown related product for {product.id}: {sorted(unknown)}")
     return products
 
 
@@ -298,7 +306,7 @@ def product_card(product: Product) -> str:
     state, label = product_status(product)
     platforms = "".join(f"<span>{esc(item)}</span>" for item in product.platforms[:3])
     return f"""<article class="product-card" data-category="{esc(product.category)}"
- data-scope="{esc(product.visibility)}" data-search="{esc(product.name + ' ' + product.tagline + ' ' + product.summary)}">
+ data-scope="{esc(product.visibility)}" data-search="{esc(product.name + ' ' + product.tagline + ' ' + product.summary + ' ' + product.collection)}">
 {product_visual(product)}
 <div class="product-card-body">
   <div class="product-meta"><span>{esc(product.category)}</span><span class="status {esc(state)}"><i></i>{esc(label)}</span></div>
@@ -348,7 +356,7 @@ def portal_page(products: list[Product]) -> bytes:
   </div>
   <div class="collection-list">
     <a href="/products?category=AI%20创作"><b>01</b><span><strong>AI 创作</strong><small>内容、短视频与长篇故事生产</small></span><em>2 PRODUCTS</em></a>
-    <a href="/products?category=学习成长"><b>02</b><span><strong>学习成长</strong><small>语言学习、职业训练与阅读辅助</small></span><em>5 PRODUCTS</em></a>
+    <a href="/products?category=学习成长"><b>02</b><span><strong>学习成长</strong><small>语言学习、职业训练与阅读辅助</small></span><em>6 PRODUCTS</em></a>
     <a href="/products?category=AI%20工程"><b>03</b><span><strong>AI 工程</strong><small>情报、Agent、模型与交付控制</small></span><em>5 PRODUCTS</em></a>
     <a href="/products?category=隐私工具"><b>04</b><span><strong>隐私工具</strong><small>本地优先的数据与个人信息管理</small></span><em>1 PRODUCT</em></a>
     <a href="/products?category=企业服务"><b>05</b><span><strong>企业服务</strong><small>面向真实决策和验收的专业服务</small></span><em>1 PRODUCT</em></a>
@@ -393,7 +401,7 @@ def catalog_page(products: list[Product]) -> bytes:
     return page("产品目录", body, portal=True)
 
 
-def product_page(product: Product) -> bytes:
+def product_page(product: Product, products: list[Product] | None = None) -> bytes:
     state, label = product_status(product)
     capabilities = "".join(
         f"<li><span>{index:02d}</span>{esc(item)}</li>"
@@ -404,6 +412,22 @@ def product_page(product: Product) -> bytes:
         action = f'<a class="button primary" href="{esc(product.public_url)}">{esc(product.cta)}</a>'
     else:
         action = '<span class="button disabled" aria-disabled="true">暂未开放公开入口</span>'
+    product_lookup = {item.id: item for item in products or []}
+    related = [
+        product_lookup[item_id]
+        for item_id in product.related_ids
+        if item_id in product_lookup
+        and product_lookup[item_id].visibility in {"public", "lab"}
+    ]
+    related_section = ""
+    if related:
+        related_cards = "".join(product_card(item) for item in related)
+        related_section = f"""<section class="related-products">
+  <div class="section-head">
+    <div><p class="eyebrow">CAREER COLLECTION</p><h2>{esc(product.collection or '相关产品')}</h2></div>
+  </div>
+  <div class="product-grid">{related_cards}</div>
+</section>"""
     body = f"""<main class="detail-main">
 <a class="back-link" href="/products">← 返回产品目录</a>
 <section class="product-hero accent-{esc(product.accent)}">
@@ -419,7 +443,7 @@ def product_page(product: Product) -> bytes:
 <section class="product-facts">
   <div><span>适用人群</span><strong>{esc(product.audience)}</strong></div>
   <div><span>产品形态</span><div class="platforms">{platforms}</div></div>
-  <div><span>当前阶段</span><strong>{esc(label)}</strong></div>
+  <div><span>产品线</span><strong>{esc(product.collection or product.category)}</strong></div>
 </section>
 <section class="capability-section">
   <div><p class="eyebrow">CORE CAPABILITIES</p><h2>核心能力</h2></div>
@@ -429,6 +453,7 @@ def product_page(product: Product) -> bytes:
   <p class="eyebrow">DELIVERY STATUS</p>
   <p>页面只展示当前真实可用范围。没有公开入口的桌面产品和实验室项目不会被标记为在线服务。</p>
 </section>
+{related_section}
 </main>
 <footer class="site-footer"><span>LifeYouMe · {esc(product.name)}</span><a href="/products">全部产品</a></footer>"""
     return page(product.name, body, portal=True)
@@ -1026,10 +1051,17 @@ class Handler(BaseHTTPRequestHandler):
                 )
             self.send_json_headers(200, payload, headers)
             return
-        if ROLE == "auth" and path in {"/api/v1/me", "/api/v1/session/verify"}:
+        if ROLE == "auth" and path in {
+            "/api/v1/me",
+            "/api/v1/session/verify",
+            "/api/v1/session/state",
+        }:
             user = self.sso_user()
             if not user:
-                self.send_json(401, {"authenticated": False})
+                self.send_json(
+                    200 if path == "/api/v1/session/state" else 401,
+                    {"authenticated": False},
+                )
                 return
             payload = {
                 "authenticated": True,
@@ -1119,6 +1151,8 @@ class Handler(BaseHTTPRequestHandler):
                     "lifecycle": item.lifecycle,
                     "availability": item.availability,
                     "category": item.category,
+                    "collection": item.collection,
+                    "related_ids": item.related_ids,
                     "audience": item.audience,
                     "platforms": item.platforms,
                     "capabilities": item.capabilities,
@@ -1141,16 +1175,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         if ROLE == "portal" and path.startswith("/products/"):
             product_id = path.removeprefix("/products/").strip("/")
+            all_products = load_products()
             product = next(
                 (
                     item
-                    for item in load_products()
+                    for item in all_products
                     if item.id == product_id and item.visibility in {"public", "lab"}
                 ),
                 None,
             )
             if product:
-                self.send_body(200, product_page(product))
+                self.send_body(200, product_page(product, all_products))
             else:
                 self.send_body(404, page("未找到产品", "<main class=\"not-found\"><h1>未找到产品</h1><a href=\"/products\">返回产品目录</a></main>", portal=True))
             return
@@ -1168,7 +1203,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self) -> None:
         path = urllib.parse.urlparse(self.path).path
         origin = trusted_origin(self.headers.get("Origin", ""))
-        if ROLE != "auth" or path not in {"/api/v1/me", "/api/v1/session/verify"} or not origin:
+        if ROLE != "auth" or path not in {
+            "/api/v1/me",
+            "/api/v1/session/verify",
+            "/api/v1/session/state",
+        } or not origin:
             self.send_json(404, {"status": "error", "message": "Not found"})
             return
         self.send_response(204)
