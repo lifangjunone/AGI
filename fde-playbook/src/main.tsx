@@ -1,746 +1,570 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import {
-  ArrowRight,
-  BookOpen,
-  BriefcaseBusiness,
-  Check,
-  ChevronRight,
-  CircleAlert,
-  Clock3,
-  Code2,
-  Command,
-  Database,
-  ExternalLink,
-  Gauge,
-  GitBranch,
-  Menu,
-  Radio,
-  Search,
-  ShieldCheck,
-  Target,
-  Users,
-  X,
-  Zap,
-} from "lucide-react";
+import { ArrowLeft, Check, Copy, X } from "lucide-react";
+import DiagnosticApp from "./App";
 import "./styles.css";
 
-type SectionId = "overview" | "workflow" | "skills" | "lab" | "career";
+type ScriptLine = { label: string; text: string };
+type CaseStudy = { tag: string; title: string; body: string; result: string };
+type Moment = {
+  id: string;
+  idx: string;
+  title: string;
+  when: string;
+  goal: string;
+  steps: string[];
+  scripts: ScriptLine[];
+  checklist: string[];
+  flags: string[];
+  caseStudy: CaseStudy;
+};
 
-const sections: { id: SectionId; label: string; short: string }[] = [
-  { id: "overview", label: "岗位全景", short: "01" },
-  { id: "workflow", label: "工作方法", short: "02" },
-  { id: "skills", label: "能力地图", short: "03" },
-  { id: "lab", label: "实战演练", short: "04" },
-  { id: "career", label: "入行指南", short: "05" },
-];
-
-const lifecycle = [
+const MOMENTS: Moment[] = [
   {
-    phase: "发现",
-    code: "DISCOVER",
-    duration: "1–5 天",
-    question: "真正阻塞业务结果的是什么？",
-    work: "跟随一线用户观察现有流程，盘点数据、权限、风险和利益相关者。",
-    artifact: "问题地图 + 成功指标",
-  },
-  {
-    phase: "定界",
-    code: "SCOPE",
-    duration: "0.5–2 天",
-    question: "最小但完整的价值闭环是什么？",
-    work: "锁定 hero workflow，明确不做什么，并写出验收条件与退出标准。",
-    artifact: "交付契约 + 架构草图",
-  },
-  {
-    phase: "共建",
-    code: "BUILD",
-    duration: "3–15 天",
-    question: "怎样尽快在真实数据上证明价值？",
-    work: "连接数据、实现操作界面、建立评测集，与客户工程师每日验证。",
-    artifact: "可运行原型 + Eval",
-  },
-  {
-    phase: "投产",
-    code: "DEPLOY",
-    duration: "1–4 周",
-    question: "系统如何被信任、采用并持续运行？",
-    work: "补齐权限、审计、观测、回滚、值班与变更管理，灰度进入生产。",
-    artifact: "生产系统 + Runbook",
-  },
-  {
-    phase: "回流",
-    code: "PRODUCTIZE",
-    duration: "持续",
-    question: "哪些现场经验应变成平台能力？",
-    work: "区分客户特例与共性模式，把连接器、评测和工作流沉淀回产品。",
-    artifact: "产品信号 + 可复用模块",
-  },
-];
-
-const skillGroups = [
-  {
-    title: "工程交付",
-    level: "硬底座",
-    icon: Code2,
-    skills: ["全栈开发", "API 与集成", "数据建模", "云与网络", "CI/CD", "可观测性"],
-    proof: "能独立把一个模糊需求送到稳定生产，而不止完成 Demo。",
-  },
-  {
-    title: "AI 系统",
-    level: "新主场",
-    icon: Database,
-    skills: ["RAG", "工具调用", "评测设计", "提示版本", "模型路由", "安全护栏"],
-    proof: "用业务样本定义质量，能解释准确率、延迟、成本与风险的取舍。",
-  },
-  {
-    title: "客户共创",
-    level: "分水岭",
-    icon: Users,
-    skills: ["现场发现", "需求拆解", "高管沟通", "用户培训", "冲突处理", "项目推进"],
-    proof: "能从不同角色的叙述中找到事实，促成决策并推动真实采用。",
-  },
-  {
-    title: "产品判断",
-    level: "杠杆点",
-    icon: GitBranch,
-    skills: ["价值排序", "范围控制", "模式识别", "产品反馈", "商业意识", "行业理解"],
-    proof: "知道什么该定制、什么该拒绝、什么必须回流成产品能力。",
-  },
-];
-
-const comparisons = [
-  ["主要目标", "客户业务结果", "通用产品能力", "促成技术购买", "提供建议与方案"],
-  ["是否写生产代码", "核心职责", "核心职责", "偶尔做 Demo", "通常不是"],
-  ["工作边界", "发现到采用", "产品研发周期", "售前验证", "项目建议范围"],
-  ["主要输入", "真实现场与数据", "产品路线图", "商机与需求", "访谈与分析"],
-  ["成功信号", "采用率与业务指标", "质量与规模", "赢单与转化", "建议被采纳"],
-];
-
-export const scenarios = [
-  {
-    title: "发现：先找真实瓶颈",
-    context:
-      "一家精密制造企业希望“用 AI 预测设备故障”。厂长要求 4 周上线，数据团队给了 18 个月传感器数据，但维修主管说误报会让班组彻底弃用系统。",
-    prompt: "你的第一步是什么？",
-    options: [
+    id: "clarify",
+    idx: "01",
+    title: "需求澄清",
+    when: "客户开口就是「我想上个 AI」「我要个智能助手」",
+    goal: "离开会议时，能把「想要 AI」翻译成一个可验证的业务结果，以及谁在什么环节用它。",
+    steps: [
+      "先问业务事件、不问功能：在哪个具体流程、谁、多久一次、现在怎么处理、错一次代价多大。",
+      "只锁定最贵的那个动作：高频 × 高失败成本 × 有现成数据。这阶段只做这一个。",
+      "要现状基线（现在的准确率/耗时/人力）。没有基线，先花半天测出来，不许跳过。",
+      "用一句话写回确认：让「谁」在「什么环节」把「某指标」从 X 改到 Y。",
+    ],
+    scripts: [
       {
-        text: "先训练预测模型，用 AUC 证明技术可行",
-        score: 0,
-        feedback: "过早进入方案。你还不知道哪类停机最贵、谁采取行动、误报成本多高。",
+        label: "把功能请求转成业务结果",
+        text: "先不聊模型。如果这个东西三个月后算成功，您会用哪个数字判断？谁的工作会因此变轻松？",
       },
       {
-        text: "跟班观察维修流程，并定义可行动告警与业务基线",
-        score: 3,
-        feedback: "正确。FDE 先确认决策闭环：谁收到什么信号、采取什么动作、结果如何计量。",
-      },
-      {
-        text: "组织高管会议，确认预算和项目汇报线",
-        score: 1,
-        feedback: "治理重要，但不能替代现场事实。应同时接触操作人员和数据拥有者。",
+        label: "顶住泛化范围",
+        text: "「更智能」没法验收。我们先挑一个您这周就会因为它变好而省钱的环节，其它的进二期清单。",
       },
     ],
+    checklist: [
+      "有具体角色 / 环节 / 频率",
+      "有可量化指标和现状基线",
+      "问清「做错一次的代价」",
+      "范围不超过 1 个闭环",
+      "关键决策人当面复述并认可",
+    ],
+    flags: [
+      "只谈技术参数、不谈业务",
+      "一上来就要「大而全平台」",
+      "没有任何现状数据就承诺效果",
+      "决策人根本不在场",
+    ],
+    caseStudy: {
+      tag: "真实小案例",
+      title: "从「知识库」收敛到「告警分诊」",
+      body: "某制造客户开场要一个会聊天的知识库。跟岗两天发现最贵动作是凌晨告警分诊：每天约 2000 条、错派损失高、历史工单齐全。范围改为告警分级一条闭环，约定误派率为指标，六周后误派率下降，知识库被放进二期。",
+      result: "范围：平台 → 1 个可验收闭环",
+    },
   },
   {
-    title: "定界：做最小价值闭环",
-    context:
-      "现场发现：80% 的损失来自 12 台关键机床的主轴过热。现有系统每天发 200 条阈值告警，仅 4% 需要处理。维修记录散落在 MES、Excel 和纸质交接本。",
-    prompt: "首个两周版本应交付什么？",
-    options: [
+    id: "metrics",
+    idx: "02",
+    title: "定义成功标准",
+    when: "项目要验收了，却只得到一句「效果好像还不错」",
+    goal: "在动手前，把成功写成可测量、有阈值、有时间点、能被否证的标准，并由客户确认。",
+    steps: [
+      "区分三类指标：业务结果（误派率/停机时长）、系统质量（准确/召回/延迟）、采纳（真实使用人数/频次），每类至少一个。",
+      "每个指标写清「基线 → 目标 → 测量方式 → 测量时间」，目标由客户签字。",
+      "同时定「最低成功线」（不达标即失败）和「惊喜线」，别只报一个漂亮数。",
+      "事先约定反例与人工兜底：模型错了怎么算、谁有权一键停用。",
+    ],
+    scripts: [
       {
-        text: "覆盖全厂所有设备的统一预测平台",
-        score: 0,
-        feedback: "范围过大，数据异构和采用风险会吞掉四周期限。",
+        label: "把验收前置",
+        text: "如果上线四周后您要决定要不要继续投入，我们今天就把判断标准写下来，省得到时各说各话。",
       },
       {
-        text: "12 台机床的风险排序、证据解释和维修确认闭环",
-        score: 3,
-        feedback: "正确。范围小但闭环完整，既能度量误报，也能收集新的维修标签。",
-      },
-      {
-        text: "一个展示趋势和热力图的管理驾驶舱",
-        score: 1,
-        feedback: "可视化不等于业务闭环。缺少操作动作、责任人和反馈采集。",
+        label: "拆开「准确率」",
+        text: "我们把「准」拆开：该报警的漏掉多少、不该报的骚扰多少，分别定阈值，比一个总准确率更能说明问题。",
       },
     ],
+    checklist: [
+      "每个指标有基线/目标/测法/时点",
+      "设了最低成功线",
+      "客户书面确认",
+      "定义了失败与停用条件",
+    ],
+    flags: [
+      "用「感觉变好了」当标准",
+      "只承诺模型分、不谈业务结果",
+      "没有测量数据来源",
+      "目标在项目中途被随意改",
+    ],
+    caseStudy: {
+      tag: "真实小案例",
+      title: "87 分却被判成功",
+      body: "客户要求「准确率做到 90%」。拆成漏报率 ≤5%（安全）、误报率 ≤30%（不打扰）、值班实际采纳 ≥80%。上线后模型总分 87、但漏报仅 2%，客户依据事前标准判定成功并决定扩点。",
+      result: "标准事前定清 → 验收无争议",
+    },
   },
   {
-    title: "投产：守住可信门槛",
-    context:
-      "灰度结果显示计划外停机减少 22%，但夜班出现一次数据延迟，系统仍展示旧风险分数。客户要求次日全量上线。",
-    prompt: "你会如何处理？",
-    options: [
+    id: "production",
+    idx: "03",
+    title: "POC 转生产",
+    when: "Demo 跑得很炫，但没有任何人敢真正用它",
+    goal: "在 POC 阶段就为上生产铺路，而不是做完 Demo 再整体返工。",
+    steps: [
+      "第一天就对齐生产差距清单：真实数据源、权限、延迟、并发、监控、降级、审计。",
+      "用真实（脱敏）数据和真实用户跑，不用精心准备的 demo 样本。",
+      "设计「人在回路」：关键动作保留人工确认，并展示依据与置信度。",
+      "先小范围灰度，定义好退出/回滚条件，再逐步放量。",
+    ],
+    scripts: [
       {
-        text: "按客户要求上线，之后再补监控",
-        score: 0,
-        feedback: "这是生产责任缺位。过期数据会直接破坏用户信任。",
+        label: "重新定义 POC",
+        text: "POC 的目标不是证明它聪明，是提前暴露所有让它不敢上线的东西。",
       },
       {
-        text: "暂停发布，加入数据新鲜度门禁、降级提示与回滚演练",
-        score: 3,
-        feedback: "正确。业务收益不能抵消运行风险；明确降级行为后再扩大范围。",
-      },
-      {
-        text: "隐藏风险分数更新时间，避免操作员困惑",
-        score: 0,
-        feedback: "不可接受。透明度是高风险系统建立信任的基础。",
+        label: "给激进上线踩刹车",
+        text: "我们先让一个班组用两周，约定好什么情况立刻回退，再谈全厂推广。",
       },
     ],
+    checklist: [
+      "接入真实数据源和权限",
+      "有日志/监控/告警",
+      "有降级与回滚开关",
+      "经真实用户灰度验证",
+      "明确了运维责任人",
+    ],
+    flags: [
+      "只在样例数据上成功",
+      "没人愿意为上线后负责",
+      "没有回滚方案",
+      "要求一步到位全量上线",
+    ],
+    caseStudy: {
+      tag: "真实小案例",
+      title: "演示封神，为什么没翻车",
+      body: "告警 Demo 在样例上表现完美，接入真实数据后准确率骤降——数据缺失、口径不一。因提前列了生产差距清单，补齐数据校验与置信度展示，先灰度一个班组，达标后才扩线。",
+      result: "灰度先行，避免「上线翻车」",
+    },
+  },
+  {
+    id: "data",
+    idx: "04",
+    title: "数据权限与合规",
+    when: "客户两手一摊：「数据不能给你」",
+    goal: "让项目在不踩数据红线的前提下拿到够用的数据，把合规变成可执行方案，而不是一句拒绝。",
+    steps: [
+      "尽早摸清数据在哪、谁有权、什么敏感级别、有无出境与留存要求。",
+      "最小化取数：只取该闭环必需字段，能脱敏/匿名就不取明文。",
+      "给出落地选项：内网部署、专有环境、字段脱敏、访问审计，让客户安全团队选。",
+      "把授权范围、用途、留存期限写成书面确认，全程留痕。",
+    ],
+    scripts: [
+      {
+        label: "缩小取数面",
+        text: "我不需要全部数据。告诉我这个判断真正依赖哪几个字段，我们围绕最小集合申请。",
+      },
+      {
+        label: "换一条路拿数据",
+        text: "我们换个方式——在您内网环境里跑，数据不出域，我只拿到评测结果，可以吗？",
+      },
+    ],
+    checklist: [
+      "明确数据清单与敏感级",
+      "最小字段 + 脱敏",
+      "有部署/留存方案",
+      "安全与法务书面授权",
+      "全程访问可审计",
+    ],
+    flags: [
+      "只靠口头授权、无留痕",
+      "先拿数据后补审批",
+      "把生产数据随意导出调试",
+      "用途超出当初申请范围",
+    ],
+    caseStudy: {
+      tag: "真实小案例",
+      title: "数据不出域，项目照样推进",
+      body: "客户以保密为由拒绝提供告警明细。改为客户内网部署、字段级脱敏、只回传统一评测指标。安全团队两周放行，项目未因数据问题停摆。",
+      result: "合规方案落地，审批仅 2 周",
+    },
+  },
+  {
+    id: "expect",
+    idx: "05",
+    title: "客户预期管理",
+    when: "对方觉得「AI 应该什么都能做、还能替掉几个人」",
+    goal: "把不切实际的预期持续校准成这阶段能做 / 不能做什么，同时保住信任。",
+    steps: [
+      "第一次会就明确能力边界，用「现在能做 / 暂时不能 / 需要人确认」三栏写清。",
+      "固定节奏（如每周）同步进展、坏消息和指标，坏消息不过夜。",
+      "每交付一个小结果就可视化，用客户的语言而非模型术语。",
+      "主动维护一份「不会做的事」清单，比被动拒绝更建立信任。",
+    ],
+    scripts: [
+      {
+        label: "摆正人机关系",
+        text: "它不是替代专家，是帮专家把 80% 的重复判断先筛一遍，最后拍板的还是人。",
+      },
+      {
+        label: "顶住过度承诺压力",
+        text: "这个目标我可以做探索，但不建议写进本阶段验收——我不想用一个做不到的承诺，换今天的高兴。",
+      },
+    ],
+    checklist: [
+      "有书面的能力边界",
+      "固定同步节奏",
+      "坏消息即时披露",
+      "成果用业务语言呈现",
+      "维护「不做清单」",
+    ],
+    flags: [
+      "为签约默认夸张承诺",
+      "只报喜、不报忧",
+      "用技术术语压客户",
+      "阶段中途偷偷换目标",
+    ],
+    caseStudy: {
+      tag: "真实小案例",
+      title: "一次坏消息，换来续约",
+      body: "客户高层期待「全自动决策、可裁撤岗位」。项目组首会即明确「辅助分诊、人工拍板」，每周用误派率曲线同步。一次数据质量问题当天通报并给出补救，信任不降反升，二期主动续约。",
+      result: "透明同步 → 信任上升",
+    },
+  },
+  {
+    id: "handoff",
+    idx: "06",
+    title: "交付与交接",
+    when: "项目结束了，客户团队却没人接得住",
+    goal: "交付的不是一个模型，而是客户团队能独立运行、维护、判断异常的能力。",
+    steps: [
+      "立项即定义交接物：文档、运行手册、应急预案、再训练/评测方法、责任人。",
+      "至少两次实操陪跑：让客户团队自己操作，你只在场、不代劳。",
+      "固化可复用资产：连接器、提示模板、评测集、问题清单，沉淀回产品。",
+      "约定交付后支持窗口与升级路径，再正式收尾。",
+    ],
+    scripts: [
+      {
+        label: "把验收变成客户的主场",
+        text: "验收那天请你们团队独立跑一遍，我在旁边不插手——能跑通，才算交接成功。",
+      },
+      {
+        label: "留下「一页纸」",
+        text: "我会把怎么判断它不对劲、出问题先做什么写成一页纸，贴在值班室。",
+      },
+    ],
+    checklist: [
+      "交接物齐全",
+      "客户独立实操通过",
+      "有一页纸应急手册",
+      "可复用资产已回流",
+      "支持窗口与责任人明确",
+    ],
+    flags: [
+      "只交一个链接或模型",
+      "知识全留在你脑子里",
+      "没有运维负责人",
+      "交付完就失联",
+    ],
+    caseStudy: {
+      tag: "真实小案例",
+      title: "三个月后，客户自己更新了规则",
+      body: "验收不只看指标，要求值班团队独立操作两轮、并完成一次模拟误报处置。交接含一页纸应急流程与评测集模板。三个月后客户自行完成一次规则更新，无需原厂介入。",
+      result: "客户可独立运维 → 交接成功",
+    },
   },
 ];
 
-export const sources = [
-  {
-    name: "OpenAI · Forward Deployed Engineer",
-    note: "官方岗位定义：端到端部署、生产采用、评测反馈与跨团队协作。",
-    href: "https://openai.com/careers/forward-deployed-engineer-(fde)-sf-san-francisco/",
-  },
-  {
-    name: "Palantir · 官方招聘岗位库",
-    note: "岗位原型：客户现场、架构决策、大规模数据和定制应用。",
-    href: "https://jobs.lever.co/palantir",
-  },
-  {
-    name: "Deloitte · Associate FDE",
-    note: "企业 AI 交付细节：人机协同、质量/安全/延迟/成本权衡与可复用资产。",
-    href: "https://apply.deloitte.com/en_US/careers/JobDetail?jobId=360224",
-  },
-  {
-    name: "Awesome FDE Roadmap",
-    note: "社区实践路线：数据、云基础设施、AI 评测与咨询能力。",
-    href: "https://github.com/nikolaospapachristou/Awesome-FDE-Roadmap",
-  },
-];
+const BLOCK_TITLES = [
+  { key: "A", title: "该怎么做" },
+  { key: "B", title: "可直接照说的话术" },
+  { key: "C", title: "离场前检查清单" },
+  { key: "D", title: "要躲开的雷区" },
+  { key: "E", title: "真实小案例" },
+] as const;
 
-function App() {
-  const [activeSection, setActiveSection] = useState<SectionId>("overview");
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [query, setQuery] = useState("");
-  const [lifecyclePhase, setLifecyclePhase] = useState(0);
-  const [scenarioStep, setScenarioStep] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
+type Notify = (message: string) => void;
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        setSearchOpen((current) => !current);
+function CopyButton({ text, notify }: { text: string; notify: Notify }) {
+  const [copied, setCopied] = useState(false);
+
+  const fallback = () => {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand("copy");
+    } catch {
+      ok = false;
+    }
+    document.body.removeChild(ta);
+    return ok;
+  };
+
+  const handleCopy = async () => {
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } else {
+        ok = fallback();
       }
-      if (event.key === "Escape") setSearchOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) setActiveSection(visible.target.id as SectionId);
-      },
-      { rootMargin: "-25% 0px -60% 0px", threshold: [0.1, 0.4] },
-    );
-    sections.forEach(({ id }) => {
-      const node = document.getElementById(id);
-      if (node) observer.observe(node);
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  const searchResults = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    const pages = [
-      { title: "FDE 是什么", detail: "一句话定义、核心责任和岗位边界", id: "overview" },
-      { title: "部署生命周期", detail: "发现、定界、共建、投产与回流", id: "workflow" },
-      { title: "能力地图", detail: "工程、AI、客户共创与产品判断", id: "skills" },
-      { title: "制造业实战", detail: "处理设备告警项目的三次关键决策", id: "lab" },
-      { title: "90 天入行路线", detail: "作品集、面试和自我判断", id: "career" },
-    ];
-    if (!normalized) return pages;
-    return pages.filter((item) =>
-      `${item.title}${item.detail}`.toLowerCase().includes(normalized),
-    );
-  }, [query]);
-
-  const score = answers.reduce(
-    (total, answer, index) => total + (scenarios[index]?.options[answer]?.score ?? 0),
-    0,
-  );
-
-  const jumpTo = (id: SectionId) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setMobileOpen(false);
-    setSearchOpen(false);
-  };
-
-  const answerScenario = (option: number) => {
-    if (answers.length !== scenarioStep) return;
-    setAnswers((current) => [...current, option]);
-  };
-
-  const resetLab = () => {
-    setAnswers([]);
-    setScenarioStep(0);
+    } catch {
+      ok = fallback();
+    }
+    if (ok) {
+      setCopied(true);
+      notify("话术已复制，可直接粘贴");
+      window.setTimeout(() => setCopied(false), 1500);
+    } else {
+      notify("复制失败，请手动选择");
+    }
   };
 
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <button className="brand" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <span className="brand-mark">F/DE</span>
-          <span>
-            <strong>前线工程手册</strong>
-            <small>FIELD MANUAL · 2026</small>
-          </span>
+    <button className="copy" onClick={handleCopy}>
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+      {copied ? "已复制" : "复制这句话"}
+    </button>
+  );
+}
+
+function Checklist({ items, momentId }: { items: string[]; momentId: string }) {
+  const [checked, setChecked] = useState<boolean[]>(() => items.map(() => false));
+
+  useEffect(() => {
+    setChecked(items.map(() => false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [momentId]);
+
+  return (
+    <ul className="checklist">
+      {items.map((item, index) => (
+        <li
+          key={item}
+          className={checked[index] ? "done" : ""}
+          onClick={() =>
+            setChecked((current) => current.map((v, i) => (i === index ? !v : v)))
+          }
+        >
+          <input
+            type="checkbox"
+            checked={checked[index]}
+            onChange={() =>
+              setChecked((current) => current.map((v, i) => (i === index ? !v : v)))
+            }
+          />
+          <span>{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function MomentView({ moment, onBack, notify }: { moment: Moment; onBack: () => void; notify: Notify }) {
+  return (
+    <>
+      <div className="crumb">
+        <button className="back" onClick={onBack}>
+          <ArrowLeft size={14} /> 返回 6 个时刻
         </button>
-        <nav className="desktop-nav" aria-label="主导航">
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              className={activeSection === section.id ? "active" : ""}
-              onClick={() => jumpTo(section.id)}
-            >
-              {section.label}
-            </button>
+      </div>
+      <div className="m-head">
+        <div className="m-index">时刻 {moment.idx}</div>
+        <h1>{moment.title}</h1>
+        <div className="goal">
+          <b>这一时刻要达成的唯一结果：</b>{moment.goal}
+        </div>
+
+        <div className="block">
+          <p className="block-title">
+            <span className="n">{BLOCK_TITLES[0].key}</span>
+            {BLOCK_TITLES[0].title}
+          </p>
+          <ol className="steps">
+            {moment.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="block">
+          <p className="block-title">
+            <span className="n">{BLOCK_TITLES[1].key}</span>
+            {BLOCK_TITLES[1].title}
+          </p>
+          {moment.scripts.map((line) => (
+            <div className="script" key={line.label}>
+              <p className="lab">{line.label}</p>
+              <p>{line.text}</p>
+              <div className="foot">
+                <CopyButton text={line.text} notify={notify} />
+              </div>
+            </div>
           ))}
-        </nav>
-        <div className="top-actions">
-          <button className="search-trigger" onClick={() => setSearchOpen(true)}>
-            <Search size={16} />
-            <span>搜索手册</span>
-            <kbd>⌘ K</kbd>
-          </button>
-          <button
-            className="icon-button menu-button"
-            aria-label={mobileOpen ? "关闭导航" : "打开导航"}
-            onClick={() => setMobileOpen((current) => !current)}
-          >
-            {mobileOpen ? <X /> : <Menu />}
+        </div>
+
+        <div className="block">
+          <p className="block-title">
+            <span className="n">{BLOCK_TITLES[2].key}</span>
+            {BLOCK_TITLES[2].title}
+          </p>
+          <Checklist items={moment.checklist} momentId={moment.id} />
+        </div>
+
+        <div className="block">
+          <p className="block-title">
+            <span className="n">{BLOCK_TITLES[3].key}</span>
+            {BLOCK_TITLES[3].title}
+          </p>
+          <div className="flags">
+            {moment.flags.map((flag) => (
+              <div className="flag" key={flag}>
+                <span className="x">
+                  <X size={14} />
+                </span>
+                <span>{flag}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="block">
+          <p className="block-title">
+            <span className="n">{BLOCK_TITLES[4].key}</span>
+            {BLOCK_TITLES[4].title}
+          </p>
+          <div className="case">
+            <p className="ct">{moment.caseStudy.tag}</p>
+            <h4>{moment.caseStudy.title}</h4>
+            <p>{moment.caseStudy.body}</p>
+            <span className="metric">
+              <b>结果</b> {moment.caseStudy.result}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="m-foot">
+        <button className="ghost-btn" onClick={onBack}>
+          <ArrowLeft size={15} /> 选其它时刻
+        </button>
+      </div>
+    </>
+  );
+}
+
+function App() {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+
+  const notify = (message: string) => {
+    setToast(message);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 1800);
+  };
+
+  const activeMoment = MOMENTS.find((m) => m.id === activeId) ?? null;
+
+  const goHome = () => {
+    setActiveId(null);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  const openMoment = (id: string) => {
+    setActiveId(id);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && activeId) goHome();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeId]);
+
+  return (
+    <div className="app-shell">
+      <div className="top">
+        <div className="wrap">
+          <button className="brand" onClick={goHome}>
+            <span className="brand-mark">FDE</span>
+            <span className="brand-name">
+              <strong>现场作战工具包</strong>
+              <small>FIELD KIT · v0.1</small>
+            </span>
           </button>
         </div>
-        {mobileOpen && (
-          <nav className="mobile-nav" aria-label="移动端导航">
-            {sections.map((section) => (
-              <button key={section.id} onClick={() => jumpTo(section.id)}>
-                <span>{section.short}</span>
-                {section.label}
-              </button>
-            ))}
-          </nav>
-        )}
-      </header>
+      </div>
 
       <main>
-        <section className="hero" aria-labelledby="hero-title">
-          <div className="hero-copy">
-            <p className="eyebrow"><Radio size={15} /> CUSTOMER REALITY / PRODUCTION CODE</p>
-            <h1 id="hero-title">FDE<br />前线工程手册</h1>
-            <p className="hero-lead">
-              站在客户现场，把最模糊、最关键的问题，变成真正运行的生产系统。
-            </p>
-            <div className="hero-actions">
-              <button className="primary-button" onClick={() => jumpTo("lab")}>
-                进入实战 <ArrowRight size={18} />
-              </button>
-              <button className="text-button" onClick={() => jumpTo("overview")}>
-                先用 60 秒了解岗位 <ChevronRight size={17} />
-              </button>
-            </div>
-          </div>
-          <div className="hero-status" aria-label="岗位核心信号">
-            <div><span>01</span><strong>深入现场</strong><small>理解没有写进 PRD 的事实</small></div>
-            <div><span>02</span><strong>亲手交付</strong><small>从原型直到生产采用</small></div>
-            <div><span>03</span><strong>反哺产品</strong><small>让一次经验产生复利</small></div>
-          </div>
-          <div className="scroll-cue"><span /> 向下进入现场</div>
-        </section>
-
-        <section id="overview" className="content-section overview-section">
-          <SectionHeading
-            index="01"
-            kicker="60 秒岗位全景"
-            title="不是顾问，也不只是工程师"
-            intro="FDE（Forward Deployed Engineer，前线部署工程师）嵌入客户团队，对从问题发现到生产采用的完整结果负责。"
-          />
-
-          <div className="definition-grid">
-            <article className="definition-primary">
-              <p className="definition-quote">
-                “一个客户，许多能力。”<br />
-                <span>用工程能力解决现场结果，再把重复模式带回核心产品。</span>
-              </p>
-              <div className="responsibility-line">
-                {["发现", "定界", "架构", "编码", "上线", "采用", "回流"].map((item, index) => (
-                  <div key={item}>
-                    <span>{String(index + 1).padStart(2, "0")}</span>
-                    <strong>{item}</strong>
-                  </div>
-                ))}
+        {!activeMoment && (
+          <section className="view show home-view">
+            <div className="wrap">
+              <div className="hero">
+                <p className="eyebrow">Forward Deployed Engineer · 现场作战工具包</p>
+                <h1>上客户现场前，先把这 6 个难关过一遍</h1>
+                <p className="lede">
+                  不是文章合集，也不是空社区。每个时刻给你<b>可直接照说的话术、可勾选的离场清单、可复制的模板</b>，外加一个带数字的真实小案例。目标只有一个：你这周就在项目里用掉其中一个。
+                </p>
+                <div className="usage">
+                  <span>
+                    <i className="dot" />
+                    进入你当前所处的时刻
+                  </span>
+                  <span>
+                    <i className="dot" />
+                    照话术开场，避免被需求带跑
+                  </span>
+                  <span>
+                    <i className="dot" />
+                    用清单做离场前自检
+                  </span>
+                </div>
               </div>
-            </article>
-            <aside className="truth-panel">
-              <div className="panel-label">THE TRUTH</div>
-              <h3>交付物不是 PPT</h3>
-              <p>而是客户在真实数据、真实权限和真实风险下愿意持续使用的系统。</p>
-              <dl>
-                <div><dt>输入</dt><dd>模糊问题 + 复杂现场</dd></div>
-                <div><dt>输出</dt><dd>可衡量的业务结果</dd></div>
-                <div><dt>杠杆</dt><dd>可复用的产品能力</dd></div>
-              </dl>
-            </aside>
-          </div>
 
-          <div className="role-table-wrap">
-            <div className="table-heading">
-              <div>
-                <p className="micro-label">ROLE DIFFERENCE</p>
-                <h3>相似岗位，到底差在哪</h3>
+              <div className="pick-title">
+                <h2>你现在卡在哪一刻？</h2>
+                <small>点进去就是对应打法</small>
               </div>
-              <p>边界会因公司而异，判断岗位时要看实际责任，不只看 Title。</p>
-            </div>
-            <div className="role-table" role="table" aria-label="FDE 与相似岗位对比">
-              <div className="role-row role-head" role="row">
-                <span role="columnheader">维度</span>
-                <span role="columnheader" className="fde-column">FDE</span>
-                <span role="columnheader">产品工程师</span>
-                <span role="columnheader">解决方案工程师</span>
-                <span role="columnheader">技术顾问</span>
-              </div>
-              {comparisons.map((row) => (
-                <div className="role-row" role="row" key={row[0]}>
-                  {row.map((cell, index) => (
-                    <span role="cell" className={index === 1 ? "fde-column" : ""} key={`${row[0]}-${index}`}>
-                      {cell}
+              <div className="grid">
+                {MOMENTS.map((moment) => (
+                  <button
+                    key={moment.id}
+                    className="moment-card"
+                    onClick={() => openMoment(moment.id)}
+                  >
+                    <span className="idx">{moment.idx}</span>
+                    <span className="moment-card-text">
+                      <h3>{moment.title}</h3>
+                      <p>{moment.when}</p>
                     </span>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="workflow" className="content-section dark-section">
-          <SectionHeading
-            index="02"
-            kicker="端到端工作方法"
-            title="五个阶段，一条价值闭环"
-            intro="FDE 的节奏不是先写完整需求再开发，而是用现场证据不断收窄问题，尽快交付可验证的生产切片。"
-            inverted
-          />
-          <div className="lifecycle-layout">
-            <div className="phase-selector" role="tablist" aria-label="部署生命周期">
-              {lifecycle.map((item, index) => (
-                <button
-                  key={item.code}
-                  role="tab"
-                  aria-selected={lifecyclePhase === index}
-                  className={lifecyclePhase === index ? "active" : ""}
-                  onClick={() => setLifecyclePhase(index)}
-                >
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <strong>{item.phase}</strong>
-                  <small>{item.code}</small>
-                </button>
-              ))}
-            </div>
-            <article className="phase-detail">
-              <div className="phase-topline">
-                <span>{lifecycle[lifecyclePhase].code}</span>
-                <span><Clock3 size={14} /> {lifecycle[lifecyclePhase].duration}</span>
-              </div>
-              <p className="phase-question">{lifecycle[lifecyclePhase].question}</p>
-              <p className="phase-work">{lifecycle[lifecyclePhase].work}</p>
-              <div className="artifact">
-                <Target size={18} />
-                <span>阶段产物</span>
-                <strong>{lifecycle[lifecyclePhase].artifact}</strong>
-              </div>
-            </article>
-          </div>
-          <div className="week-strip">
-            <div><span>MON</span><strong>用户跟访</strong><small>观察操作，不代替用户描述</small></div>
-            <div><span>TUE</span><strong>数据剖析</strong><small>验证质量、权限与边界</small></div>
-            <div><span>WED</span><strong>结对构建</strong><small>用真实样本完成纵向切片</small></div>
-            <div><span>THU</span><strong>现场评测</strong><small>错误分析与范围重排</small></div>
-            <div><span>FRI</span><strong>生产回流</strong><small>复盘风险，沉淀产品信号</small></div>
-          </div>
-        </section>
-
-        <section id="skills" className="content-section">
-          <SectionHeading
-            index="03"
-            kicker="能力地图"
-            title="技术是底座，判断力决定上限"
-            intro="强 FDE 不是每项都最深，而是能在不确定环境里快速建立足够深度，串起技术、业务与组织。"
-          />
-          <div className="skill-grid">
-            {skillGroups.map(({ title, level, icon: Icon, skills, proof }, index) => (
-              <article className="skill-card" key={title}>
-                <div className="skill-card-head">
-                  <div className="skill-icon"><Icon /></div>
-                  <span>0{index + 1} / {level}</span>
-                </div>
-                <h3>{title}</h3>
-                <div className="skill-tags">
-                  {skills.map((skill) => <span key={skill}>{skill}</span>)}
-                </div>
-                <p><Check size={16} /> {proof}</p>
-              </article>
-            ))}
-          </div>
-          <div className="decision-model">
-            <div>
-              <p className="micro-label">DAILY TRADE-OFF</p>
-              <h3>每个方案都要同时过四道门</h3>
-            </div>
-            <div className="decision-axis">
-              <span><Zap />价值<strong>现在值得做吗</strong></span>
-              <span><Clock3 />速度<strong>多久能证伪</strong></span>
-              <span><ShieldCheck />风险<strong>错了会怎样</strong></span>
-              <span><Gauge />复用<strong>下个客户更快吗</strong></span>
-            </div>
-          </div>
-        </section>
-
-        <section id="lab" className="content-section lab-section">
-          <SectionHeading
-            index="04"
-            kicker="交互式实战"
-            title="你来接管这次部署"
-            intro="客户不是在购买一个模型，而是在赌一条关键业务流程。连续完成三次判断，看看你是否具备 FDE 的结果思维。"
-          />
-          <div className="lab-frame">
-            <aside className="mission-rail">
-              <div className="mission-id"><Radio /> LIVE MISSION<br /><strong>MX-204</strong></div>
-              <div className="mission-meta">
-                <span>客户</span><strong>精密制造集团</strong>
-                <span>目标</span><strong>降低计划外停机</strong>
-                <span>周期</span><strong>4 周</strong>
-                <span>风险</span><strong className="risk">高</strong>
-              </div>
-              <div className="lab-progress" aria-label={`实战进度 ${answers.length}/3`}>
-                {[0, 1, 2].map((item) => (
-                  <span key={item} className={answers.length > item ? "done" : scenarioStep === item ? "current" : ""} />
+                    <span className="go">›</span>
+                  </button>
                 ))}
               </div>
-              <small>{answers.length} / 3 决策完成</small>
-            </aside>
-
-            <div className="scenario-panel">
-              {scenarioStep < scenarios.length ? (
-                <>
-                  <div className="scenario-head">
-                    <span>DECISION {scenarioStep + 1} / 3</span>
-                    <strong>{scenarios[scenarioStep].title}</strong>
-                  </div>
-                  <p className="scenario-context">{scenarios[scenarioStep].context}</p>
-                  <h3>{scenarios[scenarioStep].prompt}</h3>
-                  <div className="option-list">
-                    {scenarios[scenarioStep].options.map((option, index) => {
-                      const answered = answers.length > scenarioStep;
-                      const selected = answers[scenarioStep] === index;
-                      return (
-                        <button
-                          key={option.text}
-                          disabled={answered}
-                          className={selected ? (option.score === 3 ? "correct" : "wrong") : ""}
-                          onClick={() => answerScenario(index)}
-                        >
-                          <span>{String.fromCharCode(65 + index)}</span>
-                          <strong>{option.text}</strong>
-                          {selected && <Check size={18} />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {answers.length > scenarioStep && (
-                    <div className="feedback-box">
-                      <CircleAlert size={20} />
-                      <p>{scenarios[scenarioStep].options[answers[scenarioStep]].feedback}</p>
-                      <button
-                        onClick={() => setScenarioStep((current) => current + 1)}
-                      >
-                        继续下一决策 <ArrowRight size={17} />
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="mission-result">
-                  <span className="result-label">MISSION REVIEW</span>
-                  <div className="score-ring"><strong>{score}</strong><span>/ 9</span></div>
-                  <h3>{score >= 8 ? "具备结果型 FDE 思维" : score >= 5 ? "方向正确，需加强生产判断" : "仍在用传统交付思维解题"}</h3>
-                  <p>
-                    最优路径不是“最快写出模型”，而是先定义可行动结果，再交付最小闭环，最后用生产门禁守住长期信任。
-                  </p>
-                  <button className="primary-button" onClick={resetLab}>重新演练</button>
-                </div>
-              )}
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
-        <section id="career" className="content-section career-section">
-          <SectionHeading
-            index="05"
-            kicker="入行与面试"
-            title="用 90 天证明你能交付"
-            intro="证书的说服力有限。最有价值的作品集，是一个从业务问题、真实数据、工程实现到运行证据都完整的部署案例。"
-          />
-          <div className="roadmap">
-            <article>
-              <span className="roadmap-day">01—30</span>
-              <h3>补齐生产底座</h3>
-              <p>做一个带鉴权、日志、测试、部署和回滚的全栈小系统。</p>
-              <ul>
-                <li>API、数据库与数据管道</li>
-                <li>云部署、权限和可观测性</li>
-                <li>明确 SLO 与故障演练</li>
-              </ul>
-            </article>
-            <article>
-              <span className="roadmap-day">31—60</span>
-              <h3>完成 AI 纵向切片</h3>
-              <p>选一个真实工作流，用业务样本建立评测，不把演示效果当质量。</p>
-              <ul>
-                <li>50+ 条代表性 Eval 数据</li>
-                <li>质量、延迟、成本仪表</li>
-                <li>人工复核与失败降级</li>
-              </ul>
-            </article>
-            <article>
-              <span className="roadmap-day">61—90</span>
-              <h3>模拟客户交付</h3>
-              <p>找 3 位真实用户跟访，让系统承受现场约束并记录每次取舍。</p>
-              <ul>
-                <li>发现记录与范围决策</li>
-                <li>采用数据与错误复盘</li>
-                <li>可复用模块与产品建议</li>
-              </ul>
-            </article>
-          </div>
-
-          <a className="career-resume-cta" href="https://lifeyoume.icu/resume/?source=fde-playbook">
-            <div>
-              <span>RESUME FORGE · 下一步</span>
-              <h3>把这 90 天的交付证据写进岗位简历</h3>
-              <p>带着目标 JD 进入简历锻造厂，检查关键词、量化成果和 ATS 可读性。</p>
+        {activeMoment && (
+          <section className="view show moment-view" key={activeMoment.id}>
+            <div className="wrap">
+              <MomentView moment={activeMoment} onBack={goHome} notify={notify} />
             </div>
-            <strong>制作 FDE 简历 <ArrowRight size={18} /></strong>
-          </a>
-
-          <div className="interview-grid">
-            <div className="interview-main">
-              <p className="micro-label">INTERVIEW SIGNAL</p>
-              <h3>面试官真正想看到的四个证据</h3>
-              <ol>
-                <li><span>01</span><div><strong>先澄清，再编码</strong><p>主动识别用户、约束、成功指标与风险。</p></div></li>
-                <li><span>02</span><div><strong>能做范围取舍</strong><p>解释为什么先做这个，也能清楚说明不做什么。</p></div></li>
-                <li><span>03</span><div><strong>代码可进生产</strong><p>考虑测试、权限、观测、回滚，而不是停在 happy path。</p></div></li>
-                <li><span>04</span><div><strong>讲清业务影响</strong><p>把技术选择翻译成采用、效率、收入或风险变化。</p></div></li>
-              </ol>
-            </div>
-            <aside className="fit-check">
-              <BriefcaseBusiness />
-              <h3>你适合 FDE 吗？</h3>
-              <p>高匹配信号</p>
-              <ul>
-                <li>喜欢直接面对用户与模糊问题</li>
-                <li>愿意跨前后端、数据和基础设施</li>
-                <li>能在压力下做清晰取舍</li>
-                <li>对“被采用”比“已发布”更兴奋</li>
-              </ul>
-              <p>需要慎重</p>
-              <ul className="muted-list">
-                <li>强烈偏好稳定、封闭的需求边界</li>
-                <li>不愿承担出差与客户沟通</li>
-                <li>只想深耕单一技术层</li>
-              </ul>
-            </aside>
-          </div>
-
-          <div className="source-block">
-            <div className="source-heading">
-              <BookOpen />
-              <div><p className="micro-label">SOURCES</p><h3>继续深入</h3></div>
-              <span>资料核验：2026-08-28</span>
-            </div>
-            <div className="source-list">
-              {sources.map((source, index) => (
-                <a href={source.href} target="_blank" rel="noreferrer" key={source.name}>
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <div><strong>{source.name}</strong><p>{source.note}</p></div>
-                  <ExternalLink size={17} />
-                </a>
-              ))}
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
       </main>
 
-      <footer>
-        <div className="brand-mark">F/DE</div>
-        <p>从现场事实到生产结果。</p>
-        <span>独立学习项目 · 非任何公司的官方材料</span>
+      <footer className="site">
+        <div className="wrap">FDE 现场作战工具包 · 面向被派到企业做 AI 交付的工程师。</div>
       </footer>
 
-      {searchOpen && (
-        <div className="search-overlay" role="dialog" aria-modal="true" aria-label="搜索手册">
-          <button className="overlay-dismiss" aria-label="关闭搜索" onClick={() => setSearchOpen(false)} />
-          <div className="search-dialog">
-            <div className="search-input">
-              <Search />
-              <input
-                autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="搜索岗位、能力或实战..."
-              />
-              <kbd>ESC</kbd>
-            </div>
-            <div className="search-results">
-              {searchResults.map((result) => (
-                <button key={result.id} onClick={() => jumpTo(result.id as SectionId)}>
-                  <Command size={17} />
-                  <div><strong>{result.title}</strong><span>{result.detail}</span></div>
-                  <ChevronRight size={17} />
-                </button>
-              ))}
-              {searchResults.length === 0 && <p className="empty-search">没有匹配内容</p>}
-            </div>
-          </div>
-        </div>
-      )}
+      <div className={`toast${toast ? " show" : ""}`}>{toast}</div>
     </div>
   );
 }
 
-function SectionHeading({
-  index,
-  kicker,
-  title,
-  intro,
-  inverted = false,
-}: {
-  index: string;
-  kicker: string;
-  title: string;
-  intro: string;
-  inverted?: boolean;
-}) {
-  return (
-    <header className={`section-heading ${inverted ? "inverted" : ""}`}>
-      <div className="section-index">{index}</div>
-      <div>
-        <p className="eyebrow">{kicker}</p>
-        <h2>{title}</h2>
-      </div>
-      <p className="section-intro">{intro}</p>
-    </header>
-  );
-}
-
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(<DiagnosticApp />);

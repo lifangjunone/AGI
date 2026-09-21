@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.tsbuildinfo
 .DS_Store
+/.alipay-sandbox.json
+/server/data/
+/.env

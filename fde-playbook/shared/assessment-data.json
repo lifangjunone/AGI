@@ -1,0 +1,192 @@
+{
+  "dimensions": [
+    {
+      "id": "value",
+      "name": "业务价值",
+      "short": "目标是否值得做"
+    },
+    {
+      "id": "acceptance",
+      "name": "验收标准",
+      "short": "结果是否能验收"
+    },
+    {
+      "id": "data",
+      "name": "数据与合规",
+      "short": "数据是否拿得到"
+    },
+    {
+      "id": "production",
+      "name": "生产就绪",
+      "short": "Demo 是否能上线"
+    },
+    {
+      "id": "alignment",
+      "name": "客户协同",
+      "short": "关键人是否同向"
+    },
+    {
+      "id": "handoff",
+      "name": "交付交接",
+      "short": "客户是否接得住"
+    }
+  ],
+  "questions": [
+    {
+      "id": "value-outcome",
+      "dimension": "value",
+      "scenario": "需求澄清",
+      "question": "客户能否用一个业务数字说明项目成功？",
+      "why": "没有业务指标，项目容易变成演示效果竞赛。",
+      "options": [
+        { "label": "只有“更智能、更高效”这类表述", "score": 0 },
+        { "label": "知道业务方向，但没有现状基线", "score": 1 },
+        { "label": "有指标和基线，目标值仍未确认", "score": 2 },
+        { "label": "指标、基线、目标值均已书面确认", "score": 3 }
+      ]
+    },
+    {
+      "id": "value-scope",
+      "dimension": "value",
+      "scenario": "范围控制",
+      "question": "当前一期范围是否收敛到一个可闭环场景？",
+      "why": "大而全是企业 AI POC 最常见的失控起点。",
+      "options": [
+        { "label": "希望一次覆盖多个部门和完整平台", "score": 0 },
+        { "label": "有优先级，但一期仍包含多个流程", "score": 1 },
+        { "label": "聚焦一个流程，边界还有少量争议", "score": 2 },
+        { "label": "一个角色、一个动作、一个结果", "score": 3 }
+      ]
+    },
+    {
+      "id": "acceptance-metric",
+      "dimension": "acceptance",
+      "scenario": "验收设计",
+      "question": "验收标准是否包含业务、系统和采纳三类指标？",
+      "why": "只看模型准确率，通常无法证明项目创造了业务价值。",
+      "options": [
+        { "label": "尚未定义验收标准", "score": 0 },
+        { "label": "只有模型准确率或主观体验", "score": 1 },
+        { "label": "有两类指标，但测量方式不完整", "score": 2 },
+        { "label": "三类指标、阈值、测法和时间点齐全", "score": 3 }
+      ]
+    },
+    {
+      "id": "acceptance-owner",
+      "dimension": "acceptance",
+      "scenario": "决策机制",
+      "question": "谁拥有最终验收权，是否已经明确？",
+      "why": "验收人缺席会导致项目后期重新定义成功。",
+      "options": [
+        { "label": "不知道最终谁拍板", "score": 0 },
+        { "label": "知道部门，但具体责任人未确认", "score": 1 },
+        { "label": "责任人明确，但还未确认验收口径", "score": 2 },
+        { "label": "责任人已书面确认验收口径", "score": 3 }
+      ]
+    },
+    {
+      "id": "data-access",
+      "dimension": "data",
+      "scenario": "数据获取",
+      "question": "真实数据、权限和负责人现在处于什么状态？",
+      "why": "样例数据上的成功不能证明生产环境可用。",
+      "options": [
+        { "label": "还没确认数据在哪、谁能授权", "score": 0 },
+        { "label": "知道数据源，但没有访问权限", "score": 1 },
+        { "label": "已拿到脱敏样本，生产权限待审批", "score": 2 },
+        { "label": "真实数据链路、权限与责任人均就绪", "score": 3 }
+      ]
+    },
+    {
+      "id": "data-compliance",
+      "dimension": "data",
+      "scenario": "安全合规",
+      "question": "数据用途、脱敏、留存和审计是否有书面方案？",
+      "why": "口头授权不能覆盖生产环境的数据责任。",
+      "options": [
+        { "label": "尚未和安全或法务沟通", "score": 0 },
+        { "label": "口头沟通过，没有书面方案", "score": 1 },
+        { "label": "方案已提交，仍在审批", "score": 2 },
+        { "label": "最小化取数、留存与审计均已批准", "score": 3 }
+      ]
+    },
+    {
+      "id": "production-gap",
+      "dimension": "production",
+      "scenario": "POC 转生产",
+      "question": "团队是否维护了一份明确的生产差距清单？",
+      "why": "没有差距清单，Demo 完成后通常需要整体返工。",
+      "options": [
+        { "label": "目前只关注 Demo 能否跑通", "score": 0 },
+        { "label": "知道有差距，但没有逐项负责人", "score": 1 },
+        { "label": "有清单和负责人，部分截止时间缺失", "score": 2 },
+        { "label": "数据、权限、监控、回滚和运维均有计划", "score": 3 }
+      ]
+    },
+    {
+      "id": "production-safety",
+      "dimension": "production",
+      "scenario": "上线安全",
+      "question": "关键动作是否具备人工确认、监控和回滚？",
+      "why": "没有安全边界，业务方不会真正把流量交给系统。",
+      "options": [
+        { "label": "默认全自动，没有回滚预案", "score": 0 },
+        { "label": "有人审，但缺监控或回滚", "score": 1 },
+        { "label": "人工确认、监控、回滚具备其中两项", "score": 2 },
+        { "label": "三项齐全，并定义了触发阈值", "score": 3 }
+      ]
+    },
+    {
+      "id": "alignment-expectation",
+      "dimension": "alignment",
+      "scenario": "预期管理",
+      "question": "客户是否清楚一期“能做、不能做、需要人确认”的边界？",
+      "why": "能力边界不透明，会把技术问题升级成信任问题。",
+      "options": [
+        { "label": "客户期待 AI 全自动替代人工", "score": 0 },
+        { "label": "口头解释过，双方理解仍不一致", "score": 1 },
+        { "label": "边界基本一致，但没有留痕", "score": 2 },
+        { "label": "三栏边界已经书面确认", "score": 3 }
+      ]
+    },
+    {
+      "id": "alignment-rhythm",
+      "dimension": "alignment",
+      "scenario": "沟通节奏",
+      "question": "项目是否有固定同步节奏和坏消息机制？",
+      "why": "坏消息延迟披露会快速消耗客户信任。",
+      "options": [
+        { "label": "只在里程碑或出问题时沟通", "score": 0 },
+        { "label": "偶尔同步，没有固定节奏", "score": 1 },
+        { "label": "固定同步，但风险披露规则不明确", "score": 2 },
+        { "label": "固定同步、风险不过夜、决策有记录", "score": 3 }
+      ]
+    },
+    {
+      "id": "handoff-owner",
+      "dimension": "handoff",
+      "scenario": "交接责任",
+      "question": "客户侧是否已有明确的系统运营责任人？",
+      "why": "没有接手人，项目结束就会停止产生价值。",
+      "options": [
+        { "label": "还没有人愿意接", "score": 0 },
+        { "label": "有人参与，但职责未确认", "score": 1 },
+        { "label": "责任人明确，尚未完成实操", "score": 2 },
+        { "label": "责任人已独立完成操作和异常处置", "score": 3 }
+      ]
+    },
+    {
+      "id": "handoff-assets",
+      "dimension": "handoff",
+      "scenario": "资产沉淀",
+      "question": "运行手册、评测集、应急预案和支持窗口是否齐全？",
+      "why": "只交付一个模型或链接，不等于交付了可持续能力。",
+      "options": [
+        { "label": "目前只有产品或模型本身", "score": 0 },
+        { "label": "有零散文档，无法独立运行", "score": 1 },
+        { "label": "主要材料齐全，尚未演练", "score": 2 },
+        { "label": "材料齐全并完成客户独立演练", "score": 3 }
+      ]
+    }
+  ]
+}
