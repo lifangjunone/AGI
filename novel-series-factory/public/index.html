@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12161c">
+  <title>故事片场 · AI 全集制片</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="故事片场首页">
+        <span class="brand-mark">场</span>
+        <span><strong>故事片场</strong><small>NOVEL SERIES FACTORY</small></span>
+      </a>
+
+      <nav class="primary-nav" aria-label="主导航">
+        <button class="create-project-button" id="create-project-button"><span>＋</span> 创建新项目</button>
+        <button class="nav-item active" data-page="library"><span class="nav-icon">▤</span>我的项目</button>
+        <button class="nav-item" data-page="overview"><span class="nav-icon">⌂</span>方案演示</button>
+        <button class="nav-item" data-page="story"><span class="nav-icon">文</span>故事圣经</button>
+        <button class="nav-item" data-page="episodes"><span class="nav-icon">集</span>分集剧本</button>
+        <button class="nav-item" data-page="assets"><span class="nav-icon">角</span>角色资产</button>
+        <button class="nav-item" data-page="shots"><span class="nav-icon">镜</span>分镜工坊</button>
+        <button class="nav-item" data-page="production"><span class="nav-icon">产</span>批量生产</button>
+        <button class="nav-item" data-page="quality"><span class="nav-icon">检</span>质量检查</button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="storage">
+          <div><span>本月算力</span><strong>68%</strong></div>
+          <div class="storage-track"><i></i></div>
+          <small>¥ 1,364 / ¥ 2,000</small>
+        </div>
+        <button class="profile">
+          <span class="avatar">林</span>
+          <span><strong>林制作</strong><small>工作室版 · Pro</small></span>
+          <b>···</b>
+        </button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div class="project-switcher">
+          <span class="project-cover mini-cover"></span>
+          <span><small>本地项目库</small><strong>真实任务 · 单集技术预览</strong></span>
+          <button aria-label="切换项目">⌄</button>
+        </div>
+        <div class="top-actions">
+          <span class="save-state"><i></i> 项目保存到本机</span>
+          <button class="icon-button" aria-label="通知">◌<span class="dot"></span></button>
+          <button class="secondary-button">邀请成员</button>
+          <button class="primary-button" id="continue-button">查看我的项目 <span>→</span></button>
+        </div>
+      </header>
+
+      <section class="page active" id="library-page">
+        <div class="page-heading"><div><div class="eyebrow">LOCAL PRODUCTIONS</div><h1>我的项目</h1><p>刷新后继续查看任务、预览成片，失败时可重试。</p></div><button class="secondary-button" id="refresh-projects">刷新列表</button></div>
+        <div class="alert-strip"><span class="alert-symbol">i</span><div><strong>当前能力：单集技术预览，不是完整 AI 剧集</strong><small>规则抽句 + 真实 TTS + 占位画面 + 估算时间轴字幕。语言模型创作、图像与视频模型尚未接入。其他工作台为方案演示。</small></div></div>
+        <p id="library-status" role="status">正在读取本地项目…</p>
+        <div id="project-library" class="project-library"></div>
+      </section>
+      <section class="page" id="overview-page">
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow">PROJECT 01 · 连载动态漫</div>
+            <h1>早上好，林制作</h1>
+            <p>《雾隐长安》正在生产第 08–12 集，还有 3 项需要你确认。</p>
+          </div>
+          <button class="outline-button" id="preview-button">▶ 预览样集</button>
+        </div>
+
+        <div class="alert-strip">
+          <span class="alert-symbol">!</span>
+          <div><strong>第 09 集有 2 个镜头需要复核</strong><small>角色服装与设定不一致，系统已暂停这两个镜头的后续渲染。</small></div>
+          <button data-goto="quality">立即处理 <span>→</span></button>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-card">
+            <div class="metric-label"><span>全集进度</span><em class="up">按计划</em></div>
+            <div class="metric-value">32<span>%</span></div>
+            <div class="progress"><i style="width:32%"></i></div>
+            <small>12 / 36 集进入生产</small>
+          </article>
+          <article class="metric-card">
+            <div class="metric-label"><span>合格镜头</span><em class="up">↑ 6.4%</em></div>
+            <div class="metric-value">247<span>个</span></div>
+            <div class="spark-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <small>首次通过率 78.6%</small>
+          </article>
+          <article class="metric-card">
+            <div class="metric-label"><span>本项目成本</span><em>预算内</em></div>
+            <div class="metric-value">¥1,364</div>
+            <div class="budget-line"><i style="width:45%"></i><b style="left:66%"></b></div>
+            <small>预计总成本 ¥3,028</small>
+          </article>
+          <article class="metric-card">
+            <div class="metric-label"><span>预计完工</span><em>剩余 4 天</em></div>
+            <div class="metric-value">10<span>月 06 日</span></div>
+            <div class="team-row"><span>林</span><span>陈</span><span>AI</span><small>3 位协作者</small></div>
+          </article>
+        </div>
+
+        <div class="overview-layout">
+          <section class="panel production-map">
+            <div class="panel-heading">
+              <div><h2>全集生产线</h2><p>从小说理解到成片交付的实时状态</p></div>
+              <button class="text-button" data-goto="production">查看任务中心 →</button>
+            </div>
+            <div class="pipeline">
+              <button class="pipeline-step complete" data-goto="story">
+                <span class="step-icon">✓</span><strong>原著解析</strong><small>126 章</small><em>已完成</em>
+              </button>
+              <i class="connector complete"></i>
+              <button class="pipeline-step complete" data-goto="episodes">
+                <span class="step-icon">✓</span><strong>剧本改编</strong><small>36 集</small><em>已完成</em>
+              </button>
+              <i class="connector complete"></i>
+              <button class="pipeline-step active" data-goto="shots">
+                <span class="step-icon">03</span><strong>分镜生成</strong><small>312 / 864</small><em>进行中</em>
+              </button>
+              <i class="connector"></i>
+              <button class="pipeline-step" data-goto="production">
+                <span class="step-icon">04</span><strong>音画制作</strong><small>247 / 864</small><em>排队中</em>
+              </button>
+              <i class="connector"></i>
+              <button class="pipeline-step" data-goto="quality">
+                <span class="step-icon">05</span><strong>质检成片</strong><small>7 / 36 集</small><em>待处理</em>
+              </button>
+            </div>
+            <div class="batch-card">
+              <div class="batch-visual">
+                <div class="cinema-frame"><span class="moon"></span><span class="roof"></span><span class="hero"></span></div>
+                <span class="play">▶</span>
+              </div>
+              <div class="batch-copy">
+                <div><span class="status-live">● 生成中</span><span>批次 #B-20260930-04</span></div>
+                <h3>第 08–12 集 · 高潮段落</h3>
+                <p>正在生成「沈砚雨夜追凶」镜头组，预计 18 分钟后完成。</p>
+                <div class="inline-progress"><i style="width:68%"></i></div>
+                <small>68% · 42 / 62 个镜头</small>
+              </div>
+              <button class="secondary-button" data-goto="production">查看批次</button>
+            </div>
+          </section>
+
+          <aside class="panel activity-panel">
+            <div class="panel-heading"><div><h2>待你确认</h2><p>关键决策不会自动越过</p></div><span class="count">3</span></div>
+            <div class="review-list">
+              <button data-goto="assets">
+                <span class="review-icon amber">角</span>
+                <span><strong>女主雨夜服装</strong><small>3 个候选 · 角色资产</small></span>
+                <b>›</b>
+              </button>
+              <button data-goto="episodes">
+                <span class="review-icon violet">文</span>
+                <span><strong>第 13–18 集剧本</strong><small>6 集待总审 · 分集剧本</small></span>
+                <b>›</b>
+              </button>
+              <button data-goto="quality">
+                <span class="review-icon red">检</span>
+                <span><strong>第 09 集异常镜头</strong><small>2 个高风险项 · 质量检查</small></span>
+                <b>›</b>
+              </button>
+            </div>
+            <hr>
+            <div class="panel-heading compact"><div><h2>最近动态</h2></div></div>
+            <ol class="activity-list">
+              <li><i class="green"></i><div><strong>第 07 集成片通过质检</strong><small>AI 质检员 · 8 分钟前</small></div></li>
+              <li><i class="blue"></i><div><strong>陈编剧更新第 16 集台词</strong><small>修改 7 处 · 23 分钟前</small></div></li>
+              <li><i class="gray"></i><div><strong>完成 18 个镜头渲染</strong><small>批次 #B-03 · 41 分钟前</small></div></li>
+            </ol>
+          </aside>
+        </div>
+
+        <section class="panel episode-strip">
+          <div class="panel-heading">
+            <div><h2>分集进度</h2><p>快速定位每一集的生产状态</p></div>
+            <div class="legend"><span><i class="done"></i>已完成</span><span><i class="doing"></i>生产中</span><span><i></i>待开始</span></div>
+          </div>
+          <div class="episode-row" id="episode-row"></div>
+        </section>
+      </section>
+
+      <section class="page workspace-page" id="story-page">
+        <div class="page-heading">
+          <div><div class="eyebrow">STORY BIBLE · 已锁定 87%</div><h1>故事圣经</h1><p>全剧唯一事实来源，所有剧本与生成任务从这里读取设定。</p></div>
+          <button class="primary-button toast-trigger">重新解析原著</button>
+        </div>
+        <div class="story-layout">
+          <aside class="chapter-panel panel">
+            <label class="search-box">⌕ <input value="" placeholder="搜索人物、地点或设定"></label>
+            <h3>原著结构</h3>
+            <button class="chapter active"><span>卷一 · 长安夜雨</span><small>01–42 章</small></button>
+            <button class="chapter"><span>卷二 · 故城迷局</span><small>43–87 章</small></button>
+            <button class="chapter"><span>卷三 · 雾尽天明</span><small>88–126 章</small></button>
+            <div class="source-stat"><strong>126</strong><span>章节</span><strong>48.2万</strong><span>字数</span></div>
+          </aside>
+          <section class="panel bible-content">
+            <div class="tabbar">
+              <button class="active">核心设定</button><button>人物关系</button><button>时间线</button><button>伏笔</button>
+            </div>
+            <div class="setting-hero">
+              <div><span class="label">世界观摘要</span><h2>盛唐天宝年间，长安城中出现能吞噬记忆的异雾。</h2><p>大理寺少卿沈砚与身份成谜的女医师苏绾，在追查连环失踪案时，逐步发现异雾与二十年前宫廷秘案的联系。</p></div>
+              <div class="fact-score"><strong>96%</strong><small>设定完整度</small></div>
+            </div>
+            <div class="fact-grid">
+              <article><span class="fact-icon">人</span><div><strong>核心人物</strong><b>12</b><small>4 位主角 · 8 位重要配角</small></div></article>
+              <article><span class="fact-icon">地</span><div><strong>主要地点</strong><b>18</b><small>长安城内 14 · 城外 4</small></div></article>
+              <article><span class="fact-icon">事</span><div><strong>关键事件</strong><b>46</b><small>已建立完整因果链</small></div></article>
+              <article><span class="fact-icon">伏</span><div><strong>伏笔线索</strong><b>23</b><small>19 已回收 · 4 待确认</small></div></article>
+            </div>
+            <h3 class="section-title">不可违背的世界规则</h3>
+            <div class="rule-list">
+              <div><span>01</span><p><strong>异雾只在子时出现</strong><small>接触者会失去最近七日内最强烈的一段记忆。</small></p><em>已锁定</em></div>
+              <div><span>02</span><p><strong>青铜鱼符是唯一可抵御异雾的物件</strong><small>全剧仅有三枚，持有者变化必须记录。</small></p><em>已锁定</em></div>
+              <div><span>03</span><p><strong>沈砚从不饮酒</strong><small>源于童年创伤，第 28 集前不得揭示原因。</small></p><em>已锁定</em></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="page workspace-page" id="episodes-page">
+        <div class="page-heading">
+          <div><div class="eyebrow">SCRIPT ROOM · 36 集</div><h1>分集剧本</h1><p>从原文章节到可拍剧本，每一处改编都有依据。</p></div>
+          <button class="primary-button toast-trigger">批量生成下一阶段</button>
+        </div>
+        <div class="episode-workspace">
+          <aside class="panel episode-list" id="episode-list"></aside>
+          <section class="panel script-editor">
+            <div class="script-head">
+              <div><span class="label">第 09 集</span><h2>雨夜追凶</h2><p>对应原著 29–32 章 · 预计 02:18</p></div>
+              <div><button class="secondary-button toast-trigger">版本对比</button><button class="primary-button toast-trigger">确认剧本</button></div>
+            </div>
+            <div class="story-beats">
+              <span><b>00:00</b>开场钩子</span><i></i><span><b>00:26</b>线索出现</span><i></i><span><b>01:18</b>追逐升级</span><i></i><span><b>02:02</b>悬念</span>
+            </div>
+            <article class="scene-block">
+              <header><span>场 03</span><strong>西市暗巷 · 外 · 夜</strong><em>约 42 秒</em></header>
+              <div class="scene-content">
+                <p class="action">骤雨落在青石板上。沈砚翻过矮墙，落地时看见巷口一闪而过的青色衣角。</p>
+                <div class="dialogue"><span>沈砚</span><p>站住！大理寺办案！</p><em>压低声音，急促</em></div>
+                <p class="action">黑衣人回头，面具下露出一双泛白的眼睛。远处更鼓敲过三声，薄雾沿地面漫入巷中。</p>
+                <div class="dialogue"><span>苏绾</span><p>沈砚，别追！雾来了。</p><em>画外音，焦急</em></div>
+              </div>
+              <footer><span>引用设定：异雾仅在子时出现</span><button class="text-button toast-trigger">查看原文依据</button></footer>
+            </article>
+            <article class="scene-block muted-scene"><header><span>场 04</span><strong>西市暗巷 · 追逐</strong><em>约 36 秒</em></header><p>镜头脚本已生成，点击展开查看 6 个镜头。</p></article>
+          </section>
+          <aside class="panel ai-notes">
+            <h3>AI 编剧检查</h3>
+            <div class="check-score"><strong>92</strong><span>/ 100<small>可进入分镜</small></span></div>
+            <ul><li class="pass">人物行为与设定一致</li><li class="pass">时长符合 1–3 分钟</li><li class="pass">结尾含有效悬念</li><li class="warn">对白密度略高</li></ul>
+            <button class="outline-button toast-trigger">应用 2 条优化建议</button>
+          </aside>
+        </div>
+      </section>
+
+      <section class="page workspace-page" id="assets-page">
+        <div class="page-heading">
+          <div><div class="eyebrow">CAST & ASSETS · 角色一致性 94%</div><h1>角色资产</h1><p>锁定人物外观、服装、声音和跨集状态，杜绝角色漂移。</p></div>
+          <button class="primary-button toast-trigger">＋ 新建角色</button>
+        </div>
+        <div class="asset-toolbar"><div class="tabbar"><button class="active">主要角色 4</button><button>重要配角 8</button><button>服装版本 17</button><button>场景 18</button></div><label class="search-box">⌕ <input placeholder="搜索资产"></label></div>
+        <div class="character-grid">
+          <article class="character-card selected">
+            <div class="portrait portrait-one"><span class="portrait-face"></span><span class="portrait-hair"></span><em>主角</em></div>
+            <div><h3>沈砚</h3><p>大理寺少卿 · 27 岁</p><div class="asset-tags"><span>冷峻</span><span>墨色官服</span><span>低沉男声</span></div><footer><span class="locked">✓ 已锁定</span><small>被 168 个镜头引用</small></footer></div>
+          </article>
+          <article class="character-card">
+            <div class="portrait portrait-two"><span class="portrait-face"></span><span class="portrait-hair"></span><em>主角</em></div>
+            <div><h3>苏绾</h3><p>神秘女医师 · 24 岁</p><div class="asset-tags"><span>聪慧</span><span>青色襦裙</span><span>清冷女声</span></div><footer><span class="locked">✓ 已锁定</span><small>被 142 个镜头引用</small></footer></div>
+          </article>
+          <article class="character-card">
+            <div class="portrait portrait-three"><span class="portrait-face"></span><span class="portrait-hair"></span><em>反派?</em></div>
+            <div><h3>裴玄</h3><p>金吾卫中郎将 · 31 岁</p><div class="asset-tags"><span>深沉</span><span>玄甲</span><span>磁性男声</span></div><footer><span class="locked">✓ 已锁定</span><small>被 86 个镜头引用</small></footer></div>
+          </article>
+          <article class="character-card pending">
+            <div class="portrait portrait-four"><span class="portrait-face"></span><span class="portrait-hair"></span><em>待确认</em></div>
+            <div><h3>苏绾 · 雨夜版</h3><p>服装版本 · 第 09–12 集</p><div class="asset-tags"><span>湿发</span><span>深青斗篷</span><span>轻伤</span></div><footer><button class="primary-button toast-trigger">审核 3 个候选</button><small>将影响 22 个镜头</small></footer></div>
+          </article>
+        </div>
+        <section class="panel asset-detail">
+          <div class="asset-detail-head"><div><span class="label">当前选中</span><h2>沈砚 · 角色资产圣经</h2></div><button class="secondary-button toast-trigger">编辑设定</button></div>
+          <div class="turnaround"><div class="figure front"></div><div class="figure side"></div><div class="figure back"></div></div>
+          <dl><div><dt>脸型特征</dt><dd>窄长脸、剑眉、左眼下浅痣，不留胡须</dd></div><div><dt>常驻服装</dt><dd>墨色圆领官袍、暗红革带、黑色皂靴</dd></div><div><dt>声音档案</dt><dd>低沉克制 · 语速 0.92× · 情绪幅度低</dd></div><div><dt>禁用特征</dt><dd>长发披散、金色配饰、笑容夸张</dd></div></dl>
+        </section>
+      </section>
+
+      <section class="page workspace-page" id="shots-page">
+        <div class="page-heading">
+          <div><div class="eyebrow">SHOT STUDIO · 第 09 集</div><h1>分镜工坊</h1><p>剧本已拆解为可生成、可替换、可追踪的镜头单元。</p></div>
+          <div><button class="secondary-button toast-trigger">故事板预览</button><button class="primary-button toast-trigger">生成选中镜头</button></div>
+        </div>
+        <div class="shot-toolbar">
+          <div class="tabbar"><button class="active">场 03 · 暗巷</button><button>场 04 · 追逐</button><button>场 05 · 医馆</button></div>
+          <div class="view-options"><button class="active">▦ 故事板</button><button>☷ 列表</button></div>
+        </div>
+        <div class="shot-grid">
+          <article class="shot-card approved"><div class="shot-image shot-a"><span class="rain"></span><span class="subject"></span><em>00:04.2</em></div><header><b>#S03-01</b><span>S 级 · 图生视频</span></header><p>大全景。雨夜长安西市，沈砚从屋檐跃入暗巷。</p><footer><span>✓ 已通过</span><button>•••</button></footer></article>
+          <article class="shot-card approved"><div class="shot-image shot-b"><span class="rain"></span><span class="subject"></span><em>00:03.6</em></div><header><b>#S03-02</b><span>A 级 · 图生视频</span></header><p>中近景。沈砚落地抬头，雨水顺着剑眉滑落。</p><footer><span>✓ 已通过</span><button>•••</button></footer></article>
+          <article class="shot-card generating"><div class="shot-image shot-c"><span class="loader"></span><em>00:05.0</em></div><header><b>#S03-03</b><span>S 级 · 视频生成</span></header><p>主观镜头。青色衣角在巷口闪过，镜头快速前推。</p><footer><span>◌ 生成中 64%</span><button>•••</button></footer></article>
+          <article class="shot-card warning"><div class="shot-image shot-d"><span class="rain"></span><span class="subject"></span><em>00:04.8</em><i>!</i></div><header><b>#S03-04</b><span>A 级 · 图生视频</span></header><p>近景。苏绾撑伞追来，服装与雨夜版本不一致。</p><footer><span>! 待复核</span><button>重新生成</button></footer></article>
+          <article class="shot-card queued"><div class="shot-image shot-e"><span>等待上游镜头</span><em>00:03.2</em></div><header><b>#S03-05</b><span>B 级 · 静态运镜</span></header><p>特写。雨滴落在青铜鱼符上，符面泛起微光。</p><footer><span>排队中</span><button>•••</button></footer></article>
+          <button class="add-shot toast-trigger"><span>＋</span><strong>添加镜头</strong><small>插入到场 03 末尾</small></button>
+        </div>
+      </section>
+
+      <section class="page workspace-page" id="production-page">
+        <div class="page-heading">
+          <div><div class="eyebrow">PRODUCTION QUEUE · 2 个活跃批次</div><h1>批量生产</h1><p>统一调度全集图像、视频、配音和渲染任务。</p></div>
+          <button class="primary-button toast-trigger">＋ 创建生产批次</button>
+        </div>
+        <div class="production-metrics">
+          <article><span>当前并发</span><strong>8 <small>/ 12</small></strong><em class="up">运行正常</em></article>
+          <article><span>今日完成</span><strong>86 <small>镜头</small></strong><em>合格率 81.4%</em></article>
+          <article><span>预计等待</span><strong>18 <small>分钟</small></strong><em>较昨日 -12%</em></article>
+          <article><span>今日消耗</span><strong>¥ 286</strong><em>预算剩余 ¥714</em></article>
+        </div>
+        <section class="panel queue-panel">
+          <div class="panel-heading"><div><h2>生产批次</h2><p>任务失败会保留已完成结果并从断点续跑</p></div><div class="queue-filter"><button class="active">全部</button><button>运行中</button><button>待审核</button><button>已完成</button></div></div>
+          <div class="batch-table">
+            <div class="batch-row header"><span>批次</span><span>范围与任务</span><span>进度</span><span>模型 / 成本</span><span>状态</span><span></span></div>
+            <div class="batch-row"><span><b>#B-04</b><small>今天 10:24</small></span><span><strong>第 08–12 集 · 高潮段落</strong><small>62 个视频镜头</small></span><span><div class="table-progress"><i style="width:68%"></i></div><small>42 / 62</small></span><span><strong>混合智能路由</strong><small>¥186.40 / ¥272</small></span><span><em class="status running">● 运行中</em></span><span><button class="more">•••</button></span></div>
+            <div class="batch-row"><span><b>#B-03</b><small>今天 08:12</small></span><span><strong>第 08–12 集 · 角色配音</strong><small>186 条对白</small></span><span><div class="table-progress"><i style="width:100%"></i></div><small>186 / 186</small></span><span><strong>多角色 TTS</strong><small>¥24.80</small></span><span><em class="status review">待审核</em></span><span><button class="more">•••</button></span></div>
+            <div class="batch-row"><span><b>#B-02</b><small>昨天 20:46</small></span><span><strong>第 01–07 集 · 成片渲染</strong><small>7 集 · 14:36</small></span><span><div class="table-progress"><i style="width:100%"></i></div><small>7 / 7</small></span><span><strong>1080 × 1920</strong><small>¥32.60</small></span><span><em class="status done">✓ 已完成</em></span><span><button class="more">•••</button></span></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="page workspace-page" id="quality-page">
+        <div class="page-heading">
+          <div><div class="eyebrow">QUALITY CONTROL · 14 项规则</div><h1>质量检查</h1><p>从剧情连续性到音画技术指标，问题精确定位到单个镜头。</p></div>
+          <button class="primary-button toast-trigger">运行全集检查</button>
+        </div>
+        <div class="quality-summary">
+          <div class="quality-score"><span class="score-ring"><strong>91</strong><small>综合评分</small></span><div><h2>整体达到发布标准</h2><p>7 集已检查，发现 2 个高风险项、6 个建议项。</p><div class="quality-tags"><span class="good">✓ 剧情连续</span><span class="good">✓ 音画同步</span><span class="bad">! 角色一致性</span></div></div></div>
+          <div class="quality-bars"><div><span>角色一致性</span><i><b style="width:84%"></b></i><em>84</em></div><div><span>画面质量</span><i><b style="width:94%"></b></i><em>94</em></div><div><span>音画同步</span><i><b style="width:96%"></b></i><em>96</em></div><div><span>剧情连续</span><i><b style="width:92%"></b></i><em>92</em></div></div>
+        </div>
+        <section class="panel issue-panel">
+          <div class="panel-heading"><div><h2>需要处理的问题</h2><p>高风险问题已自动阻止相关镜头进入成片</p></div><span class="count danger">2 高风险</span></div>
+          <div class="issue-list">
+            <article>
+              <div class="issue-thumb shot-d"><span class="subject"></span><i>!</i></div>
+              <div class="issue-main"><span class="risk high">高风险 · 角色一致性</span><h3>苏绾服装与第 09 集雨夜设定不一致</h3><p>镜头 #S03-04 使用了“日常青色襦裙”，应引用“深青雨夜斗篷 v2”。</p><small>第 09 集 · 场 03 · 00:48</small></div>
+              <div class="issue-actions"><button class="primary-button resolve-button">自动修复</button><button class="secondary-button toast-trigger">人工处理</button></div>
+            </article>
+            <article>
+              <div class="issue-thumb shot-f"><span class="subject"></span><i>!</i></div>
+              <div class="issue-main"><span class="risk high">高风险 · 剧情连续性</span><h3>青铜鱼符持有人与故事圣经冲突</h3><p>镜头 #S04-07 中鱼符出现在裴玄手中；当前时间点应由沈砚持有。</p><small>第 09 集 · 场 04 · 01:36</small></div>
+              <div class="issue-actions"><button class="primary-button resolve-button">自动修复</button><button class="secondary-button toast-trigger">人工处理</button></div>
+            </article>
+            <article class="suggestion">
+              <div class="issue-thumb audio-thumb">⌁</div>
+              <div class="issue-main"><span class="risk low">建议 · 音频</span><h3>环境雨声音量略高</h3><p>对白区间的背景声为 -17 LUFS，建议降低至 -21 LUFS。</p><small>第 08 集 · 场 06 · 01:12</small></div>
+              <div class="issue-actions"><button class="secondary-button resolve-button">应用建议</button></div>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="preview-modal" hidden>
+    <div class="preview-modal" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+      <header><div><span class="label">样集预览</span><h2 id="preview-title">第 07 集 · 雾中来客</h2></div><button id="close-modal" aria-label="关闭">×</button></header>
+      <div class="video-preview"><div class="video-moon"></div><div class="video-city"></div><div class="video-person"></div><button>▶</button><span>00:00 / 02:06</span></div>
+      <footer><p>1080 × 1920 · 角色一致性 95 · 已通过 14 项检查</p><button class="primary-button toast-trigger">导出样集</button></footer>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="create-modal" hidden>
+    <div class="create-modal" role="dialog" aria-modal="true" aria-labelledby="create-title">
+      <header class="create-header">
+        <div>
+          <span class="label">NEW PRODUCTION</span>
+          <h2 id="create-title">创建剧集项目</h2>
+          <p>创建单集技术预览：规则抽句、真实配音和占位 MP4。暂不生成完整小说或调用付费模型。</p>
+        </div>
+        <button id="close-create-modal" aria-label="关闭">×</button>
+      </header>
+
+      <div class="wizard-steps" aria-label="创建步骤">
+        <div class="active" data-step-indicator="1"><span>1</span><b>剧情来源</b></div><i></i>
+        <div data-step-indicator="2"><span>2</span><b>内容输入</b></div><i></i>
+        <div data-step-indicator="3"><span>3</span><b>剧集规划</b></div><i></i>
+        <div data-step-indicator="4"><span>4</span><b>确认创建</b></div>
+      </div>
+
+      <div class="wizard-body">
+        <section class="wizard-panel active" data-wizard-step="1">
+          <div class="wizard-intro">
+            <h3>你的故事从哪里来？</h3>
+            <p>四种来源最终都会转为统一的结构化故事资料。</p>
+          </div>
+          <div class="source-options">
+            <button class="source-option selected" data-source="manual">
+              <span class="source-option-icon">稿</span>
+              <strong>输入或上传小说</strong>
+              <p>粘贴正文或导入 UTF-8 TXT，最多 12000 字。</p>
+              <em>适合原创与已获授权作品</em>
+            </button>
+            <button class="source-option" data-source="search">
+              <span class="source-option-icon">搜</span>
+              <strong>通过小说名查找</strong>
+              <p>输入作品名，联网检索正版、公版或可授权来源。</p>
+              <em>找到正文后仍需确认版权</em>
+            </button>
+            <button class="source-option" data-source="url">
+              <span class="source-option-icon">链</span>
+              <strong>粘贴小说链接</strong>
+              <p>解析网页中的作品信息，确认权限后读取正文。</p>
+              <em>不绕过登录、付费或反爬限制</em>
+            </button>
+            <button class="source-option" data-source="ai">
+              <span class="source-option-icon">AI</span>
+              <strong>原创剧情描述</strong>
+              <p>输入你写好的剧情，用于配音与技术预览。</p>
+              <em>AI 自动扩写尚未接入</em>
+            </button>
+          </div>
+        </section>
+
+        <section class="wizard-panel" data-wizard-step="2">
+          <div class="wizard-intro">
+            <button class="wizard-back-link" data-prev-step>← 返回选择来源</button>
+            <h3 id="source-form-title">输入或上传小说</h3>
+            <p id="source-form-subtitle">导入你拥有版权或已获得改编授权的作品。</p>
+          </div>
+
+          <div class="source-form active" data-source-form="manual">
+            <div class="form-grid two">
+              <label><span>作品名称</span><input id="manual-title" placeholder="例如：雾隐长安"></label>
+              <label><span>作者（选填）</span><input placeholder="作者名称"></label>
+            </div>
+            <label><span>小说正文</span><textarea id="manual-content" rows="8" placeholder="在这里粘贴小说正文，或使用下方文件上传……"></textarea></label>
+            <label class="upload-zone">
+              <input id="novel-file" type="file" accept=".txt,text/plain">
+              <span>⇧</span><strong>导入 TXT 正文</strong><small id="file-status">UTF-8 编码，最多 12000 字 / 100 KB</small>
+            </label>
+            <label class="copyright-check"><input type="checkbox" id="manual-rights"> 我确认拥有该内容的著作权或视频改编授权</label>
+          </div>
+
+          <div class="source-form" data-source-form="search">
+            <label><span>小说名称</span><div class="search-input-action"><input id="search-title" placeholder="输入书名，例如：聊斋志异"><button type="button" id="search-novel-button">联网查找</button></div></label>
+            <div class="search-results" id="search-results" hidden>
+              <div class="search-result selected">
+                <span class="result-cover">聊</span>
+                <div><strong>聊斋志异</strong><p>蒲松龄 · 文言短篇小说集</p><small>维基文库 · 公版来源 · 可读取正文</small></div>
+                <em>公版</em>
+              </div>
+              <div class="search-result">
+                <span class="result-cover">译</span>
+                <div><strong>聊斋志异（白话译本）</strong><p>现代整理版本</p><small>仅作品信息 · 译文版权需单独授权</small></div>
+                <em class="restricted">需授权</em>
+              </div>
+            </div>
+            <div class="rights-note"><b>版权检索原则</b><p>系统只会自动读取明确属于公共领域、开放许可，或由你提供授权证明的正文。商业作品搜索结果仅用于核对书名、作者和正版来源。</p></div>
+          </div>
+
+          <div class="source-form" data-source-form="url">
+            <label><span>小说页面或正文地址</span><input id="novel-url" type="url" placeholder="https://example.com/novel/..."></label>
+            <button class="analyze-url-button" id="analyze-url-button">解析链接内容</button>
+            <div class="url-preview" id="url-preview" hidden>
+              <span>✓</span><div><strong>页面信息已识别</strong><p>系统会展示作品名、作者、正文可用性和版权风险。</p></div>
+            </div>
+            <label><span>授权说明（选填）</span><textarea rows="4" placeholder="如果这是你的站点或已获授权内容，可填写授权依据……"></textarea></label>
+            <label class="copyright-check"><input type="checkbox" id="url-rights"> 我确认有权将该链接中的内容用于视频改编</label>
+          </div>
+
+          <div class="source-form" data-source-form="ai">
+            <label><span>一句话剧情或创作要求</span><textarea id="ai-premise" rows="5" placeholder="例如：盛唐长安，一位能看见他人记忆的女医师，与失忆的大理寺少卿联手追查一场覆盖全城的阴谋……"></textarea></label>
+            <div class="form-grid three">
+              <label><span>题材</span><select id="ai-genre"><option>悬疑探案</option><option>古风言情</option><option>都市逆袭</option><option>玄幻冒险</option><option>科幻末世</option><option>轻喜剧</option></select></label>
+              <label><span>目标受众</span><select><option>18–35 岁女性</option><option>18–35 岁男性</option><option>全年龄</option><option>亲子家庭</option></select></label>
+              <label><span>故事基调</span><select><option>紧张烧脑</option><option>轻松治愈</option><option>热血爽感</option><option>浪漫虐恋</option><option>暗黑惊悚</option></select></label>
+            </div>
+            <div class="creative-chips"><span>也可以只选一个方向：</span><button type="button">古装探案</button><button type="button">都市甜宠</button><button type="button">玄幻升级</button><button type="button">末世求生</button></div>
+          </div>
+        </section>
+
+        <section class="wizard-panel" data-wizard-step="3">
+          <div class="wizard-intro">
+            <button class="wizard-back-link" data-prev-step>← 修改剧情来源</button>
+            <span class="analysis-badge">单集技术预览 · 非 AI 规划</span>
+            <h3>确认剧集规划</h3>
+            <p>本次固定制作 1 集、3 段抽句和占位画面，实际时长以配音为准。</p>
+          </div>
+          <div class="plan-summary">
+            <div class="generated-story">
+              <span class="label">故事框架预览</span>
+              <h3 id="generated-title">雾隐长安</h3>
+              <p id="generated-summary">盛唐长安出现吞噬记忆的异雾。大理寺少卿与神秘女医师从连环失踪案入手，揭开二十年前宫廷秘案。</p>
+              <div><span>规则抽句</span><span>真实 TTS</span><span>非 AI 创作</span></div>
+            </div>
+            <div class="plan-controls">
+              <label><span>本次制作 <b id="episode-count-value">1 集</b></span><input id="episode-count" type="range" min="1" max="1" value="1" disabled></label>
+              <label><span>单集时长</span><select disabled><option>根据实际旁白时长确定</option></select></label>
+              <label><span>成片形态</span><select disabled><option>占位视觉卡 + 旁白（技术验证）</option></select></label>
+              <label><span>画幅</span><select disabled><option>720 × 1280 · 9:16</option></select></label>
+            </div>
+          </div>
+          <div class="estimate-grid">
+            <article><span>成片时长</span><strong>待配音确定</strong><small>不承诺固定时长</small></article>
+            <article><span>占位片段</span><strong>3 段</strong><small>尚未生成真实镜头</small></article>
+            <article><span>执行方式</span><strong>串行排队</strong><small>避免并发占满显存</small></article>
+            <article><span>付费模型调用</span><strong>不调用</strong><small>仅自托管 TTS 与本地渲染</small></article>
+          </div>
+        </section>
+
+        <section class="wizard-panel" data-wizard-step="4">
+          <div class="creation-success">
+            <span class="success-mark">✓</span>
+            <div class="eyebrow">READY FOR PRE-PRODUCTION</div>
+            <h3>项目已准备好创建</h3>
+            <p>创建后立即排队，生成 1 个技术预览 MP4、旁白 WAV、估算时间轴 SRT 和结构 JSON。</p>
+            <div class="final-project-card">
+              <span class="project-cover large"></span>
+              <div><small>新剧集项目</small><strong id="final-project-title">未命名故事</strong><p id="final-source-label">来源：输入或上传小说</p></div>
+              <em id="final-episode-label">36 集 · 9:16 动态漫</em>
+            </div>
+            <div class="creation-scope">
+              <div><span>第一阶段</span><strong>规则抽句</strong><small>截取正文首、中、尾片段，非自动编剧</small></div>
+              <div><span>第二阶段</span><strong>真实配音</strong><small>GPU 上 Qwen3-TTS 合成旁白</small></div>
+              <div><span>第三阶段</span><strong>占位画面合成</strong><small>本地 FFmpeg 输出 MP4 与独立字幕</small></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="wizard-footer">
+        <div><span class="safety-dot"></span><span id="wizard-safety-text">内容仅存储在当前工作区</span></div>
+        <button class="secondary-button" id="wizard-cancel">取消</button>
+        <button class="primary-button" id="wizard-next">下一步：填写内容 →</button>
+      </footer>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="mvp-progress-modal" hidden>
+    <div class="mvp-progress-modal" role="dialog" aria-modal="true" aria-labelledby="mvp-progress-title">
+      <header>
+        <div><span class="label">REAL MVP PIPELINE</span><h2 id="mvp-progress-title">正在制作首集样片</h2></div>
+        <button id="close-mvp-progress" aria-label="关闭">×</button>
+      </header>
+      <div class="mvp-progress-body">
+        <div class="mvp-progress-ring"><strong id="mvp-progress-value">0%</strong></div>
+        <div>
+          <h3 id="mvp-progress-stage">正在创建项目</h3>
+          <p id="mvp-progress-copy">技术预览使用规则抽句和占位画面；字幕按字数估算时间，未做 ASR 精确对齐。</p>
+          <div class="mvp-progress-track"><i id="mvp-progress-bar"></i></div>
+          <p class="mvp-error" id="mvp-error" hidden></p>
+          <button id="retry-project" class="primary-button" hidden>重试任务（优先复用旁白）</button>
+        </div>
+      </div>
+      <div class="mvp-result" id="mvp-result" hidden>
+        <video id="mvp-video" controls playsinline></video>
+        <div class="mvp-downloads">
+          <a id="mvp-video-link" class="primary-button" download>下载 MP4</a>
+          <a id="mvp-audio-link" class="secondary-button" download>下载旁白 WAV</a>
+          <a id="mvp-subtitle-link" class="secondary-button" download>下载字幕 SRT</a>
+          <a id="mvp-story-link" class="secondary-button" download>下载剧情 JSON</a>
+        </div>
+      </div>
+      <footer><span>使用真实 Qwen3-TTS + 本机 FFmpeg；当前不调用付费图像/视频模型。</span></footer>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite">原型操作已记录</div>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+[
+  {
+    "id": "daily-2026-10-13",
+    "title": "2026-10-13 每日热点：技术、新闻与社区讨论精选",
+    "slug": "daily-2026-10-13",
+    "author": "Trend Forum 编辑部",
+    "category": "每日热点",
+    "tags": [
+      "热点",
+      "技术",
+      "新闻",
+      "自动发布"
+    ],
+    "status": "published",
+    "publishedAt": "2026-10-13T12:49:04.068Z",
+    "sourceReport": {
+      "date": "2026-10-13",
+      "path": "/Users/bytedance/Library/Application Support/Technology Exploration Agent/reports/2026-10-13.json",
+      "generatedAt": "2026-10-13T02:18:33.802111+00:00",
+      "analysisModel": "local-rules"
+    },
+    "excerpt": "面向复杂任务自动执行的 AI Agent 技术或产品。",
+    "body": "今天的热点由 Technology Exploration 项目的最新日报生成，覆盖知乎、微博、小红书、X、V2EX、GitHub、Hacker News、Bilibili 等来源。\n\n## 今日关键信号\n1. Manifold MCP - 面向您的经纪人的SEO、AI答疑、社交媒体、广告及潜在客户数据 —— 面向复杂任务自动执行的 AI Agent 技术或产品。 来源：Buzzing/Product Hunt、NewsNow/Product Hunt\n2. Humanize Olympiad Agents: A Multi-Session Workflow for Olympiad Problem Solving with Solve, Review, Wiki, Verify —— 这项研究提出新的模型组合或路由方法，核心价值在于提升跨数据集场景的稳定性。 来源：arXiv\n3. Dropstone CLI —— 面向复杂任务自动执行的 AI Agent 技术或产品。 来源：NewsNow/Product Hunt\n4. Verifiable Retrieval for Legal Reasoning through Structure-driven Knowledge Graph —— 这项研究提出新的模型组合或路由方法，核心价值在于提升跨数据集场景的稳定性。 来源：arXiv\n5. My Ten Days Using a Domestic \\\"Personal AI Assistant\\\" | AI New Arrivals —— 一项正在升温的 AI 产品或技术动态。 来源：AI今日热榜/极客公园\n\n## 热门内容 Top 8\n1. cathrynlavery/diagram-design（GitHub Trending · 热度 68）\n2. Good news: the free access continues. By popular request, DeepSeek V4.1 Flash will remain free on WorkBuddy until October 31. Keep explor...（X · 热度 63.9）\n3. Codex CLI 默认会安装一个持久化且能自动更新的后台守护进程（Buzzing/Hacker News · 热度 59.3）\n4. Humanize Olympiad Agents: A Multi-Session Workflow for Olympiad Problem Solving with Solve, Review, Wiki, Verify（arXiv · 热度 57.9）\n5. A new UC San Diego paper builds theory of mind into a 7B agent through its training reward, so the agent learns to read a partner’s belie...（X · 热度 57.8）\n6. Dusting off this tweet from April because this gap in shared understanding of LLM capability is *widening*. It's now less \"two groups of...（X · 热度 57.8）\n7. This weekend in Codex parenting. Made an app that monitors a @Ubiquiti stream while my daughter is watching tv and auto-pauses the TV if...（X · 热度 57）\n8. lyogavin/airllm（GitHub Trending · 热度 57）\n\n## 编辑建议\n适合把这些热点拆成 3 类内容：即时快讯、深度解读、技术趋势观察。后续可以接入登录、评论、点赞、收藏和人工审核流程。",
+    "relatedItems": [
+      "jxymt2",
+      "j4w0wg",
+      "ieg69q",
+      "qefvvp",
+      "u47u2x",
+      "e0214z",
+      "4p79vd",
+      "bwdwns"
+    ]
+  },
+  {
+    "id": "daily-2026-10-10",
+    "title": "2026-10-10 每日热点：技术、新闻与社区讨论精选",
+    "slug": "daily-2026-10-10",
+    "author": "Trend Forum 编辑部",
+    "category": "每日热点",
+    "tags": [
+      "热点",
+      "技术",
+      "新闻",
+      "自动发布"
+    ],
+    "status": "published",
+    "publishedAt": "2026-10-10T09:33:30.418Z",
+    "sourceReport": {
+      "date": "2026-10-10",
+      "path": "/Users/bytedance/Library/Application Support/Technology Exploration Agent/reports/2026-10-10.json",
+      "generatedAt": "2026-10-10T03:30:09.849670+00:00",
+      "analysisModel": "local-rules"
+    },
+    "excerpt": "面向复杂任务自动执行的 AI Agent 技术或产品。",
+    "body": "今天的热点由 Technology Exploration 项目的最新日报生成，覆盖知乎、微博、小红书、X、V2EX、GitHub、Hacker News、Bilibili 等来源。\n\n## 今日关键信号\n1. dtool：面向 AI Agent 的本地数据管道 CLI —— 面向复杂任务自动执行的 AI Agent 技术或产品。 来源：NewsNow/V2EX\n2. A Closer Look at Agentic BBO: Benchmarking LLM Agents for Black-Box Optimization —— 这项研究提出新的模型组合或路由方法，核心价值在于提升跨数据集场景的稳定性。 来源：arXiv\n3. A governed cloud coding agent for teams, built on Pi —— 面向复杂任务自动执行的 AI Agent 技术或产品。 来源：Hacker News\n4. The Geometry of Hierarchical Navigation: Accuracy and Query Cost for Point Process Input —— 这项研究提出新的模型组合或路由方法，核心价值在于提升跨数据集场景的稳定性。 来源：arXiv\n5. Show HN: Context Diet – trims tool output before it floods Claude Code's context —— 一项正在升温的 AI 产品或技术动态。 来源：Hacker News、X\n\n## 热门内容 Top 8\n1. My observation going back to my old university was the same: most students had no idea what Opus 5.5 is (a week after it was out), don't...（X · 热度 68.7）\n2. A Closer Look at Agentic BBO: Benchmarking LLM Agents for Black-Box Optimization（arXiv · 热度 68.3）\n3. cathrynlavery/diagram-design（GitHub Trending · 热度 64.3）\n4. Use and Disuse: Intent-Structured Experience Consolidation for Memory and Learning in LLM Agents（arXiv · 热度 64.3）\n5. Poster: A Preliminary Study of LLM Distillation Inference（arXiv · 热度 62.6）\n6. The learner who does not learn: when optimizing a pedagogical metric degrades LLM tutoring（arXiv · 热度 60.9）\n7. An update for builders using Codex on Windows: We’ve built a new sandbox mode using @Microsoft’s Execution Containers (MXC) for faster se...（X · 热度 59.9）\n8. Cool Github repo, 29k stars 1 MCP server for reverse engineering across binaries, applications and runtime behavior. Ask your AI agent to...（X · 热度 56）\n\n## 编辑建议\n适合把这些热点拆成 3 类内容：即时快讯、深度解读、技术趋势观察。后续可以接入登录、评论、点赞、收藏和人工审核流程。",
+    "relatedItems": [
+      "se3463",
+      "uf1z3o",
+      "jxymt2",
+      "gnxy3r",
+      "xks4td",
+      "28hrkj",
+      "plvo2n",
+      "tf4pj4"
+    ]
+  }
+]

@@ -1,0 +1,45 @@
+{
+  "name": "video-intelligence-studio",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n web,api -c blue,green \"npm:dev:web\" \"npm:dev:api\"",
+    "dev:web": "vite --host 127.0.0.1 --port 5174 --strictPort",
+    "dev:api": "tsx watch server/app.ts",
+    "build": "tsc -b && vite build",
+    "start:api": "tsx server/app.ts",
+    "infra:up": "docker compose up -d neo4j",
+    "infra:down": "docker compose down",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "cytoscape": "^3.34.3",
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
+    "lucide-react": "^0.544.0",
+    "multer": "^2.4.0",
+    "neo4j-driver": "^6.2.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "ws": "^8.21.3"
+  },
+  "devDependencies": {
+    "@types/cytoscape": "^3.21.9",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@types/ws": "^8.18.1",
+    "@vitejs/plugin-react": "^5.0.3",
+    "concurrently": "^10.0.5",
+    "playwright": "^1.63.0",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.2",
+    "vite": "^7.1.7",
+    "vitest": "^3.2.4"
+  }
+}

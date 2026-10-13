@@ -1,0 +1,19 @@
+[Unit]
+Description=CLM Decision API
+After=network-online.target clm-encoder.service
+Wants=network-online.target
+Requires=clm-encoder.service
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/decision-studio/clm
+Environment=CLM_EMB_URL=http://127.0.0.1:8090/v1/embeddings
+ExecStart=/opt/decision-studio/venv/bin/clm-serve --host 127.0.0.1 --port 8700
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

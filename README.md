@@ -34,6 +34,18 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`daily-focus-widget/`](daily-focus-widget/README.md) | 今日小记 | 菜单栏常驻的轻量每日待办，支持全局呼出、快速隐藏、本地持久化和智能系统提醒 | Electron、原生 HTML/CSS/JS |
 | [`kaidan-page/`](kaidan-page/README.md) | 开单页 Kaidan | 把个人技能商品化为三档报价、收入测算和可独立分享的服务售卖页 | React、TypeScript、Vite、Playwright |
 | [`resume-forge/`](resume-forge/README.md) | ResumeForge / 简历锻造厂 | 将目标岗位 JD 与真实经历转为 ATS 可读、证据充分并可导出的一页简历 | React、TypeScript、Vite、Playwright |
+| [`autonomous-income-engine/`](autonomous-income-engine/README.md) | Autonomous Income Engine | 商品图批量成品、公开获客入口、独立付款确认和数字交付收入实验 | Node.js、Canvas、Nginx、systemd |
+| [`decision-model-lab/`](decision-model-lab/README.md) | Decision Model Lab | 校准决策模型评测、CLM 适配、概率校准和微调准入实验室 | Python、FastAPI、Docker、CLM |
+| [`decision-studio/`](decision-studio/README.md) | 决策工作台 | 面向普通用户的结构化 AI 决策与 CLM/Jev 同题对比产品 | React、Vite、FastAPI、CLM |
+| [`fde-daily-brief/`](fde-daily-brief/README.md) | FDE Daily Brief | 每天采集 FDE/AI 交付热点并生成可发布的结构化简报 | Node.js、Cron、火山方舟 |
+| [`game-hub/`](game-hub/README.md) | 坐坐游戏厅 | 可持续扩展的网页小游戏大厅和首批五个轻量小游戏 | React、Vite、Playwright |
+| [`homesort-ios/`](homesort-ios/README.md) | HomeSort | Android 默认 Launcher 与 iOS SwiftUI/WidgetKit 预测入口 | Kotlin、SwiftUI、WidgetKit、React 原型 |
+| [`local-growth-cashflow/`](local-growth-cashflow/README.md) | 邻店增长 | 面向本地商家的低成本内容获客交付工作台 | Node.js、原生 Web |
+| [`message-pet-mvp/`](message-pet-mvp/README.md) | 消息灵宠 MVP | 桌面宠物式多平台消息提醒、紧急待办和每日总结原型 | Electron、Node.js、原生 Web |
+| [`novel-series-factory/`](novel-series-factory/README.md) | Novel Series Factory | 小说到完整多集视频的 AI 桌面制片系统商业 Beta | Electron、Node.js、Ark、Seedream、Seedance |
+| [`travel-frame/`](travel-frame/README.md) | 旅帧 TravelFrame | 本地优先旅行照片整理、精选和隐私友好分析原型 | Vite、TensorFlow.js |
+| [`trend-forum/`](trend-forum/README.md) | Trend Forum | 热点聚合、社区信息流和每日自动发文公网网站 | React、Vite、自动发布脚本 |
+| [`video-intelligence-studio/`](video-intelligence-studio/README.md) | 叙镜 Narrative Lens | 视频理解、二创、裂变、知识图谱和任务中心工作台 | React、TypeScript、Express、Neo4j |
 
 ## 门户信息架构
 
@@ -42,7 +54,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 ```text
 lifeyoume.icu/
 ├── /                         LifeYouMe 产品展厅
-├── /products                 15 项公开产品与实验项目目录
+├── /products                 多项公开产品与实验项目目录
 ├── /products/<product-id>    统一产品详情、状态和入口
 ├── /admin/                   账号与子产品登录策略管理后台
 ├── /resume/                  ResumeForge 求职简历工作台
@@ -69,7 +81,7 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 ## README 状态
 
-当前 18 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
+当前 30 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
 定位、真实运行状态、构建测试方式、数据边界和统一身份接入方式；根 README 只
 维护产品地图、门户架构和跨项目约束。
 
@@ -142,6 +154,19 @@ cd ../model-operations-studio && npm install && npm run dev
 cd ../personal-privacy-vault && npm install && npm run dev
 cd ../daily-focus-widget && npm install && npm start
 cd ../kaidan-page && npm install && npm run dev
+cd ../resume-forge && npm install && npm run dev
+cd ../autonomous-income-engine && npm install && npm start
+cd ../decision-model-lab && python3 -m venv .venv && . .venv/bin/activate && pip install -e '.[dev]' && decision-lab
+cd ../decision-studio && npm install && npm run dev
+cd ../fde-daily-brief && npm install && npm run run-now
+cd ../game-hub && npm install && npm run dev
+cd ../homesort-ios && npm install && npm run dev
+cd ../local-growth-cashflow && npm start
+cd ../message-pet-mvp && npm install && npm run desktop
+cd ../novel-series-factory && npm install && npm start
+cd ../travel-frame && npm install && npm run dev
+cd ../trend-forum && npm install && npm run dev
+cd ../video-intelligence-studio && npm install && npm run dev
 ```
 
 平台服务运行：
@@ -189,6 +214,18 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 
 ## 新增功能说明
 
+- `autonomous-income-engine`：新增商品图批量成品机和自动收入实验，支持本地浏览器图片处理、带预览标识效果、固定价格 checkout、独立付款确认、高清 ZIP 解锁、公开入口探活和自动化运营循环。
+- `decision-model-lab`：新增校准决策模型实验室，适配 CLM Choice/Noul/Score/Rank 接口，提供准确率、ECE、Brier、NLL、延迟评测、可靠性图和 JSONL 评测契约。
+- `decision-studio`：新增面向用户的结构化决策工作台，支持多候选选择、是/否、评分、排序、多问题和 CLM/Jev 同题对比；Jev Key 仅保存在浏览器会话。
+- `fde-daily-brief`：新增 FDE/AI 交付日报生成器，支持公开信号采集、火山方舟生成、立即运行、定时任务和本地服务模式。
+- `game-hub`：新增“坐坐游戏厅”网页游戏底座，首批提供节奏反应、闪记方格、盯住圆点、心算快跑和十秒直觉五个小游戏，并保留可扩展注册表。
+- `homesort-ios`：新增 HomeSort 预测入口产品，Android 端可作为默认 Launcher，iOS 端提供 SwiftUI 主应用、WidgetKit 预测入口、本地预测记忆和订阅权益读取。
+- `local-growth-cashflow`：新增本地商家内容服务工作台，围绕 99/399/1299 元三档验证报价，输出内容诊断、脚本、评价回复和交付清单。
+- `message-pet-mvp`：新增桌面宠物式多平台消息中心，支持重要联系人/群聊、@我、紧急语义排序、待办提取、桌面悬浮和飞书事件接入边界。
+- `novel-series-factory`：新增小说到完整多集视频的商业 Beta 制片系统，覆盖故事来源、动态分集、制片资产、逐集生产、质量门禁、商业交付包和真实模型配置门禁。
+- `travel-frame`：新增本地优先旅行照片整理原型，围绕旅行精选、相似照片、待确认照片、质量解释和用户最终决定权设计移动优先体验。
+- `trend-forum`：新增热点聚合与每日自动发文网站，复用 Technology Intelligence 日报数据，生成社区式信息流、平台榜单、数据源状态和 `/trends/` 部署入口。
+- `video-intelligence-studio`：新增“叙镜 Narrative Lens”视频理解与二创工作台，提供本地视频上传、叙事摘要、Neo4j 人物/情节图谱、逐段转写、高光证据、二创策略和任务中心。
 - `kaidan-page`：新增 ToC 变现产品“开单页”，支持从模板或空白服务开始，定义客户、结果承诺、动态交付项、联系方式和三档报价，补充真实案例、服务保障及 FAQ；提供移动编辑/预览、目标时薪成本价、营收与产能测算、价格梯度提示、发布缺项定位、买家分享链接和含真实联系 CTA 的独立 HTML 导出，当前未接入公网托管、支付和订单。
 - `daily-focus-widget`：新增 macOS 每日待办桌面小工具“今日小记”，支持回车快速添加、完成进度、定时与置顶、菜单栏常驻、`Command + Shift + Space` 全局呼出、`Esc` 隐藏、左上/右上边缘单行折叠、五种便笺纸张颜色、开机启动及 11:00/15:00/19:00 节奏提醒；任务和外观设置仅写入本机 Application Support。
 - `personal-privacy-vault`：新增本地优先个人隐私档案“隐匣”，主密码经 PBKDF2-SHA-256 310,000 次迭代派生 AES-256-GCM 密钥；标题、分类、字段与备注整体加密写入 IndexedDB，支持六类记录、私密字段遮蔽、常用标记、内存搜索、主密码轮换、5 分钟自动锁定及 `.pvault` 加密备份恢复，不连接业务服务器；已部署至 `https://lifeyoume.icu/vault/`。

@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="批量统一商品图尺寸、主体占比、纯色背景和品牌角标；先看本地预览，付款到账后自动解锁高清 ZIP。">
+  <title>商品图批量成品机｜拖入原图，直接下载上架图包</title>
+  <link rel="preload" href="/wechat-pay.jpg" as="image">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/fflate.js"></script>
+</head>
+<body data-default-preset="">
+  <main class="page image-studio">
+    <section class="hero card image-studio-hero">
+      <p class="eyebrow">商品图批量处理工具</p>
+      <h1>批量整理商品图，预览满意再下载</h1>
+      <p class="lead">上传原图后自动统一尺寸、主体占比、留白和背景，确认整批效果后导出 ZIP。所有图片只在当前浏览器处理，不会上传。</p>
+      <div class="hero-proof">
+        <span>原图不上传</span><span>最多 30 张</span><span>先看完整预览</span><span>高清 ZIP</span>
+      </div>
+    </section>
+
+    <section class="card studio-panel" aria-labelledby="studio-title">
+      <div class="studio-heading">
+        <div>
+          <p class="eyebrow">现在就能用</p>
+          <h2 id="studio-title">商品图批量工作台</h2>
+        </div>
+        <strong data-file-count>还未选择图片</strong>
+      </div>
+
+      <label class="image-dropzone" data-dropzone>
+        <input type="file" accept="image/jpeg,image/png,image/webp" multiple data-file-input>
+        <span class="drop-icon">＋</span>
+        <strong>点击选择，或把商品图拖到这里</strong>
+        <small>支持 JPG、PNG、WebP；单次最多 30 张，每张不超过 20MB</small>
+      </label>
+
+      <div class="preset-strip" aria-label="一键成品预设">
+        <div><strong>一键预设</strong><small>选择后仍可继续调整</small></div>
+        <button type="button" data-preset="white-main">白底主图</button>
+        <button type="button" data-preset="portrait-product">3:4 商品图</button>
+        <button type="button" data-preset="social-card">4:5 内容图</button>
+        <button type="button" data-preset="taobao-main">淘宝方形主图</button>
+        <button type="button" data-preset="pdd-main">拼多多方形主图</button>
+        <button type="button" data-preset="xhs-product">小红书 3:4</button>
+        <button type="button" data-preset="douyin-product">抖音 3:4</button>
+      </div>
+
+      <div class="studio-controls">
+        <fieldset>
+          <legend>成品尺寸</legend>
+          <label><input type="radio" name="size" value="square" checked> 1:1 主图 <small>1200 × 1200</small></label>
+          <label><input type="radio" name="size" value="portrait"> 3:4 商品图 <small>1200 × 1600</small></label>
+          <label><input type="radio" name="size" value="social"> 4:5 内容图 <small>1200 × 1500</small></label>
+          <label><input type="radio" name="size" value="taobao"> 淘宝主图 <small>800 × 800</small></label>
+          <label><input type="radio" name="size" value="pdd"> 拼多多主图 <small>800 × 800</small></label>
+          <label><input type="radio" name="size" value="xhs"> 小红书商品图 <small>1242 × 1660</small></label>
+          <label><input type="radio" name="size" value="douyin"> 抖音商品图 <small>1080 × 1440</small></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>图片适配</legend>
+          <label><input type="radio" name="fit" value="contain" checked> 完整留白 <small>不裁商品</small></label>
+          <label><input type="radio" name="fit" value="cover"> 铺满画布 <small>可能裁边</small></label>
+          <label><input type="checkbox" data-normalize-subject checked> 统一主体占比 <small>自动消除原图多余留白</small></label>
+        </fieldset>
+
+        <div class="control-field">
+          <label for="background">背景颜色</label>
+          <div class="color-control">
+            <input id="background" type="color" value="#ffffff" data-background>
+            <input type="text" value="#FFFFFF" maxlength="7" data-background-text aria-label="背景颜色十六进制值">
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>原图背景处理</legend>
+          <label><input type="radio" name="matte" value="keep" checked> 保留原背景 <small>适合复杂场景</small></label>
+          <label><input type="radio" name="matte" value="replace"> 自动换纯色背景 <small>适合白/灰/棚拍底</small></label>
+          <label class="tolerance-control">容差 <output data-tolerance-output>34</output>
+            <input type="range" min="12" max="80" value="34" data-tolerance>
+          </label>
+        </fieldset>
+
+        <div class="control-field">
+          <label for="padding">四周留白 <output data-padding-output>8%</output></label>
+          <input id="padding" type="range" min="0" max="24" value="8" data-padding>
+        </div>
+
+        <div class="control-field">
+          <label for="brand">品牌角标 <small>可留空</small></label>
+          <input id="brand" type="text" maxlength="24" placeholder="例如：MORI STUDIO" data-brand>
+        </div>
+
+        <div class="control-field">
+          <label for="format">导出格式</label>
+          <select id="format" data-format>
+            <option value="image/jpeg">JPG · 体积更小</option>
+            <option value="image/webp">WebP · 网页清晰</option>
+            <option value="image/png">PNG · 无损</option>
+          </select>
+        </div>
+
+        <div class="control-field">
+          <label for="quality">清晰度 <output data-quality-output>92%</output></label>
+          <input id="quality" type="range" min="70" max="100" value="92" data-quality>
+        </div>
+
+        <div class="control-field">
+          <label for="prefix">文件名前缀</label>
+          <input id="prefix" type="text" maxlength="30" value="product" data-prefix>
+        </div>
+      </div>
+
+      <div class="studio-actions">
+        <button class="button" type="button" data-process disabled>生成整批效果预览</button>
+        <button class="button ghost" type="button" data-clear disabled>清空</button>
+        <span role="status" aria-live="polite" data-status>图片不会上传到服务器。</span>
+      </div>
+
+      <div class="image-queue" data-queue hidden></div>
+
+      <section class="studio-result" data-result hidden>
+        <div>
+          <p class="eyebrow">处理完成</p>
+          <h2><span data-result-count>0</span> 张上架图预览已生成</h2>
+          <p data-result-summary></p>
+        </div>
+        <div class="result-actions">
+          <button class="button" type="button" data-unlock>¥6.90 解锁高清 ZIP</button>
+          <button class="button" type="button" data-download hidden>下载已购高清 ZIP</button>
+          <button class="button ghost" type="button" data-share-card hidden>分享处理效果</button>
+        </div>
+      </section>
+
+      <div class="result-preview-grid" data-preview-grid hidden></div>
+
+      <section class="support checkout-panel" data-support hidden>
+        <p class="eyebrow">确认效果后再付款 · 到账自动解锁</p>
+        <h2>微信扫码支付 <strong data-payment-amount>本单金额</strong></h2>
+        <p data-payment-instruction>点击上方解锁按钮后，程序会生成本单唯一金额。</p>
+        <img src="/wechat-pay.jpg" alt="微信收款二维码">
+        <p class="checkout-live-status" role="status" aria-live="polite" data-payment-status>尚未创建订单。</p>
+      </section>
+    </section>
+
+    <section class="card value-proof">
+      <p class="eyebrow">程序替你完成的工作</p>
+      <div class="benefit-grid">
+        <article><strong>01</strong><h3>统一平台规格</h3><p>把横图、竖图和不同分辨率原图统一为同一套成品尺寸。</p></article>
+        <article><strong>02</strong><h3>自动换纯色背景</h3><p>从图片四角识别白、灰或棚拍纯色底并替换；复杂背景会保留原图。</p></article>
+        <article><strong>03</strong><h3>批量品牌角标</h3><p>一次填写品牌名，程序自动应用到全部成品，不必逐张操作。</p></article>
+        <article><strong>04</strong><h3>到账自动交付 ZIP</h3><p>买家先看整批效果；权威到账匹配后浏览器自动开放高清 ZIP，不需要人工确认或返图。</p></article>
+      </div>
+    </section>
+
+    <section class="card privacy-proof">
+      <div>
+        <p class="eyebrow">隐私边界</p>
+        <h2>原图不离开你的设备</h2>
+      </div>
+      <p>图片解码、画布处理和 ZIP 打包全部在当前浏览器完成。页面只发送不含文件名和图片内容的匿名“完成处理”事件，用来判断产品是否真的有人使用。</p>
+    </section>
+  </main>
+
+  <script>
+  (() => {
+    const MAX_FILES = 30;
+    const MAX_BYTES = 20 * 1024 * 1024;
+    const sizes = {
+      square: [1200, 1200, '1x1'],
+      portrait: [1200, 1600, '3x4'],
+      social: [1200, 1500, '4x5'],
+      taobao: [800, 800, 'taobao-800'],
+      pdd: [800, 800, 'pdd-800'],
+      xhs: [1242, 1660, 'xhs-3x4'],
+      douyin: [1080, 1440, 'douyin-3x4']
+    };
+    const extensions = {'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/png': 'png'};
+    const state = { files: [], zipBlob: null, zipName: '', checkoutId: '', previewUrls: [], paid: false, pollTimer: null, shareBlob: null, firstRenderedBlob: null };
+    const $ = (selector) => document.querySelector(selector);
+    const input = $('[data-file-input]');
+    const dropzone = $('[data-dropzone]');
+    const processButton = $('[data-process]');
+    const clearButton = $('[data-clear]');
+    const queue = $('[data-queue]');
+    const result = $('[data-result]');
+    const support = $('[data-support]');
+    const status = $('[data-status]');
+    const previewGrid = $('[data-preview-grid]');
+    const unlockButton = $('[data-unlock]');
+    const downloadButton = $('[data-download]');
+    const shareButton = $('[data-share-card]');
+    const paymentStatus = $('[data-payment-status]');
+    const apiBasePromise = (async () => {
+      try {
+        const servicePath = location.pathname.includes('/presets/') ? '../service.json' : './service.json';
+        const response = await fetch(servicePath, {cache: 'no-store'});
+        const payload = await response.json();
+        if (response.ok && /^https:\/\//i.test(payload.url || '')) return String(payload.url).replace(/\/+$/, '');
+      } catch {}
+      const appUrl = location.pathname.includes('/presets/')
+        ? new URL('../', location.href)
+        : new URL('./', location.href);
+      return appUrl.href.replace(/\/+$/, '');
+    })();
+
+    async function apiUrl(path) {
+      return (await apiBasePromise) + path;
+    }
+
+    async function trackEvent(channel) {
+      const eventsUrl = await apiUrl('/api/events');
+      navigator.sendBeacon?.(eventsUrl, new Blob([JSON.stringify({
+        type: 'interaction',
+        experimentId: 'product-image-batch-studio',
+        variantId: document.body.dataset.defaultPreset || 'direct',
+        channel
+      })], {type: 'application/json'}));
+    }
+
+    async function refreshCommerceReadiness() {
+      try {
+        const response = await fetch(await apiUrl('/api/commerce-readiness'), {cache: 'no-store'});
+        const payload = await response.json();
+        if (response.ok && payload.checkoutEnabled) {
+          unlockButton.disabled = false;
+          unlockButton.textContent = '¥6.90 解锁高清 ZIP';
+          unlockButton.title = '';
+          return true;
+        }
+        unlockButton.disabled = true;
+        unlockButton.textContent = '付款通道未就绪';
+        unlockButton.title = payload.message || '暂不创建无法自动核验的付款';
+        status.textContent = '效果预览可正常使用；可靠到账确认源尚未就绪，程序暂不收款。';
+        return false;
+      } catch {
+        unlockButton.disabled = true;
+        unlockButton.textContent = '付款服务暂不可用';
+        status.textContent = '效果预览可正常使用；付款服务暂时无法连接。';
+        return false;
+      }
+    }
+
+    function cleanName(value, fallback = 'product') {
+      const cleaned = String(value || '').trim().replace(/[\\/:*?"<>|\s]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+      return cleaned || fallback;
+    }
+
+    function fileLabel(bytes) {
+      return bytes > 1024 * 1024 ? (bytes / 1024 / 1024).toFixed(1) + ' MB' : Math.ceil(bytes / 1024) + ' KB';
+    }
+
+    function setFiles(incoming) {
+      const accepted = [];
+      const rejected = [];
+      for (const file of Array.from(incoming || []).slice(0, MAX_FILES)) {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) rejected.push(file.name + '：格式不支持');
+        else if (file.size > MAX_BYTES) rejected.push(file.name + '：超过 20MB');
+        else accepted.push(file);
+      }
+      state.files = accepted;
+      state.zipBlob = null;
+      state.previewUrls.forEach((url) => URL.revokeObjectURL(url));
+      state.previewUrls = [];
+      state.shareBlob = null;
+      state.firstRenderedBlob = null;
+      previewGrid.replaceChildren();
+      previewGrid.hidden = true;
+      result.hidden = true;
+      support.hidden = true;
+      downloadButton.hidden = true;
+      unlockButton.hidden = false;
+      shareButton.hidden = true;
+      refreshCommerceReadiness();
+      processButton.disabled = accepted.length === 0;
+      clearButton.disabled = accepted.length === 0;
+      $('[data-file-count]').textContent = accepted.length ? accepted.length + ' 张待处理' : '还未选择图片';
+      queue.hidden = accepted.length === 0;
+      queue.replaceChildren(...accepted.map((file, index) => {
+        const item = document.createElement('article');
+        const image = document.createElement('img');
+        const url = URL.createObjectURL(file);
+        image.src = url;
+        image.alt = '';
+        image.onload = () => URL.revokeObjectURL(url);
+        const copy = document.createElement('div');
+        const name = document.createElement('strong');
+        name.textContent = file.name;
+        const meta = document.createElement('small');
+        meta.textContent = fileLabel(file.size);
+        copy.append(name, meta);
+        const badge = document.createElement('span');
+        badge.textContent = String(index + 1).padStart(2, '0');
+        item.append(image, copy, badge);
+        return item;
+      }));
+      status.textContent = rejected.length ? '已忽略：' + rejected.join('；') : (accepted.length ? '已读取 ' + accepted.length + ' 张图片，等待生成。' : '图片不会上传到服务器。');
+    }
+
+    input.addEventListener('change', () => setFiles(input.files));
+    for (const type of ['dragenter', 'dragover']) {
+      dropzone.addEventListener(type, (event) => {
+        event.preventDefault();
+        dropzone.classList.add('dragging');
+      });
+    }
+    for (const type of ['dragleave', 'drop']) {
+      dropzone.addEventListener(type, (event) => {
+        event.preventDefault();
+        dropzone.classList.remove('dragging');
+      });
+    }
+    dropzone.addEventListener('drop', (event) => setFiles(event.dataTransfer.files));
+
+    $('[data-background]').addEventListener('input', (event) => {
+      $('[data-background-text]').value = event.target.value.toUpperCase();
+    });
+    $('[data-background-text]').addEventListener('change', (event) => {
+      if (/^#[0-9a-f]{6}$/i.test(event.target.value)) $('[data-background]').value = event.target.value;
+      else event.target.value = $('[data-background]').value.toUpperCase();
+    });
+    $('[data-padding]').addEventListener('input', (event) => $('[data-padding-output]').value = event.target.value + '%');
+    $('[data-quality]').addEventListener('input', (event) => $('[data-quality-output]').value = event.target.value + '%');
+    $('[data-tolerance]').addEventListener('input', (event) => $('[data-tolerance-output]').value = event.target.value);
+
+    const presets = {
+      'white-main': {size: 'square', fit: 'contain', matte: 'replace', normalize: true, background: '#ffffff', padding: 8, format: 'image/jpeg', quality: 92},
+      'portrait-product': {size: 'portrait', fit: 'contain', matte: 'keep', normalize: true, background: '#ffffff', padding: 6, format: 'image/jpeg', quality: 92},
+      'social-card': {size: 'social', fit: 'cover', matte: 'keep', normalize: false, background: '#f4f1ea', padding: 0, format: 'image/jpeg', quality: 90},
+      'taobao-main': {size: 'taobao', fit: 'contain', matte: 'replace', normalize: true, background: '#ffffff', padding: 7, format: 'image/jpeg', quality: 92},
+      'pdd-main': {size: 'pdd', fit: 'contain', matte: 'replace', normalize: true, background: '#ffffff', padding: 5, format: 'image/jpeg', quality: 90},
+      'xhs-product': {size: 'xhs', fit: 'contain', matte: 'keep', normalize: true, background: '#f7f3ed', padding: 4, format: 'image/jpeg', quality: 92},
+      'douyin-product': {size: 'douyin', fit: 'cover', matte: 'keep', normalize: false, background: '#ffffff', padding: 0, format: 'image/jpeg', quality: 92}
+    };
+    document.querySelectorAll('[data-preset]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const preset = presets[button.dataset.preset];
+        if (!preset) return;
+        document.querySelector('input[name="size"][value="' + preset.size + '"]').checked = true;
+        document.querySelector('input[name="fit"][value="' + preset.fit + '"]').checked = true;
+        document.querySelector('input[name="matte"][value="' + preset.matte + '"]').checked = true;
+        $('[data-normalize-subject]').checked = preset.normalize;
+        $('[data-background]').value = preset.background;
+        $('[data-background-text]').value = preset.background.toUpperCase();
+        $('[data-padding]').value = preset.padding;
+        $('[data-padding-output]').value = preset.padding + '%';
+        $('[data-format]').value = preset.format;
+        $('[data-quality]').value = preset.quality;
+        $('[data-quality-output]').value = preset.quality + '%';
+        document.querySelectorAll('[data-preset]').forEach((item) => item.classList.toggle('active', item === button));
+        status.textContent = button.textContent.trim() + '预设已应用，可以继续调整。';
+      });
+    });
+    const requestedPreset = document.body.dataset.defaultPreset || new URLSearchParams(location.search).get('preset');
+    if (requestedPreset && presets[requestedPreset]) {
+      document.querySelector('[data-preset="' + requestedPreset + '"]')?.click();
+    }
+
+    async function decodeImage(file) {
+      if ('createImageBitmap' in window) return createImageBitmap(file, {imageOrientation: 'from-image'});
+      const url = URL.createObjectURL(file);
+      try {
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        return image;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    function canvasBlob(canvas, type, quality) {
+      return new Promise((resolve, reject) => canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('浏览器无法导出该格式')),
+        type,
+        quality
+      ));
+    }
+
+    async function previewUrl(blob, label) {
+      const image = await decodeImage(blob);
+      try {
+        const scale = Math.min(1, 360 / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        context.save();
+        context.translate(canvas.width / 2, canvas.height / 2);
+        context.rotate(-Math.PI / 8);
+        context.font = '800 ' + Math.max(18, Math.round(canvas.width * .075)) + 'px Arial, sans-serif';
+        context.textAlign = 'center';
+        context.fillStyle = 'rgba(255,255,255,.72)';
+        context.strokeStyle = 'rgba(12,70,42,.38)';
+        context.lineWidth = 3;
+        context.strokeText('效果预览', 0, 0);
+        context.fillText('效果预览', 0, 0);
+        context.restore();
+        const preview = await canvasBlob(canvas, 'image/jpeg', .76);
+        const url = URL.createObjectURL(preview);
+        state.previewUrls.push(url);
+        const figure = document.createElement('figure');
+        const element = document.createElement('img');
+        element.src = url;
+        element.alt = label + ' 处理效果预览';
+        const caption = document.createElement('figcaption');
+        caption.textContent = label;
+        figure.append(element, caption);
+        previewGrid.append(figure);
+      } finally {
+        if (typeof image.close === 'function') image.close();
+      }
+    }
+
+    async function createShareCard(summary) {
+      if (!state.firstRenderedBlob) return null;
+      const image = await decodeImage(state.firstRenderedBlob);
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1350;
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#f3f8ee';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = '#0e2d1c';
+        context.font = '800 60px Arial, sans-serif';
+        context.fillText('一批商品图，程序已经处理好', 64, 100);
+        context.fillStyle = '#397050';
+        context.font = '700 28px Arial, sans-serif';
+        context.fillText(summary.slice(0, 54), 64, 150);
+        const frame = {x: 64, y: 200, width: 952, height: 930};
+        context.fillStyle = '#fff';
+        context.beginPath();
+        context.roundRect(frame.x, frame.y, frame.width, frame.height, 28);
+        context.fill();
+        const scale = Math.min((frame.width - 64) / image.width, (frame.height - 64) / image.height);
+        const width = image.width * scale;
+        const height = image.height * scale;
+        context.drawImage(image, frame.x + (frame.width - width) / 2, frame.y + (frame.height - height) / 2, width, height);
+        context.fillStyle = 'rgba(14,45,28,.72)';
+        context.font = '800 44px Arial, sans-serif';
+        context.textAlign = 'center';
+        context.fillText('效果预览', canvas.width / 2, frame.y + frame.height / 2);
+        context.textAlign = 'left';
+        context.fillStyle = '#0e2d1c';
+        context.font = '800 38px Arial, sans-serif';
+        context.fillText('商品图批量成品机', 64, 1210);
+        context.fillStyle = '#397050';
+        context.font = '600 25px Arial, sans-serif';
+        context.fillText('图片不上传 · 自动统一规格、背景与主体占比', 64, 1255);
+        context.fillText('打开分享链接，自己拖图就能看处理效果', 64, 1295);
+        state.shareBlob = await canvasBlob(canvas, 'image/png', 1);
+        shareButton.hidden = false;
+        await trackEvent('share-card-created');
+        return state.shareBlob;
+      } finally {
+        if (typeof image.close === 'function') image.close();
+      }
+    }
+
+    function estimateCornerBackground(image) {
+      const sample = document.createElement('canvas');
+      sample.width = 96;
+      sample.height = 96;
+      const context = sample.getContext('2d', {willReadFrequently: true});
+      context.drawImage(image, 0, 0, sample.width, sample.height);
+      const data = context.getImageData(0, 0, sample.width, sample.height).data;
+      const patch = 8;
+      const corners = [
+        [0, 0],
+        [sample.width - patch, 0],
+        [0, sample.height - patch],
+        [sample.width - patch, sample.height - patch]
+      ].map(([startX, startY]) => {
+        let red = 0, green = 0, blue = 0, count = 0;
+        for (let y = startY; y < startY + patch; y += 1) {
+          for (let x = startX; x < startX + patch; x += 1) {
+            const offset = (y * sample.width + x) * 4;
+            red += data[offset];
+            green += data[offset + 1];
+            blue += data[offset + 2];
+            count += 1;
+          }
+        }
+        return [red / count, green / count, blue / count];
+      });
+      const color = [0, 1, 2].map((channel) => corners.reduce((sum, item) => sum + item[channel], 0) / corners.length);
+      const spread = Math.max(...corners.map((item) => Math.hypot(item[0] - color[0], item[1] - color[1], item[2] - color[2])));
+      return {color, reliable: spread <= 28};
+    }
+
+    function removeFlatBackground(layer, background, tolerance) {
+      if (!background.reliable) return false;
+      const context = layer.getContext('2d', {willReadFrequently: true});
+      const imageData = context.getImageData(0, 0, layer.width, layer.height);
+      const data = imageData.data;
+      const [red, green, blue] = background.color;
+      const softStart = tolerance * 0.62;
+      const softEnd = tolerance * 1.35;
+      for (let index = 0; index < data.length; index += 4) {
+        if (data[index + 3] === 0) continue;
+        const distance = Math.hypot(data[index] - red, data[index + 1] - green, data[index + 2] - blue);
+        if (distance <= softStart) data[index + 3] = 0;
+        else if (distance < softEnd) data[index + 3] = Math.round(data[index + 3] * (distance - softStart) / (softEnd - softStart));
+      }
+      context.putImageData(imageData, 0, 0);
+      return true;
+    }
+
+    function detectSubjectBounds(image, background, tolerance) {
+      const sample = document.createElement('canvas');
+      const scale = Math.min(1, 256 / Math.max(image.width, image.height));
+      sample.width = Math.max(1, Math.round(image.width * scale));
+      sample.height = Math.max(1, Math.round(image.height * scale));
+      const context = sample.getContext('2d', {willReadFrequently: true});
+      context.drawImage(image, 0, 0, sample.width, sample.height);
+      const data = context.getImageData(0, 0, sample.width, sample.height).data;
+      let minX = sample.width, minY = sample.height, maxX = -1, maxY = -1, visible = 0;
+      const threshold = Math.max(12, tolerance * .7);
+      const hasTransparentEdge = [
+        [3, 3],
+        [sample.width - 4, 3],
+        [3, sample.height - 4],
+        [sample.width - 4, sample.height - 4]
+      ].some(([x, y]) => data[(y * sample.width + x) * 4 + 3] < 245);
+      if (!hasTransparentEdge && !background.reliable) return null;
+      for (let y = 0; y < sample.height; y += 1) {
+        for (let x = 0; x < sample.width; x += 1) {
+          const offset = (y * sample.width + x) * 4;
+          const alpha = data[offset + 3];
+          const foreground = hasTransparentEdge
+            ? alpha > 24
+            : Math.hypot(
+              data[offset] - background.color[0],
+              data[offset + 1] - background.color[1],
+              data[offset + 2] - background.color[2]
+            ) > threshold;
+          if (!foreground) continue;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+          visible += 1;
+        }
+      }
+      if (maxX < minX || maxY < minY || visible < sample.width * sample.height * .002) return null;
+      const margin = Math.max(2, Math.round(Math.max(maxX - minX, maxY - minY) * .025));
+      minX = Math.max(0, minX - margin);
+      minY = Math.max(0, minY - margin);
+      maxX = Math.min(sample.width - 1, maxX + margin);
+      maxY = Math.min(sample.height - 1, maxY + margin);
+      const width = maxX - minX + 1;
+      const height = maxY - minY + 1;
+      if (width >= sample.width * .97 && height >= sample.height * .97) return null;
+      return {
+        x: minX / sample.width * image.width,
+        y: minY / sample.height * image.height,
+        width: width / sample.width * image.width,
+        height: height / sample.height * image.height
+      };
+    }
+
+    async function renderFile(file, options) {
+      const image = await decodeImage(file);
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = options.width;
+        canvas.height = options.height;
+        const context = canvas.getContext('2d', {alpha: options.type === 'image/png'});
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        context.fillStyle = options.background;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        const layer = document.createElement('canvas');
+        layer.width = canvas.width;
+        layer.height = canvas.height;
+        const layerContext = layer.getContext('2d', {alpha: true});
+        layerContext.imageSmoothingEnabled = true;
+        layerContext.imageSmoothingQuality = 'high';
+        const inset = Math.round(Math.min(canvas.width, canvas.height) * options.padding / 100);
+        const areaWidth = canvas.width - inset * 2;
+        const areaHeight = canvas.height - inset * 2;
+        const estimatedBackground = estimateCornerBackground(image);
+        const subject = options.normalize
+          ? detectSubjectBounds(image, estimatedBackground, options.tolerance)
+          : null;
+        const sourceX = subject ? subject.x : 0;
+        const sourceY = subject ? subject.y : 0;
+        const sourceWidth = subject ? subject.width : image.width;
+        const sourceHeight = subject ? subject.height : image.height;
+        const scale = options.fit === 'cover'
+          ? Math.max(areaWidth / sourceWidth, areaHeight / sourceHeight)
+          : Math.min(areaWidth / sourceWidth, areaHeight / sourceHeight);
+        const drawWidth = sourceWidth * scale;
+        const drawHeight = sourceHeight * scale;
+        layerContext.save();
+        layerContext.beginPath();
+        layerContext.rect(inset, inset, areaWidth, areaHeight);
+        layerContext.clip();
+        layerContext.drawImage(
+          image,
+          sourceX, sourceY, sourceWidth, sourceHeight,
+          (canvas.width - drawWidth) / 2, (canvas.height - drawHeight) / 2, drawWidth, drawHeight
+        );
+        layerContext.restore();
+        const matteReplaced = options.matte === 'replace'
+          ? removeFlatBackground(layer, estimatedBackground, options.tolerance)
+          : false;
+        context.drawImage(layer, 0, 0);
+        if (options.brand) {
+          const fontSize = Math.max(22, Math.round(canvas.width * 0.025));
+          context.font = '700 ' + fontSize + 'px Arial, sans-serif';
+          const paddingX = Math.round(fontSize * 0.72);
+          const boxHeight = Math.round(fontSize * 1.8);
+          const boxWidth = Math.ceil(context.measureText(options.brand).width + paddingX * 2);
+          const x = canvas.width - inset - boxWidth;
+          const y = canvas.height - inset - boxHeight;
+          context.fillStyle = 'rgba(16,33,22,.82)';
+          context.beginPath();
+          context.roundRect(x, y, boxWidth, boxHeight, Math.round(fontSize * .35));
+          context.fill();
+          context.fillStyle = '#fff';
+          context.textBaseline = 'middle';
+          context.fillText(options.brand, x + paddingX, y + boxHeight / 2);
+        }
+        return {blob: await canvasBlob(canvas, options.type, options.quality), matteReplaced, subjectNormalized: Boolean(subject)};
+      } finally {
+        if (typeof image.close === 'function') image.close();
+      }
+    }
+
+    processButton.addEventListener('click', async () => {
+      if (!state.files.length || !window.fflate) return;
+      processButton.disabled = true;
+      clearButton.disabled = true;
+      result.hidden = true;
+      support.hidden = true;
+      state.previewUrls.forEach((url) => URL.revokeObjectURL(url));
+      state.previewUrls = [];
+      state.shareBlob = null;
+      state.firstRenderedBlob = null;
+      previewGrid.replaceChildren();
+      previewGrid.hidden = true;
+      downloadButton.hidden = true;
+      unlockButton.hidden = false;
+      shareButton.hidden = true;
+      const sizeKey = document.querySelector('input[name="size"]:checked').value;
+      const [width, height, ratio] = sizes[sizeKey];
+      const type = $('[data-format]').value;
+      const options = {
+        width, height, ratio, type,
+        fit: document.querySelector('input[name="fit"]:checked').value,
+        matte: document.querySelector('input[name="matte"]:checked').value,
+        normalize: $('[data-normalize-subject]').checked,
+        background: $('[data-background]').value,
+        padding: Number($('[data-padding]').value),
+        tolerance: Number($('[data-tolerance]').value),
+        quality: Number($('[data-quality]').value) / 100,
+        brand: String($('[data-brand]').value || '').trim().slice(0, 24)
+      };
+      const prefix = cleanName($('[data-prefix]').value);
+      const zipFiles = {};
+      let matteReplacedCount = 0;
+      let subjectNormalizedCount = 0;
+      try {
+        for (let index = 0; index < state.files.length; index += 1) {
+          status.textContent = '正在处理第 ' + (index + 1) + ' / ' + state.files.length + ' 张…';
+          const rendered = await renderFile(state.files[index], options);
+          if (!state.firstRenderedBlob) state.firstRenderedBlob = rendered.blob;
+          if (rendered.matteReplaced) matteReplacedCount += 1;
+          if (rendered.subjectNormalized) subjectNormalizedCount += 1;
+          const bytes = new Uint8Array(await rendered.blob.arrayBuffer());
+          zipFiles[prefix + '-' + String(index + 1).padStart(2, '0') + '-' + ratio + '.' + extensions[type]] = bytes;
+          await previewUrl(rendered.blob, '第 ' + (index + 1) + ' 张');
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        status.textContent = '正在打包 ZIP…';
+        const zipped = window.fflate.zipSync(zipFiles, {level: 6});
+        state.zipBlob = new Blob([zipped], {type: 'application/zip'});
+        state.zipName = prefix + '-' + ratio + '-' + state.files.length + 'pcs.zip';
+        $('[data-result-count]').textContent = state.files.length;
+        const matteSummary = options.matte === 'replace'
+          ? ' · 成功换底 ' + matteReplacedCount + '/' + state.files.length
+          : '';
+        const normalizeSummary = options.normalize
+          ? ' · 主体统一 ' + subjectNormalizedCount + '/' + state.files.length
+          : '';
+        const resultSummary = width + ' × ' + height + ' · ' + extensions[type].toUpperCase() + ' · ' + fileLabel(state.zipBlob.size) + matteSummary + normalizeSummary;
+        $('[data-result-summary]').textContent = resultSummary;
+        result.hidden = false;
+        previewGrid.hidden = false;
+        status.textContent = '预览已生成，没有上传任何原图。确认效果后可解锁高清 ZIP。';
+        await restorePaidCheckout();
+        if (!state.paid) await refreshCommerceReadiness();
+        await createShareCard(resultSummary);
+        result.scrollIntoView({behavior: 'smooth', block: 'center'});
+        await trackEvent('image-batch-completed');
+      } catch (error) {
+        state.zipBlob = null;
+        status.textContent = '处理失败：' + (error && error.message ? error.message : '请减少图片后重试');
+      } finally {
+        processButton.disabled = state.files.length === 0;
+        clearButton.disabled = state.files.length === 0;
+      }
+    });
+
+    function checkoutStorageKey() {
+      return 'product-image-batch-studio:checkout';
+    }
+
+    function rememberCheckout(id) {
+      state.checkoutId = id;
+      try { localStorage.setItem(checkoutStorageKey(), id); } catch {}
+    }
+
+    function unlockDownload() {
+      state.paid = true;
+      downloadButton.hidden = false;
+      unlockButton.hidden = true;
+      support.hidden = false;
+      $('[data-payment-amount]').textContent = '已到账';
+      paymentStatus.textContent = '真实到账已匹配，高清 ZIP 已自动解锁。请在关闭页面前下载。';
+      if (state.pollTimer) clearInterval(state.pollTimer);
+    }
+
+    async function refreshPaymentStatus() {
+      if (!state.checkoutId) return false;
+      try {
+        const response = await fetch(await apiUrl('/api/checkouts/' + encodeURIComponent(state.checkoutId)));
+        const payload = await response.json();
+        if (!response.ok || !payload.ok || !payload.checkout) return false;
+        if (payload.checkout.status === 'paid') {
+          unlockDownload();
+          return true;
+        }
+        const amount = payload.checkout.paymentAmount || payload.checkout.amount;
+        $('[data-payment-amount]').textContent = '¥' + amount;
+        $('[data-payment-instruction]').textContent = payload.checkout.paymentInstruction || '请按本单金额精确支付；到账后自动解锁。';
+        paymentStatus.textContent = payload.checkout.status === 'underpaid'
+          ? '已收到部分款项，还差 ¥' + payload.checkout.shortAmount + '。补足后自动解锁。'
+          : '正在等待独立到账通知，页面会自动检查。买家自报付款不会解锁。';
+        return false;
+      } catch {
+        paymentStatus.textContent = '暂时无法查询到账状态，程序会继续重试。';
+        return false;
+      }
+    }
+
+    async function restorePaidCheckout() {
+      try { state.checkoutId = localStorage.getItem(checkoutStorageKey()) || ''; } catch {}
+      if (!state.checkoutId) return;
+      const paid = await refreshPaymentStatus();
+      if (!paid) state.checkoutId = '';
+    }
+
+    unlockButton.addEventListener('click', async () => {
+      if (!state.zipBlob) return;
+      unlockButton.disabled = true;
+      unlockButton.textContent = '正在生成本单金额…';
+      support.hidden = false;
+      paymentStatus.textContent = '正在创建安全付款记录。';
+      try {
+        const leadSessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random();
+        const response = await fetch(await apiUrl('/api/checkouts'), {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            productId: 'product-image-batch-studio',
+            variantId: 'browser-hd-zip',
+            source: 'product-image-preview',
+            leadSessionId,
+            amount: .01
+          })
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok || !payload.checkout?.id) throw new Error(payload.error || '订单创建失败');
+        rememberCheckout(payload.checkout.id);
+        $('[data-payment-amount]').textContent = '¥' + (payload.checkout.paymentAmount || payload.checkout.amount);
+        $('[data-payment-instruction]').textContent = payload.checkout.paymentInstruction;
+        paymentStatus.textContent = '等待真实到账；匹配成功后本页自动开放高清 ZIP。';
+        state.pollTimer = setInterval(refreshPaymentStatus, 4000);
+      } catch (error) {
+        support.hidden = true;
+        paymentStatus.textContent = error.message;
+        status.textContent = '付款入口暂不可用：' + error.message + '。预览仍保留，可以稍后重试。';
+      } finally {
+        unlockButton.disabled = false;
+        unlockButton.textContent = '¥6.90 解锁高清 ZIP';
+      }
+    });
+
+    downloadButton.addEventListener('click', () => {
+      if (!state.zipBlob || !state.paid) return;
+      if (!state.zipBlob) return;
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(state.zipBlob);
+      link.download = state.zipName;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1500);
+    });
+
+    shareButton.addEventListener('click', async () => {
+      if (!state.shareBlob) return;
+      const referralUrl = new URL(location.href);
+      referralUrl.searchParams.set('source', 'share-card');
+      const file = new File([state.shareBlob], '商品图处理效果.png', {type: 'image/png'});
+      try {
+        if (navigator.share && navigator.canShare?.({files: [file]})) {
+          await navigator.share({
+            title: '商品图批量处理效果',
+            text: '我用这个工具批量统一了商品图规格，图片不上传，可以直接试效果。',
+            url: referralUrl.href,
+            files: [file]
+          });
+          await trackEvent('share-card-shared');
+          return;
+        }
+      } catch (error) {
+        if (error?.name === 'AbortError') return;
+      }
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(state.shareBlob);
+      link.download = '商品图处理效果.png';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1500);
+      await navigator.clipboard?.writeText(referralUrl.href).catch(() => {});
+      status.textContent = '效果卡已下载，回流链接已复制；可直接发给需要处理商品图的人。';
+      await trackEvent('share-card-shared');
+    });
+
+    clearButton.addEventListener('click', () => {
+      input.value = '';
+      setFiles([]);
+    });
+    refreshCommerceReadiness();
+    if (new URLSearchParams(location.search).get('source') === 'share-card') trackEvent('share-card-referral');
+  })();
+  </script>
+</body>
+</html>

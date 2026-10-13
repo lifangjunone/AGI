@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="校准决策模型探索与评测工作台">
+  <title>Decision Model Lab</title>
+  <link rel="stylesheet" href="/assets/app.css?v=2">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark">D</span>
+      <span>Decision Model Lab</span>
+    </a>
+    <nav>
+      <button class="nav active" data-view="playground">决策台</button>
+      <button class="nav" data-view="evaluation">校准评测</button>
+      <button class="nav" data-view="research">研究路线</button>
+    </nav>
+    <div class="health"><span class="health-dot"></span><span id="health-label">检查中</span></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">SYSTEM ONE EXPLORATION · CLM</p>
+        <h1>把模型输出从文本<br>收敛为可执行决策</h1>
+        <p class="lead">统一验证 Choice、Score、Yes/No 与候选排序；以准确率、校准误差和延迟判断它是否真的适合进入 Agent Loop。</p>
+      </div>
+      <div class="hero-stat">
+        <span id="provider-label">MOCK</span>
+        <strong id="model-label">mock-lexical</strong>
+        <small>当前推理后端</small>
+      </div>
+    </section>
+
+    <section id="playground" class="view active">
+      <div class="workbench">
+        <article class="panel input-panel">
+          <div class="panel-head">
+            <div><span class="step">01</span><h2>定义状态</h2></div>
+            <select id="preset">
+              <option value="billing">重复扣款</option>
+              <option value="coding">Coding Agent</option>
+              <option value="risk">内容风控</option>
+            </select>
+          </div>
+          <label for="state">STATE / 当前上下文</label>
+          <textarea id="state" rows="10"></textarea>
+          <div class="divider"></div>
+          <div class="panel-head compact">
+            <div><span class="step">02</span><h2>定义问题</h2></div>
+            <select id="question-type">
+              <option value="choice">Choice</option>
+              <option value="noul">Yes / No</option>
+              <option value="score">Score</option>
+            </select>
+          </div>
+          <label for="instruction">QUESTION / 需要模型决定什么</label>
+          <input id="instruction" type="text">
+          <label for="criteria">CRITERIA / 每行格式：键 | 描述</label>
+          <textarea id="criteria" rows="7"></textarea>
+          <div class="control-row">
+            <label>Temperature <input id="temperature" type="number" min="0.05" max="100" step="0.05" value="1"></label>
+            <button id="run-decision" class="primary">运行决策 <kbd>⌘↵</kbd></button>
+          </div>
+        </article>
+
+        <article class="panel result-panel">
+          <div class="panel-head">
+            <div><span class="step">03</span><h2>观察分布</h2></div>
+            <span id="latency" class="latency">等待运行</span>
+          </div>
+          <div id="result-empty" class="empty">
+            <div class="pulse"></div>
+            <p>决策概率将在这里展开</p>
+            <small>重点看第一名、决策间隔与分布是否过度自信</small>
+          </div>
+          <div id="result" hidden>
+            <div class="winner">
+              <small>SELECTED ACTION</small>
+              <strong id="winner-label"></strong>
+              <span id="confidence"></span>
+            </div>
+            <div id="bars" class="bars"></div>
+            <details>
+              <summary>查看原始 JSON</summary>
+              <pre id="raw-json"></pre>
+            </details>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="evaluation" class="view">
+      <div class="section-title">
+        <div><p class="eyebrow">CALIBRATION FIRST</p><h2>不只看“选对没有”，还要看“自信是否可信”</h2></div>
+        <button id="run-eval" class="primary">运行内置基线集</button>
+      </div>
+      <div class="metric-grid">
+        <article><span>Accuracy</span><strong id="metric-accuracy">—</strong><small>Top-1 正确率</small></article>
+        <article><span>ECE</span><strong id="metric-ece">—</strong><small>越接近 0 越好</small></article>
+        <article><span>Brier</span><strong id="metric-brier">—</strong><small>概率预测误差</small></article>
+        <article><span>Mean latency</span><strong id="metric-latency">—</strong><small>服务端单请求</small></article>
+      </div>
+      <article class="panel chart-panel">
+        <div class="chart-head"><h2>Reliability diagram</h2><span>虚线代表完美校准</span></div>
+        <div id="calibration-chart" class="chart-placeholder">运行评测后生成</div>
+      </article>
+      <article class="panel">
+        <div class="chart-head"><h2>样本明细</h2><span>内置数据只用于工程冒烟，不代表业务结论</span></div>
+        <div id="eval-table" class="table-wrap"></div>
+      </article>
+    </section>
+
+    <section id="research" class="view">
+      <div class="section-title"><div><p class="eyebrow">ROADMAP</p><h2>从可运行 Demo 到业务可用 Decision Primitive</h2></div></div>
+      <div class="timeline">
+        <article class="done"><span>NOW</span><h3>可复现与基线</h3><p>CLM API 适配、Mock 联调、结构化决策、校准指标、内网容器化。</p></article>
+        <article><span>NEXT</span><h3>业务数据闭环</h3><p>从 Agent trajectory 拆 State–Action pair，固定离线集与 hard negatives。</p></article>
+        <article><span>THEN</span><h3>Head 微调</h3><p>冻结 Qwen3-8B，只训练 projection heads；与 raw embedding、LLM baseline 对照。</p></article>
+        <article><span>GATE</span><h3>推广准入</h3><p>以准确率、ECE、P95 延迟、缓存命中率和成本共同决定是否接入。</p></article>
+      </div>
+      <article class="panel principles">
+        <h2>实验护栏</h2>
+        <div><strong>01</strong><p>开发集与评测集按任务或 workflow 隔离，禁止同轨迹泄漏。</p></div>
+        <div><strong>02</strong><p>先跑不微调的 CLM 与 raw encoder 基线，再开始优化。</p></div>
+        <div><strong>03</strong><p>任何“更准”都必须同时报告校准、延迟与缓存条件。</p></div>
+      </article>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/assets/app.js?v=2"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "name": "homesort-ios",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "ios:sync": "npm run build && cap sync ios",
+    "ios:open": "npm run ios:sync && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "lucide-react": "^0.544.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "typescript": "~5.9.3",
+    "vite": "^7.1.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@eslint/js": "^9.36.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.4.0",
+    "typescript-eslint": "^8.45.0"
+  }
+}

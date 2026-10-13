@@ -117,6 +117,15 @@ class AuthStoreTests(unittest.TestCase):
             ["product.login_required", "product.login_optional"], actions
         )
 
+    def test_product_access_policy_defaults_to_enabled_and_is_mutable(self):
+        self.assertTrue(self.store.product_enabled("decision-studio"))
+        self.store.set_product_enabled("decision-studio", False, "admin", now=6_000)
+        self.assertFalse(self.store.product_enabled("decision-studio"))
+        self.store.set_product_enabled("decision-studio", True, "admin", now=6_001)
+        self.assertTrue(self.store.product_enabled("decision-studio"))
+        actions = [item["action"] for item in self.store.recent_admin_audit()]
+        self.assertEqual(["product.enabled", "product.disabled"], actions)
+
 
 if __name__ == "__main__":
     unittest.main()

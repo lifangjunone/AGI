@@ -1,0 +1,17 @@
+[
+  {
+    "attachments" : [
+      {
+        "configurationName" : "Test Scheme Action",
+        "deviceId" : "0D121E62-415E-4266-A1EB-F14014D47CB8",
+        "deviceName" : "iPhone 17",
+        "exportedFileName" : "AA8EE616-627C-4BB2-83AD-812983A0C34F.png",
+        "isAssociatedWithFailure" : false,
+        "suggestedHumanReadableName" : "Predictive launcher home_0_AF145331-E14C-44D8-9AA6-DC8929D5FE44.png",
+        "timestamp" : 1790745919.303
+      }
+    ],
+    "testIdentifier" : "HomeSortUITests/testOnboardingCreatesPredictiveLauncher()",
+    "testIdentifierURL" : "test://com.apple.xcode/HomeSort/HomeSortUITests/HomeSortUITests/testOnboardingCreatesPredictiveLauncher"
+  }
+]

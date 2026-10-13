@@ -1,0 +1,16 @@
+# Buyer and payment data
+/data/
+/runtime/
+
+# Generated deploy artifacts
+/dist/
+/public-site/
+/public-front/
+
+# Local dependencies and logs
+/node_modules/
+*.log
+.DS_Store
+
+# The real payment QR is local-only and copied into generated output at runtime.
+/assets/wechat-pay.jpg

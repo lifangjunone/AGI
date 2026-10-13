@@ -78,6 +78,11 @@ env/
 *.apk
 *.aab
 
+# Runtime data
+lifeyoume-platform/data/*.db
+lifeyoume-platform/data/*.db-shm
+lifeyoume-platform/data/*.db-wal
+
 # Local automation/process artifacts
 **/.workspace/
 **/.sandbox/

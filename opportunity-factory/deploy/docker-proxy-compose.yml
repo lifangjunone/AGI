@@ -17,5 +17,8 @@ services:
       - ../certbot/www:/var/www/certbot:ro
       - /data/app/personal-privacy-vault/current:/var/www/vault:ro
       - /data/app/resume-forge/current:/var/www/resume:ro
+      - /data/app/travel-frame/current:/var/www/travel-frame:ro
+      - /data/app/trend-forum/current:/var/www/trends:ro
+      - /data/app/game-hub/current:/var/www/games:ro
 
 networks: {}

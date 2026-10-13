@@ -1,0 +1,132 @@
+name: HomeSort
+
+options:
+  bundleIdPrefix: com.huimiying
+  deploymentTarget:
+    iOS: "18.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: Y3X27XDH8C
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  HomeSort:
+    type: application
+    platform: iOS
+    sources:
+      - path: HomeSort
+      - path: Shared
+    info:
+      path: HomeSort/Info.plist
+      properties:
+        CFBundleDisplayName: HomeSort
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        CFBundleURLTypes:
+          - CFBundleURLName: com.huimiying.homesort
+            CFBundleURLSchemes:
+              - homesort
+        LSApplicationQueriesSchemes:
+          - weixin
+          - lark
+          - feishu
+          - dingtalk
+          - alipay
+          - taobao
+          - snssdk1128
+          - xhsdiscover
+          - diditaxi
+          - didiEnterprise
+          - didi-enterprise
+          - didi-esp
+          - esdidi
+          - com.xiaojukeji.esp
+          - bilibili
+          - zhihu
+          - amapuri
+          - qqmap
+          - shortcuts
+          - calshow
+          - clock-alarm
+          - clock-worldclock
+          - clock-timer
+          - clock-stopwatch
+          - message
+          - music
+          - mobilenotes
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+        NSLocationWhenInUseUsageDescription: HomeSort 使用当前位置显示当地实时天气，位置不会存储。
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIRequiresFullScreen: true
+        UIUserInterfaceStyle: Light
+    entitlements:
+      path: HomeSort/HomeSort.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.huimiying.homesort
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.huimiying.homesort
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - target: HomeSortWidget
+        embed: true
+    scheme:
+      testTargets:
+        - HomeSortTests
+        - HomeSortUITests
+      storeKitConfiguration: StoreKit.storekit
+
+  HomeSortWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: HomeSortWidget
+      - path: Shared
+    info:
+      path: HomeSortWidget/Info.plist
+      properties:
+        CFBundleDisplayName: HomeSort Widget
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: HomeSortWidget/HomeSortWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.huimiying.homesort
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.huimiying.homesort.widget
+        SKIP_INSTALL: true
+        APPLICATION_EXTENSION_API_ONLY: true
+
+  HomeSortTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: HomeSortTests
+    dependencies:
+      - target: HomeSort
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.huimiying.homesort.tests
+        GENERATE_INFOPLIST_FILE: true
+
+  HomeSortUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: HomeSortUITests
+    dependencies:
+      - target: HomeSort
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.huimiying.homesort.uitests
+        GENERATE_INFOPLIST_FILE: true

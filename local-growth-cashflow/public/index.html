@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="邻店增长：面向本地商家服务者的成交工作台。" />
+    <title>邻店增长｜成交工作台</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="邻店增长首页">
+          <span class="brand-mark">邻</span>
+          <span><b>邻店增长</b><small>本地生意成交台</small></span>
+        </a>
+
+        <nav class="side-nav" aria-label="工作台导航">
+          <button class="nav-item active" data-view="proposal"><span>✦</span>做成交提案</button>
+          <button class="nav-item" data-view="pipeline"><span>◎</span>客户跟进<em id="nav-lead-count">0</em></button>
+          <button class="nav-item" data-view="offers"><span>¥</span>报价与话术</button>
+          <button class="nav-item" data-view="plan"><span>✓</span>今日行动</button>
+        </nav>
+
+        <div class="side-bottom">
+          <div class="side-goal">
+            <small>本周目标</small>
+            <div><b id="side-deals">0 / 3 单</b><span>¥<i id="side-revenue">0</i></span></div>
+            <div class="goal-bar"><span id="side-progress"></span></div>
+          </div>
+          <p>AI 内容需人工核实<br />不承诺播放量和成交</p>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="app-header">
+          <div>
+            <h1 id="view-title">做成交提案</h1>
+            <p id="view-subtitle">输入一家店，生成可以直接发给老板的 ¥99 提案</p>
+          </div>
+          <div class="header-actions">
+            <div class="model-pill"><span id="ai-status-dot" class="status-dot checking"></span><b id="ai-status-title">模型检测中</b></div>
+            <button id="check-ai" class="icon-button" type="button">检测</button>
+          </div>
+        </header>
+
+        <section class="view active" data-view-panel="proposal">
+          <div class="dashboard-strip">
+            <article>
+              <small>今天要做</small>
+              <b>1 份提案</b>
+              <span>先完成，再优化</span>
+            </article>
+            <article>
+              <small>建议首单价</small>
+              <b>¥99</b>
+              <span>降低老板决策门槛</span>
+            </article>
+            <article class="calculator-card">
+              <small>老板回本门槛</small>
+              <div><label>客单 ¥</label><input id="hero-ticket" type="number" min="1" value="68" /><i>→</i><b><span id="hero-orders">2</span> 单回本</b></div>
+            </article>
+            <article class="why-card">
+              <small>我们卖什么</small>
+              <b>不是 AI 文案</b>
+              <span>是可执行、能算账的获客提案</span>
+            </article>
+          </div>
+
+          <div class="mobile-work-toggle">
+            <button class="active" data-work-pane="brief">1 填写门店</button>
+            <button data-work-pane="result">2 查看提案</button>
+          </div>
+          <div class="proposal-layout">
+            <section class="panel brief-panel">
+              <div class="panel-title">
+                <div><b>填写门店信息</b><small>仅需 5 项，约 1 分钟</small></div>
+                <span>第 1 步 / 共 2 步</span>
+              </div>
+              <form id="brief-form" class="brief-form">
+                <label>门店名称<input id="shop-name" name="shopName" value="巷口手作烘焙" required /></label>
+                <div class="two-cols">
+                  <label>行业
+                    <select id="industry" name="industry">
+                      <option value="餐饮">餐饮</option><option value="美业">美业</option>
+                      <option value="健身">健身</option><option value="宠物">宠物</option>
+                      <option value="家政">家政维修</option><option value="通用">其他服务</option>
+                    </select>
+                  </label>
+                  <label>客单价（元）<input id="ticket" name="ticket" type="number" min="1" value="68" /></label>
+                </div>
+                <label>核心产品 / 服务<input id="product" name="product" value="当天现烤生日蛋糕" required /></label>
+                <label>最想吸引的人群<input id="audience" name="audience" value="附近 3 公里的年轻家庭" required /></label>
+                <label>当前问题<textarea id="pain" name="pain" rows="3">发了视频没人咨询，顾客觉得定制蛋糕贵</textarea></label>
+                <fieldset class="mode-picker">
+                  <legend>生成模式</legend>
+                  <label><input type="radio" name="mode" value="fast" /><span>快速<small>先看方向</small></span></label>
+                  <label><input type="radio" name="mode" value="quality" checked /><span>品质<small>推荐交付</small></span></label>
+                  <label><input type="radio" name="mode" value="reasoning" /><span>深度<small>复杂诊断</small></span></label>
+                </fieldset>
+                <button id="generate-button" class="primary generate-button" type="submit">
+                  <span class="button-label">生成 ¥99 成交提案</span><span>→</span>
+                  <span class="button-loader" aria-hidden="true"></span>
+                </button>
+                <small class="form-note">不要填写顾客姓名、手机号等个人敏感信息。</small>
+              </form>
+            </section>
+
+            <section class="panel output-panel" aria-live="polite">
+              <div class="output-toolbar">
+                <div class="tabs" role="tablist">
+                  <button class="tab active" data-tab="diagnosis">卖点与回本</button>
+                  <button class="tab" data-tab="scripts">可拍脚本</button>
+                  <button class="tab" data-tab="reviews">口碑回复</button>
+                  <button class="tab" data-tab="calendar">成交与执行</button>
+                </div>
+                <div class="output-actions">
+                  <button id="save-to-leads" class="secondary compact" title="保存到客户跟进">加入跟进</button>
+                  <button id="copy-output" class="primary compact" title="复制当前内容">复制给老板</button>
+                </div>
+              </div>
+              <div id="generation-meta" class="generation-meta"><span>本地预览</span><span>点击左侧按钮调用 AI</span></div>
+              <div id="output" class="output"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="pipeline">
+          <div class="view-grid">
+            <section class="panel pipeline-panel">
+              <div class="panel-title">
+                <div><b>客户跟进</b><small>只记录下一步，不做复杂 CRM</small></div>
+                <button id="export-leads" class="secondary compact">导出 CSV</button>
+              </div>
+              <form id="lead-form" class="lead-entry">
+                <input id="lead-name" aria-label="门店名" placeholder="门店名" required />
+                <input id="lead-channel" aria-label="来源" placeholder="来源，如点评/路过" />
+                <select id="lead-status" aria-label="状态">
+                  <option>待联系</option><option>已联系</option><option>有兴趣</option>
+                  <option>已发样稿</option><option>已成交</option><option>暂不需要</option>
+                </select>
+                <input id="lead-note" aria-label="备注" placeholder="下一步 / 跟进时间" />
+                <button class="primary" type="submit">添加客户</button>
+              </form>
+              <div class="metrics">
+                <div><span id="lead-count">0</span><small>总客户</small></div>
+                <div><span id="contact-count">0</span><small>已触达</small></div>
+                <div><span id="deal-count">0</span><small>已成交</small></div>
+                <div><span id="revenue-count">¥0</span><small>累计收入</small></div>
+              </div>
+              <div class="table-wrap">
+                <table><thead><tr><th>门店</th><th>来源</th><th>状态</th><th>下一步</th><th>操作</th></tr></thead><tbody id="lead-list"></tbody></table>
+                <p id="empty-leads" class="empty">还没有客户。先添加一家你今天准备联系的门店。</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="offers">
+          <div class="offer-page">
+            <div class="offer-intro">
+              <span>怎么赚钱</span>
+              <h2>先用小单证明价值，<br />再赚长期服务费</h2>
+              <p>不要一上来卖几千元代运营。先让老板用最低决策成本看到具体结果。</p>
+            </div>
+            <div class="pricing-grid">
+              <article class="price-card featured">
+                <div class="tag">第一单就卖这个</div><small>引流体验包</small><h3>¥99</h3>
+                <p>诊断 1 份 · 脚本 3 条 · 评价回复 10 条</p>
+                <button class="primary full" data-package="体验包">复制成交话术</button>
+              </article>
+              <article class="price-card">
+                <small>客户认可后升级</small><h3>¥399</h3>
+                <p>7 天内容计划 · 脚本 10 条 · 主页卖点</p>
+                <button class="secondary full" data-package="标准包">复制成交话术</button>
+              </article>
+              <article class="price-card">
+                <small>稳定复购</small><h3>¥1,299</h3>
+                <p>月度计划 · 每周复盘 · 30 条内容</p>
+                <button class="secondary full" data-package="月度包">复制成交话术</button>
+              </article>
+            </div>
+            <div class="difference-panel panel">
+              <b>为什么客户不直接用通用 AI？</b>
+              <div><span>通用 AI</span><p>老板要自己写提示词、判断质量、组织执行，最后通常停在“一堆文案”。</p></div>
+              <div class="ours"><span>邻店增长</span><p>直接交付针对门店的诊断、回本账、拍摄脚本和行动指令，老板拿到就能执行。</p></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view-panel="plan">
+          <div class="daily-board">
+            <div class="today-card panel">
+              <small>今天只做三件事</small>
+              <h2>拿到第一笔 ¥99，<br />不是继续改页面</h2>
+              <ol>
+                <li><b>找 5 家店</b><span>点评/地图筛选线上内容弱、老板容易联系的门店</span></li>
+                <li><b>做 1 份提案</b><span>只针对最有潜力的一家，生成后人工校对</span></li>
+                <li><b>完成 5 次触达</b><span>只展示一部分，认可后报价 ¥99</span></li>
+              </ol>
+            </div>
+            <div class="script-card panel">
+              <small>到店开场，照着说</small>
+              <blockquote>老板你好，我在附近工作。看了你们线上内容，我顺手做了一页针对店里的增长建议。不是让你现在买代运营，你给我 30 秒看一下；如果完全没用，我就不打扰。</blockquote>
+              <button class="primary" data-package="体验包">复制完整成交话术</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>

@@ -17,10 +17,10 @@ SPEC.loader.exec_module(app)
 class PlatformTests(unittest.TestCase):
     def test_registry_loads_independent_products(self):
         products = app.load_products()
-        self.assertEqual(16, len(products))
+        self.assertEqual(20, len(products))
         self.assertEqual(
-            ["frame60", "privacy-vault", "audit"],
-            [item.id for item in products[:3]],
+            ["frame60", "decision-studio", "travel-frame", "game-hub", "privacy-vault"],
+            [item.id for item in products[:5]],
         )
         self.assertTrue(all(item.platforms for item in products))
         self.assertEqual("internal", products[-1].visibility)
@@ -94,6 +94,23 @@ class PlatformTests(unittest.TestCase):
         self.assertIn("delivery-pilot", ids)
         self.assertNotIn("avatar-generator-service", ids)
 
+    def test_public_catalog_excludes_disabled_products(self):
+        products = app.load_products()
+        with mock.patch.object(
+            app.AUTH_STORE,
+            "product_enabled",
+            side_effect=lambda product_id: product_id != "privacy-vault",
+        ):
+            visible_ids = [item.id for item in app.visible_products(products)]
+            catalog = app.catalog_page(products).decode("utf-8")
+            detail_product = next(item for item in products if item.id == "decision-studio")
+            detail = app.product_page(detail_product, products).decode("utf-8")
+
+        self.assertNotIn("privacy-vault", visible_ids)
+        self.assertNotIn("/products/privacy-vault", catalog)
+        self.assertNotIn("/products/privacy-vault", detail)
+        self.assertIn("decision-studio", visible_ids)
+
     def test_portal_and_detail_pages_use_real_catalog_data(self):
         products = app.load_products()
         portal = app.portal_page(products).decode("utf-8")
@@ -160,12 +177,15 @@ class PlatformTests(unittest.TestCase):
                 ).decode("utf-8")
         self.assertIn('action="/admin/users/status"', document)
         self.assertIn('action="/admin/users/password"', document)
+        self.assertIn('action="/admin/products/access-policy"', document)
         self.assertIn('action="/admin/products/login-policy"', document)
         self.assertIn('class="admin-app" data-admin-app', document)
         self.assertIn('data-admin-view="overview"', document)
         self.assertIn('data-admin-view="products" hidden', document)
         self.assertIn('data-admin-table="products" data-page-size="7"', document)
         self.assertIn('data-admin-search="products"', document)
+        self.assertIn("产品访问", document)
+        self.assertIn("关闭访问", document)
         self.assertNotIn('class="site-header"', document)
         self.assertIn("privacy-vault", document)
         self.assertNotIn("not used by this render", document)

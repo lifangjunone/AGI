@@ -1,0 +1,58 @@
+{
+  "identifier" : "C78FC0BE-07E2-46D3-B487-AFB73AE8F379",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "zh_CN",
+    "_storefront" : "CHN"
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "C67D98F8-AAD0-42B3-A4D7-22AA214F43B7",
+      "localizations" : [
+        {
+          "description" : "跨设备保留你的智能入口与长期使用记忆。",
+          "displayName" : "HomeSort Pro",
+          "locale" : "zh_CN"
+        }
+      ],
+      "name" : "HomeSort Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "68",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "B24A08D5-63BC-4456-863E-57D58BAA7BDC",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "长期记忆、加密云同步与趋势洞察。",
+              "displayName" : "HomeSort Pro 年度订阅",
+              "locale" : "zh_CN"
+            }
+          ],
+          "productID" : "com.huimiying.homesort.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "HomeSort Pro Annual",
+          "subscriptionGroupID" : "C67D98F8-AAD0-42B3-A4D7-22AA214F43B7",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

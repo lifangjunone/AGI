@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>故事片场</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23252d25'/%3E%3Cpath d='M18 17h28v6H25v8h18v6H25v10h21v6H18z' fill='%23d9e6a0'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/studio.css">
+</head>
+<body>
+  <header class="titlebar"><span>故事片场 <i>/</i> STORY STUDIO</span><span class="local">● 本地工作空间</span></header>
+  <aside>
+    <div class="wordmark">故事<span>片场</span><small>让故事，有下一幕。</small></div>
+    <nav><button id="nav-create" class="nav active">＋ 开始创作</button><button id="nav-library" class="nav">▦ 我的作品</button><button id="nav-settings" class="nav">⚙ 制片配置</button></nav>
+    <div class="sidebar-note"><span class="dot"></span> 商业 Beta<small>内容与项目保存在本机<br>模型按配置远程调用</small></div>
+  </aside>
+  <main>
+    <section id="create-view">
+      <div class="eyebrow">FROM WORDS TO WORLDS</div>
+      <h1>每个故事，都值得被看见。</h1>
+      <p class="lead">给我们故事，选择它在荧幕上的样子。</p>
+      <form id="create-form">
+        <div class="input-panel">
+          <div class="source-tabs" role="tablist" aria-label="故事来源">
+            <button type="button" role="tab" aria-selected="true" data-source="manual" class="selected">小说正文</button>
+            <button type="button" role="tab" aria-selected="false" data-source="url">小说地址</button>
+            <button type="button" role="tab" aria-selected="false" data-source="ai">创作灵感</button>
+            <button type="button" id="import-text" class="import">↥ 导入 TXT</button>
+          </div>
+          <label class="sr-only" for="story-input">故事内容</label>
+          <textarea id="story-input" maxlength="1000000" placeholder="粘贴你的小说正文……&#10;&#10;故事会从这里开始。" required></textarea>
+          <div class="input-bottom"><span id="source-hint">支持长篇正文，最多 100 万字符；集数会按全文动态分析。</span><span id="char-count">0 / 1,000,000</span></div>
+        </div>
+        <div class="section-heading"><h2>你想拍成什么？</h2><span>先定方向，制作前仍可确认</span></div>
+        <div class="format-grid" role="group" aria-label="成片类型">
+          <button type="button" data-format="anime" class="format selected" aria-pressed="true"><div class="art anime"><b>✳</b><i>ANIMATION</i></div><strong>动漫</strong><small>让想象，不受现实限制</small><em>✓</em></button>
+          <button type="button" data-format="drama" class="format" aria-pressed="false"><div class="art drama"><b>Ⅱ</b><i>DRAMA SERIES</i></div><strong>电视剧</strong><small>人物、冲突与每集悬念</small><em>✓</em></button>
+          <button type="button" data-format="film" class="format" aria-pressed="false"><div class="art film"><b>◯</b><i>MOTION PICTURE</i></div><strong>电影</strong><small>完整叙事，沉浸式表达</small><em>✓</em></button>
+          <button type="button" data-format="other" class="format" aria-pressed="false"><div class="art other"><b>⋯</b><i>YOUR FORMAT</i></div><strong>其它</strong><small>有声故事、实验短片…</small><em>✓</em></button>
+        </div>
+        <div class="preferences">
+          <label>项目名 <input id="project-title" maxlength="80" placeholder="选填，默认使用内容开头"></label>
+          <label id="duration-label">每集时长
+            <select id="episode-duration">
+              <option value="60">约 1 分钟</option>
+              <option value="90" selected>约 1.5 分钟</option>
+              <option value="120">约 2 分钟</option>
+              <option value="180">约 3 分钟</option>
+              <option value="300">约 5 分钟</option>
+              <option value="600">约 10 分钟</option>
+              <option value="custom">自定义…</option>
+            </select>
+            <span id="custom-duration" class="custom-duration" hidden>
+              <input id="custom-duration-value" type="number" min="0.1" max="180" step="0.1" value="2" aria-label="自定义每集时长">
+              <select id="custom-duration-unit" aria-label="自定义时长单位">
+                <option value="minutes" selected>分钟</option>
+                <option value="seconds">秒</option>
+              </select>
+            </span>
+          </label>
+          <label>画幅 <select id="ratio"><option value="9:16">竖屏 9:16</option><option value="16:9">横屏 16:9</option></select></label>
+          <label>声音方案
+            <select id="audio-strategy">
+              <option value="auto" selected>智能选择（推荐）</option>
+              <option value="tts">独立角色配音</option>
+              <option value="native">视频模型原声优先</option>
+            </select>
+            <small class="field-help">智能模式会保留可用原声，没有原声时自动补配音。</small>
+          </label>
+        </div>
+        <label id="rights-row" class="rights"><input id="rights" type="checkbox">我有权使用并改编这份内容</label>
+        <div class="submit-row"><p>集数由系统根据内容和单集时长分析生成。<small>先保存制作方案，不会自动调用付费模型。</small></p><button type="submit" class="primary" id="save-plan">分析并创建方案 <span>→</span></button></div>
+      </form>
+    </section>
+    <section id="library-view" hidden>
+      <div class="eyebrow">YOUR PRODUCTIONS</div><div class="page-heading"><div><h1>我的作品</h1><p class="lead">故事的每一步，都留在这里。</p></div><button class="secondary" id="refresh">刷新</button></div>
+      <div id="library" class="library"></div>
+    </section>
+    <section id="settings-view" hidden>
+      <div class="eyebrow">PRODUCTION SETTINGS</div>
+      <div class="page-heading">
+        <div><h1>制片配置</h1><p class="lead">把语言、多模态、图像、视频、ASR 与 TTS 模型放到一个地方管理。</p></div>
+        <button class="secondary" id="refresh-models">检测状态</button>
+      </div>
+      <div id="model-status" class="model-status"></div>
+      <form id="settings-form" class="settings-card">
+        <div class="section-heading"><h2>模型路由</h2><span id="settings-path"></span></div>
+        <div id="settings-fields" class="settings-grid"></div>
+        <div class="submit-row"><p>密钥只保存在本机配置文件里。密钥输入框留空表示沿用已保存值。<small>保存后会自动重启本地制作服务并重新读取配置。</small></p><button type="submit" class="primary" id="save-settings">保存并重启服务 <span>↻</span></button></div>
+      </form>
+    </section>
+    <section id="detail-view" hidden>
+      <button class="back" id="back-library">← 返回作品库</button>
+      <div class="eyebrow">PRODUCTION</div><h1 id="detail-title"></h1><p id="detail-meta" class="lead"></p>
+      <section id="pipeline-overview" class="pipeline-overview">
+        <header>
+          <div><span id="pipeline-kicker" class="badge">当前任务</span><h2 id="pipeline-heading">正在读取制作状态…</h2><p id="pipeline-now">稍候，正在确认流水线依赖。</p></div>
+          <div class="pipeline-total"><strong id="pipeline-percent">0%</strong><span>全流程进度</span></div>
+        </header>
+        <div id="pipeline-activity" class="pipeline-activity" role="status" aria-live="polite">
+          <span class="pipeline-activity-pulse"></span>
+          <div><strong id="pipeline-activity-title">正在确认任务状态</strong><small id="pipeline-activity-detail">请稍候…</small></div>
+          <div class="pipeline-activity-progress"><i id="pipeline-activity-progress"></i></div>
+          <time id="pipeline-activity-time"></time>
+        </div>
+        <div id="pipeline-stages" class="pipeline-stages" role="tablist" aria-label="制作流水线"></div>
+      </section>
+      <section id="pipeline-workspace" class="pipeline-workspace">
+        <header>
+          <div><span id="pipeline-workspace-index">STEP 01</span><h2 id="pipeline-workspace-title">故事输入</h2><p id="pipeline-workspace-copy"></p></div>
+          <button type="button" id="pipeline-current-stage" class="secondary">回到当前步骤</button>
+        </header>
+        <div id="pipeline-stage-panels"></div>
+      </section>
+      <div class="result-layout">
+        <div id="screen" class="screen">
+          <video id="player" controls playsinline hidden></video>
+          <div id="screen-empty"><span>▷</span><h2>故事，等待开拍</h2><p>成片会出现在这里</p></div>
+          <div id="player-actions" class="player-actions" hidden>
+            <span id="playing-label">当前视频</span>
+            <button type="button" id="fullscreen-player" aria-label="全屏播放">⛶ 全屏播放</button>
+          </div>
+          <button type="button" id="exit-fullscreen-player" class="exit-fullscreen-player" hidden aria-label="退出全屏">×</button>
+        </div>
+        <div class="result-summary">
+          <span id="status-badge" class="badge"></span><h2 id="detail-stage"></h2><p id="detail-description"></p><progress id="progress" max="100" value="0"></progress>
+          <details id="prototype-actions" class="prototype-actions" hidden>
+            <summary>高级试制与技术自检</summary>
+            <label id="episode-limit-row" class="episode-limit" hidden>本次试制
+              <select id="episode-limit"><option value="1">前 1 集</option><option value="2" selected>前 2 集</option><option value="3">前 3 集</option></select>
+            </label>
+            <button id="real-video" class="primary" hidden>生成真实视频样片</button>
+            <button id="sample" class="secondary" hidden>仅生成流程自检片</button>
+          </details>
+          <button id="export" class="primary" hidden>导出视频 ↓</button>
+          <p class="disclaimer">真实视频样片会调用已配置的视频模型；流程自检片只验证旁白、字幕和封装链路，会出现占位画面，不能代表成片质量。</p>
+        </div>
+      </div>
+      <section id="production-control" class="production-control" hidden>
+        <div class="production-control-main">
+          <div>
+            <span class="badge">PRODUCTION CONTROL</span>
+            <h2 id="production-control-title">准备生产</h2>
+            <p id="production-control-copy"></p>
+          </div>
+          <div class="production-control-progress">
+            <strong id="production-control-percent">0%</strong>
+            <progress id="production-control-bar" max="100" value="0"></progress>
+            <small id="production-control-count"></small>
+          </div>
+          <div class="production-control-actions">
+            <button type="button" id="production-control-action" class="primary"></button>
+            <button type="button" id="production-control-stop" class="secondary" hidden>结束本轮</button>
+          </div>
+        </div>
+        <div id="production-control-blockers" class="production-control-blockers"></div>
+        <details>
+          <summary>查看完整生产阶段 <span>平时无需操作</span></summary>
+          <div id="production-stage-list" class="production-stage-list"></div>
+        </details>
+      </section>
+      <section id="episode-board" class="episode-board" hidden>
+        <div class="episode-board-heading">
+          <div><span class="badge">全集进度</span><h2>分集制作台</h2><p>点击任意一集查看剧情、状态和单集操作。</p></div>
+          <div id="episode-board-stats" class="episode-board-stats"></div>
+        </div>
+        <div id="episode-grid" class="episode-grid"></div>
+        <div class="series-assembly">
+          <div><strong id="assembly-title">全集合成</strong><small id="assembly-status">完成至少两集后，可以合并连续预览。</small></div>
+          <button type="button" id="assemble-series" class="secondary">合并已完成连续分集</button>
+          <button type="button" id="play-series" class="primary" hidden>播放连续全集</button>
+          <button type="button" id="delivery-package" class="secondary" hidden>导出商业交付包</button>
+        </div>
+        <aside id="episode-panel" class="episode-panel" hidden>
+          <button type="button" id="episode-panel-close" class="episode-panel-close" aria-label="关闭分集详情">×</button>
+          <span id="episode-panel-index" class="badge"></span>
+          <h2 id="episode-panel-title"></h2>
+          <p id="episode-panel-summary"></p>
+          <div class="episode-panel-meta">
+            <span id="episode-panel-status"></span>
+            <span id="episode-panel-duration"></span>
+          </div>
+          <progress id="episode-panel-progress" max="100" value="0"></progress>
+          <p id="episode-panel-error" class="error" hidden></p>
+          <section id="episode-seedance-inputs" class="episode-seedance-inputs" hidden>
+            <span>SEEDANCE INPUTS</span>
+            <strong id="episode-seedance-mode"></strong>
+            <div id="episode-seedance-tags"></div>
+          </section>
+          <section id="episode-quality" class="episode-quality" hidden>
+            <span>QUALITY GATE</span>
+            <strong id="episode-quality-status"></strong>
+            <div id="episode-quality-checks"></div>
+          </section>
+          <details id="episode-continuity">
+            <summary>本集人物服装与道具状态 <span>生成前可确认</span></summary>
+            <form id="episode-continuity-form" class="episode-continuity-form">
+              <div id="episode-continuity-fields"></div>
+              <label>确认说明 <input name="note" placeholder="选填：说明本集为什么发生变化"></label>
+              <button type="submit" class="secondary">保存本集连续性</button>
+            </form>
+          </details>
+          <div class="episode-panel-actions">
+            <button type="button" id="episode-play" class="secondary" hidden>播放本集</button>
+            <button type="button" id="episode-revalidate" class="secondary" hidden>重新验收成片</button>
+            <button type="button" id="episode-generate" class="primary">生成本集</button>
+          </div>
+          <details id="episode-panel-technical" hidden><summary>单集技术信息</summary><pre id="episode-panel-data"></pre></details>
+        </aside>
+      </section>
+      <section id="episode-reader" class="episode-reader" hidden>
+        <header class="episode-reader-heading">
+          <div>
+            <span class="badge">SOURCE TO EPISODE</span>
+            <h2>小说内容分集</h2>
+            <p>逐集核对原文覆盖、改编摘要与制作状态。</p>
+          </div>
+          <div class="episode-reader-controls">
+            <label>查看方式
+              <select id="episode-reader-mode">
+                <option value="compare">原文 + 改编对照</option>
+                <option value="source">只看原文</option>
+                <option value="production">制作信息</option>
+              </select>
+            </label>
+            <span id="episode-source-coverage"></span>
+          </div>
+        </header>
+        <div class="episode-reader-layout">
+          <nav id="episode-reader-nav" aria-label="小说分集"></nav>
+          <article id="episode-source-pane" class="episode-source-pane">
+            <header>
+              <div><span id="episode-source-index" class="badge"></span><h3 id="episode-source-title"></h3></div>
+              <small id="episode-source-range"></small>
+            </header>
+            <div id="episode-source-text" class="episode-source-text"></div>
+          </article>
+          <aside id="episode-adaptation-pane" class="episode-adaptation-pane">
+            <span class="badge">改编与制作</span>
+            <h3 id="episode-adaptation-title"></h3>
+            <p id="episode-adaptation-summary"></p>
+            <dl id="episode-adaptation-facts"></dl>
+            <section><strong>情节点</strong><div id="episode-story-beats"></div></section>
+            <button type="button" id="episode-reader-detail" class="secondary">打开本集制作详情</button>
+          </aside>
+        </div>
+        <footer>
+          <button type="button" id="episode-reader-prev" class="secondary">← 上一集</button>
+          <span id="episode-reader-position"></span>
+          <button type="button" id="episode-reader-next" class="secondary">下一集 →</button>
+        </footer>
+      </section>
+      <section id="production-bible" class="production-bible" hidden>
+        <div class="production-bible-heading">
+          <div><span class="badge">PRODUCTION BIBLE</span><h2>制片资产与连续性</h2><p>角色、场景、武器道具和音色只定义一次，后续分集统一复用。</p></div>
+          <div class="bible-heading-actions"><div id="bible-readiness" class="bible-readiness"></div><button type="button" id="prepare-assets" class="primary">一键生成制片资产包</button><button type="button" id="analyze-bible" class="secondary">仅重新分析</button></div>
+        </div>
+        <div id="format-recommendation" class="format-recommendation" hidden>
+          <div><span>AI 成片建议</span><strong id="format-recommendation-title"></strong><p id="format-recommendation-reason"></p></div>
+          <button type="button" id="apply-format-recommendation" class="secondary">采用 AI 推荐</button>
+        </div>
+        <div class="asset-tabs" role="tablist" aria-label="制片资产">
+          <button type="button" class="selected" data-asset-tab="characters">人物</button>
+          <button type="button" data-asset-tab="scenes">场景</button>
+          <button type="button" data-asset-tab="props">武器与道具</button>
+          <button type="button" data-asset-tab="voices">音色</button>
+          <button type="button" data-asset-tab="continuity">跨集衔接</button>
+        </div>
+        <div id="asset-workspace" class="asset-workspace"></div>
+      </section>
+      <section class="series-plan" id="series-plan" hidden>
+        <div><span class="badge">系统建议</span><h2 id="series-title"></h2><p id="series-basis"></p></div>
+        <div class="plan-numbers">
+          <article><strong id="series-count">-</strong><span>建议集数</span></article>
+          <article><strong id="series-duration">-</strong><span>预计总时长</span></article>
+          <article><strong id="series-per-episode">-</strong><span>单集时长</span></article>
+        </div>
+        <div id="episode-preview" class="episode-preview"></div>
+      </section>
+      <details id="process-details">
+        <summary>制作详情与修复 <span>平时无需操作，出错时在这里处理</span></summary>
+        <div class="process-body"><div id="steps"></div><p id="failure" class="error" hidden></p><button id="retry" class="secondary" hidden>修复并重试失败任务</button><div id="asset-tools"></div><details id="version-history"><summary>版本历史与恢复</summary><div id="version-history-list"></div></details><details id="technical-error-box" hidden><summary>技术错误日志</summary><pre id="technical-error"></pre></details><details><summary>原始内容与制作规格</summary><pre id="source-preview"></pre></details></div>
+      </details>
+      <button type="button" id="agent-launcher" class="agent-launcher" aria-controls="agent-drawer" aria-expanded="false">
+        <span>✦</span><b>导演 Agent</b><small>用自然语言修改作品</small>
+      </button>
+      <section id="agent-drawer" class="agent-drawer" aria-label="Hermes 导演 Agent" hidden>
+        <header>
+          <div><span class="badge">HERMES AGENT LOOP</span><h2>导演 Agent</h2><p>先审阅计划，再执行会产生费用或覆盖成片的操作。</p></div>
+          <button type="button" id="agent-close" aria-label="关闭导演 Agent">×</button>
+        </header>
+        <div id="agent-messages" class="agent-messages">
+          <article class="agent-message assistant"><b>导演 Agent</b><p>告诉我你想改什么。我会读取当前作品、分集和连续性状态，然后给出可审阅的修改计划。</p></article>
+        </div>
+        <div class="agent-suggestions">
+          <button type="button">把第 1 集结尾改得更悬疑</button>
+          <button type="button">检查跨集连续性</button>
+          <button type="button">只重生成第 2 集，保持人物音色</button>
+        </div>
+        <form id="agent-form" class="agent-composer">
+          <label class="sr-only" for="agent-input">修改作品</label>
+          <textarea id="agent-input" maxlength="4000" rows="3" placeholder="例如：苏晚从第 2 集开始换深蓝风衣，其它设定保持不变"></textarea>
+          <p id="agent-input-status" role="status" hidden></p>
+          <button type="submit" id="agent-send" class="primary">制定修改计划 →</button>
+        </form>
+      </section>
+    </section>
+    <p id="notice" role="status" hidden></p>
+  </main>
+  <div id="production-confirm" class="production-confirm" role="dialog" aria-modal="true" aria-labelledby="production-confirm-title" hidden>
+    <section>
+      <span class="badge">BILLABLE PRODUCTION</span>
+      <h2 id="production-confirm-title">确认开始全集生产</h2>
+      <p id="production-confirm-copy"></p>
+      <div id="production-confirm-facts"></div>
+      <label><input type="checkbox" id="production-confirm-check"> 我确认将调用真实模型，并理解会产生费用</label>
+      <footer>
+        <button type="button" id="production-confirm-cancel" class="secondary">暂不生产</button>
+        <button type="button" id="production-confirm-submit" class="primary" disabled>开始全集生产</button>
+      </footer>
+    </section>
+  </div>
+  <div id="image-lightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title" hidden>
+    <button type="button" id="lightbox-close" class="lightbox-close" aria-label="关闭大图">×</button>
+    <button type="button" id="lightbox-prev" class="lightbox-nav lightbox-prev" aria-label="上一张">‹</button>
+    <figure>
+      <img id="lightbox-image" alt="">
+      <figcaption><strong id="lightbox-title"></strong><span id="lightbox-meta"></span></figcaption>
+    </figure>
+    <button type="button" id="lightbox-next" class="lightbox-nav lightbox-next" aria-label="下一张">›</button>
+  </div>
+  <input type="file" id="web-file" accept=".txt" hidden>
+  <script src="/studio.js"></script>
+</body>
+</html>

@@ -90,6 +90,12 @@ class AuthStore:
                     updated_at INTEGER NOT NULL,
                     updated_by TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS product_access_policies (
+                    product_id TEXT PRIMARY KEY,
+                    enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
+                    updated_at INTEGER NOT NULL,
+                    updated_by TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS admin_audit (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     actor TEXT NOT NULL,
@@ -416,6 +422,52 @@ class AuthStore:
                 (product_id,),
             ).fetchone()
         return bool(row["login_required"]) if row is not None else default
+
+    def product_enabled(self, product_id: str, default: bool = True) -> bool:
+        try:
+            with self.connect() as connection:
+                row = connection.execute(
+                    """
+                    SELECT enabled FROM product_access_policies
+                    WHERE product_id = ?
+                    """,
+                    (product_id,),
+                ).fetchone()
+        except sqlite3.OperationalError as error:
+            if "product_access_policies" not in str(error):
+                raise
+            return default
+        return bool(row["enabled"]) if row is not None else default
+
+    def set_product_enabled(
+        self,
+        product_id: str,
+        enabled: bool,
+        actor: str,
+        now: int | None = None,
+    ) -> None:
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO product_access_policies (
+                    product_id, enabled, updated_at, updated_by
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(product_id) DO UPDATE SET
+                    enabled = excluded.enabled,
+                    updated_at = excluded.updated_at,
+                    updated_by = excluded.updated_by
+                """,
+                (product_id, int(enabled), current, actor),
+            )
+            self.record_admin_action(
+                connection,
+                actor,
+                "product.enabled" if enabled else "product.disabled",
+                "product",
+                product_id,
+                current,
+            )
 
     def set_login_required(
         self,

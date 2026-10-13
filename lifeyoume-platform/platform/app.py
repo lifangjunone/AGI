@@ -278,7 +278,42 @@ STATUS_LABELS = {
 
 
 def visible_products(products: list[Product]) -> list[Product]:
-    return [item for item in products if item.visibility in {"public", "lab"}]
+    return [
+        item
+        for item in products
+        if item.visibility in {"public", "lab"} and AUTH_STORE.product_enabled(item.id)
+    ]
+
+
+def product_payload(product: Product, *, include_policy: bool = False) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "id": product.id,
+        "name": product.name,
+        "tagline": product.tagline,
+        "summary": product.summary,
+        "public_url": product.public_url,
+        "lifecycle": product.lifecycle,
+        "availability": product.availability,
+        "category": product.category,
+        "collection": product.collection,
+        "related_ids": product.related_ids,
+        "audience": product.audience,
+        "platforms": product.platforms,
+        "capabilities": product.capabilities,
+        "featured": product.featured,
+        "visibility": product.visibility,
+        "visual": product.visual,
+        "cta": product.cta,
+        "runtime": check_product(product),
+    }
+    if include_policy:
+        payload.update(
+            {
+                "enabled": AUTH_STORE.product_enabled(product.id),
+                "login_required": AUTH_STORE.login_required(product.id),
+            }
+        )
+    return payload
 
 
 def product_status(product: Product) -> tuple[str, str]:
@@ -418,6 +453,7 @@ def product_page(product: Product, products: list[Product] | None = None) -> byt
         for item_id in product.related_ids
         if item_id in product_lookup
         and product_lookup[item_id].visibility in {"public", "lab"}
+        and AUTH_STORE.product_enabled(product_lookup[item_id].id)
     ]
     related_section = ""
     if related:
@@ -555,15 +591,26 @@ def admin_dashboard(
 
     policy_rows = []
     for product in products:
+        enabled = AUTH_STORE.product_enabled(product.id)
         required = AUTH_STORE.login_required(product.id)
+        next_enabled = "false" if enabled else "true"
         next_required = "false" if required else "true"
         policy_rows.append(
             f"""<tr data-admin-row data-search="{esc(product.name + " " + product.id + " " + product.category)}">
 <td><strong>{esc(product.name)}</strong><small>{esc(product.id)}</small></td>
 <td>{esc(product.category)}</td>
+<td><span class="admin-status {'active' if enabled else 'disabled'}"><i></i>
+{'已开放展示' if enabled else '已关闭访问'}</span></td>
 <td><span class="admin-status {'required' if required else 'optional'}"><i></i>
 {'需要登录' if required else '免登录直达'}</span></td>
-<td><form method="post" action="/admin/products/login-policy">
+<td class="admin-actions product-policy-actions">
+<form method="post" action="/admin/products/access-policy">
+  <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+  <input type="hidden" name="product_id" value="{esc(product.id)}">
+  <input type="hidden" name="enabled" value="{next_enabled}">
+  <button class="table-button {'danger' if enabled else 'positive'}" type="submit">{'关闭访问' if enabled else '开启访问'}</button>
+</form>
+<form method="post" action="/admin/products/login-policy">
   <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
   <input type="hidden" name="product_id" value="{esc(product.id)}">
   <input type="hidden" name="login_required" value="{next_required}">
@@ -585,8 +632,10 @@ def admin_dashboard(
         "user-status": "账号状态已更新，相关会话已按策略处理。",
         "password": "账号密码已更新，原有 Web 与设备会话已全部失效。",
         "product-policy": "产品登录策略已生效，无需重载服务。",
+        "product-access": "产品访问状态已生效，关闭后目录隐藏并禁止直达。",
     }
     notice_text = notice_map.get(notice, "")
+    enabled_count = sum(AUTH_STORE.product_enabled(item.id) for item in products)
     login_required_count = sum(
         AUTH_STORE.login_required(item.id) for item in products
     )
@@ -602,7 +651,7 @@ def admin_dashboard(
   <nav class="admin-nav" aria-label="后台分区">
     <a href="#overview" data-admin-target="overview"><b>01</b><span>总览</span></a>
     <a href="#users" data-admin-target="users"><b>02</b><span>账号管理</span><em>{len(users)}</em></a>
-    <a href="#products" data-admin-target="products"><b>03</b><span>产品登录</span><em>{len(products)}</em></a>
+    <a href="#products" data-admin-target="products"><b>03</b><span>产品访问</span><em>{enabled_count}/{len(products)}</em></a>
     <a href="#audit" data-admin-target="audit"><b>04</b><span>操作审计</span></a>
   </nav>
   <div class="admin-rail-footer">
@@ -621,15 +670,15 @@ def admin_dashboard(
       <div class="admin-metrics" aria-label="平台摘要">
         <div><strong>{len(users):02d}</strong><span>注册账号</span><small>{active_users} 个正常使用</small></div>
         <div><strong>{active_users:02d}</strong><span>已启用账号</span><small>{len(users) - active_users} 个已禁用</small></div>
-        <div><strong>{len(products):02d}</strong><span>注册产品</span><small>统一目录管理</small></div>
+        <div><strong>{enabled_count:02d}</strong><span>开放产品</span><small>{len(products) - enabled_count} 个已关闭</small></div>
         <div><strong>{login_required_count:02d}</strong><span>启用登录</span><small>{len(products) - login_required_count} 个免登录</small></div>
       </div>
       <div class="admin-overview-grid">
         <section class="admin-overview-panel">
           <div class="admin-panel-title"><span>访问策略</span><a href="#products" data-admin-target="products">管理策略</a></div>
-          <div class="policy-gauge"><strong>{login_required_count}/{len(products)}</strong><span>产品当前要求统一登录</span></div>
-          <progress class="policy-bar" value="{login_required_count}" max="{max(len(products), 1)}">{login_required_count}/{len(products)}</progress>
-          <p>策略由身份服务实时判断，修改后立即生效，无需重新部署。</p>
+          <div class="policy-gauge"><strong>{enabled_count}/{len(products)}</strong><span>产品当前开放展示与直达访问</span></div>
+          <progress class="policy-bar" value="{enabled_count}" max="{max(len(products), 1)}">{enabled_count}/{len(products)}</progress>
+          <p>访问开关由身份服务实时判断，关闭后目录、产品详情、公开 API 与直达入口都会被拦截。</p>
         </section>
         <section class="admin-overview-panel">
           <div class="admin-panel-title"><span>最近操作</span><a href="#audit" data-admin-target="audit">查看全部</a></div>
@@ -651,12 +700,12 @@ def admin_dashboard(
     </section>
     <section class="admin-view" data-admin-view="products" hidden>
       <div class="admin-view-head">
-        <div><p class="eyebrow">ACCESS POLICY</p><h2>子产品登录策略</h2><p>关闭后直接进入产品首页，开启后进入统一登录。</p></div>
+        <div><p class="eyebrow">ACCESS POLICY</p><h2>子产品访问策略</h2><p>访问状态控制是否展示和允许直达；登录策略控制开放产品是否需要统一登录。</p></div>
         <label class="admin-search"><span>搜索产品</span><input type="search" data-admin-search="products" placeholder="名称、分类或 ID"></label>
       </div>
       <div class="admin-data-panel" data-admin-table="products" data-page-size="7">
         <div class="admin-table-wrap"><table class="admin-table">
-        <thead><tr><th>产品</th><th>分类</th><th>当前策略</th><th>操作</th></tr></thead>
+        <thead><tr><th>产品</th><th>分类</th><th>访问状态</th><th>登录策略</th><th>操作</th></tr></thead>
         <tbody>{''.join(policy_rows)}</tbody></table></div>
         <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
       </div>
@@ -1023,6 +1072,17 @@ class Handler(BaseHTTPRequestHandler):
             if product_id not in valid_products:
                 self.send_json(400, {"allowed": False, "error": "invalid_product"})
                 return
+            enabled = AUTH_STORE.product_enabled(product_id)
+            if not enabled:
+                self.send_json(
+                    403,
+                    {
+                        "allowed": False,
+                        "error": "product_disabled",
+                        "product_id": product_id,
+                    },
+                )
+                return
             required = AUTH_STORE.login_required(product_id)
             user = self.sso_user()
             if required and not user:
@@ -1141,29 +1201,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_with_headers(200, body, headers)
             return
         if path == "/api/v1/products" and ROLE in {"portal", "ops"}:
+            source_products = load_products()
+            public_products = visible_products(source_products)
             products = [
-                {
-                    "id": item.id,
-                    "name": item.name,
-                    "tagline": item.tagline,
-                    "summary": item.summary,
-                    "public_url": item.public_url,
-                    "lifecycle": item.lifecycle,
-                    "availability": item.availability,
-                    "category": item.category,
-                    "collection": item.collection,
-                    "related_ids": item.related_ids,
-                    "audience": item.audience,
-                    "platforms": item.platforms,
-                    "capabilities": item.capabilities,
-                    "featured": item.featured,
-                    "visibility": item.visibility,
-                    "visual": item.visual,
-                    "cta": item.cta,
-                    "runtime": check_product(item),
-                }
-                for item in load_products()
-                if ROLE == "ops" or item.visibility in {"public", "lab"}
+                product_payload(item, include_policy=ROLE == "ops")
+                for item in source_products
+                if ROLE == "ops" or item in public_products
             ]
             self.send_json(200, {"schema_version": 2, "products": products})
             return
@@ -1181,6 +1224,7 @@ class Handler(BaseHTTPRequestHandler):
                     item
                     for item in all_products
                     if item.id == product_id and item.visibility in {"public", "lab"}
+                    and AUTH_STORE.product_enabled(item.id)
                 ),
                 None,
             )
@@ -1322,6 +1366,16 @@ class Handler(BaseHTTPRequestHandler):
                 required = form.get("login_required") == "true"
                 AUTH_STORE.set_login_required(product_id, required, username)
                 self.redirect("/admin/?ok=product-policy#products")
+                return
+            if path == "/admin/products/access-policy":
+                product_id = form.get("product_id", "")[:64]
+                valid_products = {item.id for item in load_products()}
+                if product_id not in valid_products:
+                    self.send_json(400, {"error": "invalid_product"})
+                    return
+                enabled = form.get("enabled") == "true"
+                AUTH_STORE.set_product_enabled(product_id, enabled, username)
+                self.redirect("/admin/?ok=product-access#products")
                 return
             self.send_json(404, {"error": "not_found"})
             return

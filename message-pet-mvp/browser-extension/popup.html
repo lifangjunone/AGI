@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>消息灵宠浏览器伴侣</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <img src="icon.svg" alt="" />
+      <div><strong>消息灵宠</strong><small>浏览器伴侣</small></div>
+      <span id="status-dot"></span>
+    </header>
+    <main>
+      <label for="pairing-code">本机配对码</label>
+      <input id="pairing-code" type="password" autocomplete="off" placeholder="从桌面应用复制" />
+      <label for="endpoint">本机服务地址</label>
+      <input id="endpoint" type="url" value="http://127.0.0.1:43173/api/integrations/browser/messages" />
+      <label class="switch-row">
+        <span><b>网页通知采集</b><small>仅支持已声明的飞书/微信网页</small></span>
+        <input id="enabled" type="checkbox" checked />
+      </label>
+      <button id="save">保存并测试连接</button>
+      <p id="result">配对后才会向本机消息灵宠发送通知。</p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

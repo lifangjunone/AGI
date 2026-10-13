@@ -1,0 +1,18 @@
+{
+  "name": "坐坐游戏厅",
+  "short_name": "坐坐",
+  "description": "每天让一个新游戏入座。",
+  "start_url": "/games/",
+  "scope": "/games/",
+  "display": "standalone",
+  "background_color": "#f2f3ef",
+  "theme_color": "#181916",
+  "icons": [
+    {
+      "src": "/games/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

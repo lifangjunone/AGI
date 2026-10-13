@@ -1,0 +1,19 @@
+[Unit]
+Description=Decision Studio Web and API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=decisionstudio
+Group=decisionstudio
+WorkingDirectory=/data/app/decision-studio/current
+EnvironmentFile=/data/app/decision-studio/.env
+ExecStart=/data/app/decision-studio/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8810 --proxy-headers
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

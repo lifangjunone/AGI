@@ -1,0 +1,19 @@
+{
+  "name": "fde-daily-brief",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "每天采集 FDE/AI 交付相关公开热点，用火山方舟生成一篇可粘贴到公众号的文章",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "run-now": "node src/run-now.js",
+    "serve": "node src/server.js"
+  },
+  "dependencies": {
+    "node-cron": "^3.0.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "novel-series-factory",
+  "version": "0.9.0-beta.1",
+  "private": true,
+  "main": "desktop/main.cjs",
+  "type": "module",
+  "description": "故事片场：小说到完整多集视频的 AI 桌面制片系统（商业 Beta）",
+  "scripts": {
+    "start": "electron .",
+    "web": "node server.mjs",
+    "dev": "electron .",
+    "package:mac": "node desktop/package.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.6.0"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}

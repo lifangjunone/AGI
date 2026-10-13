@@ -1,0 +1,31 @@
+{
+  "name": "decision-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:web\" \"npm:dev:api\"",
+    "dev:web": "vite",
+    "dev:api": ".venv/bin/uvicorn app.main:app --reload --port 8810",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": ".venv/bin/pytest -q && vitest run",
+    "lint": ".venv/bin/ruff check app tests && eslint ."
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "lucide-react": "^0.544.0",
+    "vite": "^7.1.7",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.4.0",
+    "vitest": "^3.2.4"
+  }
+}

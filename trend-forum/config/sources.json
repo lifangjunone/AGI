@@ -1,0 +1,25 @@
+{
+  "technologyExploration": {
+    "name": "Technology Intelligence / Technology Exploration",
+    "projectPath": "../technology-intelligence",
+    "reportDirectory": "~/Library/Application Support/Technology Exploration Agent/reports",
+    "description": "读取现有 Technology Exploration 项目生成的本机日报 JSON，作为本站每日热点、技术趋势和平台榜单的数据来源。"
+  },
+  "platformReferences": [
+    "知乎",
+    "小红书",
+    "微博",
+    "X",
+    "V2EX",
+    "Bilibili",
+    "Hacker News",
+    "GitHub Trending",
+    "Product Hunt",
+    "arXiv"
+  ],
+  "publishing": {
+    "defaultAuthor": "Trend Forum 编辑部",
+    "dailyPostHour": 9,
+    "timezone": "Asia/Shanghai"
+  }
+}

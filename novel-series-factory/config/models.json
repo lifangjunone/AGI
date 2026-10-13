@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "routing": {
+    "story_analysis": ["ark_language"],
+    "script_writing": ["ark_language"],
+    "continuity_review": ["ark_multimodal"],
+    "image_generation": ["ark_image"],
+    "video_generation": ["ark_video", "fallback_video"],
+    "speech_recognition": ["seed_asr"],
+    "speech_synthesis": ["qwen3_tts"],
+    "subtitle_alignment": ["timestamp_helper", "seed_asr"],
+    "retrieval_rerank": ["rerank_helper", "ark_language"]
+  },
+  "models": [
+    {
+      "id": "ark_language",
+      "label": "方舟语言模型",
+      "provider": "volcengine_ark",
+      "capabilities": ["text", "json", "long_context"],
+      "apiStyle": "openai_responses",
+      "baseUrlEnv": "ARK_BASE_URL",
+      "apiKeyEnv": "ARK_API_KEY",
+      "modelEnv": "ARK_LLM_MODEL",
+      "required": true
+    },
+    {
+      "id": "ark_multimodal",
+      "label": "方舟多模态理解",
+      "provider": "volcengine_ark",
+      "capabilities": ["text", "image_understanding", "video_understanding"],
+      "apiStyle": "openai_responses",
+      "baseUrlEnv": "ARK_BASE_URL",
+      "apiKeyEnv": "ARK_API_KEY",
+      "modelEnv": "ARK_MULTIMODAL_MODEL",
+      "required": true
+    },
+    {
+      "id": "ark_image",
+      "label": "Seedream 图像生成",
+      "provider": "volcengine_ark",
+      "capabilities": ["text_to_image", "reference_image", "character_design"],
+      "apiStyle": "ark_images_generations",
+      "baseUrlEnv": "ARK_BASE_URL",
+      "apiKeyEnv": "ARK_API_KEY",
+      "modelEnv": "ARK_IMAGE_MODEL",
+      "required": true
+    },
+    {
+      "id": "ark_video",
+      "label": "Seedance 视频生成",
+      "provider": "volcengine_ark",
+      "capabilities": ["text_to_video", "image_to_video"],
+      "apiStyle": "ark_content_generation_tasks",
+      "baseUrlEnv": "ARK_BASE_URL",
+      "apiKeyEnv": "ARK_API_KEY",
+      "modelEnv": "ARK_VIDEO_MODEL",
+      "required": true
+    },
+    {
+      "id": "fallback_video",
+      "label": "OpenAI 兼容视频兜底",
+      "provider": "custom_openai_compatible",
+      "capabilities": ["text_to_video", "base64_mp4"],
+      "apiStyle": "chat_completions_base64_video",
+      "baseUrlEnv": "FALLBACK_VIDEO_API_URL",
+      "apiKeyEnv": "FALLBACK_VIDEO_API_KEY",
+      "modelEnv": "FALLBACK_VIDEO_MODEL",
+      "required": false
+    },
+    {
+      "id": "seed_asr",
+      "label": "SeedASR 语音识别",
+      "provider": "volcengine_speech",
+      "capabilities": ["asr", "subtitle_transcription"],
+      "apiStyle": "websocket_bigmodel_nostream",
+      "baseUrlEnv": "ASR_API_URL",
+      "apiKeyEnv": "ASR_API_KEY",
+      "modelEnv": "ASR_MODEL",
+      "required": false
+    },
+    {
+      "id": "qwen3_tts",
+      "label": "Qwen3-TTS 1.7B（GPU 自托管）",
+      "provider": "self_hosted",
+      "capabilities": ["tts", "character_voice", "voice_clone"],
+      "apiStyle": "qwen3_tts_http",
+      "baseUrlEnv": "TTS_API_URL",
+      "modelEnv": "TTS_MODEL",
+      "required": true
+    },
+    {
+      "id": "timestamp_helper",
+      "label": "字幕时间戳模型",
+      "provider": "custom_openai_compatible",
+      "capabilities": ["subtitle_alignment"],
+      "apiStyle": "chat_completions",
+      "baseUrlEnv": "TIMESTAMP_API_URL",
+      "apiKeyEnv": "TIMESTAMP_API_KEY",
+      "modelEnv": "TIMESTAMP_MODEL",
+      "required": false
+    },
+    {
+      "id": "rerank_helper",
+      "label": "剧情检索重排",
+      "provider": "custom",
+      "capabilities": ["rerank", "story_retrieval"],
+      "apiStyle": "rerank",
+      "baseUrlEnv": "RERANK_API_URL",
+      "apiKeyEnv": "RERANK_API_KEY",
+      "modelEnv": "RERANK_MODEL",
+      "required": false
+    }
+  ]
+}

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-13
+
+### feat
+
+- Added `autonomous-income-engine`, a self-contained product-image batch studio and autonomous income experiment with local browser image processing, checkout creation, payment confirmation, ZIP delivery, monitoring, and operational automation.
+- Added `decision-model-lab` and `decision-studio` for CLM/Jev decision exploration, calibrated evaluation, structured choice/score/rank tasks, and user-facing decision workflows.
+- Added `fde-daily-brief`, `trend-forum`, and `local-growth-cashflow` to cover FDE briefing, trend publishing, and local merchant content-service cashflow experiments.
+- Added `game-hub`, `homesort-ios`, `message-pet-mvp`, `travel-frame`, and `video-intelligence-studio` as new product prototypes for lightweight games, predictive app launch, message triage, travel photo organization, and video intelligence.
+- Added `novel-series-factory`, a commercial-beta desktop production system for turning novels and original stories into multi-episode AI video series.
+- Expanded LifeYouMe platform registration and proxy/product configuration to include the newly added products and routes.
+
+### fix
+
+- Updated LifeYouMe platform authentication, product config, Nginx platform config, and regression tests for the expanded product workspace.
+- Updated Opportunity Factory proxy compose configuration for the current deployment layout.
+
+### docs
+
+- Updated the root README project catalog, quick-start commands, feature notes, and per-project documentation coverage.
+- Added `fde-daily-brief/README.md` so every top-level product directory in this commit has its own project README.
+
 ## 2026-09-15
 
 ### feat

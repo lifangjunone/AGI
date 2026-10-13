@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.codex.autonomous-income-engine</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/bytedance/Desktop/projects/.tools/bin/node</string>
+    <string>/Users/bytedance/Desktop/agi/autonomous-income-engine/src/server.js</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/bytedance/Desktop/agi/autonomous-income-engine</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/bytedance/Desktop/projects/.tools/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>PORT</key>
+    <string>4188</string>
+    <key>PUBLIC_BASE_URL</key>
+    <string>https://lifeyoume.icu/image</string>
+    <key>DEPLOY_PUBLIC_BASE_URL</key>
+    <string>https://lifeyoume.icu/image</string>
+    <key>PAYMENT_AUTOSYNC</key>
+    <string>1</string>
+    <key>REQUIRE_PAYMENT_WEBHOOK_SECRET</key>
+    <string>1</string>
+    <key>REQUIRE_AUTHORITATIVE_PAYMENT_SOURCE</key>
+    <string>1</string>
+    <key>REQUIRE_ADMIN_API_SECRET</key>
+    <string>1</string>
+    <key>ADMIN_API_SECRET</key>
+    <string>admin_9ef82d2b4c764b9eab9f53ec2c16f077b84d48ef</string>
+    <key>TRUST_PROXY</key>
+    <string>1</string>
+    <key>PAYMENT_SYNC_INTERVAL_SECONDS</key>
+    <string>15</string>
+    <key>COMMERCE_AUTORUN</key>
+    <string>1</string>
+    <key>COMMERCE_INTERVAL_SECONDS</key>
+    <string>900</string>
+    <key>PUBLIC_ACCESS_MONITOR</key>
+    <string>0</string>
+    <key>PUBLIC_ACCESS_INTERVAL_MS</key>
+    <string>60000</string>
+    <key>PUBLIC_ACCESS_FAILURE_THRESHOLD</key>
+    <string>3</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/Users/bytedance/Desktop/agi/autonomous-income-engine/runtime/logs/service.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/bytedance/Desktop/agi/autonomous-income-engine/runtime/logs/service.err.log</string>
+</dict>
+</plist>

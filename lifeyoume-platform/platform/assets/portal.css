@@ -1599,6 +1599,10 @@ th {
   gap: 8px;
 }
 
+.product-policy-actions {
+  flex-wrap: wrap;
+}
+
 .password-reset-form {
   display: flex;
   align-items: flex-end;
@@ -2114,11 +2118,12 @@ th {
   }
 
   [data-admin-table="products"] .admin-table tr {
-    min-height: 76px;
+    min-height: 108px;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 70px 76px;
+    grid-template-columns: minmax(0, 1fr) 74px 86px;
     grid-template-areas:
       "product category action"
+      "product access action"
       "product policy action";
     align-items: center;
     border-bottom: 1px solid var(--line);
@@ -2138,12 +2143,18 @@ th {
   }
 
   [data-admin-table="products"] .admin-table td:nth-child(3) {
+    grid-area: access;
+    align-self: end;
+    padding: 2px 4px;
+  }
+
+  [data-admin-table="products"] .admin-table td:nth-child(4) {
     grid-area: policy;
     align-self: start;
     padding: 2px 4px 10px;
   }
 
-  [data-admin-table="products"] .admin-table td:nth-child(4) {
+  [data-admin-table="products"] .admin-table td:nth-child(5) {
     grid-area: action;
     padding: 0 10px 0 4px;
   }
@@ -2154,7 +2165,7 @@ th {
   }
 
   [data-admin-table="products"] .table-button {
-    width: 66px;
+    width: 76px;
     padding: 0 6px;
   }
 

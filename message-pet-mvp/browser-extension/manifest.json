@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "消息灵宠浏览器伴侣",
+  "version": "0.1.0",
+  "description": "将网页通知和用户主动选择的内容安全发送到本机消息灵宠。",
+  "permissions": [
+    "contextMenus",
+    "notifications",
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:43173/*",
+    "http://localhost:43173/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "消息灵宠浏览器伴侣",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.feishu.cn/*",
+        "https://*.larksuite.com/*",
+        "https://wx.qq.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://*.feishu.cn/*",
+        "https://*.larksuite.com/*",
+        "https://wx.qq.com/*"
+      ],
+      "js": [
+        "notification-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+node_modules
+dist
+.DS_Store
+*.local
+native/build/
+native/build-*/
+native/DerivedData/
+native/*.xcworkspace/xcuserdata/
+native/*.xcodeproj/xcuserdata/
+native/*.xcodeproj/project.xcworkspace/xcuserdata/
+build-ios/
+*.xcuserstate
+.tools/
+android-launcher/.gradle/
+android-launcher/local.properties
+android-launcher/**/build/

@@ -1,0 +1,13 @@
+{
+  "name": "local-growth-cashflow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "面向本地生活商家的低成本内容获客交付工作台",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

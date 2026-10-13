@@ -1,0 +1,17 @@
+services:
+  income-engine:
+    build:
+      context: .
+    restart: unless-stopped
+    ports:
+      - "${AIE_PORT:-4188}:4188"
+    environment:
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL:-}"
+      PAYMENT_WEBHOOK_SECRET: "${PAYMENT_WEBHOOK_SECRET:?Set PAYMENT_WEBHOOK_SECRET to a long random secret}"
+      ADMIN_API_SECRET: "${ADMIN_API_SECRET:?Set ADMIN_API_SECRET to a different long random secret}"
+    volumes:
+      - income-engine-state:/app/state
+      - ./assets/wechat-pay.jpg:/run/secrets/wechat-pay.jpg:ro
+
+volumes:
+  income-engine-state:

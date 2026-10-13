@@ -1,0 +1,15 @@
+[Unit]
+Description=Novel Series Factory Qwen3-TTS API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/data00/home/lifangjun/services/qwen3-tts
+ExecStart=/data00/home/lifangjun/services/qwen3-tts/start.sh
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

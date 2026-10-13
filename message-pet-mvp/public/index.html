@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f4f1e9" />
+    <title>消息灵宠 · MVP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <section class="desktop-pet" id="desktop-pet" aria-label="桌面消息灵宠">
+      <div class="desktop-dragbar">消息灵宠 <button id="pet-hide" title="隐藏">×</button></div>
+      <button class="pet-alert-card" id="pet-alert-card">
+        <span class="pet-alert-level">重要</span>
+        <strong id="pet-alert-title">有重要消息</strong>
+        <small id="pet-alert-detail">点击查看详情</small>
+      </button>
+      <div class="mini-pet" id="mini-pet">
+        <div class="mini-ear left"></div>
+        <div class="mini-ear right"></div>
+        <div class="mini-face">
+          <i class="mini-eye left"></i><i class="mini-eye right"></i>
+          <i class="mini-nose"></i>
+        </div>
+        <div class="mini-body">M</div>
+        <span class="mini-badge" id="mini-badge">0</span>
+      </div>
+      <p class="pet-hint">双击灵灵打开消息中心</p>
+    </section>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#">
+          <span class="brand-mark">M</span>
+          <span>消息灵宠</span>
+        </a>
+
+        <nav class="nav-list" aria-label="主导航">
+          <button class="nav-item active" data-view="inbox">
+            <span class="nav-icon">◈</span>
+            消息中心
+            <span class="nav-count" id="nav-count">0</span>
+          </button>
+          <button class="nav-item" data-view="mentions">
+            <span class="nav-icon">@</span>
+            群聊提到我
+          </button>
+          <button class="nav-item" data-view="todos">
+            <span class="nav-icon">✓</span>
+            今日待办
+          </button>
+          <button class="nav-item" data-view="summary">
+            <span class="nav-icon">⌁</span>
+            每日总结
+          </button>
+          <button class="nav-item" data-view="settings">
+            <span class="nav-icon">⚙</span>
+            规则与接入
+          </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <p class="eyebrow">已连接平台</p>
+          <div class="connection"><i class="dot feishu"></i>飞书 <b>在线</b></div>
+          <div class="connection"><i class="dot wechat"></i>微信 <b>演示</b></div>
+          <button class="settings-button" data-view="settings">⚙ 管理平台与规则</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="date-label" id="date-label"></p>
+            <h1>下午好，先处理最重要的事。</h1>
+          </div>
+          <div class="top-actions">
+            <button class="icon-button desktop-only" id="collapse-button" title="收起为桌面宠物">⌄</button>
+            <button class="icon-button" id="simulate-button" title="模拟一条新消息">＋</button>
+            <div class="avatar">我</div>
+          </div>
+        </header>
+
+        <section class="hero-grid">
+          <article class="pet-card">
+            <div class="pet-copy">
+              <span class="status-pill"><i></i>灵灵正在值守</span>
+              <h2 id="pet-headline">我帮你盯着消息呢</h2>
+              <p id="pet-copy">正在整理今天需要优先处理的信息。</p>
+              <button class="primary-button" data-jump="mentions">查看最重要消息 <span>→</span></button>
+            </div>
+            <div class="pet-wrap" aria-label="消息灵宠">
+              <div class="alert-bubble" id="alert-bubble">!</div>
+              <div class="pet-shadow"></div>
+              <div class="pet">
+                <div class="pet-ear left"></div>
+                <div class="pet-ear right"></div>
+                <div class="pet-face">
+                  <div class="eye left"></div>
+                  <div class="eye right"></div>
+                  <div class="nose"></div>
+                  <div class="mouth"></div>
+                </div>
+                <div class="pet-body">
+                  <div class="chest">M</div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="brief-card">
+            <div class="card-heading">
+              <div>
+                <span class="eyebrow">TODAY'S BRIEF</span>
+                <h3>今日速览</h3>
+              </div>
+              <span class="live-label">实时更新</span>
+            </div>
+            <div class="metrics">
+              <div><strong id="metric-important">0</strong><span>重要消息</span></div>
+              <div><strong id="metric-mentions">0</strong><span>群聊 @我</span></div>
+              <div><strong id="metric-todos">0</strong><span>紧急待办</span></div>
+            </div>
+            <div class="brief-note" id="brief-note">正在生成你的今日重点…</div>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <div class="messages-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">PRIORITY INBOX</p>
+                <h2 id="section-title">需要你关注</h2>
+              </div>
+              <div class="filter-tabs" id="filters">
+                <button class="active" data-filter="all">全部</button>
+                <button data-filter="critical">紧急</button>
+                <button data-filter="direct">私聊</button>
+                <button data-filter="group">群聊</button>
+              </div>
+            </div>
+            <div class="message-list" id="message-list"></div>
+          </div>
+
+          <aside class="todo-panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">ACTION NEEDED</p>
+                <h2>今日紧急待办</h2>
+              </div>
+              <span class="todo-total" id="todo-total">0 项</span>
+            </div>
+            <div class="todo-list" id="todo-list"></div>
+            <button class="outline-button" id="add-todo">＋ 添加待办</button>
+          </aside>
+        </section>
+
+        <section class="settings-panel" id="settings-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">RULES & INTEGRATIONS</p>
+              <h2>重要规则与平台接入</h2>
+            </div>
+            <button class="primary-button" id="save-settings">保存设置</button>
+          </div>
+          <div class="settings-grid">
+            <article class="setting-card">
+              <span class="setting-index">01</span>
+              <h3>重要联系人</h3>
+              <p>这些联系人发来的私聊会直接进入高优先级提醒。</p>
+              <label for="important-people">每行一个名字</label>
+              <textarea id="important-people" rows="6"></textarea>
+            </article>
+            <article class="setting-card">
+              <span class="setting-index">02</span>
+              <h3>重要群聊</h3>
+              <p>重要群消息会提高优先级，其中有人 @你 时会升为最高级。</p>
+              <label for="important-groups">每行一个群名</label>
+              <textarea id="important-groups" rows="6"></textarea>
+            </article>
+            <article class="setting-card integration-card">
+              <span class="setting-index">03</span>
+              <h3>飞书事件接入</h3>
+              <p id="feishu-status">正在检查接入状态…</p>
+              <div class="integration-row"><span>事件地址</span><code id="feishu-callback">/api/integrations/feishu/events</code></div>
+              <div class="integration-row"><span>验证令牌</span><b id="feishu-token-status">未配置</b></div>
+              <div class="integration-row"><span>本人 Open ID</span><b id="feishu-user-status">未配置</b></div>
+              <small>令牌和 Open ID 通过环境变量配置，不会暴露在页面中。</small>
+            </article>
+            <article class="setting-card integration-card">
+              <span class="setting-index">04</span>
+              <h3>浏览器伴侣</h3>
+              <p>采集飞书网页版、微信网页版主动发出的通知，也支持右键发送选中文本。</p>
+              <div class="integration-row"><span>连接状态</span><b>本机服务已就绪</b></div>
+              <div class="integration-row"><span>配对码</span><code id="browser-pairing-code">加载中…</code></div>
+              <div class="integration-row"><span>扩展目录</span><code>browser-extension</code></div>
+              <button class="outline-button" id="copy-pairing-code">复制配对码</button>
+              <small>该配对码相当于本机写入凭证，请不要发送给其他人。</small>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

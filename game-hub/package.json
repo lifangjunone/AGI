@@ -1,0 +1,23 @@
+{
+  "name": "game-hub",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test test/gameLogic.test.js",
+    "test:e2e": "node test/release.e2e.mjs"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
+    "lucide-react": "^0.544.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "vite": "^7.1.9"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.0"
+  }
+}

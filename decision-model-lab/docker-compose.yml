@@ -1,0 +1,13 @@
+services:
+  decision-lab:
+    build: .
+    ports:
+      - "8800:8800"
+    environment:
+      DECISION_LAB_PROVIDER: ${DECISION_LAB_PROVIDER:-mock}
+      CLM_BASE_URL: ${CLM_BASE_URL:-http://host.docker.internal:8700}
+      CLM_API_KEY: ${CLM_API_KEY:-}
+      DECISION_LAB_API_KEY: ${DECISION_LAB_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
