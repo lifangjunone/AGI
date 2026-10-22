@@ -106,6 +106,26 @@ class AuthStore:
                 );
                 CREATE INDEX IF NOT EXISTS admin_audit_created_idx
                     ON admin_audit(created_at DESC);
+                CREATE TABLE IF NOT EXISTS product_clicks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    product_id TEXT NOT NULL,
+                    clicked_at INTEGER NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS product_clicks_product_time_idx
+                    ON product_clicks(product_id, clicked_at DESC);
+                CREATE TABLE IF NOT EXISTS product_ranking_policies (
+                    product_id TEXT PRIMARY KEY,
+                    pinned_priority INTEGER NOT NULL DEFAULT 0
+                        CHECK (pinned_priority BETWEEN 0 AND 99),
+                    updated_at INTEGER NOT NULL,
+                    updated_by TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS platform_settings (
+                    setting_key TEXT PRIMARY KEY,
+                    setting_value TEXT NOT NULL,
+                    updated_at INTEGER NOT NULL,
+                    updated_by TEXT NOT NULL
+                );
                 """
             )
         self.path.chmod(0o600)
@@ -511,3 +531,190 @@ class AuthStore:
                 (max(1, min(limit, 100)),),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def record_product_click(
+        self, product_id: str, now: int | None = None
+    ) -> None:
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            connection.execute(
+                "INSERT INTO product_clicks (product_id, clicked_at) VALUES (?, ?)",
+                (product_id, current),
+            )
+
+    def product_click_stats(
+        self, product_ids: list[str], now: int | None = None
+    ) -> dict[str, dict[str, int]]:
+        if not product_ids:
+            return {}
+        current = int(time.time() if now is None else now)
+        placeholders = ",".join("?" for _ in product_ids)
+        stats = {
+            product_id: {"clicks_24h": 0, "clicks_7d": 0, "total": 0}
+            for product_id in product_ids
+        }
+        try:
+            with self.connect() as connection:
+                rows = connection.execute(
+                    f"""
+                    SELECT product_id,
+                        COUNT(*) AS total,
+                        SUM(CASE WHEN clicked_at >= ? THEN 1 ELSE 0 END) AS clicks_24h,
+                        SUM(CASE WHEN clicked_at >= ? THEN 1 ELSE 0 END) AS clicks_7d
+                    FROM product_clicks
+                    WHERE product_id IN ({placeholders})
+                    GROUP BY product_id
+                    """,
+                    (current - 86_400, current - 7 * 86_400, *product_ids),
+                ).fetchall()
+        except sqlite3.OperationalError as error:
+            if "product_clicks" not in str(error):
+                raise
+            return stats
+        for row in rows:
+            stats[row["product_id"]] = {
+                "clicks_24h": int(row["clicks_24h"] or 0),
+                "clicks_7d": int(row["clicks_7d"] or 0),
+                "total": int(row["total"] or 0),
+            }
+        return stats
+
+    def product_click_trend(
+        self, product_ids: list[str], days: int = 7, now: int | None = None
+    ) -> list[dict[str, object]]:
+        if not product_ids:
+            return []
+        current = int(time.time() if now is None else now)
+        safe_days = max(1, min(days, 31))
+        first_day = current // 86_400 - safe_days + 1
+        placeholders = ",".join("?" for _ in product_ids)
+        totals: dict[int, int] = {}
+        try:
+            with self.connect() as connection:
+                rows = connection.execute(
+                    f"""
+                    SELECT CAST(clicked_at / 86400 AS INTEGER) AS day_number,
+                        COUNT(*) AS total
+                    FROM product_clicks
+                    WHERE product_id IN ({placeholders})
+                      AND clicked_at >= ?
+                    GROUP BY day_number
+                    """,
+                    (*product_ids, first_day * 86_400),
+                ).fetchall()
+            totals = {int(row["day_number"]): int(row["total"]) for row in rows}
+        except sqlite3.OperationalError as error:
+            if "product_clicks" not in str(error):
+                raise
+        return [
+            {
+                "day": time.strftime(
+                    "%m-%d", time.gmtime(day_number * 86_400)
+                ),
+                "total": totals.get(day_number, 0),
+            }
+            for day_number in range(first_day, first_day + safe_days)
+        ]
+
+    def pinned_priorities(self, product_ids: list[str]) -> dict[str, int]:
+        if not product_ids:
+            return {}
+        placeholders = ",".join("?" for _ in product_ids)
+        priorities = {product_id: 0 for product_id in product_ids}
+        try:
+            with self.connect() as connection:
+                rows = connection.execute(
+                    f"""
+                    SELECT product_id, pinned_priority
+                    FROM product_ranking_policies
+                    WHERE product_id IN ({placeholders})
+                    """,
+                    product_ids,
+                ).fetchall()
+        except sqlite3.OperationalError as error:
+            if "product_ranking_policies" not in str(error):
+                raise
+            return priorities
+        priorities.update(
+            {row["product_id"]: int(row["pinned_priority"]) for row in rows}
+        )
+        return priorities
+
+    def set_pinned_priority(
+        self,
+        product_id: str,
+        priority: int,
+        actor: str,
+        now: int | None = None,
+    ) -> None:
+        if not 0 <= priority <= 99:
+            raise ValueError("Pinned priority must be between 0 and 99")
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO product_ranking_policies (
+                    product_id, pinned_priority, updated_at, updated_by
+                ) VALUES (?, ?, ?, ?)
+                ON CONFLICT(product_id) DO UPDATE SET
+                    pinned_priority = excluded.pinned_priority,
+                    updated_at = excluded.updated_at,
+                    updated_by = excluded.updated_by
+                """,
+                (product_id, priority, current, actor),
+            )
+            self.record_admin_action(
+                connection,
+                actor,
+                "product.ranking_pinned" if priority else "product.ranking_auto",
+                "product",
+                product_id,
+                current,
+            )
+
+    def rotation_minutes(self, default: int = 1) -> int:
+        try:
+            with self.connect() as connection:
+                row = connection.execute(
+                    """
+                    SELECT setting_value FROM platform_settings
+                    WHERE setting_key = 'product_rotation_minutes'
+                    """
+                ).fetchone()
+        except sqlite3.OperationalError as error:
+            if "platform_settings" not in str(error):
+                raise
+            return default
+        try:
+            value = int(row["setting_value"]) if row is not None else default
+        except (TypeError, ValueError):
+            return default
+        return value if 1 <= value <= 1_440 else default
+
+    def set_rotation_minutes(
+        self, minutes: int, actor: str, now: int | None = None
+    ) -> None:
+        if not 1 <= minutes <= 1_440:
+            raise ValueError("Rotation minutes must be between 1 and 1440")
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO platform_settings (
+                    setting_key, setting_value, updated_at, updated_by
+                ) VALUES ('product_rotation_minutes', ?, ?, ?)
+                ON CONFLICT(setting_key) DO UPDATE SET
+                    setting_value = excluded.setting_value,
+                    updated_at = excluded.updated_at,
+                    updated_by = excluded.updated_by
+                """,
+                (str(minutes), current, actor),
+            )
+            self.record_admin_action(
+                connection,
+                actor,
+                "product.rotation_updated",
+                "setting",
+                "product_rotation_minutes",
+                current,
+            )

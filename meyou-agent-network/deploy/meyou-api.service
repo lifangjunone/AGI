@@ -1,0 +1,18 @@
+[Unit]
+Description=MeYou Agent Network API
+After=network-online.target postgresql.service redis.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/meyou-agent-network
+EnvironmentFile=/etc/meyou-agent-network/api.env
+ExecStart=/usr/bin/npm run start -w @meyou/api
+Restart=always
+RestartSec=3
+User=meyou
+Group=meyou
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

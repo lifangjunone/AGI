@@ -1,0 +1,109 @@
+openapi: 3.1.0
+info:
+  title: Nexora Suite API
+  version: 1.0.0
+servers:
+  - url: http://localhost
+paths:
+  /api/v1/auth/login:
+    post:
+      summary: Sign in through Nexora Core
+      responses:
+        "200": { description: Access token issued }
+        "401": { description: Invalid credentials }
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh a valid Core session with current roles and product entitlements
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Refreshed access token issued }
+        "401": { description: Session user is no longer active }
+  /api/v1/agents:
+    get:
+      summary: List tenant agents
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Agent collection }
+    post:
+      summary: Create or register an agent
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Agent created }
+  /api/v1/agents/{id}/publish:
+    post:
+      summary: Publish an immutable Studio agent version
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "201": { description: Version published and registered }
+  /api/v1/gateway/agents/{id}/invoke:
+    post:
+      summary: Invoke a governed agent
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Agent response and trace ID }
+        "403": { description: Policy denied }
+  /api/v1/providers:
+    get:
+      summary: List MaaS model providers without exposing credential plaintext
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Tenant model provider collection }
+    post:
+      summary: Connect a cloud provider or private model endpoint and encrypt its credential
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Model provider connected }
+  /api/v1/providers/{id}/models:
+    get:
+      summary: Discover upstream models from a provider or private OpenAI-compatible endpoint
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200": { description: Discovered upstream model collection }
+        "502": { description: Provider model catalog could not be reached or parsed }
+  /api/v1/models:
+    get:
+      summary: List the tenant model catalog
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Model catalog }
+    post:
+      summary: Register an upstream model in the MaaS catalog
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Model registered }
+  /api/v1/models/import:
+    post:
+      summary: Batch import discovered upstream models into the MaaS catalog
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Models imported }
+  /api/v1/routes:
+    get:
+      summary: List stable model aliases and their current targets
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Model route collection }
+    post:
+      summary: Create a stable model alias
+      security: [{ bearerAuth: [] }]
+      responses:
+        "201": { description: Model route created }
+  /v1/chat/completions:
+    post:
+      summary: Invoke a MaaS route through the OpenAI-compatible interface
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Upstream model response }
+        "404": { description: No active provider, model, and route combination }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

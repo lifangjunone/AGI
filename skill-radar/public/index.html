@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="每天更新的 AI Agent Skill 热门榜与分类目录。" />
+    <meta name="theme-color" content="#f3f5f2" />
+    <title>Skill Radar · 技能雷达</title>
+    <link rel="icon" href="/skills/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/skills/styles.css" />
+    <script src="/skills/app.js" type="module"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#skill-list">跳到 Skill 列表</a>
+    <header class="site-header">
+      <a class="brand" href="/skills/" aria-label="Skill Radar 首页">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>Skill Radar</span>
+        <small>技能雷达</small>
+      </a>
+      <div class="header-meta">
+        <span id="freshness"><span class="status-dot"></span>正在校准今日数据</span>
+        <a href="#methodology">评分方法</a>
+        <a href="https://lifeyoume.icu/products">LifeYouMe 产品</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="control-deck" aria-labelledby="page-title">
+        <div class="title-block">
+          <p class="edition" id="edition">DAILY INDEX · --</p>
+          <h1 id="page-title">今天，哪些 <span lang="en">Skill</span><br /><em>值得装？</em></h1>
+          <p class="intro">把安装规模、近期增长和官方来源放在同一张证据表里。先看趋势，再按你的领域挑工具。</p>
+        </div>
+
+        <div class="radar-summary" aria-label="今日最热 Skill">
+          <div class="top-signal">
+            <div class="top-signal-heading">
+              <div class="radar-mini" aria-hidden="true"><span></span></div>
+              <p>今日 No.1 · 公开安装榜</p>
+            </div>
+            <h2 id="top-skill-name">正在读取…</h2>
+            <p id="top-skill-source">公开数据快照</p>
+            <dl class="top-evidence">
+              <div><dt>累计安装</dt><dd id="top-installs">—</dd></div>
+              <div><dt>近 7 日</dt><dd id="top-weekly">—</dd></div>
+              <div><dt>环比</dt><dd id="top-trend">—</dd></div>
+            </dl>
+            <a id="top-skill-link" href="#skill-list">查看证据与安装命令 ↓</a>
+          </div>
+          <p class="snapshot-note"><b id="stat-skills">—</b> 个 Skill · <b id="stat-sources">—</b> 个发布源 ·
+            <b id="stat-official">—</b> 个官方条目 · <b id="stat-categories">—</b> 个领域<br />
+            安装数据来自 skills.sh，本榜单每天保存一次公开快照。</p>
+        </div>
+      </section>
+
+      <section class="finder" aria-label="搜索与筛选">
+        <label class="search-box">
+          <span aria-hidden="true">⌕</span>
+          <span class="sr-only">搜索 Skill、作者或用途</span>
+          <input id="search" type="search" autocomplete="off" placeholder="搜索 Skill、作者或用途" />
+          <kbd>/</kbd>
+        </label>
+        <div class="sort-group" role="group" aria-label="排序方式">
+          <button class="sort-button is-active" type="button" data-sort="score">综合热门</button>
+          <button class="sort-button" type="button" data-sort="growth">增长最快</button>
+          <button class="sort-button" type="button" data-sort="official">官方优先</button>
+        </div>
+      </section>
+
+      <nav class="category-nav" id="categories" aria-label="Skill 领域">
+        <button class="category-button is-active" type="button" data-category="all">
+          <span>全部领域</span><b>—</b>
+        </button>
+      </nav>
+      <p class="category-hint">横滑查看全部 8 个领域 →</p>
+
+      <section class="results" aria-labelledby="result-heading">
+        <div class="result-header">
+          <div>
+            <p class="section-index">01 / LIVE DIRECTORY</p>
+            <h2 id="result-heading">今日 Skill 索引</h2>
+          </div>
+          <p id="result-count" aria-live="polite">正在读取数据…</p>
+        </div>
+        <div class="column-labels" aria-hidden="true">
+          <span>排名 / Skill</span><span>领域</span><span>采用证据</span><span>趋势</span><span>操作</span>
+        </div>
+        <ol class="skill-list" id="skill-list" aria-busy="true">
+          <li class="skeleton"></li>
+          <li class="skeleton"></li>
+          <li class="skeleton"></li>
+        </ol>
+        <div class="empty-state" id="empty-state" hidden>
+          <span aria-hidden="true">⌁</span>
+          <h3>这一格暂时没有信号</h3>
+          <p>换个关键词或清除领域筛选，已加载的数据不会丢失。</p>
+          <button type="button" id="clear-filters">查看全部 Skill</button>
+        </div>
+        <button class="load-more" id="load-more" type="button" hidden>再看 20 个 Skill <span>↓</span></button>
+      </section>
+
+      <section class="methodology" id="methodology" aria-labelledby="method-title">
+        <div>
+          <p class="section-index">02 / HOW IT WORKS</p>
+          <h2 id="method-title">热度有证据，推荐有边界</h2>
+        </div>
+        <p id="method-summary">综合安装规模、最近一周安装量与官方标识排序。增长率用于发现近期上升项目，不代表绝对质量。</p>
+        <dl>
+          <div><dt>安装规模</dt><dd>反映长期采用，不等同于质量担保。</dd></div>
+          <div><dt>近期信号</dt><dd>比较连续周安装量，识别正在升温的工具。</dd></div>
+          <div><dt>来源可信度</dt><dd>官方标识会加权，但第三方优秀 Skill 同样可进入榜单。</dd></div>
+        </dl>
+      </section>
+    </main>
+
+    <footer>
+      <p>Skill Radar by LifeYouMe</p>
+      <p>每日公开数据快照 · 请在安装前检查源码、权限与许可证</p>
+    </footer>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

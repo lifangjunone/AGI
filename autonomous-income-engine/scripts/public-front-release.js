@@ -6,6 +6,7 @@ const ROOT = path.join(__dirname, "..");
 const DEFAULT_FRONT = path.join(ROOT, "public-front");
 const ALLOWED_FILES = new Set([
   ".nojekyll",
+  "favicon.svg",
   "feed.json",
   "fflate.js",
   "index.html",
@@ -15,6 +16,14 @@ const ALLOWED_FILES = new Set([
   "sitemap.xml",
   "styles.css",
   "wechat-pay.jpg",
+  "products/consumer-evidence-pack/index.html",
+  "products/product-image-batch-studio/index.html",
+  "guides/12315-complaint-evidence-list/index.html",
+  "guides/merchant-refuses-refund-evidence/index.html",
+  "guides/product-not-as-described-evidence/index.html",
+  "guides/wechat-chat-evidence-organize/index.html",
+  "guides/damaged-delivery-claim-evidence/index.html",
+  "guides/prepaid-service-refund-evidence/index.html",
   "presets/portrait-product-image.html",
   "presets/social-product-card.html",
   "presets/white-main-image.html",

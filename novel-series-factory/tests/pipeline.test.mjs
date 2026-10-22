@@ -48,6 +48,15 @@ async function waitFor(pipeline, id) {
   throw new Error("Test job timed out");
 }
 
+async function waitForAssetPreparation(pipeline, id) {
+  for (let i = 0; i < 250; i++) {
+    const project = await pipeline.read(id);
+    if (["completed", "failed"].includes(project.assetPreparation?.status)) return project;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  throw new Error("Asset preparation timed out");
+}
+
 test("reject unsupported, empty, oversized and unauthorized input", () => {
   for (const value of [null, [], {}, { ...input, sourceType: "url" },
     { ...input, rightsConfirmed: false }, { ...input, content: " " },
@@ -192,6 +201,42 @@ test("Seedance references include character views, fixed voice audio and previou
   ]);
   assert.match(result.content[0].image_url.url, /^data:image\/jpeg;base64,/);
   assert.match(result.content[4].audio_url.url, /^data:audio\/wav;base64,/);
+});
+
+test("Seedance pads out-of-range reference images without changing originals", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "seedance-image-adapter-test-"));
+  const wideImage = [
+    "P3", "300 100", "255",
+    Array.from({ length: 300 * 100 }, () => "120 80 40").join(" "),
+  ].join("\n");
+  const validImage = [
+    "P3", "200 100", "255",
+    Array.from({ length: 200 * 100 }, () => "40 80 120").join(" "),
+  ].join("\n");
+  await writeFile(join(projectDir, "prop-wide.jpg"), wideImage);
+  await writeFile(join(projectDir, "scene-valid.jpg"), validImage);
+  const original = await readFile(join(projectDir, "prop-wide.jpg"));
+  const result = await buildSeedanceReferences({
+    SEEDANCE_MULTIMODAL_REFERENCES: "true",
+  }, { episode: { number: 1 } }, {
+    dir: projectDir,
+    productionBible: {
+      characters: [],
+      scenes: [{ id: "scene-1", name: "门厅", image: "/assets/scene-valid.jpg" }],
+      props: [{ id: "prop-1", name: "长卷", image: "/assets/prop-wide.jpg" }],
+      voices: [],
+    },
+  });
+  const scene = result.audit.images.find(item => item.kind === "scene");
+  const prop = result.audit.images.find(item => item.kind === "prop");
+  assert.equal(scene.adapted, false);
+  assert.equal(scene.originalAspectRatio, 2);
+  assert.equal(prop.originalAspectRatio, 3);
+  assert.equal(prop.adapted, true);
+  assert.ok(prop.adaptedAspectRatio >= 0.39 && prop.adaptedAspectRatio <= 2.5);
+  assert.match(prop.adaptedFilename, /^prop-wide-seedance-[a-f0-9]{12}\.jpg$/);
+  assert.match(result.content[1].image_url.url, /^data:image\/jpeg;base64,/);
+  assert.deepEqual(await readFile(join(projectDir, "prop-wide.jpg")), original);
 });
 
 test("production readiness blocks video until every visual and voice sample exists", () => {
@@ -354,6 +399,49 @@ test("advanced media gate rejects excessive black frames and invalid loudness", 
   const failed = await waitFor(pipeline, project.id);
   assert.equal(failed.status, "failed");
   assert.match(failed.error, /black_frames/);
+});
+
+test("media gate allows short cinematic holds but rejects one prolonged frozen segment", async () => {
+  const run = async advanced => {
+    const { pipeline } = await setupWithEnv({ ALLOW_BILLABLE_GENERATION: "true" }, {
+      speech: async (_url, _story, path) => { await writeFile(path, "audio"); return 1; },
+      probe: async path => { await readFile(path); return 21.28; },
+      mediaProbe: async path => {
+        await readFile(path);
+        return {
+          duration: 21.28, hasVideo: true, hasAudio: true,
+          videoCodec: "h264", audioCodec: "aac", width: 720, height: 1280,
+        };
+      },
+      mediaQualityAnalyzer: async () => ({
+        status: "analyzed", blackSeconds: 0, blackSegments: 0,
+        integratedLoudnessLufs: -18, truePeakDbfs: -2,
+        ...advanced,
+      }),
+      visualConsistencyAnalyzer: async () => ({
+        status: "analyzed", passed: true, confidence: 1, summary: "一致",
+      }),
+      realVideo: async (_env, _story, _project, path) => writeFile(path, "model-video"),
+      mux: async (_dir, _raw, _audio, output) => writeFile(output, "final-video"),
+    });
+    const project = await pipeline.createPlan({
+      sourceType: "manual", content: input.content, format: "anime",
+      episodeDurationSeconds: 21, rightsConfirmed: true,
+    });
+    project.productionBible = readyProductionBible(project.productionBible);
+    await writeFile(join(project.dir, "project.json"), JSON.stringify(project), "utf8");
+    await pipeline.startEpisode(project.id, 1);
+    return waitFor(pipeline, project.id);
+  };
+  const cinematicHolds = await run({
+    freezeSeconds: 4.5, freezeSegments: 2, maxFreezeSeconds: 2.583,
+  });
+  assert.equal(cinematicHolds.status, "completed");
+  const prolongedFreeze = await run({
+    freezeSeconds: 4.5, freezeSegments: 1, maxFreezeSeconds: 4.5,
+  });
+  assert.equal(prolongedFreeze.status, "failed");
+  assert.match(prolongedFreeze.error, /frozen_frames/);
 });
 
 test("semantic media gate rejects visual asset inconsistency", async () => {
@@ -721,6 +809,124 @@ test("full-series production completes remaining episodes and assembles verified
   assert.equal(result.assembly.episodeCount, project.seriesPlan.episodeCount);
 });
 
+test("full-series failure marks only the actual episode failed and resets later episodes", async () => {
+  const { pipeline, dataDir } = await setupWithEnv({
+    ALLOW_BILLABLE_GENERATION: "true",
+  }, {
+    speech: async (_url, _story, path) => { await writeFile(path, "audio"); return 1; },
+    probe: async path => { await readFile(path); return 5; },
+    realVideo: async () => { throw new Error("Seedance rejected reference"); },
+    visualConsistencyAnalyzer: async () => ({
+      status: "analyzed", passed: true, confidence: 1, summary: "一致",
+    }),
+  });
+  const project = await pipeline.createPlan({
+    sourceType: "manual",
+    content: "第一幕雾起。第二幕追查。第三幕反转。".repeat(70),
+    title: "全集失败状态",
+    format: "anime",
+    episodeDurationSeconds: 60,
+    rightsConfirmed: true,
+  });
+  assert.ok(project.seriesPlan.episodeCount >= 2);
+  const saved = await pipeline.read(project.id);
+  readyProductionBible(saved.productionBible);
+  await writeFile(join(dataDir, "projects", project.id, "project.json"), JSON.stringify(saved));
+  await pipeline.startSeriesProduction(project.id, {
+    confirmBillable: true,
+    confirmedEpisodeCount: project.seriesPlan.episodeCount,
+  });
+  const result = await waitFor(pipeline, project.id);
+  assert.equal(result.episodeStates[0].status, "failed");
+  for (const later of result.episodeStates.slice(1)) {
+    assert.equal(later.status, "not_started");
+    assert.equal(later.stage, "等待前序分集修复");
+    assert.equal(later.progress, 0);
+    assert.equal(later.error, null);
+  }
+  assert.equal(result.productionRun.failedEpisode, 1);
+  assert.equal(result.productionRun.currentEpisode, null);
+});
+
+test("Seedance generation resumes an existing remote task instead of submitting twice", async () => {
+  const projectDir = await mkdtemp(join(tmpdir(), "seedance-resume-test-"));
+  await writeFile(join(projectDir, "model-video-01.mp4.seedance-task.json"), JSON.stringify({
+    id: "task-existing",
+    model: "seedance-test",
+    episodeNumber: 1,
+  }));
+  const video = Buffer.concat([
+    Buffer.from("00000000ftypisom", "latin1"),
+    Buffer.alloc(10_100),
+  ]);
+  let creates = 0, polls = 0;
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options = {}) => {
+    if (String(url).endsWith("/contents/generations/tasks") && options.method === "POST") {
+      creates++;
+      return new Response(JSON.stringify({ id: "task-new" }), { status: 200 });
+    }
+    if (String(url).endsWith("/contents/generations/tasks/task-existing")) {
+      polls++;
+      return new Response(JSON.stringify({
+        id: "task-existing",
+        status: "succeeded",
+        content: { video_url: "https://media.example/video.mp4" },
+      }), { status: 200 });
+    }
+    if (String(url) === "https://media.example/video.mp4") {
+      return new Response(video, { status: 200 });
+    }
+    throw new Error(`unexpected request: ${url}`);
+  };
+  try {
+    const { pipeline } = await setupWithEnv({
+      ALLOW_BILLABLE_GENERATION: "true",
+      ARK_API_KEY: "test",
+      ARK_BASE_URL: "https://ark.example/api/v3",
+      ARK_VIDEO_MODEL: "seedance-test",
+      SEEDANCE_MULTIMODAL_REFERENCES: "false",
+    }, {
+      speech: async (_url, _story, path) => { await writeFile(path, "audio"); return 1; },
+      probe: async path => { await readFile(path); return 5; },
+      mediaProbe: async path => {
+        await readFile(path);
+        return {
+          duration: 5, hasVideo: true, hasAudio: path.includes("episode-"),
+          videoCodec: "h264", audioCodec: path.includes("episode-") ? "aac" : null,
+          width: 720, height: 1280,
+        };
+      },
+      mux: async (_dir, _raw, _audio, path) => writeFile(path, "final-video"),
+      visualConsistencyAnalyzer: async () => ({
+        status: "analyzed", passed: true, confidence: 1, summary: "一致",
+      }),
+    });
+    const project = await pipeline.createPlan({
+      sourceType: "manual", content: input.content, format: "anime",
+      episodeDurationSeconds: 5, rightsConfirmed: true,
+    });
+    const generatedProjectDir = project.dir;
+    await writeFile(
+      join(generatedProjectDir, "model-video-01.mp4.seedance-task.json"),
+      JSON.stringify({ id: "task-existing", model: "seedance-test", episodeNumber: 1 }),
+    );
+    await pipeline.startRealVideo(project.id, { episodeLimit: 1 });
+    const result = await waitFor(pipeline, project.id);
+    assert.equal(result.status, "completed");
+    assert.equal(creates, 0);
+    assert.equal(polls, 1);
+    assert.equal(result.assets.episodes[0].videoGeneration.remoteTaskId, "task-existing");
+    const taskRecord = JSON.parse(await readFile(
+      join(generatedProjectDir, "model-video-01.mp4.seedance-task.json"), "utf8",
+    ));
+    assert.equal(taskRecord.status, "succeeded");
+    assert.equal(taskRecord.generation.remoteTaskId, "task-existing");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("existing episode can be revalidated without regenerating or billing video", async () => {
   let videoCalls = 0;
   const { pipeline } = await setupWithEnv({
@@ -815,6 +1021,162 @@ test("failed revalidation invalidates completed project assembly and delivery", 
   assert.equal(persisted.episodeStates[0].status, "failed");
   assert.equal(persisted.assembly.status, "stale");
   assert.equal(persisted.delivery.status, "stale");
+});
+
+test("duration sync failure is repaired locally without another video generation", async () => {
+  let videoCalls = 0;
+  let repairCalls = 0;
+  const { pipeline } = await setupWithEnv({}, {
+    mediaProbe: async path => {
+      await readFile(path);
+      return {
+        duration: 22, videoDuration: 22, audioDuration: 22,
+        hasVideo: true, hasAudio: true, videoCodec: "h264", audioCodec: "aac",
+        width: 1920, height: 1080,
+      };
+    },
+    mediaQualityAnalyzer: async () => ({
+      status: "analyzed", blackSeconds: 0, blackSegments: 0,
+      freezeSeconds: 0, freezeSegments: 0, maxFreezeSeconds: 0,
+      integratedLoudnessLufs: -18, truePeakDbfs: -2,
+    }),
+    visualConsistencyAnalyzer: async () => ({
+      status: "analyzed", passed: true, confidence: 1, summary: "一致",
+    }),
+    realVideo: async () => { videoCalls++; },
+    alignMediaAudio: async (_dir, path) => {
+      repairCalls++;
+      await readFile(path);
+      return {
+        duration: 22, videoDuration: 22, audioDuration: 22,
+        hasVideo: true, hasAudio: true, videoCodec: "h264", audioCodec: "aac",
+        width: 1920, height: 1080,
+      };
+    },
+    seriesAssembler: async (_dir, _list, outputPath) => {
+      await writeFile(outputPath, "assembled-film");
+      return 22;
+    },
+  });
+  const project = await pipeline.createPlan({
+    sourceType: "manual", content: input.content, format: "film",
+    episodeDurationSeconds: 20, rightsConfirmed: true,
+  });
+  await writeFile(join(project.dir, "episode-01.mp4"), "existing-video");
+  await writeFile(join(project.dir, "narration-01.wav"), "existing-audio");
+  await writeFile(join(project.dir, "episode-01.srt"), "existing-subtitles");
+  await writeFile(join(project.dir, "story-01.json"), JSON.stringify({
+    episode: { number: 1, narration: "第一声钟响。", scenes: [] },
+    continuitySnapshot: { characters: [], voices: [], props: [], changes: [] },
+  }));
+  const saved = await pipeline.read(project.id);
+  saved.status = "failed";
+  saved.error = "第 1 集质量门禁未通过：audio_video_duration_sync";
+  saved.technicalError = saved.error;
+  saved.productionRun = {
+    status: "failed", mode: "full_series", failedEpisode: 1, completedEpisodes: 0,
+  };
+  saved.episodeStates[0] = {
+    ...saved.episodeStates[0], status: "failed", progress: 85,
+    error: saved.error,
+  };
+  await writeFile(join(project.dir, "project.json"), JSON.stringify(saved), "utf8");
+
+  const result = await pipeline.repairEpisodeMedia(project.id, 1);
+  assert.equal(videoCalls, 0);
+  assert.equal(repairCalls, 1);
+  assert.equal(result.asset.qualityReport.status, "passed");
+  assert.equal(result.asset.qualityReport.revalidationKind, "existing_media_audio_alignment");
+  assert.equal(result.asset.qualityReport.repair.billableVideoGeneration, false);
+  const persisted = await pipeline.read(project.id);
+  assert.equal(persisted.status, "completed");
+  assert.equal(persisted.episodeStates[0].status, "completed");
+  assert.equal(persisted.productionRun.failedEpisode, null);
+  assert.equal(persisted.productionRun.status, "completed");
+  assert.equal(persisted.productionRun.qualityGate.status, "passed");
+  assert.equal(persisted.assembly.status, "completed");
+  assert.equal(persisted.outputKind, "complete_series");
+});
+
+test("single-episode film can assemble a complete deliverable", async () => {
+  let assembledFiles = "";
+  const { pipeline } = await setupWithEnv({}, {
+    probe: async path => { await readFile(path); return 20; },
+    seriesAssembler: async (_dir, listPath, outputPath) => {
+      assembledFiles = await readFile(listPath, "utf8");
+      await writeFile(outputPath, "single-film");
+      return 20;
+    },
+  });
+  const project = await pipeline.createPlan({
+    sourceType: "manual", content: input.content, format: "film",
+    episodeDurationSeconds: 20, rightsConfirmed: true,
+  });
+  await writeFile(join(project.dir, "episode-01.mp4"), "film");
+  const saved = await pipeline.read(project.id);
+  saved.assets = {
+    episodes: [{
+      number: 1, duration: 20,
+      video: `/api/projects/${project.id}/assets/episode-01.mp4`,
+      qualityReport: { status: "passed", checks: [] },
+    }],
+  };
+  await writeFile(join(project.dir, "project.json"), JSON.stringify(saved), "utf8");
+
+  const assembled = await pipeline.assembleSeries(project.id, { requireComplete: true });
+  assert.equal(assembled.assembly.status, "completed");
+  assert.equal(assembled.assembly.episodeCount, 1);
+  assert.match(assembledFiles, /episode-01\.mp4/);
+});
+
+test("repaired media is preserved when external quality validation times out", async () => {
+  const { pipeline } = await setupWithEnv({}, {
+    mediaProbe: async path => {
+      await readFile(path);
+      return {
+        duration: 22, videoDuration: 22, audioDuration: 22,
+        hasVideo: true, hasAudio: true, videoCodec: "h264", audioCodec: "aac",
+        width: 1920, height: 1080,
+      };
+    },
+    mediaQualityAnalyzer: async () => ({
+      status: "analyzed", blackSeconds: 0, blackSegments: 0,
+      freezeSeconds: 0, freezeSegments: 0, maxFreezeSeconds: 0,
+      integratedLoudnessLufs: -18, truePeakDbfs: -2,
+    }),
+    visualConsistencyAnalyzer: async () => {
+      const error = new Error("多模态质检网络超时，已重试仍未恢复");
+      error.name = "TimeoutError";
+      throw error;
+    },
+    alignMediaAudio: async () => ({
+      duration: 22, videoDuration: 22, audioDuration: 22,
+      hasVideo: true, hasAudio: true, videoCodec: "h264", audioCodec: "aac",
+      width: 1920, height: 1080,
+    }),
+  });
+  const project = await pipeline.createPlan({
+    sourceType: "manual", content: input.content, format: "film",
+    episodeDurationSeconds: 20, rightsConfirmed: true,
+  });
+  await writeFile(join(project.dir, "episode-01.mp4"), "existing-video");
+  await writeFile(join(project.dir, "story-01.json"), JSON.stringify({
+    episode: { number: 1, narration: "第一声钟响。", scenes: [] },
+  }));
+  const saved = await pipeline.read(project.id);
+  saved.status = "failed";
+  saved.error = "第 1 集质量门禁未通过：audio_video_duration_sync";
+  saved.episodeStates[0] = {
+    ...saved.episodeStates[0], status: "failed", progress: 85, error: saved.error,
+  };
+  await writeFile(join(project.dir, "project.json"), JSON.stringify(saved), "utf8");
+
+  await assert.rejects(() => pipeline.repairEpisodeMedia(project.id, 1), /只复验现有成片/);
+  const persisted = await pipeline.read(project.id);
+  assert.equal(persisted.mediaRepair.status, "awaiting_quality");
+  assert.equal(persisted.mediaRepair.billableVideoGeneration, false);
+  assert.equal(persisted.episodeStates[0].stage, "音轨已修复，等待质量复验");
+  assert.match(persisted.error, /只复验现有成片/);
 });
 
 test("full-series resume skips completed episodes and only bills remaining work", async () => {
@@ -1187,6 +1549,129 @@ test("AI production bible and generated character views are persisted", async ()
   assert.ok(await readFile(join(generated.dir, "character-character-1-sheet.jpg")));
   assert.equal(pipeline.assetPath(project.id, "character-character-1-sheet.jpg"),
     join(generated.dir, "character-character-1-sheet.jpg"));
+});
+
+test("asset preparation runs in background and automatically retries transient analysis timeouts", async () => {
+  let analysisCalls = 0;
+  const { pipeline } = await setupWithEnv({}, {
+    bibleAnalyzer: async () => {
+      analysisCalls++;
+      if (analysisCalls < 3) {
+        const error = new Error("The operation was aborted due to timeout");
+        error.name = "TimeoutError";
+        throw error;
+      }
+      return {
+        version: 2, status: "needs_review", analyzedAt: new Date().toISOString(),
+        recommendation: { format: "anime", reason: "测试", confidence: 1 },
+        characters: [{
+          id: "character-1", name: "林舟", role: "主角", description: "测试角色",
+          visualAnchor: "青年黑发蓝衣", views: {}, sheet: null,
+          status: "needs_design", locked: false,
+        }],
+        scenes: [], props: [], voices: [],
+        continuity: { enabled: true, transitionStyle: "动作承接" },
+      };
+    },
+    imageGenerator: async () => ({
+      buffer: Buffer.from("mock image"), extension: "jpg",
+      generation: { model: "mock-image" },
+    }),
+    characterSheetSplitter: async (_dir, _path, base, extension) => ({
+      front: `${base}-front.${extension}`, threeQuarter: `${base}-three.${extension}`,
+      side: `${base}-side.${extension}`, back: `${base}-back.${extension}`,
+    }),
+  });
+  const project = await pipeline.createPlan({
+    sourceType: "manual", content: input.content, format: "anime",
+    episodeDurationSeconds: 20, rightsConfirmed: true,
+  });
+  const accepted = await pipeline.prepareProductionAssets(project.id);
+  assert.equal(accepted.assetPreparation.status, "running");
+  const completed = await waitForAssetPreparation(pipeline, project.id);
+  assert.equal(completed.assetPreparation.status, "completed");
+  assert.equal(analysisCalls, 3);
+  assert.equal(completed.productionAssetReadiness.ready, true);
+});
+
+test("asset preparation keeps successful assets and resume only regenerates failed items", async () => {
+  let allowSecond = false;
+  const calls = [];
+  const { pipeline } = await setupWithEnv({}, {
+    bibleAnalyzer: async () => ({
+      version: 2, status: "needs_review", analyzedAt: new Date().toISOString(),
+      recommendation: { format: "anime", reason: "测试", confidence: 1 },
+      characters: [
+        {
+          id: "character-1", name: "林舟", role: "主角", description: "测试角色",
+          visualAnchor: "青年黑发蓝衣", views: {}, sheet: null,
+          status: "needs_design", locked: false,
+        },
+        {
+          id: "character-2", name: "苏绾", role: "同伴", description: "测试角色",
+          visualAnchor: "青年长发白衣", views: {}, sheet: null,
+          status: "needs_design", locked: false,
+        },
+      ],
+      scenes: [], props: [], voices: [],
+      continuity: { enabled: true, transitionStyle: "动作承接" },
+    }),
+    imageGenerator: async (_env, prompt) => {
+      const name = prompt.includes("苏绾") ? "苏绾" : "林舟";
+      calls.push(name);
+      if (name === "苏绾" && !allowSecond) throw new Error("permanent provider failure");
+      return {
+        buffer: Buffer.from(`mock image ${name}`), extension: "jpg",
+        generation: { model: "mock-image" },
+      };
+    },
+    characterSheetSplitter: async (_dir, _path, base, extension) => ({
+      front: `${base}-front.${extension}`, threeQuarter: `${base}-three.${extension}`,
+      side: `${base}-side.${extension}`, back: `${base}-back.${extension}`,
+    }),
+  });
+  const project = await pipeline.createPlan({
+    sourceType: "manual", content: input.content, format: "anime",
+    episodeDurationSeconds: 20, rightsConfirmed: true,
+  });
+  await pipeline.prepareProductionAssets(project.id);
+  const failed = await waitForAssetPreparation(pipeline, project.id);
+  assert.equal(failed.assetPreparation.status, "failed");
+  assert.deepEqual(calls, ["林舟", "苏绾"]);
+  assert.ok(failed.productionBible.characters[0].views.front);
+  assert.equal(failed.productionBible.characters[1].status, "failed");
+
+  allowSecond = true;
+  await pipeline.prepareProductionAssets(project.id);
+  const resumed = await waitForAssetPreparation(pipeline, project.id);
+  assert.equal(resumed.assetPreparation.status, "completed");
+  assert.deepEqual(calls, ["林舟", "苏绾", "苏绾"]);
+  assert.equal(resumed.productionAssetReadiness.ready, true);
+});
+
+test("interrupted asset preparation becomes resumable after app restart", async () => {
+  const { pipeline, dataDir } = await setup();
+  const created = await pipeline.createPlan({
+    sourceType: "manual", content: input.content, format: "anime",
+    episodeDurationSeconds: 20, rightsConfirmed: true,
+  });
+  const saved = await pipeline.read(created.id);
+  saved.assetPreparation = {
+    status: "running", stage: "生成制片视觉资产 2/4", progress: 45,
+    startedAt: new Date().toISOString(),
+  };
+  saved.productionBible.characters[0].views = {
+    front: "front.jpg", threeQuarter: "three.jpg", side: "side.jpg", back: "back.jpg",
+  };
+  await writeFile(join(dataDir, "projects", created.id, "project.json"), JSON.stringify(saved));
+
+  const restarted = createMvpPipeline({ dataDir, env: {}, services: {} });
+  await restarted.initialize();
+  const recovered = await restarted.read(created.id);
+  assert.equal(recovered.assetPreparation.status, "failed");
+  assert.equal(recovered.assetPreparation.resumable, true);
+  assert.match(recovered.assetPreparation.error, /已成功生成的资产均已保留/);
+  assert.equal(recovered.productionBible.characters[0].views.front, "front.jpg");
 });
 
 test("smart audio keeps native model audio without calling TTS", async () => {

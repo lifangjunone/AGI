@@ -1,0 +1,48 @@
+[
+  {
+    "file": "page.png",
+    "state": null,
+    "size": "1440x900",
+    "zoom": 1,
+    "animationWaitMs": 343,
+    "issues": [],
+    "lint": [
+      {
+        "rule": "eyebrow",
+        "label": "标题上方的眉标",
+        "count": 1,
+        "examples": [
+          "p#edition.edition「DAILY INDEX · 2026/10/21」"
+        ]
+      },
+      {
+        "rule": "numbered",
+        "label": "标题上方的编号标签",
+        "count": 2,
+        "examples": [
+          "p.section-index「01 / LIVE DIRECTORY」",
+          "p.section-index「02 / HOW IT WORKS」"
+        ]
+      },
+      {
+        "rule": "englishLabel",
+        "label": "中文界面里的英文大写标签",
+        "count": 3,
+        "examples": [
+          "p#edition.edition「DAILY INDEX · 2026/10/21」",
+          "p.section-index「01 / LIVE DIRECTORY」",
+          "p.section-index「02 / HOW IT WORKS」"
+        ]
+      },
+      {
+        "rule": "contrastLow",
+        "label": "文字对比度不达标（正文低于 4.5:1，大字低于 3:1）",
+        "count": 2,
+        "examples": [
+          "span.rank「03」（3.57:1）",
+          "span.podium-label「TOP 3」（3.51:1）"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: nexora-control
+description: Nexora Control agent governance platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

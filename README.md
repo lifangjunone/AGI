@@ -38,11 +38,15 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`decision-model-lab/`](decision-model-lab/README.md) | Decision Model Lab | 校准决策模型评测、CLM 适配、概率校准和微调准入实验室 | Python、FastAPI、Docker、CLM |
 | [`decision-studio/`](decision-studio/README.md) | 决策工作台 | 面向普通用户的结构化 AI 决策与 CLM/Jev 同题对比产品 | React、Vite、FastAPI、CLM |
 | [`fde-daily-brief/`](fde-daily-brief/README.md) | FDE Daily Brief | 每天采集 FDE/AI 交付热点并生成可发布的结构化简报 | Node.js、Cron、火山方舟 |
+| [`flowframe-studio/`](flowframe-studio/README.md) | FlowFrame Studio | AI 视频创作工作台，覆盖生成、素材、项目、时间线和模型配置 | React、Vite、Node.js |
 | [`game-hub/`](game-hub/README.md) | 坐坐游戏厅 | 可持续扩展的网页小游戏大厅和首批五个轻量小游戏 | React、Vite、Playwright |
 | [`homesort-ios/`](homesort-ios/README.md) | HomeSort | Android 默认 Launcher 与 iOS SwiftUI/WidgetKit 预测入口 | Kotlin、SwiftUI、WidgetKit、React 原型 |
 | [`local-growth-cashflow/`](local-growth-cashflow/README.md) | 邻店增长 | 面向本地商家的低成本内容获客交付工作台 | Node.js、原生 Web |
 | [`message-pet-mvp/`](message-pet-mvp/README.md) | 消息灵宠 MVP | 桌面宠物式多平台消息提醒、紧急待办和每日总结原型 | Electron、Node.js、原生 Web |
+| [`meyou-agent-network/`](meyou-agent-network/README.md) | 遇见 MeYou | Agent 先替用户找人、破冰、接待和撮合，覆盖社群、心动、个人与企业四类关系入口 | React、Fastify、PostgreSQL、Redis |
+| [`nexora-suite/`](nexora-suite/README.md) | Nexora Suite | 面向 AI 平台工程的 Core、Control、MaaS 与 Studio 四套件 | Go、Next.js、Kubernetes、Helm |
 | [`novel-series-factory/`](novel-series-factory/README.md) | Novel Series Factory | 小说到完整多集视频的 AI 桌面制片系统商业 Beta | Electron、Node.js、Ark、Seedream、Seedance |
+| [`skill-radar/`](skill-radar/README.md) | Skill Radar | 每日发现和展示增长最快的 AI Agent Skill 榜单 | Node.js、原生 Web、Nginx |
 | [`travel-frame/`](travel-frame/README.md) | 旅帧 TravelFrame | 本地优先旅行照片整理、精选和隐私友好分析原型 | Vite、TensorFlow.js |
 | [`trend-forum/`](trend-forum/README.md) | Trend Forum | 热点聚合、社区信息流和每日自动发文公网网站 | React、Vite、自动发布脚本 |
 | [`video-intelligence-studio/`](video-intelligence-studio/README.md) | 叙镜 Narrative Lens | 视频理解、二创、裂变、知识图谱和任务中心工作台 | React、TypeScript、Express、Neo4j |
@@ -159,11 +163,15 @@ cd ../autonomous-income-engine && npm install && npm start
 cd ../decision-model-lab && python3 -m venv .venv && . .venv/bin/activate && pip install -e '.[dev]' && decision-lab
 cd ../decision-studio && npm install && npm run dev
 cd ../fde-daily-brief && npm install && npm run run-now
+cd ../flowframe-studio && npm install && npm run dev
 cd ../game-hub && npm install && npm run dev
 cd ../homesort-ios && npm install && npm run dev
 cd ../local-growth-cashflow && npm start
 cd ../message-pet-mvp && npm install && npm run desktop
+cd ../meyou-agent-network && npm install && npm run dev
+cd ../nexora-suite && make test
 cd ../novel-series-factory && npm install && npm start
+cd ../skill-radar && npm install && npm run serve
 cd ../travel-frame && npm install && npm run dev
 cd ../trend-forum && npm install && npm run dev
 cd ../video-intelligence-studio && npm install && npm run dev
@@ -187,6 +195,7 @@ SERVICE_ROLE=portal python3 platform/app.py
 ## 仓库约定
 
 - 子项目独立维护 README、依赖声明、构建脚本和测试命令。
+- 提交代码必须遵守 [`COMMIT_GUIDELINES.md`](COMMIT_GUIDELINES.md)，包括 README/CHANGELOG 同步、测试记录、禁止提交内容和推送后远端一致性校验。
 - 不提交 `node_modules/`、`dist/`、`build/`、`target/`、本地模型、`.env`、私钥和证书。
 - 生成的交付物、运行数据和测试证据必须与源码边界分离。
 - 新增子项目时，必须同时补充本 README 和子项目 README。
@@ -214,6 +223,10 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 
 ## 新增功能说明
 
+- `meyou-agent-network`：新增“遇见 MeYou”Agent 原生关系网络 Beta，支持持续找人、18+ 匿名双向心动匹配、个人公开页接待、社群成员撮合、企业客户收件箱、真人接管、授权审计和中英双语响应式体验。
+- `flowframe-studio`：新增 AI 视频创作工作台，支持模型配置校验、生成任务、项目素材、图生视频、双轨时间线和 `/flowframe/` 生产部署边界。
+- `nexora-suite`：新增 Nexora AI 平台套件，覆盖 Core、Control、MaaS 与 Studio 四个子系统，包含 Go API、Next.js 控制台、OpenAPI/事件契约、Docker Compose、Helm 与 Kubernetes 部署资料。
+- `skill-radar`：新增 Skill Radar 榜单站点，支持采集公开 Skill 数据、分类排名、趋势展示、静态发布和定时刷新服务。
 - `autonomous-income-engine`：新增商品图批量成品机和自动收入实验，支持本地浏览器图片处理、带预览标识效果、固定价格 checkout、独立付款确认、高清 ZIP 解锁、公开入口探活和自动化运营循环。
 - `decision-model-lab`：新增校准决策模型实验室，适配 CLM Choice/Noul/Score/Rank 接口，提供准确率、ECE、Brier、NLL、延迟评测、可靠性图和 JSONL 评测契约。
 - `decision-studio`：新增面向用户的结构化决策工作台，支持多候选选择、是/否、评分、排序、多问题和 CLM/Jev 同题对比；Jev Key 仅保存在浏览器会话。

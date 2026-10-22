@@ -5,7 +5,7 @@
   "description": "自动提供批量商品图成品、公开获客入口、真实使用漏斗与权威收款核验的收入实验",
   "scripts": {
     "start": "node src/server.js",
-    "verify": "node --test --test-name-pattern='public storefront stays curated|jobseeker full payment|public product identity|checkout price is server-authoritative|personal QR checkout assigns|public access monitor|public base probe|public tunnel spawn errors|public tunnel launcher resolves npx|routine service restarts preserve|buyer payment proof|buyer checkout APIs redact|public write rate limiter|wechat notification text|authoritative payment notifications|payment feed directory|payment webhook rejects forged|production runtime refuses|admin API secret protects|server buy links require explicit confirmation|product image studio counts real usage|storefront commerce cycle|stable public front|public front release gate|public front payment service update|funnel reports an unreachable' test/engine.test.js",
+    "verify": "node --test --test-name-pattern='public storefront stays curated|jobseeker full payment|public product identity|checkout price is server-authoritative|personal QR checkout assigns|public access monitor|public base probe|public tunnel spawn errors|public tunnel launcher resolves npx|routine service restarts preserve|buyer payment proof|buyer checkout APIs redact|mobile admin confirms|public write rate limiter|wechat notification text|authoritative payment notifications|payment feed directory|payment webhook rejects forged|production runtime refuses|admin API secret protects|server buy links require explicit confirmation|product image studio counts real usage|storefront commerce cycle|stable public front|public front release gate|public front payment service update|funnel reports an unreachable' test/engine.test.js",
     "build:storefront": "node -e \"const {generateSite}=require('./src/engine'); const result=generateSite({seed:20261012,count:8}); console.log('storefront:',result.product.id);\"",
     "build:front": "node scripts/build-public-front.js",
     "verify:front": "node scripts/public-front-release.js verify",
@@ -36,7 +36,8 @@
   },
   "dependencies": {
     "fflate": "^0.8.3",
-    "qrcode-generator": "^1.4.4"
+    "qrcode-generator": "^1.4.4",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "jsqr": "^1.4.0",

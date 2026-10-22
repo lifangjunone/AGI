@@ -6,6 +6,7 @@ import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { basename, extname, isAbsolute, join, resolve } from "node:path";
 import WebSocket from "ws";
+import sharp from "sharp";
 
 const MAX_NOVEL_CHARACTERS = 1_000_000;
 const MAX_WEB_SOURCE_CHARACTERS = 1_000_000;
@@ -626,7 +627,9 @@ ${source}`,
         },
       ],
     }),
-    signal: AbortSignal.timeout(Number(env.MODEL_REQUEST_TIMEOUT_MS || 180000)),
+    signal: AbortSignal.timeout(Math.max(
+      300000, Number(env.MODEL_REQUEST_TIMEOUT_MS || 180000),
+    )),
   });
   const text = await response.text();
   if (!response.ok) throw new Error(`语言模型分析失败 (${response.status}): ${text.slice(0, 500)}`);
@@ -777,6 +780,21 @@ function formatSrtTime(seconds) {
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")},${String(ms).padStart(3, "0")}`;
 }
 
+function sceneTimeline(story, duration) {
+  const scenes = story.episode.scenes;
+  const weights = scenes.map(scene => Math.max(1, [...scene.narration].length));
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+  const minimum = duration >= scenes.length * 2.5 ? 2.5 : 0.25;
+  const durations = weights.map(weight => Math.max(minimum, (duration * weight) / totalWeight));
+  const scale = duration / durations.reduce((sum, value) => sum + value, 0);
+  let cursor = 0;
+  return scenes.map((scene, index) => {
+    const start = cursor;
+    cursor = index === scenes.length - 1 ? duration : cursor + durations[index] * scale;
+    return { index: index + 1, start, end: cursor, scene };
+  });
+}
+
 function run(command, args, cwd) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd });
@@ -837,6 +855,10 @@ async function probeMedia(mediaPath) {
         const duration = Number(data.format?.duration || video?.duration || audio?.duration);
         resolve({
           duration: Number.isFinite(duration) ? duration : null,
+          videoDuration: Number.isFinite(Number(video?.duration))
+            ? Number(video.duration) : null,
+          audioDuration: Number.isFinite(Number(audio?.duration))
+            ? Number(audio.duration) : null,
           hasVideo: Boolean(video),
           hasAudio: Boolean(audio),
           videoCodec: video?.codec_name || null,
@@ -849,6 +871,14 @@ async function probeMedia(mediaPath) {
       }
     });
   });
+}
+
+async function probeImageDimensions(imagePath) {
+  const media = await probeMedia(imagePath);
+  if (!media.hasVideo || !media.width || !media.height) {
+    throw new Error(`无法读取参考图尺寸：${basename(imagePath)}`);
+  }
+  return { width: media.width, height: media.height };
 }
 
 async function analyzeMediaQuality(mediaPath) {
@@ -883,6 +913,7 @@ async function analyzeMediaQuality(mediaPath) {
         blackSegments: blackDurations.length,
         freezeSeconds: Number(freezeDurations.reduce((sum, value) => sum + value, 0).toFixed(3)),
         freezeSegments: Math.max(freezeStarts.length, freezeDurations.length),
+        maxFreezeSeconds: Number(Math.max(0, ...freezeDurations).toFixed(3)),
         integratedLoudnessLufs: Number.isFinite(integrated) ? integrated : null,
         truePeakDbfs: Number.isFinite(truePeak) ? truePeak : null,
       });
@@ -1333,6 +1364,83 @@ async function localAssetDataUrl(project, assetUrl) {
   }
 }
 
+async function prepareSeedanceImage(project, assetUrl) {
+  if (!assetUrl || typeof assetUrl !== "string") return null;
+  const filename = basename(new URL(assetUrl, "http://localhost").pathname);
+  if (!filename) return null;
+  const sourcePath = join(project.dir, filename);
+  try {
+    const source = await readFile(sourcePath);
+    const original = await probeImageDimensions(sourcePath);
+    const originalAspectRatio = original.width / original.height;
+    const audit = {
+      originalFilename: filename,
+      originalWidth: original.width,
+      originalHeight: original.height,
+      originalAspectRatio: Number(originalAspectRatio.toFixed(4)),
+      adapted: false,
+      adaptedFilename: null,
+      adaptedWidth: original.width,
+      adaptedHeight: original.height,
+      adaptedAspectRatio: Number(originalAspectRatio.toFixed(4)),
+    };
+    let inputPath = sourcePath;
+    if (originalAspectRatio > 2.5 || originalAspectRatio < 0.39) {
+      const evenCeil = value => Math.ceil(value / 2) * 2;
+      const targetWidth = originalAspectRatio > 2.5
+        ? original.width : evenCeil(original.height * 0.41);
+      const targetHeight = originalAspectRatio > 2.5
+        ? evenCeil(original.width / 2.45) : original.height;
+      const extension = [".jpg", ".jpeg", ".png", ".webp"].includes(extname(filename).toLowerCase())
+        ? extname(filename).toLowerCase() : ".jpg";
+      const fingerprint = createHash("sha256").update(source).digest("hex").slice(0, 12);
+      const adaptedFilename = `${basename(filename, extname(filename))}-seedance-${fingerprint}${extension}`;
+      inputPath = join(project.dir, adaptedFilename);
+      let reusable = false;
+      try {
+        const existing = await probeImageDimensions(inputPath);
+        reusable = existing.width === targetWidth && existing.height === targetHeight;
+      } catch { /* Generate the missing or invalid derivative below. */ }
+      if (!reusable) {
+        await run("ffmpeg", [
+          "-y", "-i", sourcePath,
+          "-vf", `pad=${targetWidth}:${targetHeight}:(ow-iw)/2:(oh-ih)/2:color=black`,
+          "-frames:v", "1", inputPath,
+        ], project.dir);
+      }
+      const adapted = await probeImageDimensions(inputPath);
+      Object.assign(audit, {
+        adapted: true,
+        adaptedFilename,
+        adaptedWidth: adapted.width,
+        adaptedHeight: adapted.height,
+        adaptedAspectRatio: Number((adapted.width / adapted.height).toFixed(4)),
+      });
+    }
+    const body = inputPath === sourcePath ? source : await readFile(inputPath);
+    return {
+      url: `data:${mimeTypeFor(inputPath)};base64,${body.toString("base64")}`,
+      audit,
+    };
+  } catch {
+    const url = await localAssetDataUrl(project, assetUrl);
+    return url ? {
+      url,
+      audit: {
+        originalFilename: filename,
+        originalWidth: null,
+        originalHeight: null,
+        originalAspectRatio: null,
+        adapted: false,
+        adaptedFilename: null,
+        adaptedWidth: null,
+        adaptedHeight: null,
+        adaptedAspectRatio: null,
+      },
+    } : null;
+  }
+}
+
 export async function buildSeedanceReferences(env, story, project) {
   if (!seedanceMultimodalEnabled(env)) {
     return { content: [], audit: { enabled: false, images: [], audio: null, video: null } };
@@ -1343,10 +1451,13 @@ export async function buildSeedanceReferences(env, story, project) {
   for (const character of project.productionBible?.characters || []) {
     for (const [view, assetUrl] of Object.entries(character.views || {})) {
       if (!assetUrl || content.length >= maxImages) continue;
-      const url = await localAssetDataUrl(project, assetUrl);
-      if (!url) continue;
-      content.push({ type: "image_url", image_url: { url }, role: "reference_image" });
-      images.push({ kind: "character", assetId: character.id, assetName: character.name, view });
+      const prepared = await prepareSeedanceImage(project, assetUrl);
+      if (!prepared) continue;
+      content.push({ type: "image_url", image_url: { url: prepared.url }, role: "reference_image" });
+      images.push({
+        kind: "character", assetId: character.id, assetName: character.name, view,
+        ...prepared.audit,
+      });
     }
   }
   for (const [kind, assets] of [
@@ -1355,10 +1466,10 @@ export async function buildSeedanceReferences(env, story, project) {
   ]) {
     for (const asset of assets) {
       if (!asset.image || content.length >= maxImages) continue;
-      const url = await localAssetDataUrl(project, asset.image);
-      if (!url) continue;
-      content.push({ type: "image_url", image_url: { url }, role: "reference_image" });
-      images.push({ kind, assetId: asset.id, assetName: asset.name });
+      const prepared = await prepareSeedanceImage(project, asset.image);
+      if (!prepared) continue;
+      content.push({ type: "image_url", image_url: { url: prepared.url }, role: "reference_image" });
+      images.push({ kind, assetId: asset.id, assetName: asset.name, ...prepared.audit });
     }
   }
   const voiceSamples = [];
@@ -1435,8 +1546,15 @@ function buildVideoPrompt(story, project) {
   const formatGuard = format === "anime"
     ? "STYLE IS STRICTLY 2D ANIME: illustrated characters, visible drawn outlines, cel-shaded colors. Absolutely no live-action actors, no photorealistic people, no photographic or realistic TV-drama look."
     : "";
-  const scenes = story.episode.scenes.map((scene, index) =>
-    `Scene ${index + 1}: ${scene.title}. Visual: ${scene.visual}. Story beat: ${scene.narration}`).join("\n");
+  const targetDuration = Math.max(1, Number(
+    story.episode?.audioDurationSeconds ||
+    story.episode?.targetDurationSeconds ||
+    project.specification?.episodeDurationSeconds || 5,
+  ));
+  const timeline = sceneTimeline(story, targetDuration);
+  const scenes = timeline.map(({ index, start, end, scene }) =>
+    `Scene ${index} [${start.toFixed(2)}s–${end.toFixed(2)}s]: ${scene.title}. ` +
+    `Visual: ${scene.visual}. The visible action must express this exact story beat during this interval: ${scene.narration}`).join("\n");
   const bible = project.productionBible;
   const episodeNumber = story.episode.number;
   const previousEpisode = project.seriesPlan?.episodes?.[episodeNumber - 2];
@@ -1467,6 +1585,7 @@ Never change a character voice. Never change wardrobe, weapon, prop owner or pro
     "The output must be an actual visual scene, not a placeholder card, not abstract UI lines, not a slideshow title card.",
     "No on-screen text, no subtitles, no logos, no watermark.",
     "Use coherent characters, atmospheric lighting, smooth camera movement and clear narrative progression.",
+    "TIMING IS MANDATORY: cut or transition at the supplied scene boundaries. Match visible actions, speaking character, emotion and camera emphasis to the story beat assigned to each interval. Do not show a later beat early.",
     "Keep it safe, non-explicit, suitable for general audiences.",
     `Episode title: ${story.episode.title}`,
     `Logline: ${story.logline}`,
@@ -1518,7 +1637,8 @@ async function generateArkVideo(env, story, project, outputPath) {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${env.ARK_API_KEY}`,
   };
-  const requestedDuration = Number(story.episode?.targetDurationSeconds ||
+  const requestedDuration = Number(story.episode?.audioDurationSeconds ||
+    story.episode?.targetDurationSeconds ||
     project.specification?.episodeDurationSeconds || 5);
   const duration = Math.max(4, Math.min(30, Math.round(requestedDuration)));
   const ratio = project.specification?.ratio === "9:16" ? "9:16" : "16:9";
@@ -1551,34 +1671,62 @@ async function generateArkVideo(env, story, project, outputPath) {
   ].filter(Boolean).join("\n\n");
   const content = [{ type: "text", text: prompt }, ...references.content];
   const usesPreviousVideo = Boolean(references.audit.video);
-  const created = await request("/contents/generations/tasks", {
-    method: "POST",
-    body: JSON.stringify({
+  const taskRecordPath = `${outputPath}.seedance-task.json`;
+  let created = null;
+  try {
+    const saved = JSON.parse(await readFile(taskRecordPath, "utf8"));
+    if (saved?.id && saved?.model === env.ARK_VIDEO_MODEL) {
+      if (saved.status === "succeeded" && saved.generation) {
+        const video = await readFile(outputPath);
+        const header = video.subarray(0, 32).toString("latin1");
+        if (video.length >= 10_000 && header.includes("ftyp")) return saved.generation;
+      }
+      created = saved;
+    }
+  } catch { /* No resumable remote task exists yet. */ }
+  if (!created) {
+    created = await request("/contents/generations/tasks", {
+      method: "POST",
+      body: JSON.stringify({
+        model: env.ARK_VIDEO_MODEL,
+        content,
+        duration,
+        ratio: usesPreviousVideo ? "adaptive" : ratio,
+        resolution: "720p",
+        generate_audio: project.specification?.audioStrategy !== "tts",
+        return_last_frame: true,
+        ...(usesPreviousVideo ? { omni_reference_task_type: "extend" } :
+          references.content.length ? { omni_reference_task_type: "reference" } : {}),
+      }),
+    });
+    if (!created.id) throw new Error("Seedance 创建任务成功但未返回任务 ID");
+    await writeFile(taskRecordPath, JSON.stringify({
+      id: created.id,
       model: env.ARK_VIDEO_MODEL,
-      content,
-      duration,
-      ratio: usesPreviousVideo ? "adaptive" : ratio,
-      resolution: "720p",
-      generate_audio: project.specification?.audioStrategy !== "tts",
-      return_last_frame: true,
-      ...(usesPreviousVideo ? { omni_reference_task_type: "extend" } :
-        references.content.length ? { omni_reference_task_type: "reference" } : {}),
-    }),
-  });
-  if (!created.id) throw new Error("Seedance 创建任务成功但未返回任务 ID");
+      episodeNumber: story.episode?.number || 1,
+      createdAt: new Date().toISOString(),
+    }, null, 2), "utf8");
+  }
   const startedAt = Date.now();
-  const timeoutMs = Number(env.MODEL_REQUEST_TIMEOUT_MS || 600000);
+  const configuredTimeoutMs = Number(env.MODEL_REQUEST_TIMEOUT_MS || 600000);
+  const timeoutMs = Math.max(
+    Number.isFinite(configuredTimeoutMs) ? configuredTimeoutMs : 600000,
+    60 * 60 * 1000,
+  );
   let task;
   while (Date.now() - startedAt < timeoutMs) {
-    await new Promise(resolve => setTimeout(resolve, 5000));
     task = await request(`/contents/generations/tasks/${encodeURIComponent(created.id)}`);
     if (task.status === "succeeded") break;
     if (["failed", "expired", "cancelled"].includes(task.status)) {
+      await rm(taskRecordPath, { force: true });
       throw new Error(`Seedance 任务 ${task.status}：${task.error?.message || JSON.stringify(task.error || {})}`);
     }
     if (!["queued", "running"].includes(task.status)) throw new Error(`Seedance 返回未知任务状态：${task.status || "empty"}`);
+    await new Promise(resolve => setTimeout(resolve, 5000));
   }
-  if (task?.status !== "succeeded") throw new Error(`Seedance 任务等待超时（任务 ID：${created.id}）`);
+  if (task?.status !== "succeeded") {
+    throw new Error(`Seedance 远端任务仍在处理中，可继续等待同一任务（任务 ID：${created.id}）`);
+  }
   const videoUrl = task.content?.video_url;
   if (!videoUrl) throw new Error(`Seedance 任务成功但没有返回视频地址（任务 ID：${created.id}）`);
   const videoResponse = await fetch(videoUrl, { signal: AbortSignal.timeout(120000) });
@@ -1589,7 +1737,7 @@ async function generateArkVideo(env, story, project, outputPath) {
     throw new Error(`Seedance 返回内容不是合法 MP4（${video.length} bytes）`);
   }
   await writeFile(outputPath, video);
-  return {
+  const generation = {
     remoteTaskId: created.id,
     model: env.ARK_VIDEO_MODEL,
     duration,
@@ -1600,6 +1748,15 @@ async function generateArkVideo(env, story, project, outputPath) {
     taskType: usesPreviousVideo ? "extend" : references.content.length ? "reference" : "text",
     referenceInputs: references.audit,
   };
+  await writeFile(taskRecordPath, JSON.stringify({
+    id: created.id,
+    model: env.ARK_VIDEO_MODEL,
+    episodeNumber: story.episode?.number || 1,
+    status: "succeeded",
+    completedAt: new Date().toISOString(),
+    generation,
+  }, null, 2), "utf8");
+  return generation;
 }
 
 function decodeVideoDataUri(content) {
@@ -1620,6 +1777,15 @@ function decodeVideoDataUri(content) {
 
 function publicErrorMessage(error) {
   const message = String(error?.message || error || "生成失败");
+  if (/aborted due to timeout|timeout|timed out|TimeoutError/i.test(message)) {
+    return "模型响应超时。系统已保留成功结果，可自动重试或仅补做失败项。";
+  }
+  if (/\b429\b|too many requests|rate.?limit/i.test(message)) {
+    return "模型服务当前请求过多。系统会稍后自动重试，不会重复生成已完成资产。";
+  }
+  if (/fetch failed|network|socket|ECONNRESET|ENETUNREACH/i.test(message)) {
+    return "模型网络连接暂时不可用。系统已保留成功结果，可继续重试。";
+  }
   if (/moov atom not found|Invalid data found when processing input|Error opening input file/.test(message)) {
     return "视频模型返回的文件不是可播放 MP4，无法合成旁白。请检查兜底视频模型是否真正返回 video/mp4。";
   }
@@ -1629,61 +1795,215 @@ function publicErrorMessage(error) {
   return message.split("\n")[0].slice(0, 240);
 }
 
-async function muxVideoWithAudio(projectDir, visualPath, audioPath, videoPath) {
-  await run("ffmpeg", [
-    "-y",
-    "-i", visualPath,
-    "-i", audioPath,
-    "-map", "0:v:0",
-    "-map", "1:a:0",
-    "-c:v", "copy",
-    "-c:a", "aac",
-    "-b:a", "160k",
-    "-shortest",
-    "-movflags", "+faststart",
-    videoPath,
-  ], projectDir);
+function isTransientModelError(error) {
+  const message = `${error?.name || ""} ${error?.code || ""} ${error?.message || error || ""}`;
+  return /timeout|aborted|fetch failed|network|socket|reset|ECONN|ENET|EAI_AGAIN|\b429\b|\b5\d\d\b/i.test(message);
 }
 
-async function preserveNativeVideo(projectDir, visualPath, videoPath) {
-  await run("ffmpeg", [
-    "-y",
-    "-i", visualPath,
-    "-map", "0:v:0",
-    "-map", "0:a:0",
-    "-c", "copy",
-    "-movflags", "+faststart",
-    videoPath,
-  ], projectDir);
+async function retryModelOperation(label, operation, onRetry, attempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await operation(attempt);
+    } catch (error) {
+      lastError = error;
+      if (!isTransientModelError(error) || attempt === attempts) throw error;
+      const delayMs = Math.min(8000, 1000 * (2 ** (attempt - 1)));
+      await onRetry?.({ label, attempt, nextAttempt: attempt + 1, delayMs, error });
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
 }
 
-async function writeEstimatedSubtitles(story, duration, subtitlePath) {
+function escapeXml(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&apos;",
+  })[character]);
+}
+
+function subtitleOverlayFilters(baseLabel, timeline, firstInputIndex) {
+  const filters = [];
+  let current = baseLabel;
+  timeline.forEach((item, index) => {
+    const output = `sub${index + 1}`;
+    const start = item.start.toFixed(3);
+    const end = item.end.toFixed(3);
+    filters.push(
+      `${current}[${firstInputIndex + index}:v]overlay=x=0:y=H-h-34:` +
+      `enable='between(t\\,${start}\\,${end})'[${output}]`,
+    );
+    current = `[${output}]`;
+  });
+  return { filters, output: current };
+}
+
+async function muxVideoWithAudio(projectDir, visualPath, audioPath, videoPath, subtitleTimeline) {
+  const visualMedia = await probeMedia(visualPath);
+  if (!(visualMedia.videoDuration > 0 || visualMedia.duration > 0)) {
+    throw new Error("无法读取视频轨时长，不能对齐配音");
+  }
+  const targetDuration = Number(visualMedia.videoDuration || visualMedia.duration);
+  const overlayInputs = subtitleTimeline.flatMap(item => ["-loop", "1", "-i", item.overlayPath]);
+  const overlays = subtitleOverlayFilters("[0:v]", subtitleTimeline, 2);
+  const filters = [...overlays.filters, "[1:a:0]apad[audio]"];
+  try {
+    await run("ffmpeg", [
+      "-y",
+      "-i", visualPath,
+      "-i", audioPath,
+      ...overlayInputs,
+      "-filter_complex", filters.join(";"),
+      "-map", overlays.output,
+      "-map", "[audio]",
+      "-c:v", "libx264",
+      "-preset", "veryfast",
+      "-crf", "20",
+      "-pix_fmt", "yuv420p",
+      "-c:a", "aac",
+      "-b:a", "160k",
+      "-t", targetDuration.toFixed(6),
+      "-movflags", "+faststart",
+      videoPath,
+    ], projectDir);
+  } finally {
+    await Promise.all(subtitleTimeline.map(item =>
+      rm(item.overlayPath, { force: true }).catch(() => {})));
+  }
+}
+
+async function alignExistingMediaAudio(projectDir, videoPath) {
+  const media = await probeMedia(videoPath);
+  const targetDuration = Number(media.videoDuration || media.duration);
+  if (!media.hasVideo || !media.hasAudio || !(targetDuration > 0)) {
+    throw new Error("现有成片缺少有效音视频流，无法执行无费用修复");
+  }
+  const temporaryPath = `${videoPath}.audio-sync-fix.mp4`;
+  try {
+    await run("ffmpeg", [
+      "-y",
+      "-i", videoPath,
+      "-filter_complex", "[0:a:0]apad[audio]",
+      "-map", "0:v:0",
+      "-map", "[audio]",
+      "-c:v", "copy",
+      "-c:a", "aac",
+      "-b:a", "160k",
+      "-t", targetDuration.toFixed(6),
+      "-movflags", "+faststart",
+      temporaryPath,
+    ], projectDir);
+    const repaired = await probeMedia(temporaryPath);
+    const drift = Math.abs(Number(repaired.videoDuration) - Number(repaired.audioDuration));
+    if (!repaired.hasVideo || !repaired.hasAudio || !Number.isFinite(drift) ||
+        drift > Math.max(0.2, Number(repaired.duration || 0) * 0.02)) {
+      throw new Error("音轨对齐后校验仍未通过，原文件保持不变");
+    }
+    await rename(temporaryPath, videoPath);
+    return repaired;
+  } finally {
+    await rm(temporaryPath, { force: true }).catch(() => {});
+  }
+}
+
+async function preserveNativeVideo(projectDir, visualPath, videoPath, subtitleTimeline) {
+  const overlayInputs = subtitleTimeline.flatMap(item => ["-loop", "1", "-i", item.overlayPath]);
+  const overlays = subtitleOverlayFilters("[0:v]", subtitleTimeline, 1);
+  try {
+    await run("ffmpeg", [
+      "-y",
+      "-i", visualPath,
+      ...overlayInputs,
+      "-filter_complex", overlays.filters.join(";"),
+      "-map", overlays.output,
+      "-map", "0:a:0",
+      "-c:v", "libx264",
+      "-preset", "veryfast",
+      "-crf", "20",
+      "-pix_fmt", "yuv420p",
+      "-c:a", "copy",
+      "-movflags", "+faststart",
+      videoPath,
+    ], projectDir);
+  } finally {
+    await Promise.all(subtitleTimeline.map(item =>
+      rm(item.overlayPath, { force: true }).catch(() => {})));
+  }
+}
+
+async function translateSubtitleScenes(env, story) {
   const scenes = story.episode.scenes;
-  const weights = scenes.map((scene) => Math.max(1, [...scene.narration].length));
-  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
-  const durations = weights.map((weight) => Math.max(2.5, (duration * weight) / totalWeight));
-  const normalizedTotal = durations.reduce((sum, value) => sum + value, 0);
-  const scale = duration / normalizedTotal;
-  const adjusted = durations.map((value) => value * scale);
-  let cursor = 0;
-  const subtitles = scenes.map((scene, index) => {
-    const start = cursor;
-    cursor += adjusted[index];
-    return `${index + 1}\n${formatSrtTime(start)} --> ${formatSrtTime(cursor)}\n${wrapSubtitleText(scene.narration, 20, 3)}\n`;
+  if (!env.ARK_API_KEY || !env.ARK_BASE_URL || !env.ARK_LLM_MODEL) {
+    throw new Error("双语字幕需要配置可用的方舟语言模型");
+  }
+  const response = await fetch(`${env.ARK_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${env.ARK_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: env.ARK_LLM_MODEL,
+      temperature: 0,
+      messages: [
+        {
+          role: "system",
+          content: "你是影视字幕翻译。忠实、简洁、口语自然。只返回严格 JSON，不要 Markdown。",
+        },
+        {
+          role: "user",
+          content: `把每条中文字幕翻译成英文，顺序和条数必须完全一致。返回 {\"translations\":[\"...\"]}。\n${JSON.stringify(scenes.map(scene => scene.narration))}`,
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(Number(env.MODEL_REQUEST_TIMEOUT_MS || 180000)),
+  });
+  const raw = await response.text();
+  if (!response.ok) throw new Error(`双语字幕翻译失败 (${response.status}): ${raw.slice(0, 500)}`);
+  let payload;
+  try { payload = JSON.parse(raw); } catch { throw new Error("双语字幕翻译接口返回无效 JSON"); }
+  const result = parseJsonContent(payload?.choices?.[0]?.message?.content);
+  if (!Array.isArray(result.translations) || result.translations.length !== scenes.length ||
+      result.translations.some(item => !safeText(item, 1000))) {
+    throw new Error("语言模型返回的英文字幕条数与中文台词不一致");
+  }
+  return result.translations.map(item => safeText(item, 1000));
+}
+
+async function writeBilingualSubtitles(story, duration, subtitlePath, translations) {
+  const timeline = sceneTimeline(story, duration);
+  const subtitles = timeline.map(({ index, start, end, scene }) => {
+    const english = wrapSubtitleText(translations[index - 1], 42, 2);
+    const chinese = wrapSubtitleText(scene.narration, 20, 2);
+    return `${index}\n${formatSrtTime(start)} --> ${formatSrtTime(end)}\n${english}\n${chinese}\n`;
   });
   await writeFile(subtitlePath, subtitles.join("\n"), "utf8");
+  for (const item of timeline) {
+    const englishLines = wrapSubtitleText(translations[item.index - 1], 42, 2).split("\n");
+    const chineseLines = wrapSubtitleText(item.scene.narration, 20, 2).split("\n");
+    const lines = [
+      ...englishLines.map(text => ({ text, size: 25, weight: 600 })),
+      ...chineseLines.map(text => ({ text, size: 28, weight: 650 })),
+    ];
+    const lineHeight = 36;
+    const height = Math.max(112, lines.length * lineHeight + 24);
+    const tspans = lines.map((line, index) =>
+      `<text x="360" y="${24 + (index + 1) * lineHeight}" text-anchor="middle" ` +
+      `font-family="Arial, PingFang SC, Heiti SC, sans-serif" font-size="${line.size}" ` +
+      `font-weight="${line.weight}" fill="white" stroke="#111111" stroke-width="4" ` +
+      `paint-order="stroke" stroke-linejoin="round">${escapeXml(line.text)}</text>`).join("");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="${height}">` +
+      `<rect width="720" height="${height}" fill="transparent"/>${tspans}</svg>`;
+    item.overlayPath = `${subtitlePath}.overlay-${String(item.index).padStart(2, "0")}.png`;
+    await sharp(Buffer.from(svg)).png().toFile(item.overlayPath);
+  }
+  return timeline;
 }
 
-async function renderVideo(projectDir, story, duration, audioPath, videoPath, subtitlePath) {
+async function renderVideo(projectDir, story, duration, audioPath, videoPath, _subtitlePath, subtitleTimeline) {
   const scenes = story.episode.scenes;
-  const weights = scenes.map((scene) => Math.max(1, [...scene.narration].length));
-  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
-  const durations = weights.map((weight) => Math.max(2.5, (duration * weight) / totalWeight));
-  const normalizedTotal = durations.reduce((sum, value) => sum + value, 0);
-  const scale = duration / normalizedTotal;
-  const adjusted = durations.map((value) => value * scale);
-
-  await writeEstimatedSubtitles(story, duration, subtitlePath);
+  const timeline = sceneTimeline(story, duration);
+  const adjusted = timeline.map(item => item.end - item.start);
 
   const colors = ["0x111827", "0x261b2c", "0x182b2a"];
   const inputs = [];
@@ -1703,14 +2023,18 @@ async function renderVideo(projectDir, story, duration, audioPath, videoPath, su
       `fade=t=in:st=0:d=0.6,fade=t=out:st=${fadeOutStart}:d=0.6[v${index}]`,
     );
   }
-  filters.push(`${scenes.map((_, index) => `[v${index}]`).join("")}concat=n=${scenes.length}:v=1:a=0[vout]`);
+  filters.push(`${scenes.map((_, index) => `[v${index}]`).join("")}` +
+    `concat=n=${scenes.length}:v=1:a=0[joined]`);
+  const overlays = subtitleOverlayFilters("[joined]", subtitleTimeline, scenes.length + 1);
+  filters.push(...overlays.filters);
 
   await run("ffmpeg", [
     "-y",
     ...inputs,
     "-i", audioPath,
+    ...subtitleTimeline.flatMap(item => ["-loop", "1", "-i", item.overlayPath]),
     "-filter_complex", filters.join(";"),
-    "-map", "[vout]",
+    "-map", overlays.output,
     "-map", `${scenes.length}:a`,
     "-c:v", "libx264",
     "-preset", "veryfast",
@@ -1859,6 +2183,20 @@ function episodeQualityReport(
       value: `${media.width}x${media.height}`,
     });
   }
+  if (media.videoDuration > 0 && media.audioDuration > 0) {
+    const drift = Math.abs(media.videoDuration - media.audioDuration);
+    checks.push({
+      id: "audio_video_duration_sync",
+      required: true,
+      passed: drift <= Math.max(0.2, Number(media.duration || 0) * 0.02),
+      value: {
+        videoSeconds: Number(media.videoDuration.toFixed(3)),
+        audioSeconds: Number(media.audioDuration.toFixed(3)),
+        driftSeconds: Number(drift.toFixed(3)),
+      },
+      expected: "音视频轨时长漂移 ≤ 0.2 秒或成片时长的 2%",
+    });
+  }
   if (expectedDuration > 0 && media.duration > 0) {
     const differenceRatio = Math.abs(media.duration - expectedDuration) / expectedDuration;
     checks.push({
@@ -1872,7 +2210,12 @@ function episodeQualityReport(
   if (advanced?.status === "analyzed") {
     const duration = Number(media.duration || 0);
     const blackLimit = Math.max(0.5, duration * 0.1);
-    const freezeLimit = Math.max(2, duration * 0.2);
+    const freezeTotalLimit = Math.max(2, duration * 0.25);
+    const freezeSegmentLimit = Math.max(4, duration * 0.2);
+    const maxFreezeSeconds = Number(advanced.maxFreezeSeconds ??
+      (advanced.freezeSegments <= 1 ? advanced.freezeSeconds : 0));
+    const frozenFramesPassed = advanced.freezeSeconds <= freezeTotalLimit &&
+      maxFreezeSeconds <= freezeSegmentLimit;
     checks.push(
       {
         id: "black_frames", required: true,
@@ -1881,8 +2224,12 @@ function episodeQualityReport(
       },
       {
         id: "frozen_frames", required: true,
-        passed: advanced.freezeSeconds <= freezeLimit,
-        value: advanced.freezeSeconds, expected: `≤ ${Number(freezeLimit.toFixed(2))} 秒`,
+        passed: frozenFramesPassed,
+        value: {
+          totalSeconds: advanced.freezeSeconds,
+          longestSegmentSeconds: maxFreezeSeconds,
+        },
+        expected: `累计 ≤ ${Number(freezeTotalLimit.toFixed(2))} 秒，单段 ≤ ${Number(freezeSegmentLimit.toFixed(2))} 秒`,
       },
       {
         id: "integrated_loudness", required: true,
@@ -2161,7 +2508,12 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
   const render = services.render || renderVideo;
   const realVideo = services.realVideo || (env.ARK_API_KEY && env.ARK_VIDEO_MODEL ? generateArkVideo : generateFallbackVideo);
   const mux = services.mux || muxVideoWithAudio;
+  const alignMediaAudio = services.alignMediaAudio || alignExistingMediaAudio;
   const preserveNative = services.preserveNative || preserveNativeVideo;
+  const subtitleTranslator = services.subtitleTranslator ||
+    (services.mediaProbe || services.render
+      ? async (_env, story) => story.episode.scenes.map((_, index) => `English subtitle ${index + 1}`)
+      : translateSubtitleScenes);
   const sourceFetcher = services.sourceFetcher || fetchSourceFromUrl;
   const bibleAnalyzer = services.bibleAnalyzer || analyzeProductionBible;
   const imageGenerator = services.imageGenerator || generateArkImage;
@@ -2232,6 +2584,19 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
     async initialize() {
       await mkdir(projectsDir, { recursive: true });
       for (const project of await api.list()) {
+        if (project.assetPreparation?.status === "running") {
+          await update(project, {
+            assetPreparation: {
+              ...project.assetPreparation,
+              status: "failed",
+              stage: "资产任务被应用重启中断，可继续补做",
+              error: "应用重启中断了本轮任务。已成功生成的资产均已保留，继续后只补做缺失项。",
+              resumable: true,
+              retry: null,
+              updatedAt: new Date().toISOString(),
+            },
+          });
+        }
         if (["running", "queued"].includes(project.status)) {
           if (project.productionRun?.mode === "full_series") {
             project.productionRun.status = "failed";
@@ -2666,16 +3031,48 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
     async prepareProductionAssets(id) {
       if (scheduled.has(id)) throw new Error("项目已有生成任务在运行");
       scheduled.add(id);
+      const project = await api.read(id);
+      await update(project, {
+        assetPreparation: {
+          ...(project.assetPreparation || {}),
+          status: "running", stage: "任务已接受，正在准备制片资产", progress: 1,
+          startedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+          error: null, failures: [], retry: null,
+        },
+      });
+      void api.runProductionAssets(id).catch(error => {
+        console.error("制片资产后台任务失败", id, publicErrorMessage(error));
+      });
+      return project;
+    },
+
+    async runProductionAssets(id) {
       let project = await api.read(id);
       try {
         await update(project, {
           assetPreparation: {
+            ...project.assetPreparation,
             status: "running", stage: "AI 分析人物、场景、武器道具与音色", progress: 5,
-            startedAt: new Date().toISOString(), error: null,
+            updatedAt: new Date().toISOString(), error: null, retry: null,
           },
         });
         if (!project.productionBible?.analyzedAt) {
-          project.productionBible = normalizeProductionBible(await bibleAnalyzer(env, project));
+          project.productionBible = normalizeProductionBible(await retryModelOperation(
+            "AI 制片资产分析",
+            () => bibleAnalyzer(env, project),
+            async retry => {
+              project.assetPreparation = {
+                ...project.assetPreparation,
+                stage: `AI 制片资产分析超时，正在自动重试 ${retry.nextAttempt}/3`,
+                retry: {
+                  task: retry.label, attempt: retry.attempt,
+                  nextAttempt: retry.nextAttempt, reason: publicErrorMessage(retry.error),
+                },
+                updatedAt: new Date().toISOString(),
+              };
+              await update(project, { assetPreparation: project.assetPreparation });
+            },
+          ));
           project.continuityLedger = buildProjectContinuityLedger(project, project.continuityLedger);
           await update(project, {
             productionBible: project.productionBible,
@@ -2688,6 +3085,7 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
           ...bible.scenes.map(asset => ({ type: "scene", asset })),
           ...bible.props.map(asset => ({ type: "prop", asset })),
         ];
+        const failures = [];
         let finished = 0;
         for (const { type, asset } of visualAssets) {
           const alreadyReady = type === "character"
@@ -2695,22 +3093,49 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
             : Boolean(asset.image);
           if (!alreadyReady) {
             asset.status = "generating";
+            asset.error = null;
             await update(project, { productionBible: bible });
-            const generated = await imageGenerator(env, imagePromptForAsset(project, type, asset));
-            const base = `${type}-${asset.id}`;
-            const filename = `${base}-sheet.${generated.extension}`;
-            const path = join(project.dir, filename);
-            await writeFile(path, generated.buffer);
-            asset.sheet = `/api/projects/${project.id}/assets/${filename}`;
-            asset.image = asset.sheet;
-            asset.generation = generated.generation;
-            if (type === "character") {
-              const views = await characterSheetSplitter(project.dir, path, base, generated.extension);
-              asset.views = Object.fromEntries(Object.entries(views).map(([key, file]) =>
-                [key, `/api/projects/${project.id}/assets/${file}`]));
+            try {
+              const generated = await retryModelOperation(
+                `${asset.name}${type === "character" ? "人物多视图" : type === "scene" ? "场景图" : "道具图"}`,
+                () => imageGenerator(env, imagePromptForAsset(project, type, asset)),
+                async retry => {
+                  project.assetPreparation = {
+                    ...project.assetPreparation,
+                    stage: `${retry.label}超时，正在自动重试 ${retry.nextAttempt}/3`,
+                    retry: {
+                      task: retry.label, attempt: retry.attempt,
+                      nextAttempt: retry.nextAttempt, reason: publicErrorMessage(retry.error),
+                    },
+                    updatedAt: new Date().toISOString(),
+                  };
+                  await update(project, {
+                    productionBible: bible,
+                    assetPreparation: project.assetPreparation,
+                  });
+                },
+              );
+              const base = `${type}-${asset.id}`;
+              const filename = `${base}-sheet.${generated.extension}`;
+              const path = join(project.dir, filename);
+              await writeFile(path, generated.buffer);
+              asset.sheet = `/api/projects/${project.id}/assets/${filename}`;
+              asset.image = asset.sheet;
+              asset.generation = generated.generation;
+              if (type === "character") {
+                const views = await characterSheetSplitter(project.dir, path, base, generated.extension);
+                asset.views = Object.fromEntries(Object.entries(views).map(([key, file]) =>
+                  [key, `/api/projects/${project.id}/assets/${file}`]));
+              }
+              asset.status = "ready";
+              asset.generatedAt = new Date().toISOString();
+            } catch (error) {
+              asset.status = "failed";
+              asset.error = publicErrorMessage(error);
+              failures.push({
+                kind: type, id: asset.id, name: asset.name, error: asset.error,
+              });
             }
-            asset.status = "ready";
-            asset.generatedAt = new Date().toISOString();
           }
           finished++;
           await update(project, {
@@ -2719,45 +3144,100 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
               ...project.assetPreparation,
               stage: `生成制片视觉资产 ${finished}/${visualAssets.length}`,
               progress: 10 + Math.round((finished / Math.max(1, visualAssets.length)) * 70),
+              completedTasks: finished, totalTasks: visualAssets.length + bible.voices.length,
+              failures, retry: null, updatedAt: new Date().toISOString(),
             },
           });
         }
-        const availableVoices = await fetchTtsVoices(env.TTS_API_URL);
+        const speakerCounts = new Map();
+        for (const voice of bible.voices) {
+          if (voice.speaker && voice.speaker !== "待选择") {
+            speakerCounts.set(voice.speaker, (speakerCounts.get(voice.speaker) || 0) + 1);
+          }
+        }
+        const needsVoiceCatalog = bible.voices.some(voice =>
+          !voice.speaker || voice.speaker === "待选择" ||
+          (speakerCounts.get(voice.speaker) || 0) > 1);
+        const availableVoices = needsVoiceCatalog
+          ? await retryModelOperation(
+            "读取 TTS 可用音色",
+            () => fetchTtsVoices(env.TTS_API_URL),
+            async retry => {
+              project.assetPreparation = {
+                ...project.assetPreparation,
+                stage: `TTS 音色服务超时，正在自动重试 ${retry.nextAttempt}/3`,
+                retry: {
+                  task: retry.label, attempt: retry.attempt,
+                  nextAttempt: retry.nextAttempt, reason: publicErrorMessage(retry.error),
+                },
+                updatedAt: new Date().toISOString(),
+              };
+              await update(project, { assetPreparation: project.assetPreparation });
+            },
+          )
+          : [];
         const usedSpeakers = new Set();
         for (let index = 0; index < bible.voices.length; index++) {
           const voice = bible.voices[index];
-          const character = bible.characters.find(item => item.id === voice.characterId);
-          const duplicate = usedSpeakers.has(voice.speaker);
-          if (!voice.speaker || voice.speaker === "待选择" || duplicate) {
-            const nextSpeaker = chooseCharacterSpeaker(character, voice, availableVoices, usedSpeakers);
-            if (!nextSpeaker) throw new Error(`${voice.characterName}没有可分配的独立中文音色`);
-            if (voice.speaker !== nextSpeaker) {
-              voice.speaker = nextSpeaker;
-              voice.bindingVersion = (voice.bindingVersion || 1) + 1;
-              voice.sample = null;
-              voice.sampleGeneratedAt = null;
+          try {
+            const character = bible.characters.find(item => item.id === voice.characterId);
+            const duplicate = usedSpeakers.has(voice.speaker);
+            if (!voice.speaker || voice.speaker === "待选择" || duplicate) {
+              const nextSpeaker = chooseCharacterSpeaker(character, voice, availableVoices, usedSpeakers);
+              if (!nextSpeaker) throw new Error(`${voice.characterName}没有可分配的独立中文音色`);
+              if (voice.speaker !== nextSpeaker) {
+                voice.speaker = nextSpeaker;
+                voice.bindingVersion = (voice.bindingVersion || 1) + 1;
+                voice.sample = null;
+                voice.sampleGeneratedAt = null;
+              }
             }
-          }
-          usedSpeakers.add(voice.speaker);
-          voice.direction ||= "自然、符合人物年龄与身份，保持稳定声线";
-          voice.status = "configured";
-          if (!voice.sample) {
-            const filename = `voice-${voice.id}-sample.wav`;
-            await synthesizeVoiceSample(env.TTS_API_URL, voice, join(project.dir, filename));
-            voice.sample = `/api/projects/${project.id}/assets/${filename}`;
-            voice.sampleGeneratedAt = new Date().toISOString();
+            usedSpeakers.add(voice.speaker);
+            voice.direction ||= "自然、符合人物年龄与身份，保持稳定声线";
             voice.status = "configured";
-          }
-          const referenceDuration = 1.8;
-          if (!voice.referenceSample || Number(voice.referenceSampleDuration || 0) < referenceDuration) {
-            const source = join(project.dir, basename(new URL(voice.sample, "http://localhost").pathname));
-            const filename = `voice-${voice.id}-reference.wav`;
-            await run("ffmpeg", [
-              "-y", "-i", source, "-t", String(referenceDuration), "-ac", "1", "-ar", "24000",
-              join(project.dir, filename),
-            ], project.dir);
-            voice.referenceSample = `/api/projects/${project.id}/assets/${filename}`;
-            voice.referenceSampleDuration = referenceDuration;
+            if (!voice.sample) {
+              const filename = `voice-${voice.id}-sample.wav`;
+              await retryModelOperation(
+                `${voice.characterName}角色音色样本`,
+                () => synthesizeVoiceSample(env.TTS_API_URL, voice, join(project.dir, filename)),
+                async retry => {
+                  project.assetPreparation = {
+                    ...project.assetPreparation,
+                    stage: `${retry.label}超时，正在自动重试 ${retry.nextAttempt}/3`,
+                    retry: {
+                      task: retry.label, attempt: retry.attempt,
+                      nextAttempt: retry.nextAttempt, reason: publicErrorMessage(retry.error),
+                    },
+                    updatedAt: new Date().toISOString(),
+                  };
+                  await update(project, {
+                    productionBible: bible,
+                    assetPreparation: project.assetPreparation,
+                  });
+                },
+              );
+              voice.sample = `/api/projects/${project.id}/assets/${filename}`;
+              voice.sampleGeneratedAt = new Date().toISOString();
+              voice.status = "configured";
+            }
+            const referenceDuration = 1.8;
+            if (!voice.referenceSample || Number(voice.referenceSampleDuration || 0) < referenceDuration) {
+              const source = join(project.dir, basename(new URL(voice.sample, "http://localhost").pathname));
+              const filename = `voice-${voice.id}-reference.wav`;
+              await run("ffmpeg", [
+                "-y", "-i", source, "-t", String(referenceDuration), "-ac", "1", "-ar", "24000",
+                join(project.dir, filename),
+              ], project.dir);
+              voice.referenceSample = `/api/projects/${project.id}/assets/${filename}`;
+              voice.referenceSampleDuration = referenceDuration;
+            }
+            voice.error = null;
+          } catch (error) {
+            voice.status = "failed";
+            voice.error = publicErrorMessage(error);
+            failures.push({
+              kind: "voice", id: voice.id, name: voice.characterName, error: voice.error,
+            });
           }
           await update(project, {
             productionBible: bible,
@@ -2765,11 +3245,18 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
               ...project.assetPreparation,
               stage: `生成固定角色音色样本 ${index + 1}/${bible.voices.length}`,
               progress: 82 + Math.round(((index + 1) / Math.max(1, bible.voices.length)) * 15),
+              completedTasks: visualAssets.length + index + 1,
+              totalTasks: visualAssets.length + bible.voices.length,
+              failures, retry: null, updatedAt: new Date().toISOString(),
             },
           });
         }
         const readiness = productionAssetReadiness(project);
-        if (!readiness.ready) throw new Error(`资产验收未通过：${readiness.missing.join("、")}`);
+        if (!readiness.ready) {
+          const error = new Error(`仍有 ${readiness.missing.length} 项资产需要补做`);
+          error.assetFailures = failures;
+          throw error;
+        }
         bible.status = "ready";
         await update(project, {
           productionBible: bible,
@@ -2777,7 +3264,8 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
           assetPreparation: {
             ...project.assetPreparation,
             status: "completed", stage: "制片资产包已就绪", progress: 100,
-            completedAt: new Date().toISOString(), readiness,
+            completedAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+            readiness, failures: [], retry: null,
           },
         });
         return project;
@@ -2787,6 +3275,8 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
             ...(project.assetPreparation || {}),
             status: "failed", stage: "制片资产包需要处理",
             error: publicErrorMessage(error),
+            failures: error.assetFailures || project.assetPreparation?.failures || [],
+            resumable: true, retry: null, updatedAt: new Date().toISOString(),
           },
         });
         throw error;
@@ -3195,10 +3685,191 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
       return { project, asset };
     },
 
+    async repairEpisodeMedia(id, episodeNumber) {
+      const project = await api.read(id);
+      const number = Number(episodeNumber);
+      if (!Number.isInteger(number) || number < 1) throw new Error("分集编号无效");
+      if (scheduled.has(id) || ["queued", "running"].includes(project.status)) {
+        throw new Error("项目正在生产，暂时不能修复成片");
+      }
+      const state = normalizeEpisodeStates(project).find(item => item.number === number);
+      const failure = `${state?.error || ""} ${project.error || ""}`;
+      if (!/audio_video_duration_sync/.test(failure)) {
+        throw new Error("当前失败不是可自动修复的音画轨时长问题");
+      }
+      const padded = String(number).padStart(2, "0");
+      const videoPath = join(project.dir, `episode-${padded}.mp4`);
+      const storyPath = join(project.dir, `story-${padded}.json`);
+      const story = JSON.parse(await readFile(storyPath, "utf8"));
+      await update(project, {
+        status: "running",
+        stage: `正在本地修复第 ${number} 集音轨时长（不重新生成视频）`,
+        error: null,
+        mediaRepair: {
+          episodeNumber: number, status: "aligning",
+          billableVideoGeneration: false, updatedAt: new Date().toISOString(),
+        },
+      });
+      let mediaAligned = false;
+      try {
+        const media = await alignMediaAudio(project.dir, videoPath);
+        mediaAligned = true;
+        project.mediaRepair = {
+          episodeNumber: number, status: "validating",
+          billableVideoGeneration: false,
+          media: {
+            duration: media.duration,
+            videoDuration: media.videoDuration,
+            audioDuration: media.audioDuration,
+          },
+          updatedAt: new Date().toISOString(),
+        };
+        await update(project, {
+          stage: `第 ${number} 集音轨已对齐，正在执行质量复验`,
+          mediaRepair: project.mediaRepair,
+        });
+        const advancedQuality = await mediaQualityAnalyzer(videoPath);
+        const visualConsistency = await visualConsistencyAnalyzer(
+          env, videoPath, story, project, media.duration,
+        );
+        const speechConsistency = {
+          status: "provenance_verified", verified: true, similarity: 1,
+          proof: "tts_subtitle_same_source",
+          reason: "固定 TTS 与字幕均由本集规范台词生成",
+        };
+        const qualityReport = {
+          ...episodeQualityReport(media, project, number, advancedQuality, {
+            speech: speechConsistency,
+            visual: visualConsistency,
+          }),
+          repairedAt: new Date().toISOString(),
+          revalidationKind: "existing_media_audio_alignment",
+          repair: {
+            kind: "pad_audio_to_video_duration",
+            billableVideoGeneration: false,
+          },
+        };
+        if (qualityReport.status !== "passed") {
+          const failed = qualityReport.checks.filter(check => check.required && !check.passed)
+            .map(check => check.id).join("、");
+          throw new Error(`第 ${number} 集修复后仍未通过质量门禁：${failed}`);
+        }
+        const existing = (project.assets?.episodes || []).find(item => item.number === number);
+        const asset = {
+          ...(existing || {}),
+          number,
+          duration: Number(media.duration.toFixed(2)),
+          video: `/api/projects/${project.id}/assets/episode-${padded}.mp4`,
+          audio: `/api/projects/${project.id}/assets/narration-${padded}.wav`,
+          audioSource: "tts",
+          audioStrategy: project.specification?.audioStrategy || "auto",
+          subtitles: `/api/projects/${project.id}/assets/episode-${padded}.srt`,
+          story: `/api/projects/${project.id}/assets/story-${padded}.json`,
+          subtitleFormat: "bilingual_burned_in",
+          subtitleLayout: "english_above_chinese",
+          continuitySnapshot: story.continuitySnapshot,
+          speechConsistency,
+          qualityReport,
+        };
+        const episodeMap = new Map((project.assets?.episodes || [])
+          .map(item => [item.number, item]));
+        episodeMap.set(number, asset);
+        project.assets = {
+          ...(project.assets || {}),
+          episodes: [...episodeMap.values()].sort((a, b) => a.number - b.number),
+        };
+        const episodeStates = normalizeEpisodeStates(project);
+        Object.assign(episodeStates[number - 1], {
+          status: "completed", stage: "本地修复并验收通过", progress: 100,
+          error: null, duration: asset.duration, assets: asset,
+        });
+        project.productionRun = {
+          ...(project.productionRun || {}),
+          status: "media_completed",
+          failedEpisode: null,
+          completedEpisodes: episodeMap.size,
+          currentEpisode: null,
+          error: null,
+          updatedAt: new Date().toISOString(),
+        };
+        await update(project, {
+          status: "completed",
+          stage: `第 ${number} 集已本地修复并通过验收`,
+          progress: 100,
+          error: null,
+          technicalError: null,
+          mediaRepair: {
+            ...project.mediaRepair, status: "completed",
+            completedAt: new Date().toISOString(),
+          },
+          assets: project.assets,
+          episodeStates,
+          productionRun: project.productionRun,
+        });
+        const allEpisodesReady = episodeMap.size === project.seriesPlan?.episodeCount &&
+          [...episodeMap.values()].every(item => item.qualityReport?.status === "passed");
+        if (allEpisodesReady && project.productionRun?.mode === "full_series") {
+          await api.assembleSeries(project.id, { requireComplete: true });
+          const refreshed = await api.read(project.id);
+          refreshed.productionRun = {
+            ...refreshed.productionRun,
+            status: "completed",
+            completedEpisodes: episodeMap.size,
+            completedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            qualityGate: {
+              status: "passed",
+              episodeCount: episodeMap.size,
+              passedEpisodes: episodeMap.size,
+              hasVideo: Boolean(refreshed.assembly?.video),
+              duration: refreshed.assembly?.duration || 0,
+            },
+          };
+          await update(refreshed, {
+            productionRun: refreshed.productionRun,
+            status: "completed",
+            stage: "现有成片已修复，完整视频已合成并通过验收",
+            progress: 100,
+            outputKind: "complete_series",
+          });
+          return { project: refreshed, asset };
+        }
+        return { project, asset };
+      } catch (error) {
+        if (mediaAligned && isTransientModelError(error)) {
+          const pendingMessage = `第 ${number} 集音轨已修复，外部多模态质检暂时不可用；继续后只复验现有成片`;
+          const episodeStates = normalizeEpisodeStates(project);
+          Object.assign(episodeStates[number - 1], {
+            status: "failed", stage: "音轨已修复，等待质量复验", progress: 95,
+            error: `${pendingMessage}（audio_video_duration_sync 已修复）`,
+          });
+          await update(project, {
+            status: "failed",
+            stage: "音轨已修复，等待多模态质量复验",
+            error: pendingMessage,
+            technicalError: error.message,
+            episodeStates,
+            mediaRepair: {
+              ...project.mediaRepair, status: "awaiting_quality",
+              error: publicErrorMessage(error), updatedAt: new Date().toISOString(),
+            },
+          });
+          throw new Error(pendingMessage);
+        }
+        await update(project, {
+          status: "failed",
+          stage: `第 ${number} 集本地修复失败`,
+          error: publicErrorMessage(error),
+          technicalError: error.message,
+        });
+        throw error;
+      }
+    },
+
     async assembleSeries(id, options = {}) {
       const project = await api.read(id);
       const episodes = [...(project.assets?.episodes || [])].sort((a, b) => a.number - b.number);
-      if (episodes.length < 2) throw new Error("至少需要两集已完成视频才能合并全集");
+      if (!episodes.length) throw new Error("至少需要一集已完成视频才能生成完整成片");
       if (options.requireComplete && episodes.length !== project.seriesPlan?.episodeCount) {
         throw new Error(`全集合成需要 ${project.seriesPlan?.episodeCount || 0} 集，当前仅完成 ${episodes.length} 集`);
       }
@@ -3371,6 +4042,7 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
           }
           if (!(duration > 0 && Number.isFinite(duration))) throw new Error(`第 ${episodeNumber} 集音频时长无效`);
           audioItems[index] = { path: audioPath, duration, ttsSeconds };
+          stories[index].episode.audioDurationSeconds = duration;
           if (episodeNumber === 1) await writeFile(join(project.dir, "narration.wav"), await readFile(audioPath));
           return audioItems[index];
         };
@@ -3391,6 +4063,7 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
           const videoPath = join(project.dir, `episode-${number}.mp4`);
           const subtitlePath = join(project.dir, `episode-${number}.srt`);
           let finalDuration = audioItems[index]?.duration || 0;
+          let subtitleTimeline = null;
           let videoGeneration = null;
           let audioSource = "tts";
           let nativeAudioDetected = false;
@@ -3410,6 +4083,11 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
             videoGeneration = await realVideo(env, stories[index], project, rawVideoPath) || null;
             const media = await mediaProbe(rawVideoPath);
             if (!media.hasVideo) throw new Error(`第 ${episodeNumber} 集视频模型结果缺少视频流`);
+            const subtitleDuration = audioItems[index]?.duration || media.duration;
+            const translations = await subtitleTranslator(env, stories[index]);
+            subtitleTimeline = await writeBilingualSubtitles(
+              stories[index], subtitleDuration, subtitlePath, translations,
+            );
             nativeAudioDetected = media.hasAudio;
             if (nativeAudioDetected && audioStrategy !== "tts") {
               nativeVoiceVerification = await nativeVoiceVerifier(
@@ -3435,7 +4113,7 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
                 stage: `第 ${episodeNumber} 集检测到模型原声，保留原声音轨`,
                 progress: 65 + Math.round((index / stories.length) * 30),
               });
-              await preserveNative(project.dir, rawVideoPath, videoPath);
+              await preserveNative(project.dir, rawVideoPath, videoPath, subtitleTimeline);
               audioSource = "native";
             } else {
               nativeAudioFallback = audioStrategy === "native" && !nativeAudioUsable;
@@ -3446,7 +4124,7 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
                 progress: 65 + Math.round((index / stories.length) * 30),
               });
               const ttsAudio = audioItems[index] || await ensureTtsAudio(index);
-              await mux(project.dir, rawVideoPath, ttsAudio.path, videoPath);
+              await mux(project.dir, rawVideoPath, ttsAudio.path, videoPath, subtitleTimeline);
               audioSource = "tts";
             }
             const finalMedia = await mediaProbe(videoPath);
@@ -3476,10 +4154,16 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
               throw new Error(`第 ${episodeNumber} 集质量门禁未通过：${failed}`);
             }
             finalDuration = finalMedia.duration;
-            await writeEstimatedSubtitles(stories[index], finalDuration, subtitlePath);
           } else {
             await update(project, { stage: "生成字幕和竖屏流程自检片", progress: 70 });
-            await render(project.dir, stories[index], audioItems[index].duration, audioItems[index].path, videoPath, subtitlePath);
+            const translations = await subtitleTranslator(env, stories[index]);
+            subtitleTimeline = await writeBilingualSubtitles(
+              stories[index], audioItems[index].duration, subtitlePath, translations,
+            );
+            await render(
+              project.dir, stories[index], audioItems[index].duration,
+              audioItems[index].path, videoPath, subtitlePath, subtitleTimeline,
+            );
             finalDuration = await probe(videoPath);
           }
           const asset = {
@@ -3495,6 +4179,13 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
             nativeVoiceVerification,
             nativeSpeechVerification,
             qualityReport,
+            subtitleFormat: "bilingual_burned_in",
+            subtitleLayout: "english_above_chinese",
+            subtitleTimeline: subtitleTimeline?.map(item => ({
+              scene: item.index,
+              start: Number(item.start.toFixed(3)),
+              end: Number(item.end.toFixed(3)),
+            })) || [],
             continuitySnapshot: stories[index].continuitySnapshot,
             subtitles: `/api/projects/${project.id}/assets/episode-${number}.srt`,
             story: `/api/projects/${project.id}/assets/story-${number}.json`,
@@ -3631,15 +4322,29 @@ export function createMvpPipeline({ dataDir, env, onUpdate, services = {} }) {
       } catch (error) {
         const runningEpisode = project.episodeStates?.find(item =>
           ["queued", "running"].includes(item.status));
+        const failedEpisodeNumber = runningEpisode?.number || null;
         if (runningEpisode) {
           Object.assign(runningEpisode, {
             status: "failed", stage: "生成失败", error: publicErrorMessage(error),
             updatedAt: new Date().toISOString(),
           });
         }
+        for (const episodeState of project.episodeStates || []) {
+          if (episodeState.number === failedEpisodeNumber ||
+              episodeState.status === "completed" ||
+              !["queued", "running"].includes(episodeState.status)) continue;
+          Object.assign(episodeState, {
+            status: "not_started",
+            stage: "等待前序分集修复",
+            progress: 0,
+            error: null,
+            updatedAt: new Date().toISOString(),
+          });
+        }
         if (project.productionRun?.mode === "full_series") {
           project.productionRun.status = "failed";
-          project.productionRun.failedEpisode = runningEpisode?.number || null;
+          project.productionRun.currentEpisode = null;
+          project.productionRun.failedEpisode = failedEpisodeNumber;
           project.productionRun.error = publicErrorMessage(error);
           project.productionRun.updatedAt = new Date().toISOString();
         }

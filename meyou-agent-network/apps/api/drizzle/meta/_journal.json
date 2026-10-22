@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792118287403,
+      "tag": "0000_robust_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792380310000,
+      "tag": "0001_agent_plaza",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792458000000,
+      "tag": "0002_local_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792594800000,
+      "tag": "0003_plaza_runtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792617600000,
+      "tag": "0004_agent_npc_color",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792621500000,
+      "tag": "0005_community_plaza_circle",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792680000000,
+      "tag": "0006_admin_model_config",
+      "breakpoints": true
+    }
+  ]
+}

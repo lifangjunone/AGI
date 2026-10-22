@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="在浏览器本地把聊天截图、订单、付款、物流和商品照片整理成有编号、有时间线、有哈希清单的消费维权证据包。">
+  <title>消费维权证据包生成器｜先免费整理，再下载完整包</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/fflate.js"></script>
+</head>
+<body class="evidence-body">
+  <main class="evidence-shell">
+    <nav class="evidence-nav"><a href="/">← 产品箱</a><span>文件只在本机处理</span></nav>
+
+    <section class="evidence-hero">
+      <p class="eyebrow">消费纠纷材料整理工具</p>
+      <h1>散乱截图和凭证，<br>整理成一份能提交的证据包。</h1>
+      <p>导入聊天截图、订单、付款、物流和商品照片，补充时间与说明。程序会生成证据目录、时间线、统一编号、SHA-256 校验清单和可打印报告。</p>
+      <div class="evidence-proof"><span>无需注册</span><span>原文件不上传</span><span>免费完整预览</span><span>不编造事实</span></div>
+    </section>
+
+    <section class="evidence-card evidence-demo">
+      <div class="evidence-demo-heading">
+        <div>
+          <p class="eyebrow">不用上传自己的材料也能先看</p>
+          <h2>¥19.90 买到的不是一段文字，而是一套整理好的文件。</h2>
+          <p>下面使用虚构的“网购保温杯破损”演示数据，只展示工具怎样整理，不代表真实客户或处理结果。</p>
+        </div>
+        <button class="evidence-secondary" type="button" data-demo-toggle aria-expanded="false">查看演示成品</button>
+      </div>
+      <div class="evidence-demo-result" data-demo-result hidden>
+        <div class="evidence-demo-package">
+          <strong>完整证据包.zip</strong>
+          <span>00-先看这里/完整证据报告.html</span>
+          <span>00-先看这里/证据目录与时间线.csv</span>
+          <span>00-先看这里/SHA-256校验清单.txt</span>
+          <span>01-编号原文件/E001_订单信息.png</span>
+          <span>01-编号原文件/E002_商品破损照片.jpg</span>
+          <span>01-编号原文件/E003_售后沟通记录.png</span>
+        </div>
+        <div class="evidence-demo-report">
+          <span class="evidence-demo-label">虚构演示 · 不是真实订单</span>
+          <h3>保温杯破损退款争议</h3>
+          <p><strong>明确诉求：</strong>退还货款 89 元，并承担退货运费。</p>
+          <ol>
+            <li><b>E001 · 2026-10-08 · 订单信息</b><span>证明商品名称、购买时间与付款金额</span></li>
+            <li><b>E002 · 2026-10-10 · 商品照片</b><span>证明签收后杯身存在明显凹陷</span></li>
+            <li><b>E003 · 2026-10-10 · 售后记录</b><span>证明已向商家反馈问题及对方回复</span></li>
+          </ol>
+          <p class="evidence-demo-hash"><strong>每份原文件都有校验值：</strong><code>8d969eef6ecad3c29a3a…</code></p>
+        </div>
+      </div>
+      <p class="evidence-demo-next" data-demo-next hidden>这就是付费下载的结构。用自己的材料生成完整预览仍然免费，不满意不用付款。</p>
+    </section>
+
+    <section class="evidence-card">
+      <div class="evidence-step"><span>01</span><div><h2>填写纠纷事实</h2><p>只写能由材料证明的内容；不确定的地方留空。</p></div></div>
+      <div class="evidence-form">
+        <label>纠纷标题<input data-case-title maxlength="80" placeholder="例如：网购商品与描述不符退款争议"></label>
+        <label>对方名称<input data-counterparty maxlength="80" placeholder="商家、平台或个人名称"></label>
+        <label>你的明确诉求<textarea data-request rows="3" maxlength="600" placeholder="例如：退还货款 299 元，并承担退货运费"></textarea></label>
+        <label>事实摘要<textarea data-summary rows="5" maxlength="1600" placeholder="按发生顺序写：何时购买、发现什么问题、何时沟通、对方如何回复。不要写推测。"></textarea></label>
+      </div>
+    </section>
+
+    <section class="evidence-card">
+      <div class="evidence-step"><span>02</span><div><h2>导入并标注材料</h2><p>支持图片和 PDF，单次最多 50 个文件、每个不超过 25MB。</p></div></div>
+      <label class="evidence-drop">
+        <input type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-files>
+        <strong>点击选择聊天、订单、付款、物流或商品材料</strong>
+        <small>材料不会离开当前设备；建议保留原文件，不要裁掉时间、账号和订单号。</small>
+      </label>
+      <div class="evidence-list" data-file-list></div>
+    </section>
+
+    <section class="evidence-card">
+      <div class="evidence-step"><span>03</span><div><h2>生成免费预览</h2><p>先检查目录、顺序和事实摘要，确认有用再购买完整 ZIP。</p></div></div>
+      <button class="evidence-primary" type="button" data-generate disabled>生成证据包预览</button>
+      <p class="evidence-message" data-message>至少导入 1 份材料后才能生成。</p>
+    </section>
+
+    <section class="evidence-card evidence-result" data-result hidden>
+      <div class="evidence-step"><span>✓</span><div><h2>证据包结构已生成</h2><p data-result-summary></p></div></div>
+      <div class="evidence-preview">
+        <article><h3>投诉事实摘要</h3><div data-preview-summary></div></article>
+        <article><h3>证据目录与时间线</h3><div data-preview-timeline></div></article>
+        <article><h3>完整包包含</h3><ul><li>按证据编号重命名的原文件</li><li>证据目录与时间线 CSV</li><li>每个文件的 SHA-256 校验清单</li><li>可在浏览器打印为 PDF 的完整报告</li><li>全部材料打包 ZIP，便于留存和提交</li></ul></article>
+      </div>
+      <div class="evidence-actions">
+        <button class="evidence-primary" type="button" data-buy>¥19.90 下载完整证据包</button>
+        <button class="evidence-primary" type="button" data-download hidden>下载已购完整 ZIP</button>
+        <button class="evidence-secondary" type="button" data-print>打印当前预览</button>
+      </div>
+    </section>
+
+    <section class="evidence-card evidence-checkout" data-checkout hidden>
+      <p class="eyebrow">微信扫码 · 店主手机确认</p>
+      <h2>请精确支付 <strong data-amount>本单专属金额</strong></h2>
+      <div class="evidence-pay">
+        <img src="/wechat-pay.jpg" alt="微信收款二维码">
+        <div><p>不要修改专属金额。付款后回到本页，无需加微信或发消息。</p><strong data-payment-status>正在创建订单…</strong><p>店主在手机核对到账后，本页会自动开放 ZIP 下载。刷新后会恢复本浏览器订单；原材料不保存，请重新选择材料并生成预览，无需重复付款。</p></div>
+      </div>
+    </section>
+
+    <section class="evidence-boundary">
+      <h2>这个工具做什么、不做什么</h2>
+      <p>它只按你提供的事实和文件做机械整理，不判断谁对谁错，不替你写虚假内容，不提供法律意见，也不承诺平台、监管渠道或法院采纳。提交前请自行核对隐私信息、事实准确性和目标渠道要求。</p>
+    </section>
+  </main>
+
+  <script>
+  (() => {
+    const PRODUCT_ID = 'consumer-evidence-pack';
+    const MAX_FILES = 50;
+    const MAX_BYTES = 25 * 1024 * 1024;
+    const $ = (selector) => document.querySelector(selector);
+    const query = new URLSearchParams(location.search);
+    const attribution = {
+      trafficSource: String(query.get('source') || 'direct').slice(0, 80),
+      campaign: String(query.get('campaign') || '').slice(0, 120)
+    };
+    const apiBasePromise = (async () => {
+      try {
+        const response = await fetch('../../service.json', {cache:'no-store'});
+        const payload = await response.json();
+        if (response.ok && /^https:\/\//i.test(payload.url || '')) return String(payload.url).replace(/\/+$/, '');
+      } catch {}
+      return new URL('../../', location.href).href.replace(/\/+$/, '');
+    })();
+    const apiUrl = async (pathname) => (await apiBasePromise) + pathname;
+    let visitorId = '';
+    try {
+      visitorId = localStorage.getItem(PRODUCT_ID + ':visitor') || crypto.randomUUID();
+      localStorage.setItem(PRODUCT_ID + ':visitor', visitorId);
+    } catch { visitorId = String(Date.now()) + Math.random(); }
+    const state = { items: [], generated: null, zipBlob: null, checkoutId: '', pollTimer: null, paid: false, revision: 0, polling: false };
+    const checkoutStorageKey = PRODUCT_ID + ':checkout';
+    try { state.checkoutId = localStorage.getItem(checkoutStorageKey) || ''; } catch {}
+    function saveCheckout(id) {
+      state.checkoutId = id;
+      try {
+        if (id) localStorage.setItem(checkoutStorageKey, id);
+        else localStorage.removeItem(checkoutStorageKey);
+      } catch {}
+    }
+    function invalidateResult() {
+      state.revision += 1;
+      state.generated = null;
+      state.zipBlob = null;
+      $('[data-result]').hidden = true;
+      $('[data-download]').hidden = true;
+    }
+    document.querySelectorAll('.evidence-form input, .evidence-form textarea').forEach((field) => {
+      field.addEventListener('input', invalidateResult);
+    });
+
+    const esc = (value) => String(value || '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const cleanName = (value) => String(value || '').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, '-').slice(0, 80) || 'material';
+    const extension = (name) => (String(name).match(/\.([a-z0-9]{1,8})$/i)?.[1] || 'bin').toLowerCase();
+    const csv = (value) => '"' + String(value ?? '').replaceAll('"', '""') + '"';
+    const dateValue = (date = new Date()) => {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    };
+
+    async function track(channel, extra = {}) {
+      const payload = { type: 'interaction', experimentId: PRODUCT_ID, channel, visitorId, ...attribution, ...extra };
+      const endpoint = await apiUrl('/api/events');
+      try {
+        navigator.sendBeacon(endpoint, new Blob([JSON.stringify(payload)], {type:'application/json'}));
+      } catch {
+        fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}).catch(() => {});
+      }
+    }
+
+    $('[data-demo-toggle]').addEventListener('click', () => {
+      const result = $('[data-demo-result]');
+      const next = $('[data-demo-next]');
+      const opening = result.hidden;
+      result.hidden = !opening;
+      next.hidden = !opening;
+      $('[data-demo-toggle]').textContent = opening ? '收起演示成品' : '查看演示成品';
+      $('[data-demo-toggle]').setAttribute('aria-expanded', String(opening));
+      if (opening) track('evidence-demo-opened');
+    });
+
+    function renderFiles() {
+      $('[data-file-list]').replaceChildren(...state.items.map((item, index) => {
+        const row = document.createElement('article');
+        row.className = 'evidence-file';
+        row.innerHTML = `
+          <div class="evidence-file-head"><strong>证据 ${String(index + 1).padStart(2, '0')} · ${esc(item.file.name)}</strong><button type="button" data-remove>移除</button></div>
+          <div class="evidence-file-fields">
+            <label>材料类型<select data-kind><option>聊天记录</option><option>订单信息</option><option>付款凭证</option><option>物流记录</option><option>商品照片</option><option>售后记录</option><option>其他材料</option></select></label>
+            <label>发生日期<input type="date" data-date value="${esc(item.date)}"></label>
+            <label class="wide">这份材料证明什么<input data-note maxlength="240" value="${esc(item.note)}" placeholder="例如：证明 10 月 8 日向商家提出质量问题"></label>
+          </div>`;
+        row.querySelector('[data-kind]').value = item.kind;
+        row.querySelector('[data-kind]').onchange = (event) => { item.kind = event.target.value; invalidateResult(); };
+        row.querySelector('[data-date]').onchange = (event) => { item.date = event.target.value; invalidateResult(); };
+        row.querySelector('[data-note]').oninput = (event) => { item.note = event.target.value; invalidateResult(); };
+        row.querySelector('[data-remove]').onclick = () => { state.items.splice(index, 1); invalidateResult(); renderFiles(); };
+        return row;
+      }));
+      $('[data-generate]').disabled = state.items.length === 0;
+      $('[data-message]').textContent = state.items.length ? `已导入 ${state.items.length} 份材料，请补充日期和证明内容。` : '至少导入 1 份材料后才能生成。';
+      $('[data-result]').hidden = !state.generated;
+    }
+
+    $('[data-files]').addEventListener('change', (event) => {
+      const incoming = [...event.target.files];
+      const accepted = [];
+      for (const file of incoming) {
+        if (state.items.length + accepted.length >= MAX_FILES) break;
+        if (file.size > MAX_BYTES) continue;
+        if (!['image/jpeg','image/png','image/webp','application/pdf'].includes(file.type)) continue;
+        accepted.push({ file, kind: file.type === 'application/pdf' ? '其他材料' : '聊天记录', date: dateValue(new Date(file.lastModified || Date.now())), note: '' });
+      }
+      if (accepted.length) invalidateResult();
+      state.items.push(...accepted);
+      if (accepted.length) track('evidence-upload-started', {fileCount: accepted.length});
+      event.target.value = '';
+      renderFiles();
+    });
+
+    async function digest(file) {
+      const hash = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+      return [...new Uint8Array(hash)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    function caseData() {
+      return {
+        title: $('[data-case-title]').value.trim() || '消费纠纷证据材料',
+        counterparty: $('[data-counterparty]').value.trim() || '未填写',
+        request: $('[data-request]').value.trim() || '未填写',
+        summary: $('[data-summary]').value.trim() || '未填写',
+        generatedAt: new Date().toLocaleString('zh-CN')
+      };
+    }
+
+    function reportHtml(data, records) {
+      const rows = records.map((item) => `<tr><td>${item.number}</td><td>${esc(item.kind)}</td><td>${esc(item.date)}</td><td>${esc(item.note || '未填写')}</td><td>${esc(item.renamed)}</td><td><code>${item.sha256}</code></td></tr>`).join('');
+      return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>${esc(data.title)}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;max-width:980px;margin:40px auto;color:#17251b;line-height:1.65}h1{font-size:28px}section{margin:24px 0;padding:18px;border:1px solid #ccd6cc;border-radius:12px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:8px;border:1px solid #ccd6cc;text-align:left;vertical-align:top}code{font-size:9px;word-break:break-all}.boundary{color:#6d766f}@media print{body{margin:0}section{break-inside:avoid}}</style></head><body><h1>${esc(data.title)}</h1><p>生成时间：${esc(data.generatedAt)}</p><section><h2>对象与诉求</h2><p><strong>对方：</strong>${esc(data.counterparty)}</p><p><strong>诉求：</strong>${esc(data.request)}</p></section><section><h2>事实摘要</h2><p>${esc(data.summary).replaceAll('\n','<br>')}</p></section><section><h2>证据目录与时间线</h2><table><thead><tr><th>编号</th><th>类型</th><th>日期</th><th>证明内容</th><th>文件</th><th>SHA-256</th></tr></thead><tbody>${rows}</tbody></table></section><p class="boundary">本报告由用户提供的材料在浏览器本地机械整理生成，不判断责任，不提供法律意见，不承诺被任何机构采纳。提交前请核对事实与隐私信息。</p></body></html>`;
+    }
+
+    $('[data-generate]').addEventListener('click', async () => {
+      const button = $('[data-generate]');
+      const revision = state.revision;
+      const data = caseData();
+      button.disabled = true;
+      button.textContent = '正在计算文件哈希…';
+      try {
+        const sorted = [...state.items].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+        const records = [];
+        for (let index = 0; index < sorted.length; index += 1) {
+          const item = sorted[index];
+          const number = `E${String(index + 1).padStart(3, '0')}`;
+          records.push({
+            ...item, number, sha256: await digest(item.file),
+            renamed: `${number}_${item.date || 'date-unknown'}_${cleanName(item.kind)}_${cleanName(item.file.name.replace(/\.[^.]+$/, ''))}.${extension(item.file.name)}`
+          });
+        }
+        if (revision !== state.revision) {
+          $('[data-message]').textContent = '生成期间材料已修改，请重新生成。';
+          return;
+        }
+        state.generated = { data, records };
+        $('[data-result-summary]').textContent = `已整理 ${records.length} 份材料，生成 ${records.length} 条校验哈希。`;
+        $('[data-preview-summary]').innerHTML = `<p><strong>对方：</strong>${esc(state.generated.data.counterparty)}</p><p><strong>诉求：</strong>${esc(state.generated.data.request)}</p><p>${esc(state.generated.data.summary).replaceAll('\n','<br>')}</p>`;
+        $('[data-preview-timeline]').innerHTML = `<ol>${records.map((item) => `<li><strong>${item.number} · ${esc(item.date)} · ${esc(item.kind)}</strong><span>${esc(item.note || '尚未填写证明内容')}</span></li>`).join('')}</ol>`;
+        $('[data-result]').hidden = false;
+        $('[data-buy]').hidden = state.paid;
+        if (state.paid) {
+          const built = await buildZip();
+          $('[data-download]').hidden = !built;
+        }
+        $('[data-result]').scrollIntoView({behavior:'smooth', block:'start'});
+        await track('evidence-pack-completed', {fileCount: records.length});
+      } catch (error) {
+        $('[data-message]').textContent = '生成失败：' + error.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = '重新生成证据包预览';
+      }
+    });
+
+    async function buildZip() {
+      const generated = state.generated;
+      const revision = state.revision;
+      if (!generated) return false;
+      const {data, records} = generated;
+      const entries = {};
+      for (const item of records) entries['01-编号原文件/' + item.renamed] = new Uint8Array(await item.file.arrayBuffer());
+      const report = reportHtml(data, records);
+      const timeline = ['证据编号,材料类型,发生日期,证明内容,归档文件名,SHA-256', ...records.map((item) => [item.number,item.kind,item.date,item.note,item.renamed,item.sha256].map(csv).join(','))].join('\n');
+      const manifest = records.map((item) => `${item.sha256}  ${item.renamed}`).join('\n');
+      entries['00-先看这里/完整证据报告.html'] = fflate.strToU8(report);
+      entries['00-先看这里/证据目录与时间线.csv'] = fflate.strToU8('\ufeff' + timeline);
+      entries['00-先看这里/SHA-256校验清单.txt'] = fflate.strToU8(manifest);
+      entries['00-先看这里/使用边界.txt'] = fflate.strToU8('本证据包只按用户提供的事实和文件机械整理，不判断责任、不提供法律意见、不承诺任何结果。提交前请核对事实、隐私和目标渠道要求。');
+      if (revision !== state.revision || generated !== state.generated) return false;
+      state.zipBlob = new Blob([fflate.zipSync(entries, {level: 6})], {type:'application/zip'});
+      return true;
+    }
+
+    async function pollCheckout() {
+      clearTimeout(state.pollTimer);
+      if (!state.checkoutId || state.polling) return;
+      state.polling = true;
+      try {
+        const response = await fetch(await apiUrl('/api/checkouts/' + encodeURIComponent(state.checkoutId)), {cache:'no-store'});
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || '订单状态查询失败');
+        const checkout = payload.checkout;
+        if (checkout?.status === 'paid') {
+          state.paid = true;
+          const built = await buildZip();
+          $('[data-payment-status]').textContent = built ? '已确认到账，完整 ZIP 已解锁。' : '已恢复付款记录。请重新选择原材料并生成预览，无需再次付款。';
+          $('[data-message]').textContent = built ? '已确认到账，可以下载完整 ZIP。' : '已恢复付款记录，请选择原材料并生成预览，无需再次付款。';
+          $('[data-buy]').hidden = true;
+          $('[data-download]').hidden = !built;
+          $('[data-checkout]').hidden = true;
+          return;
+        }
+        if (checkout?.status === 'expired') {
+          $('[data-payment-status]').textContent = '订单已过期，请重新创建。';
+          saveCheckout('');
+          return;
+        }
+        $('[data-amount]').textContent = '¥' + Number(checkout.paymentAmount).toFixed(2);
+        $('[data-checkout]').hidden = false;
+        $('[data-payment-status]').textContent = '等待店主手机确认到账…';
+      } catch {
+        $('[data-payment-status]').textContent = '暂时无法查询到账状态，稍后自动重试。请勿重复付款。';
+      } finally { state.polling = false; }
+      state.pollTimer = setTimeout(pollCheckout, 3000);
+    }
+
+    $('[data-buy]').addEventListener('click', async () => {
+      if (!state.generated) return;
+      if (state.paid) return;
+      if (state.checkoutId) { await pollCheckout(); return; }
+      const button = $('[data-buy]');
+      button.disabled = true;
+      $('[data-checkout]').hidden = false;
+      $('[data-checkout]').scrollIntoView({behavior:'smooth', block:'center'});
+      try {
+        const response = await fetch(await apiUrl('/api/checkouts'), {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({productId:PRODUCT_ID, checkoutMode:'manual-wechat', source:'evidence-pack-result', visitorId, ...attribution})
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || '订单创建失败');
+        saveCheckout(payload.checkout.id);
+        $('[data-amount]').textContent = '¥' + Number(payload.checkout.paymentAmount).toFixed(2);
+        $('[data-payment-status]').textContent = '等待付款与手机确认…';
+        pollCheckout();
+      } catch (error) {
+        $('[data-payment-status]').textContent = error.message;
+      } finally { button.disabled = false; }
+    });
+
+    $('[data-download]').addEventListener('click', () => {
+      if (!state.zipBlob || !state.generated || !state.paid) return;
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(state.zipBlob);
+      link.download = cleanName(state.generated.data.title) + '-证据包.zip';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      track('evidence-pack-downloaded');
+    });
+    $('[data-print]').addEventListener('click', () => window.print());
+    if (state.checkoutId) pollCheckout();
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && state.checkoutId && !state.paid) pollCheckout();
+    });
+  })();
+  </script>
+</body>
+</html>

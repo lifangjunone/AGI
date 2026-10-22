@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: meyou
+      POSTGRES_PASSWORD: meyou
+      POSTGRES_DB: meyou
+    ports:
+      - "5438:5432"
+    volumes:
+      - meyou-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meyou"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6383:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - meyou-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  meyou-postgres:
+  meyou-redis:

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#173d27">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="收款确认">
+  <title>经营管理｜LifeYouMe</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./mobile-admin.css">
+</head>
+<body>
+  <main>
+    <section class="login-card" data-login>
+      <span class="brand">LIFEYOUME</span>
+      <h1>手机收款确认</h1>
+      <p>输入管理密码登录。密码只用于建立安全会话，不会保存在手机网页中。</p>
+      <form data-login-form>
+        <label for="password">管理密码</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button type="submit">登录管理端</button>
+      </form>
+      <p class="message" data-login-message></p>
+    </section>
+
+    <section class="app-shell" data-app hidden>
+      <header>
+        <div><span class="brand">LIFEYOUME</span><h1 data-page-title>经营管理</h1></div>
+        <button class="text-button" type="button" data-logout>退出</button>
+      </header>
+
+      <nav class="tabs" aria-label="管理功能">
+        <button class="tab active" type="button" data-tab="orders">收款确认</button>
+        <button class="tab" type="button" data-tab="matrix">产品榜</button>
+        <button class="tab" type="button" data-tab="promotion">推广中心</button>
+      </nav>
+
+      <section data-orders-page>
+        <section class="summary">
+          <article><span>待确认</span><strong data-pending>0</strong></article>
+          <article><span>已确认</span><strong data-paid>0</strong></article>
+          <article><span>收入</span><strong data-revenue>¥0</strong></article>
+        </section>
+
+        <section class="actions">
+          <button type="button" data-enable-push>开启新订单通知</button>
+          <button class="secondary" type="button" data-refresh>刷新订单</button>
+        </section>
+        <p class="message" data-app-message>核对微信收款通知里的金额，再确认对应订单。</p>
+
+        <section class="orders" data-orders aria-live="polite"></section>
+        <section class="install-tip">
+          <strong>安装到手机桌面</strong>
+          <p>iPhone：Safari 分享 → 添加到主屏幕。Android：浏览器菜单 → 安装应用。</p>
+        </section>
+      </section>
+
+      <section data-matrix-page hidden>
+        <section class="promotion-head">
+          <div>
+            <span class="brand">真实漏斗排名</span>
+            <h2>产品矩阵</h2>
+            <p>付款优先，其次看下单和实际完成结果；候选工具未完成前不能收费。</p>
+          </div>
+          <button class="secondary" type="button" data-refresh-matrix>刷新榜单</button>
+        </section>
+        <section class="matrix-admin-summary" data-matrix-summary></section>
+        <div class="matrix-admin-list" data-matrix-products></div>
+        <section class="boundaries" data-ranking-rule></section>
+      </section>
+
+      <section data-promotion-page hidden>
+        <section class="promotion-head">
+          <div>
+            <span class="brand">30 天零预算验证</span>
+            <h2>本周只需发布 3 条</h2>
+            <p>程序准备素材结构、文案和独立追踪链接；你集中审核并完成平台最终发布。</p>
+          </div>
+          <button class="secondary" type="button" data-refresh-promotion>刷新数据</button>
+        </section>
+        <section class="funnel" data-funnel></section>
+        <section class="diagnosis" data-diagnosis></section>
+        <section class="milestones" data-milestones></section>
+        <section class="xianyu-gate" data-xianyu></section>
+        <div class="package-list" data-promotion-packages></div>
+        <section class="boundaries">
+          <h3>自动化边界</h3>
+          <ul data-boundaries></ul>
+        </section>
+      </section>
+    </section>
+  </main>
+  <script src="./mobile-admin.js"></script>
+</body>
+</html>

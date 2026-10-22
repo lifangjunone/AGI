@@ -39,64 +39,45 @@ cp -a public/data/. /var/www/trends/data/
 
 这可以只更新 JSON 数据，不必每天重新发布整站。
 
-## macOS LaunchAgent 示例
+## 当前已启用的 macOS LaunchAgent
 
-如果希望每天 09:10 自动生成并部署公网文章，可以创建：
+当前机器已经安装两条相互独立的后台任务：
 
-`~/Library/LaunchAgents/com.trend-forum.daily-publish.plist`
+- `09:00`：`com.local.technology-exploration-daily`
+  - 后台执行 Technology Exploration 采集器。
+  - 当天报告已存在时跳过，避免重复采集。
+  - 日志：`~/Library/Logs/technology-exploration-daily.log`
+- `09:10`：`com.local.trend-forum-daily`
+  - 检查当天报告，验证日期和榜单内容后生成站点数据。
+  - 如果报告尚未完成，每分钟重试一次，最晚等待至 `09:40`。
+  - 验证失败时保留线上旧版本，不会用旧数据生成当天文章。
+  - 只原子更新服务器上的 `trends.json` 和 `posts.json`，无需每日重建整站。
+  - 日志：`~/Library/Logs/trend-forum-daily.log`
 
-内容示例：
+任务配置：
 
-```xml
-<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
-<plist version=\"1.0\">
-  <dict>
-    <key>Label</key>
-    <string>com.trend-forum.daily-publish</string>
-
-    <key>WorkingDirectory</key>
-    <string>/Users/bytedance/Desktop/agi/trend-forum</string>
-
-    <key>ProgramArguments</key>
-    <array>
-      <string>/usr/bin/env</string>
-      <string>npm</string>
-      <string>run</string>
-      <string>deploy</string>
-    </array>
-
-    <key>StartCalendarInterval</key>
-    <dict>
-      <key>Hour</key>
-      <integer>9</integer>
-      <key>Minute</key>
-      <integer>10</integer>
-    </dict>
-
-    <key>StandardOutPath</key>
-    <string>/tmp/trend-forum-daily-publish.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/trend-forum-daily-publish.err</string>
-  </dict>
-</plist>
+```text
+~/Library/LaunchAgents/com.local.technology-exploration-daily.plist
+~/Library/LaunchAgents/com.local.trend-forum-daily.plist
 ```
 
-加载任务：
+检查运行状态：
 
 ```bash
-launchctl load ~/Library/LaunchAgents/com.trend-forum.daily-publish.plist
+launchctl print gui/$(id -u)/com.local.technology-exploration-daily
+launchctl print gui/$(id -u)/com.local.trend-forum-daily
 ```
 
-停止任务：
+手动触发：
 
 ```bash
-launchctl unload ~/Library/LaunchAgents/com.trend-forum.daily-publish.plist
+launchctl kickstart -k gui/$(id -u)/com.local.technology-exploration-daily
+launchctl kickstart -k gui/$(id -u)/com.local.trend-forum-daily
 ```
 
 ## 与 Technology Exploration 的关系
 
-建议先让 `Technology Exploration` 每天更早生成日报，例如 09:00；然后让 `Trend Forum` 在 09:10 同步日报并生成网站文章。
+`Technology Exploration` 每天 09:00 生成日报；`Trend Forum` 从 09:10 开始检查并生成网站文章。
 
 这样可以形成：
 

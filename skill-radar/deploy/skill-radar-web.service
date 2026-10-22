@@ -1,0 +1,24 @@
+[Unit]
+Description=Skill Radar static web service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=skillradar
+Group=skillradar
+WorkingDirectory=/data/app/skill-radar/current
+Environment=NODE_ENV=production
+Environment=PORT=4398
+ExecStart=/usr/bin/node /data/app/skill-radar/current/scripts/serve.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/data/app/skill-radar
+MemoryMax=80M
+
+[Install]
+WantedBy=multi-user.target

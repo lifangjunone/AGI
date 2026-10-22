@@ -1,0 +1,15 @@
+apiVersion: v2
+name: nexora-maas-edition
+description: Nexora Core and Nexora MaaS
+type: application
+version: 1.0.0
+dependencies:
+  - name: nexora-infrastructure
+    version: 1.0.0
+    repository: file://../../infrastructure
+  - name: nexora-core
+    version: 1.0.0
+    repository: file://../../../../nexora-core/deploy/helm
+  - name: nexora-maas
+    version: 1.0.0
+    repository: file://../../../../nexora-maas/deploy/helm

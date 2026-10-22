@@ -17,13 +17,20 @@ SPEC.loader.exec_module(app)
 class PlatformTests(unittest.TestCase):
     def test_registry_loads_independent_products(self):
         products = app.load_products()
-        self.assertEqual(20, len(products))
+        self.assertEqual(24, len(products))
         self.assertEqual(
             ["frame60", "decision-studio", "travel-frame", "game-hub", "privacy-vault"],
             [item.id for item in products[:5]],
         )
         self.assertTrue(all(item.platforms for item in products))
-        self.assertEqual("internal", products[-1].visibility)
+        meyou = next(item for item in products if item.id == "meyou-agent-network")
+        self.assertEqual("https://meyou.lifeyoume.icu/", meyou.public_url)
+        self.assertEqual("beta", meyou.lifecycle)
+        flowframe = next(item for item in products if item.id == "flowframe-studio")
+        self.assertEqual("https://lifeyoume.icu/flowframe/", flowframe.public_url)
+        self.assertEqual("live", flowframe.lifecycle)
+        avatar = next(item for item in products if item.id == "avatar-generator-service")
+        self.assertEqual("internal", avatar.visibility)
 
     def test_registry_rejects_external_health_endpoint(self):
         payload = {
@@ -111,14 +118,73 @@ class PlatformTests(unittest.TestCase):
         self.assertNotIn("/products/privacy-vault", detail)
         self.assertIn("decision-studio", visible_ids)
 
+    def test_catalog_ranking_uses_clicks_pins_rotation_and_unavailable_last(self):
+        products = [
+            app.Product(
+                id=product_id,
+                name=product_id,
+                tagline=product_id,
+                summary=product_id,
+                public_url=url,
+                health_url="",
+                lifecycle="preview",
+                availability="showcase",
+                category="Test",
+                owner="Test",
+                audience="Test",
+                platforms=("Web",),
+                capabilities=("Test",),
+                featured=False,
+                visibility="public",
+                visual="",
+                accent="cobalt",
+                cta="Open",
+            )
+            for product_id, url in [
+                ("alpha", "https://lifeyoume.icu/a"),
+                ("bravo", "https://lifeyoume.icu/b"),
+                ("charlie", "https://lifeyoume.icu/c"),
+                ("desktop", ""),
+            ]
+        ]
+        stats = {
+            "alpha": {"clicks_24h": 1, "clicks_7d": 8, "total": 9},
+            "bravo": {"clicks_24h": 2, "clicks_7d": 8, "total": 10},
+            "charlie": {"clicks_24h": 0, "clicks_7d": 1, "total": 1},
+            "desktop": {"clicks_24h": 99, "clicks_7d": 99, "total": 99},
+        }
+        with (
+            mock.patch.object(app.AUTH_STORE, "product_click_stats", return_value=stats),
+            mock.patch.object(
+                app.AUTH_STORE,
+                "pinned_priorities",
+                return_value={"alpha": 0, "bravo": 0, "charlie": 9, "desktop": 99},
+            ),
+            mock.patch.object(app.AUTH_STORE, "rotation_minutes", return_value=1),
+        ):
+            first, _, _, _ = app.ranked_products(products, now=0)
+            second, _, _, _ = app.ranked_products(products, now=60)
+
+        self.assertEqual(
+            ["charlie", "alpha", "bravo", "desktop"],
+            [item.id for item in first],
+        )
+        self.assertEqual(
+            ["charlie", "bravo", "alpha", "desktop"],
+            [item.id for item in second],
+        )
+
     def test_portal_and_detail_pages_use_real_catalog_data(self):
         products = app.load_products()
         portal = app.portal_page(products).decode("utf-8")
+        catalog = app.catalog_page(products).decode("utf-8")
         vault = next(item for item in products if item.id == "privacy-vault")
         detail = app.product_page(vault).decode("utf-8")
 
         self.assertIn("把 AI 变成真正可使用的个人工具与生产系统", portal)
-        self.assertIn("/products/privacy-vault", portal)
+        self.assertIn("/products/privacy-vault?from=card", catalog)
+        self.assertIn("/products/flowframe-studio?from=card", catalog)
+        self.assertIn('rel="icon" type="image/svg+xml"', catalog)
         self.assertIn('href="https://lifeyoume.icu/vault/"', detail)
         self.assertNotIn("avatar-generator-service", portal)
 
@@ -179,16 +245,39 @@ class PlatformTests(unittest.TestCase):
         self.assertIn('action="/admin/users/password"', document)
         self.assertIn('action="/admin/products/access-policy"', document)
         self.assertIn('action="/admin/products/login-policy"', document)
+        self.assertIn('action="/admin/products/ranking-policy"', document)
+        self.assertIn('action="/admin/products/rotation"', document)
         self.assertIn('class="admin-app" data-admin-app', document)
         self.assertIn('data-admin-view="overview"', document)
         self.assertIn('data-admin-view="products" hidden', document)
+        self.assertIn('data-admin-view="heat" hidden', document)
+        self.assertIn('data-admin-table="heat" data-page-size="8"', document)
         self.assertIn('data-admin-table="products" data-page-size="7"', document)
         self.assertIn('data-admin-search="products"', document)
         self.assertIn("产品访问", document)
         self.assertIn("关闭访问", document)
+        self.assertIn("产品运营看板", document)
+        self.assertIn("热门产品榜", document)
+        self.assertIn("7 日点击趋势", document)
+        self.assertIn("TOP 1", document)
+        self.assertIn("无公开入口 · 置底", document)
         self.assertNotIn('class="site-header"', document)
         self.assertIn("privacy-vault", document)
         self.assertNotIn("not used by this render", document)
+        self.assertIn("https://meyou.lifeyoume.icu/admin", document)
+        self.assertIn("遇见 MeYou · 模型控制台", document)
+
+    def test_admin_session_cookie_is_cross_subdomain_for_child_admins(self):
+        header = app.Handler.admin_session_cookie("token-value")
+        self.assertIn("Domain=.lifeyoume.icu", header)
+        self.assertIn("Path=/", header)
+        self.assertIn("HttpOnly", header)
+        self.assertIn("Secure", header)
+        self.assertIn("SameSite=Strict", header)
+
+        expired = app.Handler.admin_session_cookie("", max_age=0)
+        self.assertIn("Max-Age=0", expired)
+        self.assertIn("Expires=Thu, 01 Jan 1970 00:00:00 GMT", expired)
 
 
 if __name__ == "__main__":

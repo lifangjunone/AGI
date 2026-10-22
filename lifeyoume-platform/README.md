@@ -62,6 +62,9 @@ from `OPS_ADMIN_USER` and `OPS_ADMIN_PASSWORD_HASH`. It provides:
 - end-user account enable and disable actions;
 - administrator password reset with immediate session and device-token revocation;
 - per-product login-required switches that take effect without an Nginx reload;
+- click-based catalog ranking with a seven-day heat window, configurable
+  tie rotation, per-product promotion priority, and unavailable products kept last;
+- an administrator heat dashboard with 24-hour, seven-day, and lifetime clicks;
 - an audit trail for account and product-policy changes;
 - in-view search, pagination, and responsive mobile record layouts for long data
   sets.

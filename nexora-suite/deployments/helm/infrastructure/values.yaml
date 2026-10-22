@@ -1,0 +1,21 @@
+enabled: true
+storageClass: ""
+secrets:
+  create: true
+  name: nexora-platform-secrets
+  jwtSecret: replace-before-production
+  postgresPassword: replace-before-production
+postgres:
+  image: pgvector/pgvector:pg16
+  storage: 20Gi
+redis:
+  image: redis:7-alpine
+  storage: 5Gi
+nats:
+  image: nats:2-alpine
+  storage: 5Gi
+minio:
+  image: minio/minio:latest
+  accessKey: nexora
+  secretKey: replace-before-production
+  storage: 20Gi

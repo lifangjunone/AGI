@@ -254,11 +254,13 @@ def page(
 <meta name="description" content="LifeYouMe 产品展厅：把 AI 变成真正可使用的个人工具与生产系统。">
 <meta name="theme-color" content="#111411">
 <title>{esc(title)} · LifeYouMe</title>
-<link rel="stylesheet" href="/assets/portal.css?v=4">
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+<link rel="shortcut icon" href="/favicon.ico">
+<link rel="stylesheet" href="/assets/portal.css?v=7">
 </head><body class="{body_class}">
 {header}
 {content}
-{'<script src="/assets/portal.js?v=4" defer></script>' if portal else ''}
+{'<script src="/assets/portal.js?v=7" defer></script>' if portal else ''}
 </body></html>"""
     return document.encode("utf-8")
 
@@ -283,6 +285,50 @@ def visible_products(products: list[Product]) -> list[Product]:
         for item in products
         if item.visibility in {"public", "lab"} and AUTH_STORE.product_enabled(item.id)
     ]
+
+
+def ranked_products(
+    products: list[Product], now: int | None = None
+) -> tuple[list[Product], dict[str, dict[str, int]], dict[str, int], int]:
+    current = int(time.time() if now is None else now)
+    product_ids = [item.id for item in products]
+    stats = AUTH_STORE.product_click_stats(product_ids, current)
+    priorities = AUTH_STORE.pinned_priorities(product_ids)
+    rotation_minutes = AUTH_STORE.rotation_minutes()
+    rotation_slot = current // (rotation_minutes * 60)
+
+    pinned = sorted(
+        (item for item in products if item.public_url and priorities[item.id] > 0),
+        key=lambda item: (-priorities[item.id], item.id),
+    )
+    automatic = [
+        item for item in products if item.public_url and priorities[item.id] == 0
+    ]
+    automatic.sort(key=lambda item: (-stats[item.id]["clicks_7d"], item.id))
+    rotated: list[Product] = []
+    cursor = 0
+    while cursor < len(automatic):
+        clicks = stats[automatic[cursor].id]["clicks_7d"]
+        end = cursor + 1
+        while (
+            end < len(automatic)
+            and stats[automatic[end].id]["clicks_7d"] == clicks
+        ):
+            end += 1
+        group = automatic[cursor:end]
+        if len(group) > 1:
+            offset = rotation_slot % len(group)
+            group = group[offset:] + group[:offset]
+        rotated.extend(group)
+        cursor = end
+    unavailable = sorted(
+        (item for item in products if not item.public_url),
+        key=lambda item: item.id,
+    )
+    if len(unavailable) > 1:
+        offset = rotation_slot % len(unavailable)
+        unavailable = unavailable[offset:] + unavailable[:offset]
+    return pinned + rotated + unavailable, stats, priorities, rotation_minutes
 
 
 def product_payload(product: Product, *, include_policy: bool = False) -> dict[str, Any]:
@@ -348,12 +394,12 @@ def product_card(product: Product) -> str:
   <h3>{esc(product.name)}</h3>
   <p>{esc(product.tagline)}</p>
   <div class="platforms">{platforms}</div>
-  <a class="product-link" href="/products/{esc(product.id)}">查看产品 <span aria-hidden="true">↗</span></a>
+  <a class="product-link" href="/products/{esc(product.id)}?from=card">查看产品 <span aria-hidden="true">↗</span></a>
 </div></article>"""
 
 
 def portal_page(products: list[Product]) -> bytes:
-    public = visible_products(products)
+    public, _, _, _ = ranked_products(visible_products(products))
     featured = [item for item in public if item.featured][:6]
     cards = "".join(product_card(item) for item in featured)
     total = len(public)
@@ -411,7 +457,7 @@ def portal_page(products: list[Product]) -> bytes:
 
 
 def catalog_page(products: list[Product]) -> bytes:
-    public = visible_products(products)
+    public, _, _, rotation_minutes = ranked_products(visible_products(products))
     cards = "".join(product_card(item) for item in public)
     categories = ["全部", "AI 创作", "学习成长", "AI 工程", "隐私工具", "企业服务"]
     controls = "".join(
@@ -422,7 +468,7 @@ def catalog_page(products: list[Product]) -> bytes:
 <section class="catalog-intro">
   <p class="eyebrow">PRODUCT INDEX · {len(public):02d}</p>
   <h1>产品目录</h1>
-  <p>浏览当前在线产品、桌面工具与实验室项目。每项状态均对应真实交付能力。</p>
+  <p>按近 7 天热度排序；同热度产品每 {rotation_minutes} 分钟轮换。暂无公开入口的产品始终置后。</p>
 </section>
 <section class="catalog-controls" aria-label="产品筛选">
   <div class="segmented">{controls}</div>
@@ -549,6 +595,18 @@ def format_admin_time(value: object) -> str:
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(int(value)))
 
 
+def admin_rank_badge(rank: int) -> str:
+    if rank <= 3:
+        return (
+            f'<span class="rank-badge top-{rank}" '
+            f'aria-label="当前排名第 {rank}">TOP {rank}</span>'
+        )
+    return (
+        f'<span class="rank-badge standard" '
+        f'aria-label="当前排名第 {rank}">{rank:02d}</span>'
+    )
+
+
 def admin_dashboard(
     products: list[Product],
     username: str,
@@ -556,6 +614,30 @@ def admin_dashboard(
     notice: str = "",
 ) -> bytes:
     users = AUTH_STORE.list_users()
+    ranked, click_stats, priorities, rotation_minutes = ranked_products(products)
+    rank_lookup = {item.id: index for index, item in enumerate(ranked, 1)}
+    public_ranked = [item for item in ranked if item.visibility in {"public", "lab"}]
+    click_trend = AUTH_STORE.product_click_trend(
+        [item.id for item in public_ranked]
+    )
+    total_clicks_7d = sum(click_stats[item.id]["clicks_7d"] for item in products)
+    total_clicks_24h = sum(click_stats[item.id]["clicks_24h"] for item in products)
+    total_clicks_all = sum(click_stats[item.id]["total"] for item in products)
+    pinned_count = sum(priority > 0 for priority in priorities.values())
+    hot_products = sorted(
+        public_ranked,
+        key=lambda item: (
+            -click_stats[item.id]["clicks_7d"],
+            rank_lookup[item.id],
+        ),
+    )
+    hottest = hot_products[0] if hot_products else None
+    max_hot_clicks = max(
+        (click_stats[item.id]["clicks_7d"] for item in hot_products), default=0
+    )
+    max_trend_clicks = max(
+        (int(item["total"]) for item in click_trend), default=0
+    )
     active_users = sum(item["status"] == "active" for item in users)
     user_rows = []
     for user in users:
@@ -590,15 +672,17 @@ def admin_dashboard(
         )
 
     policy_rows = []
-    for product in products:
+    for product in ranked:
         enabled = AUTH_STORE.product_enabled(product.id)
         required = AUTH_STORE.login_required(product.id)
         next_enabled = "false" if enabled else "true"
         next_required = "false" if required else "true"
         policy_rows.append(
             f"""<tr data-admin-row data-search="{esc(product.name + " " + product.id + " " + product.category)}">
+<td>{admin_rank_badge(rank_lookup[product.id])}</td>
 <td><strong>{esc(product.name)}</strong><small>{esc(product.id)}</small></td>
 <td>{esc(product.category)}</td>
+<td><strong class="heat-value">{click_stats[product.id]["clicks_7d"]}</strong><small>累计 {click_stats[product.id]["total"]}</small></td>
 <td><span class="admin-status {'active' if enabled else 'disabled'}"><i></i>
 {'已开放展示' if enabled else '已关闭访问'}</span></td>
 <td><span class="admin-status {'required' if required else 'optional'}"><i></i>
@@ -618,6 +702,52 @@ def admin_dashboard(
 </form></td></tr>"""
         )
 
+    heat_rows = []
+    for product in ranked:
+        stat = click_stats[product.id]
+        priority = priorities[product.id]
+        public_entry = bool(product.public_url)
+        ranking_label = (
+            f"固定 {priority}"
+            if priority and public_entry
+            else ("自动热度" if public_entry else "无公开入口 · 置底")
+        )
+        heat_rows.append(
+            f"""<tr data-admin-row data-search="{esc(product.name + " " + product.id + " " + product.category)}">
+<td>{admin_rank_badge(rank_lookup[product.id])}</td>
+<td><strong>{esc(product.name)}</strong><small>{esc(product.id)}</small></td>
+<td><strong class="heat-value">{stat["clicks_24h"]}</strong></td>
+<td><strong class="heat-value">{stat["clicks_7d"]}</strong></td>
+<td><strong class="heat-value">{stat["total"]}</strong></td>
+<td><span class="admin-status {'required' if priority and public_entry else 'optional' if public_entry else 'disabled'}"><i></i>{ranking_label}</span></td>
+<td>
+  <form class="ranking-form" method="post" action="/admin/products/ranking-policy">
+    <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+    <input type="hidden" name="product_id" value="{esc(product.id)}">
+    <label><span>固定优先级</span><input name="pinned_priority" type="number" min="0" max="99"
+      value="{priority if public_entry else 0}" {'disabled' if not public_entry else ''}></label>
+    <button class="table-button" type="submit" {'disabled' if not public_entry else ''}>保存</button>
+  </form>
+</td></tr>"""
+        )
+
+    heat_cards = "".join(
+        f"""<article class="ops-hot-card {'leader' if index == 1 else ''}">
+  <div class="ops-hot-card-head">{admin_rank_badge(index)}<span>{click_stats[item.id]["clicks_7d"]} 次</span></div>
+  <strong>{esc(item.name)}</strong>
+  <small>{esc(item.category)} · 近 7 天点击</small>
+  <progress class="ops-hot-track" max="{max(max_hot_clicks, 1)}"
+    value="{click_stats[item.id]["clicks_7d"]}">{click_stats[item.id]["clicks_7d"]}</progress>
+</article>"""
+        for index, item in enumerate(hot_products[:4], 1)
+    )
+    trend_bars = "".join(
+        f"""<li><div><progress max="{max(max_trend_clicks, 1)}"
+  value="{int(item["total"])}">{int(item["total"])}</progress></div>
+<strong>{int(item["total"])}</strong><span>{esc(item["day"])}</span></li>"""
+        for item in click_trend
+    )
+
     audit_items = AUTH_STORE.recent_admin_audit()
     audit_rows = "".join(
         f"""<tr data-admin-row data-search="{esc(item["actor"] + " " + item["action"] + " " + item["target_id"])}"><td>{esc(format_admin_time(item["created_at"]))}</td>
@@ -633,6 +763,8 @@ def admin_dashboard(
         "password": "账号密码已更新，原有 Web 与设备会话已全部失效。",
         "product-policy": "产品登录策略已生效，无需重载服务。",
         "product-access": "产品访问状态已生效，关闭后目录隐藏并禁止直达。",
+        "product-ranking": "产品固定优先级已更新，公开目录排序立即生效。",
+        "rotation": "轮转周期已更新，同热度产品将按新周期轮换。",
     }
     notice_text = notice_map.get(notice, "")
     enabled_count = sum(AUTH_STORE.product_enabled(item.id) for item in products)
@@ -652,7 +784,8 @@ def admin_dashboard(
     <a href="#overview" data-admin-target="overview"><b>01</b><span>总览</span></a>
     <a href="#users" data-admin-target="users"><b>02</b><span>账号管理</span><em>{len(users)}</em></a>
     <a href="#products" data-admin-target="products"><b>03</b><span>产品访问</span><em>{enabled_count}/{len(products)}</em></a>
-    <a href="#audit" data-admin-target="audit"><b>04</b><span>操作审计</span></a>
+    <a href="#heat" data-admin-target="heat"><b>04</b><span>运营看板</span><em>{pinned_count}</em></a>
+    <a href="#audit" data-admin-target="audit"><b>05</b><span>操作审计</span></a>
   </nav>
   <div class="admin-rail-footer">
     <div><span>当前管理员</span><strong>{esc(username)}</strong></div>
@@ -662,7 +795,10 @@ def admin_dashboard(
 <section class="admin-console">
   <header class="admin-console-header">
     <div><span>LIFEYOUME PLATFORM</span><h1 data-admin-title>平台总览</h1></div>
-    <a href="https://lifeyoume.icu/" target="_blank" rel="noopener">打开产品门户 ↗</a>
+    <div class="admin-console-links">
+      <a href="https://meyou.lifeyoume.icu/admin" target="_blank" rel="noopener">遇见 MeYou · 模型控制台 ↗</a>
+      <a href="https://lifeyoume.icu/" target="_blank" rel="noopener">打开产品门户 ↗</a>
+    </div>
   </header>
   {f'<div class="admin-notice" role="status">{esc(notice_text)}</div>' if notice_text else ''}
   <div class="admin-view-stack">
@@ -671,14 +807,16 @@ def admin_dashboard(
         <div><strong>{len(users):02d}</strong><span>注册账号</span><small>{active_users} 个正常使用</small></div>
         <div><strong>{active_users:02d}</strong><span>已启用账号</span><small>{len(users) - active_users} 个已禁用</small></div>
         <div><strong>{enabled_count:02d}</strong><span>开放产品</span><small>{len(products) - enabled_count} 个已关闭</small></div>
-        <div><strong>{login_required_count:02d}</strong><span>启用登录</span><small>{len(products) - login_required_count} 个免登录</small></div>
+        <div><strong>{total_clicks_7d:02d}</strong><span>近 7 天点击</span><small>今日 {total_clicks_24h} 次 · {pinned_count} 个固定主推</small></div>
       </div>
       <div class="admin-overview-grid">
-        <section class="admin-overview-panel">
-          <div class="admin-panel-title"><span>访问策略</span><a href="#products" data-admin-target="products">管理策略</a></div>
-          <div class="policy-gauge"><strong>{enabled_count}/{len(products)}</strong><span>产品当前开放展示与直达访问</span></div>
-          <progress class="policy-bar" value="{enabled_count}" max="{max(len(products), 1)}">{enabled_count}/{len(products)}</progress>
-          <p>访问开关由身份服务实时判断，关闭后目录、产品详情、公开 API 与直达入口都会被拦截。</p>
+        <section class="admin-overview-panel heat-overview-panel">
+          <div class="admin-panel-title"><span>产品热度</span><a href="#heat" data-admin-target="heat">管理排序</a></div>
+          <ol class="heat-leaders">{''.join(
+              f'<li><b>{index:02d}</b><span><strong>{esc(item.name)}</strong><small>{click_stats[item.id]["clicks_7d"]} 次 / 7 天</small></span><em>{"固定" if priorities[item.id] else "自动"}</em></li>'
+              for index, item in enumerate(public_ranked[:5], 1)
+          ) or '<li class="admin-empty">暂无产品点击</li>'}</ol>
+          <p>固定主推优先，其余按近 7 天点击量排序；同热度每 {rotation_minutes} 分钟轮换。</p>
         </section>
         <section class="admin-overview-panel">
           <div class="admin-panel-title"><span>最近操作</span><a href="#audit" data-admin-target="audit">查看全部</a></div>
@@ -705,8 +843,42 @@ def admin_dashboard(
       </div>
       <div class="admin-data-panel" data-admin-table="products" data-page-size="7">
         <div class="admin-table-wrap"><table class="admin-table">
-        <thead><tr><th>产品</th><th>分类</th><th>访问状态</th><th>登录策略</th><th>操作</th></tr></thead>
+        <thead><tr><th>排名</th><th>产品</th><th>分类</th><th>7 天点击</th><th>访问状态</th><th>登录策略</th><th>操作</th></tr></thead>
         <tbody>{''.join(policy_rows)}</tbody></table></div>
+        <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
+      </div>
+    </section>
+    <section class="admin-view" data-admin-view="heat" hidden>
+      <div class="admin-view-head heat-view-head">
+        <div><p class="eyebrow">PRODUCT OPERATIONS</p><h2>产品运营看板</h2><p>直观看热度、趋势和当前排名；固定优先级设为 0 即恢复自动排序。</p></div>
+        <form class="rotation-form" method="post" action="/admin/products/rotation">
+          <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+          <label><span>同热度轮转周期</span><input name="rotation_minutes" type="number" min="1" max="1440" value="{rotation_minutes}"><small>分钟</small></label>
+          <button class="table-button" type="submit">更新周期</button>
+        </form>
+      </div>
+      <section class="ops-dashboard" aria-label="产品运营摘要">
+        <div class="ops-kpis">
+          <article><span>24 小时点击</span><strong>{total_clicks_24h}</strong><small>最近一天用户兴趣</small></article>
+          <article><span>近 7 天点击</span><strong>{total_clicks_7d}</strong><small>目录排序主要依据</small></article>
+          <article><span>累计点击</span><strong>{total_clicks_all}</strong><small>自统计启用以来</small></article>
+          <article class="ops-leader-kpi"><span>当前最热</span><strong>{esc(hottest.name) if hottest else '暂无'}</strong><small>{click_stats[hottest.id]["clicks_7d"] if hottest else 0} 次 / 7 天</small></article>
+        </div>
+        <div class="ops-insights">
+          <section class="ops-hot-products">
+            <div class="ops-section-title"><strong>热门产品榜</strong><span>点击越多，热度条越长</span></div>
+            <div class="ops-hot-grid">{heat_cards or '<p class="admin-empty">暂无点击数据</p>'}</div>
+          </section>
+          <section class="ops-trend">
+            <div class="ops-section-title"><strong>7 日点击趋势</strong><span>全部公开产品</span></div>
+            <ol>{trend_bars}</ol>
+          </section>
+        </div>
+      </section>
+      <div class="admin-data-panel" data-admin-table="heat" data-page-size="8">
+        <div class="admin-table-wrap"><table class="admin-table">
+        <thead><tr><th>当前</th><th>产品</th><th>24 小时</th><th>7 天</th><th>累计</th><th>排序方式</th><th>固定优先级</th></tr></thead>
+        <tbody>{''.join(heat_rows)}</tbody></table></div>
         <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
       </div>
     </section>
@@ -1036,9 +1208,10 @@ class Handler(BaseHTTPRequestHandler):
 
     @staticmethod
     def admin_session_cookie(token: str, max_age: int = 43_200) -> str:
+        expires = "; Expires=Thu, 01 Jan 1970 00:00:00 GMT" if max_age <= 0 else ""
         return (
-            f"{ADMIN_COOKIE}={token}; Path=/admin; Max-Age={max_age}; "
-            "HttpOnly; Secure; SameSite=Strict"
+            f"{ADMIN_COOKIE}={token}; Domain=.lifeyoume.icu; Path=/; "
+            f"Max-Age={max_age}{expires}; HttpOnly; Secure; SameSite=Strict"
         )
 
     @staticmethod
@@ -1055,6 +1228,9 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/assets/"):
             self.send_asset(path)
             return
+        if path == "/favicon.ico":
+            self.redirect("/assets/favicon.svg")
+            return
         if path == "/healthz":
             self.send_json(200, {"status": "ok", "service": ROLE})
             return
@@ -1065,6 +1241,20 @@ class Handler(BaseHTTPRequestHandler):
                     {"provider": PAYMENT_PROVIDER or None, "checkout_enabled": PAYMENT_CONFIGURED}
                 )
             self.send_json(200, payload)
+            return
+        if ROLE == "auth" and path == "/api/v1/admin/access/check":
+            username = self.admin_user()
+            if not username:
+                self.send_json(401, {"allowed": False, "error": "admin_authentication_required"})
+                return
+            self.send_json_headers(
+                200,
+                {"allowed": True, "admin": {"user": username, "role": "platform-admin"}},
+                {
+                    "X-LifeYouMe-Admin-User": username,
+                    "X-LifeYouMe-Admin-Role": "platform-admin",
+                },
+            )
             return
         if ROLE == "auth" and path == "/api/v1/access/check":
             product_id = self.headers.get("X-LifeYouMe-Product-ID", "")[:64]
@@ -1184,11 +1374,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.redirect("/admin/")
                 return
             csrf_token = self.cookie_value(ADMIN_CSRF_COOKIE) or secrets.token_urlsafe(24)
-            headers = (
-                {"Set-Cookie": self.admin_csrf_cookie(csrf_token)}
-                if not self.cookie_value(ADMIN_CSRF_COOKIE)
-                else {}
-            )
+            headers = {}
+            if username:
+                headers["Set-Cookie"] = self.admin_session_cookie(
+                    issue_session(username)
+                )
+            elif not self.cookie_value(ADMIN_CSRF_COOKIE):
+                headers["Set-Cookie"] = self.admin_csrf_cookie(csrf_token)
             if username:
                 body = admin_dashboard(
                     load_products(),
@@ -1229,6 +1421,8 @@ class Handler(BaseHTTPRequestHandler):
                 None,
             )
             if product:
+                if query.get("from", [""])[0] == "card":
+                    AUTH_STORE.record_product_click(product.id)
                 self.send_body(200, product_page(product, all_products))
             else:
                 self.send_body(404, page("未找到产品", "<main class=\"not-found\"><h1>未找到产品</h1><a href=\"/products\">返回产品目录</a></main>", portal=True))
@@ -1270,7 +1464,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/admin/logout":
                 self.redirect(
                     "/admin/",
-                    {"Set-Cookie": self.admin_session_cookie("", max_age=0)},
+                    {
+                        "Set-Cookie": self.admin_session_cookie("", max_age=0),
+                    },
                 )
                 return
             if path == "/admin/login":
@@ -1376,6 +1572,37 @@ class Handler(BaseHTTPRequestHandler):
                 enabled = form.get("enabled") == "true"
                 AUTH_STORE.set_product_enabled(product_id, enabled, username)
                 self.redirect("/admin/?ok=product-access#products")
+                return
+            if path == "/admin/products/ranking-policy":
+                product_id = form.get("product_id", "")[:64]
+                product_lookup = {item.id: item for item in load_products()}
+                product = product_lookup.get(product_id)
+                try:
+                    priority = int(form.get("pinned_priority", "0"))
+                except ValueError:
+                    priority = -1
+                if (
+                    product is None
+                    or not product.public_url
+                    or not 0 <= priority <= 99
+                ):
+                    self.send_json(400, {"error": "invalid_ranking_policy"})
+                    return
+                AUTH_STORE.set_pinned_priority(
+                    product_id, priority, username
+                )
+                self.redirect("/admin/?ok=product-ranking#heat")
+                return
+            if path == "/admin/products/rotation":
+                try:
+                    minutes = int(form.get("rotation_minutes", ""))
+                except ValueError:
+                    minutes = 0
+                if not 1 <= minutes <= 1_440:
+                    self.send_json(400, {"error": "invalid_rotation_minutes"})
+                    return
+                AUTH_STORE.set_rotation_minutes(minutes, username)
+                self.redirect("/admin/?ok=rotation#heat")
                 return
             self.send_json(404, {"error": "not_found"})
             return
@@ -1598,7 +1825,7 @@ def main() -> None:
         SESSION_SECRET == "development-only" or not OPS_ADMIN_PASSWORD_HASH
     ):
         raise SystemExit("Ops requires SESSION_SECRET and OPS_ADMIN_PASSWORD_HASH")
-    if ROLE in {"auth", "ops"}:
+    if ROLE in {"portal", "auth", "ops"}:
         AUTH_STORE.initialize()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(json.dumps({"service": ROLE, "listen": f"{HOST}:{PORT}"}), flush=True)

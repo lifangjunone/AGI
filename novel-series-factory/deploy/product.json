@@ -1,0 +1,20 @@
+{
+  "id": "story-studio",
+  "name": "故事片场",
+  "tagline": "从小说到连续多集视频成片",
+  "summary": "面向小说改编与系列内容创作者的 AI 制片工作台，覆盖故事分析、动态分集、人物与场景资产、固定音色、跨集连续性、视频生成和全集交付。",
+  "public_url": "https://lifeyoume.icu/story-studio/",
+  "health_url": "http://127.0.0.1:4361/story-studio/api/health",
+  "lifecycle": "beta",
+  "availability": "online",
+  "category": "AI 创作",
+  "owner": "Story Studio",
+  "audience": "小说作者、短剧团队与系列视频创作者",
+  "platforms": ["Web", "macOS"],
+  "capabilities": ["动态分集", "制片资产一致性", "多集视频生产", "导演 Agent"],
+  "featured": true,
+  "visibility": "public",
+  "visual": "",
+  "accent": "lime",
+  "cta": "进入片场"
+}

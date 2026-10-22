@@ -1,7 +1,10 @@
 import http from "node:http";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
 import { loadProjectEnv } from "./lib/env.mjs";
 import { createModelHealthMonitor } from "./lib/model-config.mjs";
 import { createMvpPipeline } from "./lib/mvp-pipeline.mjs";
@@ -9,24 +12,60 @@ import { createHermesAgentLoop } from "./lib/hermes-agent-loop.mjs";
 
 const host = process.env.HOST || "127.0.0.1";
 const port = Number(process.env.PORT || 4360);
-const publicDir = new URL("./public/", import.meta.url).pathname;
-const projectRoot = new URL("./", import.meta.url).pathname.replace(/\/$/, "");
+const projectRoot = fileURLToPath(new URL("./", import.meta.url)).replace(/\/$/, "");
+const publicDir = join(projectRoot, "public");
+const basePath = normalizeBasePath(process.env.NSF_BASE_PATH);
+const requireUserHeader = process.env.NSF_REQUIRE_USER_HEADER === "true";
+const baseDataDir = process.env.NSF_DATA_DIR || join(projectRoot, "data");
 const env = await loadProjectEnv(process.env.NSF_CONFIG_DIR || projectRoot);
 const modelHealth = createModelHealthMonitor(projectRoot, env);
 await modelHealth.refresh();
-const pipeline = createMvpPipeline({
-  dataDir: process.env.NSF_DATA_DIR || join(projectRoot, "data"),
-  env,
-  services: {
-    semanticQualityOperational: () => modelHealth.isOperational("ark_multimodal"),
-  },
-});
-await pipeline.initialize();
-const hermesAgent = createHermesAgentLoop({
-  pipeline,
-  dataDir: process.env.NSF_DATA_DIR || join(projectRoot, "data"),
-  env,
-});
+const runtimeStorage = new AsyncLocalStorage();
+const runtimePromises = new Map();
+
+async function createRuntime(dataDir) {
+  const runtimePipeline = createMvpPipeline({
+    dataDir,
+    env: { ...env, NSF_BASE_PATH: basePath },
+    services: {
+      semanticQualityOperational: () => modelHealth.isOperational("ark_multimodal"),
+    },
+  });
+  await runtimePipeline.initialize();
+  return {
+    pipeline: runtimePipeline,
+    hermesAgent: createHermesAgentLoop({ pipeline: runtimePipeline, dataDir, env }),
+  };
+}
+
+function runtimeFor(userId = "") {
+  const tenant = userId
+    ? createHash("sha256").update(userId).digest("hex").slice(0, 32)
+    : "desktop";
+  if (!runtimePromises.has(tenant)) {
+    const dataDir = requireUserHeader ? join(baseDataDir, "users", tenant) : baseDataDir;
+    runtimePromises.set(tenant, createRuntime(dataDir).catch(error => {
+      runtimePromises.delete(tenant);
+      throw error;
+    }));
+  }
+  return runtimePromises.get(tenant);
+}
+
+function runtimeProxy(key) {
+  return new Proxy({}, {
+    get(_target, property) {
+      const runtime = runtimeStorage.getStore();
+      if (!runtime) throw new Error("Request runtime is unavailable");
+      const value = runtime[key][property];
+      return typeof value === "function" ? value.bind(runtime[key]) : value;
+    },
+  });
+}
+
+const pipeline = runtimeProxy("pipeline");
+const hermesAgent = runtimeProxy("hermesAgent");
+if (!requireUserHeader) await runtimeFor();
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -52,15 +91,56 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(400).end("Invalid URL");
     return;
   }
+  if (basePath && pathname === basePath) {
+    response.writeHead(308, { Location: `${basePath}/` }).end();
+    return;
+  }
+  if (basePath) {
+    if (!pathname.startsWith(`${basePath}/`)) {
+      response.writeHead(404).end("Not Found");
+      return;
+    }
+    pathname = pathname.slice(basePath.length) || "/";
+  }
+  if (pathname === "/api/health" || pathname === "/healthz") {
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    response.end(JSON.stringify({
+      ok: true,
+      service: "story-studio",
+      releaseChannel: "commercial_beta",
+      basePath: basePath || "/",
+    }));
+    return;
+  }
   if (process.env.NSF_DESKTOP_TOKEN && request.headers["x-desktop-token"] !== process.env.NSF_DESKTOP_TOKEN) {
     response.writeHead(403).end("Desktop session required");
     return;
   }
+  const userId = String(request.headers["x-lifeyoume-user-id"] || "").trim();
+  if (requireUserHeader && (!userId || userId.length > 512)) {
+    response.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
+    response.end(JSON.stringify({ error: "需要通过 LifeYouMe 登录后访问" }));
+    return;
+  }
   if (request.method === "POST" && request.headers.origin &&
-      request.headers.origin !== `http://${request.headers.host}`) {
+      request.headers.origin !==
+        `${request.headers["x-forwarded-proto"] || "http"}://${request.headers.host}`) {
     response.writeHead(403).end("Origin not allowed");
     return;
   }
+  let runtime;
+  try {
+    runtime = await runtimeFor(userId);
+  } catch (error) {
+    console.error("Tenant runtime initialization failed", error);
+    response.writeHead(503, { "Content-Type": "application/json; charset=utf-8" });
+    response.end(JSON.stringify({ error: "工作空间初始化失败" }));
+    return;
+  }
+  await runtimeStorage.run(runtime, async () => {
   if (pathname === "/api/projects" && request.method === "GET") {
     try {
       const projects = (await pipeline.list()).map(({ dir, input, story, ...project }) => project);
@@ -221,6 +301,27 @@ const server = http.createServer(async (request, response) => {
     }
     return;
   }
+  const episodeRepairMatch = pathname.match(
+    /^\/api\/projects\/([0-9a-f-]{36})\/episodes\/(\d+)\/repair-media$/,
+  );
+  if (episodeRepairMatch && request.method === "POST") {
+    try {
+      const result = await pipeline.repairEpisodeMedia(
+        episodeRepairMatch[1], Number(episodeRepairMatch[2]),
+      );
+      response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({
+        id: result.project.id,
+        episode: result.asset,
+        qualityReport: result.asset.qualityReport,
+        billableVideoGeneration: false,
+      }));
+    } catch (error) {
+      response.writeHead(409, { "Content-Type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({ error: error.message }));
+    }
+    return;
+  }
   const productionBibleMatch = pathname.match(/^\/api\/projects\/([0-9a-f-]{36})\/production-bible$/);
   if (productionBibleMatch && request.method === "POST") {
     try {
@@ -250,12 +351,11 @@ const server = http.createServer(async (request, response) => {
   if (prepareAssetsMatch && request.method === "POST") {
     try {
       const project = await pipeline.prepareProductionAssets(prepareAssetsMatch[1]);
-      response.writeHead(200, { "Content-Type": "application/json" });
+      response.writeHead(202, { "Content-Type": "application/json" });
       response.end(JSON.stringify({
         id: project.id,
-        productionBible: project.productionBible,
+        accepted: true,
         assetPreparation: project.assetPreparation,
-        productionAssetReadiness: project.productionAssetReadiness,
       }));
     } catch (error) {
       response.writeHead(502, { "Content-Type": "application/json" });
@@ -525,6 +625,7 @@ const server = http.createServer(async (request, response) => {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not Found");
   }
+  });
 });
 
 server.listen(port, host, () => {
@@ -546,4 +647,10 @@ async function readJson(request) {
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+function normalizeBasePath(value) {
+  const input = String(value || "").trim();
+  if (!input || input === "/") return "";
+  return `/${input.replace(/^\/+|\/+$/g, "")}`;
 }

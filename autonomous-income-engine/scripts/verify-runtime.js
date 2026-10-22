@@ -71,6 +71,7 @@ async function main() {
       PAYMENT_WEBHOOK_SECRET: secret,
       REQUIRE_ADMIN_API_SECRET: "1",
       ADMIN_API_SECRET: adminSecret,
+      ADMIN_MOBILE_PASSWORD: "runtime-mobile-password-123456",
       PAYMENT_AUTOSYNC: "0",
       COMMERCE_AUTORUN: "0",
       PUBLIC_ACCESS_MONITOR: "0",

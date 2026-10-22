@@ -1,4 +1,14 @@
 const $ = selector => document.querySelector(selector);
+const appBasePath = (() => {
+  const directory = new URL(".", window.location.href).pathname.replace(/\/$/, "");
+  return directory === "/" ? "" : directory;
+})();
+const isDesktopApp = Boolean(window.desktop);
+const appUrl = path => {
+  if (!path || /^(?:https?:|data:|blob:)/i.test(path)) return path;
+  if (path.startsWith(`${appBasePath}/`)) return path;
+  return `${appBasePath}/${path.replace(/^\/+/, "")}`;
+};
 const formats = { anime: "动漫", drama: "电视剧", film: "电影", other: "其它" };
 const statuses = {
   draft: "方案已保存", queued: "排队中", running: "生成中", paused: "已暂停",
@@ -56,15 +66,22 @@ function notify(text) {
   toastTimer = setTimeout(() => $("#notice").hidden = true, 6000);
 }
 async function api(path, body) {
-  const response = await fetch(path, body === undefined ? { cache: "no-store" } :
+  const response = await fetch(appUrl(path), body === undefined ? { cache: "no-store" } :
     { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || "服务暂时不可用");
   return result;
 }
+if (!isDesktopApp) {
+  $("#nav-settings").hidden = true;
+  $("#workspace-kind").textContent = "● LifeYouMe 云端工作空间";
+  document.querySelector(".sidebar-note small").innerHTML =
+    "作品按账号安全隔离<br>模型配置由平台统一管理";
+}
 function view(name) {
   clearTimeout(pollTimer);
   $("#player").pause();
+  if (!$("#episode-preview-dialog").hidden) closeEpisodePreview();
   if (name !== "detail") exitPlayerFullscreen();
   for (const key of ["create", "library", "detail", "settings"]) $(`#${key}-view`).hidden = key !== name;
   $("#nav-create").classList.toggle("active", name === "create");
@@ -298,7 +315,12 @@ async function refreshProject(id) {
   $("#real-video").hidden = project.status !== "draft" || !sourceReady;
   $("#sample").hidden = project.status !== "draft" || !sourceReady;
   $("#episode-limit-row").hidden = project.status !== "draft" || !sourceReady;
-  $("#export").hidden = !project.assets?.video;
+  const completeSeriesReady = project.assembly?.status === "completed" &&
+    Boolean(project.assembly.video);
+  const primaryVideo = completeSeriesReady
+    ? project.assembly.video
+    : project.assets?.video;
+  $("#export").hidden = !primaryVideo;
   $("#retry").hidden = project.status !== "failed";
   $("#failure").hidden = project.status !== "failed";
   $("#failure").textContent = readableFailure(project);
@@ -309,13 +331,24 @@ async function refreshProject(id) {
   renderProductionControl(project);
   if (project.status === "failed") $("#process-details").open = true;
   const video = $("#player");
-  const ready = !!project.assets?.video;
+  const ready = Boolean(primaryVideo);
   video.hidden = !ready; $("#screen-empty").hidden = !!ready;
   $("#player-actions").hidden = !ready;
   if (ready && !$("#playing-label").dataset.manual) {
-    $("#playing-label").textContent = "第 1 集";
+    $("#playing-label").textContent = completeSeriesReady
+      ? `连续全集 · ${project.assembly.episodeCount} 集`
+      : "第 1 集";
   }
-  if (ready && video.getAttribute("src") !== project.assets.video) video.src = project.assets.video;
+  if (ready && video.getAttribute("src") !== primaryVideo) {
+    video.src = appUrl(primaryVideo);
+    video.load();
+  }
+  if (ready) {
+    $("#export").onclick = () => exportAsset(
+      completeSeriesReady ? "series-complete.mp4" : "episode-01.mp4",
+    );
+  }
+  $(".disclaimer").hidden = project.outputKind === "complete_series";
   renderEpisodeBoard(project);
   renderEpisodeReader(project);
   renderProductionBible(project);
@@ -370,6 +403,32 @@ function mountPipeline() {
   pipelineMounted = true;
 }
 
+function productionAssetUnits(project) {
+  const bible = project.productionBible;
+  if (!bible) return { complete: 0, total: 0 };
+  let total = 1;
+  let complete = bible.analyzedAt ? 1 : 0;
+  for (const character of bible.characters || []) {
+    for (const view of ["front", "threeQuarter", "side", "back"]) {
+      total++;
+      if (character.views?.[view]) complete++;
+    }
+  }
+  for (const scene of bible.scenes || []) {
+    total++;
+    if (scene.image) complete++;
+  }
+  for (const prop of bible.props || []) {
+    total++;
+    if (prop.image) complete++;
+  }
+  for (const voice of bible.voices || []) {
+    total++;
+    if (voice.speaker && voice.speaker !== "待选择" && voice.sample) complete++;
+  }
+  return { complete, total };
+}
+
 function renderPipeline(project) {
   mountPipeline();
   const episodes = project.seriesPlan?.episodes || [];
@@ -382,20 +441,17 @@ function renderPipeline(project) {
     project.assembly.episodeCount === episodes.length;
   const qualityPassed = project.productionRun?.qualityGate?.status === "passed";
   const deliveryReady = assembled && qualityPassed;
-  const assetTotal = project.productionBible
-    ? project.productionBible.characters.length + project.productionBible.scenes.length +
-      project.productionBible.props.length + project.productionBible.voices.length
-    : 0;
-  const assetMissing = project.productionAssetReadiness?.missing?.length || 0;
-  const assetProgress = assetsReady ? 100 : assetTotal
-    ? Math.max(0, Math.round((assetTotal - assetMissing) / assetTotal * 100))
+  const assetUnits = productionAssetUnits(project);
+  const assetProgress = assetsReady ? 100 : assetUnits.total
+    ? Math.max(0, Math.round(assetUnits.complete / assetUnits.total * 100))
     : 0;
   const episodeProgress = episodes.length
     ? Math.round(completedEpisodes.size / episodes.length * 100)
     : 0;
   const deliveryProgress = deliveryReady ? 100 : assembled ? 70 :
     completedEpisodes.size > 0 ? 20 : 0;
-  const failed = project.status === "failed";
+  const assetFailed = project.assetPreparation?.status === "failed";
+  const failed = project.status === "failed" || assetFailed;
   const busy = projectHasActiveWork(project);
   const definitions = [
     {
@@ -414,7 +470,7 @@ function renderPipeline(project) {
       key: "assets", number: "03", label: "制片资产", icon: "资",
       complete: assetsReady, progress: assetProgress,
       detail: assetsReady ? "人物、场景、道具、固定音色已锁定" :
-        analysisReady ? `待补齐 ${assetMissing || "若干"} 项资产` : "依赖：AI 故事拆解",
+        analysisReady ? `${assetUnits.complete}/${assetUnits.total} 项制片交付物完成` : "依赖：AI 故事拆解",
       copy: assetsReady ? "视频生成将强制引用这套资产，确保人物、服装、道具与声音连续。" :
         "先生成并确认人物多视图、场景、武器道具和角色固定音色，视频才能开拍。",
     },
@@ -442,7 +498,7 @@ function renderPipeline(project) {
     const failedStep = Object.entries(project.steps || {})
       .find(([, step]) => step?.status === "failed")?.[0];
     const legacyError = `${project.error || ""} ${project.technicalError || ""}`;
-    currentIndex = failedEpisode || ["speech", "render"].includes(failedStep) ||
+    currentIndex = assetFailed ? 2 : failedEpisode || ["speech", "render"].includes(failedStep) ||
       /(ffmpeg|视频|合成|渲染|旁白|tts|字幕)/i.test(legacyError)
       ? 3
       : failedStep === "story" ? 1 : Math.max(0, currentIndex);
@@ -458,20 +514,23 @@ function renderPipeline(project) {
   $("#pipeline-percent").textContent = `${completedStageCount}/5`;
   $(".pipeline-total span").textContent = "阶段完成";
   $("#pipeline-kicker").textContent = deliveryReady ? "制作完成" : failed ? "需要处理" :
-    busy ? "正在制作" : "下一步";
+    busy ? "正在执行" : "等待操作";
   $("#pipeline-heading").textContent = deliveryReady ? "成片已完成，可以验收交付" :
-    failed ? `${current.label}需要修复` :
+    failed ? assetFailed ? "制片资产需要补做，成功项已经保留" : `${current.label}需要修复` :
       busy ? `${current.label}正在进行` :
-        current.key === "assets" ? "完善制片资产，确认后开拍" :
+        current.key === "assets" ? `未在执行 · 等待生成 ${assetUnits.total - assetUnits.complete} 项制片交付物` :
           current.key === "episodes" ? `继续制作剩余 ${Math.max(0, episodes.length - completedEpisodes.size)} 集` :
             current.key === "delivery" ? "合成全集并完成最终验收" : current.label;
+  const assetFailure = readableTaskError(project.assetPreparation?.error);
   $("#pipeline-now").textContent = deliveryReady
-    ? "所有依赖已通过，完整视频和商业交付包已就绪。"
-    : failed ? `${readableFailure(project)} 修复后会从当前步骤继续，不重复已完成工作。`
+    ? project.delivery?.status === "completed"
+      ? "所有依赖已通过，完整视频和商业交付包已就绪。"
+      : "所有依赖已通过，完整视频已就绪；可继续生成商业交付包。"
+    : failed ? `${assetFailed ? assetFailure : readableFailure(project)} 继续后只补做缺失项，不重复生成或计费已完成项。`
       : busy ? `${project.stage} · 进度会自动保存，可以随时离开此页面。`
         : current.copy;
   renderPipelineActivity(project, {
-    current, deliveryReady, failed, busy, assetProgress,
+    current, deliveryReady, failed, busy, assetProgress, assetUnits,
   });
   const stageBox = $("#pipeline-stages");
   stageBox.replaceChildren();
@@ -496,6 +555,7 @@ function renderPipeline(project) {
     stageBox.append(button);
   });
   const selected = definitions.find(stage => stage.key === selectedPipelineStage) || current;
+  if (selected.key === "delivery" && deliveryReady) resetDeliveryPlayer(project);
   const reviewing = selected.key !== currentPipelineStage;
   $("#pipeline-workspace").classList.toggle("reviewing", reviewing);
   $("#pipeline-workspace-index").textContent = reviewing ? `正在回看 · STEP ${selected.number}` : `STEP ${selected.number}`;
@@ -521,56 +581,103 @@ function renderPipelineActivity(project, context) {
   const activity = $("#pipeline-activity");
   const title = $("#pipeline-activity-title");
   const detail = $("#pipeline-activity-detail");
+  const updated = $("#pipeline-activity-updated");
   const progress = $("#pipeline-activity-progress");
   const time = $("#pipeline-activity-time");
+  const action = $("#pipeline-activity-action");
   const assetTask = project.assetPreparation;
   const bibleAnalyzing = project.productionBible?.status === "analyzing";
   let state = "idle";
   let progressValue = context.current.progress || 0;
   let startedAt = null;
+  let actionLabel = "";
+  let actionTarget = null;
   if (assetTask?.status === "running") {
     state = "running";
-    title.textContent = assetTask.stage || "正在准备制片资产";
-    detail.textContent = `系统正在执行，已完成 ${assetTask.progress || 0}% · 页面会自动更新`;
+    title.textContent = `正在执行 · ${assetTask.stage || "准备制片资产"}`;
+    const retryText = assetTask.retry
+      ? ` · 自动重试 ${assetTask.retry.nextAttempt}/3，不会重做成功项`
+      : "";
+    detail.textContent = `${context.assetUnits.complete}/${context.assetUnits.total} 项交付物完成 · ${assetTask.progress || 0}%${retryText} · 每 1.2 秒自动更新`;
     progressValue = assetTask.progress || 0;
     startedAt = assetTask.startedAt;
   } else if (bibleAnalyzing) {
     state = "running";
-    title.textContent = "AI 正在分析小说中的制片要素";
-    detail.textContent = "正在识别人物、场景、武器道具和角色音色";
+    title.textContent = "正在执行 · AI 分析制片要素";
+    detail.textContent = "正在识别人物、场景、武器道具和角色音色 · 每 1.2 秒自动更新";
     progressValue = 5;
   } else if (["running", "queued"].includes(project.status)) {
     state = "running";
-    title.textContent = project.status === "queued" ? "任务已进入制作队列" : project.stage || "正在制作";
+    title.textContent = project.status === "queued"
+      ? "正在执行 · 已进入制作队列"
+      : `正在执行 · ${project.stage || "制作中"}`;
     detail.textContent = project.status === "queued"
-      ? "等待当前任务开始，页面会自动更新"
-      : `系统正在执行 · 项目进度 ${project.progress || 0}%`;
+      ? "任务已经接受，正在等待执行资源 · 每 1.2 秒自动更新"
+      : `项目进度 ${project.progress || 0}% · 页面可关闭，进度会持续保存`;
     progressValue = project.progress || 0;
     startedAt = project.productionRun?.startedAt;
   } else if (assetTask?.status === "failed") {
     state = "failed";
-    title.textContent = "制片资产生成失败";
-    detail.textContent = assetTask.error || "打开当前步骤查看并重试失败任务";
+    const failureCount = assetTask.failures?.length || 0;
+    title.textContent = failureCount
+      ? `部分失败 · ${failureCount} 项资产需要补做`
+      : "执行失败 · 制片资产未完成";
+    detail.textContent = `${readableTaskError(assetTask.error)} · 已成功结果会保留，不会重复生成或计费`;
     progressValue = assetTask.progress || context.assetProgress || 0;
+    actionLabel = failureCount ? `仅补做 ${failureCount} 项失败资产` : "继续生成缺失资产";
+    actionTarget = () => $("#prepare-assets").click();
   } else if (project.status === "failed") {
     state = "failed";
-    title.textContent = `${context.current.label}执行失败`;
-    detail.textContent = readableFailure(project);
+    title.textContent = `执行失败 · ${context.current.label}`;
+    const repairableEpisode = repairableMediaEpisode(project);
+    const awaitingQuality = project.mediaRepair?.status === "awaiting_quality";
+    detail.textContent = repairableEpisode
+      ? awaitingQuality
+        ? `第 ${repairableEpisode} 集音轨已经修复，仅等待外部多模态质量复验；不会重新生成视频`
+        : `第 ${repairableEpisode} 集画面已经生成，仅需本地补齐音轨尾部并重新验收；不会重新调用视频模型`
+      : readableFailure(project);
     progressValue = project.progress || 0;
+    actionLabel = repairableEpisode
+      ? awaitingQuality ? "继续复验现有成片" : "免费修复现有成片"
+      : "从失败步骤继续";
+    actionTarget = repairableEpisode
+      ? () => repairEpisodeMedia(repairableEpisode)
+      : () => $("#production-control-action").click();
   } else if (context.deliveryReady) {
     state = "completed";
-    title.textContent = "整条制作流水线已完成";
-    detail.textContent = "系统当前没有执行任务 · 成片可播放和交付";
+    title.textContent = "已完成 · 整条制作流水线通过";
+    detail.textContent = "当前没有后台任务 · 成片可播放、验收和交付";
     progressValue = 100;
+    actionLabel = "播放连续全集";
+    actionTarget = () => $("#play-series").click();
   } else {
-    title.textContent = `等待你开始“${context.current.label}”`;
-    detail.textContent = "系统当前没有执行任务 · 点击下方主按钮后才会开始";
+    title.textContent = `未在执行 · 等待开始“${context.current.label}”`;
+    if (context.current.key === "assets") {
+      const remaining = Math.max(0, context.assetUnits.total - context.assetUnits.complete);
+      detail.textContent = `${context.assetUnits.complete}/${context.assetUnits.total} 项交付物完成 · 还需生成 ${remaining} 项`;
+      actionLabel = remaining ? `开始生成 ${remaining} 项资产` : "检查制片资产";
+      actionTarget = () => $("#prepare-assets").click();
+    } else if (["episodes", "delivery"].includes(context.current.key)) {
+      detail.textContent = "当前没有后台任务 · 点击右侧按钮后才会开始";
+      actionLabel = context.current.key === "episodes" ? "开始分集制作" : "开始合成验收";
+      actionTarget = () => $("#production-control-action").click();
+    } else {
+      detail.textContent = "当前没有后台任务 · 请完成当前步骤后继续";
+    }
   }
   activity.className = `pipeline-activity ${state}`;
+  activity.setAttribute("aria-busy", String(state === "running"));
   progress.style.width = `${Math.max(0, Math.min(100, progressValue))}%`;
   time.textContent = state === "running"
-    ? startedAt ? `已运行 ${formatElapsed(startedAt)}` : "执行中"
-    : state === "failed" ? "已停止" : state === "completed" ? "已完成" : "等待操作";
+    ? startedAt ? `已运行 ${formatElapsed(startedAt)}` : "正在执行"
+    : state === "failed" ? "已经停止" : state === "completed" ? "已经完成" : "等待你启动";
+  updated.textContent = state === "running"
+    ? `最近进展：${formatRecentUpdate(project.updatedAt)}`
+    : `状态更新时间：${formatClock(project.updatedAt)}`;
+  action.hidden = !actionLabel;
+  action.textContent = actionLabel;
+  action.disabled = state === "running";
+  action.onclick = actionTarget;
 }
 
 function formatElapsed(startedAt) {
@@ -579,6 +686,46 @@ function formatElapsed(startedAt) {
   if (seconds < 60) return `${seconds} 秒`;
   const minutes = Math.floor(seconds / 60);
   return `${minutes} 分 ${String(seconds % 60).padStart(2, "0")} 秒`;
+}
+
+function repairableMediaEpisode(project) {
+  const failed = project.episodeStates?.find(item =>
+    item.status === "failed" && /audio_video_duration_sync/.test(item.error || ""));
+  if (failed) return failed.number;
+  const match = String(project.error || "").match(/第\s*(\d+)\s*集.*audio_video_duration_sync/);
+  return match ? Number(match[1]) : null;
+}
+
+async function repairEpisodeMedia(number) {
+  if (!selectedId) return;
+  notify(`正在本地修复第 ${number} 集音轨，不会重新调用视频模型或产生视频生成费用`);
+  try {
+    const result = await api(
+      `/api/projects/${selectedId}/episodes/${number}/repair-media`, {},
+    );
+    await refreshProject(selectedId);
+    notify(result.qualityReport?.status === "passed"
+      ? `第 ${number} 集已完成本地修复并通过质量门禁`
+      : `第 ${number} 集本地修复完成，但仍需检查其它质量项`);
+  } catch (error) {
+    await refreshProject(selectedId).catch(() => {});
+    notify(`本地修复失败：${error.message}`);
+  }
+}
+
+function formatClock(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "刚刚";
+  return date.toLocaleTimeString("zh-CN", {
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+}
+
+function formatRecentUpdate(value) {
+  const seconds = Math.max(0, Math.round((Date.now() - Date.parse(value)) / 1000));
+  if (!Number.isFinite(seconds) || seconds < 3) return "刚刚";
+  if (seconds < 60) return `${seconds} 秒前`;
+  return `${Math.floor(seconds / 60)} 分钟前`;
 }
 
 function sourceLabel(project) {
@@ -814,7 +961,7 @@ async function exportAsset(filename) {
       if (await window.desktop.exportAsset(selectedId, filename)) notify("已导出到所选位置");
     } else {
       const a = document.createElement("a");
-      a.href = `/api/projects/${selectedId}/assets/${filename}`; a.download = filename; a.click();
+      a.href = appUrl(`/api/projects/${selectedId}/assets/${filename}`); a.download = filename; a.click();
     }
   } catch (error) { notify(error.message); }
 }
@@ -850,11 +997,10 @@ function renderProductionBible(project) {
   if (!bible) return;
   renderFormatRecommendation(project);
   const readiness = project.productionAssetReadiness || { ready: false, missing: [] };
-  const total = bible.characters.length + bible.scenes.length + bible.props.length + bible.voices.length;
-  const incomplete = readiness.missing?.length || 0;
-  const ready = Math.max(0, total - incomplete);
+  const units = productionAssetUnits(project);
+  const incomplete = Math.max(0, units.total - units.complete);
   $("#bible-readiness").innerHTML =
-    `<strong>${readiness.ready ? "已就绪" : `${ready}/${total}`}</strong><span>真实制片资产</span><small>${readiness.ready ? "允许生成分集视频" : `缺 ${incomplete} 项，禁止开拍`}</small>`;
+    `<strong>${readiness.ready ? "已就绪" : `${units.complete}/${units.total}`}</strong><span>真实制片交付物</span><small>${readiness.ready ? "允许生成分集视频" : `还需 ${incomplete} 项，禁止开拍`}</small>`;
   const preparing = project.assetPreparation?.status === "running";
   $("#prepare-assets").disabled = preparing || readiness.ready;
   $("#prepare-assets").textContent = preparing
@@ -918,7 +1064,7 @@ function renderCharacters(box, bible) {
       const cell = document.createElement("div");
       cell.className = character.views?.[key] ? "ready" : "";
       cell.innerHTML = character.views?.[key] ?
-        `<button type="button" class="view-image" aria-label="放大查看${escapeAttribute(character.name)}${label}"><img src="${character.views[key]}" alt="${escapeAttribute(character.name)}${label}"><i>↗</i></button><span>${label}</span>` :
+        `<button type="button" class="view-image" aria-label="放大查看${escapeAttribute(character.name)}${label}"><img src="${escapeAttribute(appUrl(character.views[key]))}" alt="${escapeAttribute(character.name)}${label}"><i>↗</i></button><span>${label}</span>` :
         `<b>＋</b><span>${label}</span><small>待生成</small>`;
       if (character.views?.[key]) {
         const itemIndex = characterImages.findIndex(item => item.label === label);
@@ -950,7 +1096,7 @@ function renderSimpleAssets(box, assets, label) {
     const article = document.createElement("article");
     article.className = "simple-asset";
     const type = label === "场景" ? "scene" : "prop";
-    article.innerHTML = `<div class="asset-thumbnail">${asset.image ? `<button type="button" class="view-image" aria-label="放大查看${escapeAttribute(asset.name)}"><img src="${asset.image}" alt="${escapeAttribute(asset.name)}"><i>↗</i></button>` : `<span>${label === "场景" ? "▦" : "◆"}</span>`}</div><div><span class="asset-state">${asset.status === "ready" ? "已生成" : asset.status === "failed" ? "生成失败" : "待设计"}</span><h3>${escapeHtml(asset.name)}</h3><p>${escapeHtml(asset.category || label)} · ${escapeHtml(asset.description)}</p>${asset.error ? `<p class="error">${escapeHtml(asset.error)}</p>` : ""}</div><button class="ghost generate-simple-asset">${asset.status === "generating" ? "正在生成…" : asset.image ? "重新生成" : "生成概念图"}</button>`;
+    article.innerHTML = `<div class="asset-thumbnail">${asset.image ? `<button type="button" class="view-image" aria-label="放大查看${escapeAttribute(asset.name)}"><img src="${escapeAttribute(appUrl(asset.image))}" alt="${escapeAttribute(asset.name)}"><i>↗</i></button>` : `<span>${label === "场景" ? "▦" : "◆"}</span>`}</div><div><span class="asset-state">${asset.status === "ready" ? "已生成" : asset.status === "failed" ? "生成失败" : "待设计"}</span><h3>${escapeHtml(asset.name)}</h3><p>${escapeHtml(asset.category || label)} · ${escapeHtml(asset.description)}</p>${asset.error ? `<p class="error">${escapeHtml(asset.error)}</p>` : ""}</div><button class="ghost generate-simple-asset">${asset.status === "generating" ? "正在生成…" : asset.image ? "重新生成" : "生成概念图"}</button>`;
     if (asset.image) article.querySelector(".view-image").onclick = () =>
       openLightbox([{ src: asset.image, title: asset.name, label: asset.category || label }], 0);
     const generate = article.querySelector(".generate-simple-asset");
@@ -968,7 +1114,7 @@ function renderVoices(box, bible) {
   for (const voice of bible.voices) {
     const form = document.createElement("form");
     form.className = "voice-card asset-editor";
-    form.innerHTML = `<div><span class="asset-state">${voice.sample ? "样本已生成" : voice.locked ? "已锁定但缺样本" : "待确认"} · 绑定 v${voice.bindingVersion || 1}</span><h3>${escapeHtml(voice.characterName)}</h3>${voice.sample ? `<audio controls preload="none" src="${voice.sample}"></audio>` : ""}</div><label>固定音色<input name="speaker" value="${escapeAttribute(voice.speaker)}"></label><label>固定表演方向<input name="direction" value="${escapeAttribute(voice.direction)}"></label><label class="asset-lock"><input name="locked" type="checkbox" ${voice.locked ? "checked" : ""}> 锁定音色</label><button class="secondary" type="submit">保存音色</button>`;
+    form.innerHTML = `<div><span class="asset-state">${voice.sample ? "样本已生成" : voice.locked ? "已锁定但缺样本" : "待确认"} · 绑定 v${voice.bindingVersion || 1}</span><h3>${escapeHtml(voice.characterName)}</h3>${voice.sample ? `<audio controls preload="none" src="${escapeAttribute(appUrl(voice.sample))}"></audio>` : ""}</div><label>固定音色<input name="speaker" value="${escapeAttribute(voice.speaker)}"></label><label>固定表演方向<input name="direction" value="${escapeAttribute(voice.direction)}"></label><label class="asset-lock"><input name="locked" type="checkbox" ${voice.locked ? "checked" : ""}> 锁定音色</label><button class="secondary" type="submit">保存音色</button>`;
     form.onsubmit = event => saveBible(event, { voiceId: voice.id });
     box.append(form);
   }
@@ -1054,19 +1200,15 @@ $("#analyze-bible").onclick = async () => {
 $("#prepare-assets").onclick = async () => {
   const button = $("#prepare-assets");
   button.disabled = true;
-  button.textContent = "正在准备制片资产…";
-  notify("正在分析并生成所有人物、场景、武器道具与角色音色样本；全部验收后才允许开拍");
+  button.textContent = "正在提交任务…";
+  notify("任务正在提交；成功资产会永久保留，超时会自动重试，失败后只补做缺失项");
   const projectId = selectedId;
-  clearTimeout(pollTimer);
-  pollTimer = setTimeout(() => {
-    if (selectedId === projectId) {
-      refreshProject(projectId).catch(error => notify(error.message));
-    }
-  }, 350);
   try {
-    await api(`/api/projects/${projectId}/production-assets/prepare`, {});
+    const result = await api(`/api/projects/${projectId}/production-assets/prepare`, {});
     if (selectedId === projectId) await refreshProject(projectId);
-    notify("制片资产包已全部生成并通过验收，现在可以生成分集视频");
+    notify(result.accepted
+      ? "任务已接受，正在后台生成；可以离开页面，进度会持续保存"
+      : "制片资产任务已更新");
   } catch (error) {
     if (selectedId === projectId) await refreshProject(projectId).catch(() => {});
     notify(error.message);
@@ -1101,7 +1243,7 @@ function openLightbox(items, index = 0) {
 }
 function renderLightbox() {
   const item = lightboxItems[lightboxIndex];
-  $("#lightbox-image").src = item.src;
+  $("#lightbox-image").src = appUrl(item.src);
   $("#lightbox-image").alt = `${item.title} ${item.label}`;
   $("#lightbox-title").textContent = item.title;
   $("#lightbox-meta").textContent = `${item.label} · ${lightboxIndex + 1} / ${lightboxItems.length}`;
@@ -1333,30 +1475,57 @@ $("#assemble-series").onclick = async () => {
 };
 $("#play-series").onclick = () => {
   if (!currentProject?.assembly?.video) return;
-  $("#player").src = currentProject.assembly.video;
+  resetDeliveryPlayer(currentProject);
   $("#player").hidden = false;
   $("#screen-empty").hidden = true;
   $("#player-actions").hidden = false;
-  $("#playing-label").textContent = `连续全集 · 前 ${currentProject.assembly.episodeCount} 集`;
-  $("#playing-label").dataset.manual = "true";
   $("#player").play().catch(() => {});
-  $("#export").hidden = false;
-  $("#export").onclick = () => exportAsset("series-complete.mp4");
 };
 function playEpisode(episode) {
   if (!episode.assets?.video) return;
-  const player = $("#player");
-  player.src = episode.assets.video;
-  player.hidden = false;
-  $("#screen-empty").hidden = true;
-  $("#player-actions").hidden = false;
-  $("#playing-label").textContent = `第 ${episode.number} 集 · ${episode.title}`;
-  $("#playing-label").dataset.manual = "true";
-  $("#export").hidden = false;
-  $("#export").onclick = () => exportAsset(`episode-${String(episode.number).padStart(2, "0")}.mp4`);
-  player.scrollIntoView({ behavior: "smooth", block: "center" });
+  const dialog = $("#episode-preview-dialog");
+  const player = $("#episode-preview-player");
+  $("#episode-preview-title").textContent = `第 ${episode.number} 集 · ${episode.title}`;
+  $("#episode-preview-meta").textContent = [
+    episode.duration ? `${episode.duration} 秒` : null,
+    episode.qualityReport?.status === "passed" ? "媒体验收通过" : "单集预览",
+  ].filter(Boolean).join(" · ");
+  player.src = appUrl(episode.assets.video);
+  dialog.hidden = false;
+  document.body.classList.add("modal-open");
   player.play().catch(() => {});
 }
+
+function closeEpisodePreview() {
+  const dialog = $("#episode-preview-dialog");
+  const player = $("#episode-preview-player");
+  player.pause();
+  player.removeAttribute("src");
+  player.load();
+  dialog.hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+function resetDeliveryPlayer(project = currentProject) {
+  if (!project?.assembly?.video) return;
+  const player = $("#player");
+  const seriesUrl = project.assembly.video;
+  if (player.getAttribute("src") !== seriesUrl) {
+    player.pause();
+    player.src = appUrl(seriesUrl);
+    player.load();
+  }
+  $("#playing-label").textContent = `连续全集 · ${project.assembly.episodeCount} 集`;
+  delete $("#playing-label").dataset.manual;
+  $("#export").hidden = false;
+  $("#export").onclick = () => exportAsset("series-complete.mp4");
+}
+
+$("#episode-preview-close").onclick = closeEpisodePreview;
+$("#episode-preview-done").onclick = closeEpisodePreview;
+$("#episode-preview-dialog").onclick = event => {
+  if (event.target === $("#episode-preview-dialog")) closeEpisodePreview();
+};
 
 function enterAppFullscreen() {
   $("#screen").classList.add("app-fullscreen");
@@ -1392,6 +1561,10 @@ document.addEventListener("fullscreenchange", () => {
   document.body.classList.toggle("video-fullscreen-open", active);
 });
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !$("#episode-preview-dialog").hidden) {
+    closeEpisodePreview();
+    return;
+  }
   if (event.key === "Escape" && $("#screen").classList.contains("app-fullscreen")) {
     exitPlayerFullscreen();
   }
@@ -1461,7 +1634,8 @@ function renderEpisodeQuality(report) {
     ? "本集质量门禁通过" : "本集质量门禁未通过";
   const labels = {
     video_stream: "视频流", audio_stream: "音频流", positive_duration: "有效时长",
-    resolution: "分辨率", target_duration: "目标时长", black_frames: "黑帧",
+    resolution: "分辨率", target_duration: "目标时长",
+    audio_video_duration_sync: "音画轨道同步", black_frames: "黑帧",
     frozen_frames: "冻结帧", integrated_loudness: "综合响度", true_peak: "真峰值",
     speech_content_consistency: "语音与字幕", visual_asset_consistency: "人物 / 服装 / 道具一致性",
   };
@@ -1471,7 +1645,8 @@ function renderEpisodeQuality(report) {
     const row = document.createElement("div");
     row.className = check.passed ? "passed" : check.required ? "failed" : "warning";
     const value = check.value == null ? "未验证" :
-      typeof check.value === "number" ? Number(check.value.toFixed(3)) : check.value;
+      typeof check.value === "number" ? Number(check.value.toFixed(3)) :
+        typeof check.value === "object" ? JSON.stringify(check.value) : check.value;
     row.innerHTML = `<i>${check.passed ? "✓" : check.required ? "×" : "!"}</i><span><b>${escapeHtml(labels[check.id] || check.id)}</b><small>${escapeHtml(String(value))}${check.expected ? ` · 目标 ${escapeHtml(String(check.expected))}` : ""}</small></span>`;
     checks.append(row);
   }
@@ -1648,6 +1823,12 @@ function formatDuration(seconds) {
 
 function resultDescription(project) {
   const seconds = project.duration || 0;
+  if (project.outputKind === "complete_series") {
+    const episodes = project.assembly?.episodeCount ||
+      project.assets?.episodes?.length || 0;
+    const duration = project.assembly?.duration || seconds;
+    return `全集 ${episodes} 集已完成并通过媒体验收，共 ${duration} 秒，可连续播放和导出。`;
+  }
   if (project.outputKind === "real_video_sample") return `已生成 ${seconds} 秒真实视频样片，可播放和导出。`;
   return `已生成 ${seconds} 秒流程自检片：它只验证旁白、字幕和 MP4 封装，不代表最终视频质量。`;
 }
@@ -1658,7 +1839,22 @@ function readableFailure(project) {
     return "视频模型返回的文件不是可播放 MP4，无法合成旁白。请检查兜底视频模型是否真正返回 video/mp4。";
   }
   if (/ffmpeg 退出码/.test(message)) return "视频合成失败。展开“技术错误日志”查看底层 ffmpeg 输出。";
-  return message;
+  return readableTaskError(message);
+}
+
+function readableTaskError(message) {
+  const text = String(message || "").trim();
+  if (!text) return "任务未完成。打开当前步骤查看并继续处理。";
+  if (/aborted due to timeout|timed?\s*out|timeout/i.test(text)) {
+    return "模型响应超时。已保留成功结果，可以继续补做缺失项。";
+  }
+  if (/\b429\b|too many requests|rate.?limit/i.test(text)) {
+    return "模型服务当前请求过多。系统会自动重试，已完成结果不会丢失。";
+  }
+  if (/fetch failed|network|socket|ECONNRESET|ECONNREFUSED|ENOTFOUND/i.test(text)) {
+    return "暂时无法连接模型服务。请检查网络或模型配置后继续，已完成结果不会丢失。";
+  }
+  return text;
 }
 
 function closeAgentDrawer() {

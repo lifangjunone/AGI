@@ -1,0 +1,18 @@
+{
+  "name": "LifeYouMe 经营管理",
+  "short_name": "经营管理",
+  "description": "在手机上审核推广内容、查看真实漏斗并确认微信收款",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f8f3",
+  "theme_color": "#173d27",
+  "icons": [
+    {
+      "src": "../favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

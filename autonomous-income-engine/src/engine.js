@@ -31,6 +31,135 @@ const PUBLIC_INCOME_PRODUCT = Object.freeze({
   metrics: Object.freeze({ views: 0, clicks: 0, paid: 0, revenue: 0, pendingDelivery: 0 }),
 });
 
+const PRODUCT_MATRIX = Object.freeze([
+  Object.freeze({
+    id: "consumer-evidence-pack",
+    title: "消费维权证据包生成器",
+    shortTitle: "维权证据包",
+    status: "ready",
+    category: "消费维权",
+    buyer: "需要向平台、商家或监管渠道清楚提交消费纠纷材料的人",
+    pain: "聊天截图、订单、付款、物流和商品照片散落，提交时很难说明顺序和对应关系",
+    spendReason: "免费整理和预览；确认材料结构可用后，付费下载编号归档、哈希清单和可打印完整报告",
+    delivery: "证据目录、时间线、编号原文件、SHA-256 清单、投诉事实摘要和可打印报告 ZIP",
+    promise: "把散乱材料整理成一份能检查、能打印、能继续补充的证据包；文件只在当前浏览器处理。",
+    safety: "不编造事实、不判断责任、不提供法律意见、不承诺投诉或诉讼结果。",
+    marketId: "consumer-disputes",
+    offerTypeId: "browser-tool",
+    price: 19.9,
+    path: "/products/consumer-evidence-pack/",
+    actionLabel: "免费整理自己的材料",
+    resultEvent: "evidence-pack-completed",
+    startEvent: "evidence-upload-started",
+    downloadEvent: "evidence-pack-downloaded",
+    launchedOn: "2026-10-19",
+    stopLoss: Object.freeze({ qualifiedVisits: 30, uploads: 10, completed: 5, checkouts: 2, paid: 1 }),
+  }),
+  Object.freeze({
+    ...PUBLIC_INCOME_PRODUCT,
+    shortTitle: "商品图成品机",
+    status: "ready",
+    category: "电商效率",
+    path: "/products/product-image-batch-studio/",
+    actionLabel: "免费处理自己的图片",
+    resultEvent: "image-batch-completed",
+    startEvent: "upload-started",
+    downloadEvent: "zip-downloaded",
+    launchedOn: "2026-10-18",
+    stopLoss: Object.freeze({ qualifiedVisits: 50, uploads: 15, completed: 15, checkouts: 5, paid: 1 }),
+  }),
+  Object.freeze({
+    id: "invoice-reimbursement-pack",
+    title: "报销材料自检打包器",
+    shortTitle: "报销材料包",
+    status: "candidate",
+    category: "职场效率",
+    promise: "检查发票、行程单和付款凭证是否齐全，并按报销单编号整理。",
+    safety: "工具尚在构建，不开放付款，不计入正式榜单。",
+    price: 0,
+    path: "",
+  }),
+  Object.freeze({
+    id: "rental-handover-evidence",
+    title: "租房交接证据整理器",
+    shortTitle: "租房交接包",
+    status: "candidate",
+    category: "租房生活",
+    promise: "把水电表、房屋照片、物品清单和交接对话整理成带时间的归档包。",
+    safety: "工具尚在构建，不开放付款，不计入正式榜单。",
+    price: 0,
+    path: "",
+  }),
+  Object.freeze({
+    id: "secondhand-delivery-proof",
+    title: "二手交易交付凭证包",
+    shortTitle: "二手交付包",
+    status: "candidate",
+    category: "闲置交易",
+    promise: "整理商品状态、沟通约定、打包和物流材料，生成双方可核对的交付记录。",
+    safety: "工具尚在构建，不开放付款，不计入正式榜单。",
+    price: 0,
+    path: "",
+  }),
+]);
+
+const CONSUMER_EVIDENCE_GUIDES = Object.freeze([
+  Object.freeze({
+    slug: "12315-complaint-evidence-list",
+    title: "12315 投诉需要准备哪些材料？一份可直接核对的证据清单",
+    description: "准备向 12315 或全国 12315 平台投诉时，先按主体、交易、问题、沟通、诉求五部分整理材料，避免截图散乱、事实顺序不清。",
+    question: "12315 投诉通常要准备什么？",
+    intro: "不同地区和具体事项的受理要求可能不同，但一份容易核对的消费投诉材料，至少应让接收方看清楚：谁和谁发生了什么交易、出现了什么问题、你已经如何沟通、现在希望怎样处理。",
+    checklist: ["商家或平台名称、店铺链接及可识别主体信息", "订单号、购买时间、商品或服务名称与付款凭证", "能够直接展示问题的照片、视频截图或检测材料", "与商家或平台沟通的完整关键记录", "按时间顺序写清事实，并提出具体、可执行的诉求"],
+    mistakes: ["只提交情绪表达，没有订单、付款和问题材料", "聊天截图裁掉账号、时间或上下文，无法对应双方身份", "几十张图片没有编号，正文也没有说明每张图证明什么"],
+  }),
+  Object.freeze({
+    slug: "merchant-refuses-refund-evidence",
+    title: "商家拒绝退款怎么办？先整理这 5 类沟通和交易证据",
+    description: "商家拒绝退款时，先保留交易约定、付款记录、问题材料、售后沟通和平台处理记录，再按时间线整理。",
+    question: "商家拒绝退款，哪些材料最关键？",
+    intro: "先不要只截取商家最后一句“不能退”。更重要的是保留交易时的约定、实际交付、发现问题后的沟通过程，以及商家拒绝处理的完整上下文。",
+    checklist: ["购买页面、服务说明或双方约定", "订单详情和实际付款记录", "收到的商品、服务或未履约情况", "提出退款的时间、原因和商家回复", "平台介入、售后单或其他处理记录"],
+    mistakes: ["只有付款截图，没有说明购买的具体内容", "只保留对自己有利的一句话，缺失前后对话", "诉求只写“必须处理”，没有明确退款金额或处理方式"],
+  }),
+  Object.freeze({
+    slug: "product-not-as-described-evidence",
+    title: "商品与描述不符怎么举证？购买页、实物和沟通记录这样对应",
+    description: "遇到商品与描述不符时，把购买时的宣传内容、订单、实物差异和售后沟通一一对应，形成可检查的材料目录。",
+    question: "怎样说明商品与页面描述不一致？",
+    intro: "核心不是堆很多照片，而是把“购买时看到的描述”和“实际收到的情况”对应起来。每一项差异都尽量有同一角度或同一指标的对照。",
+    checklist: ["下单时商品详情、规格选项和商家承诺的截图", "订单中的具体型号、数量、颜色或服务内容", "收货后的整体照片、问题部位和包装物流信息", "描述项与实物差异的逐项说明", "向商家提出问题及对方回复的完整记录"],
+    mistakes: ["下单后商品页面已经变化，却没有保留下单时页面", "照片看不出具体问题，也无法与订单商品对应", "把主观不满意写成描述不符，却没有列出具体差异"],
+  }),
+  Object.freeze({
+    slug: "wechat-chat-evidence-organize",
+    title: "微信聊天记录太多，投诉材料应该怎么截图和整理？",
+    description: "整理消费纠纷聊天记录时，保留双方身份、时间、关键上下文，按发生顺序编号并说明每段记录证明什么。",
+    question: "聊天记录怎样整理才容易看懂？",
+    intro: "不要把几百张连续截图直接打包。先筛出能说明交易约定、问题反馈、对方答复和处理结果的关键片段，同时保留必要上下文。",
+    checklist: ["能识别双方身份的账号或店铺信息", "交易约定、价格、交付内容等关键对话", "发现问题后第一次反馈的时间和内容", "对方承认、解释、拒绝或提出方案的记录", "按日期排序，并为每组截图补一句“证明什么”"],
+    mistakes: ["裁掉聊天对象和时间，只剩孤立的一句话", "截图顺序与事情发生顺序不一致", "图片文件名全是系统默认名称，正文无法引用"],
+  }),
+  Object.freeze({
+    slug: "damaged-delivery-claim-evidence",
+    title: "快递破损索赔要留什么证据？从外包装到签收沟通的材料清单",
+    description: "快递或网购商品破损后，保存外包装、运单、开箱过程、破损细节、商品价值和联系记录，并按时间整理。",
+    question: "商品运输破损后应当先保存什么？",
+    intro: "破损场景很依赖当时状态。保证安全的前提下，尽早记录外包装、运单信息、内部防护和商品损坏情况，并保留与商家、平台和承运方的沟通。",
+    checklist: ["带运单信息的外包装整体照片", "开箱过程或能够说明初始状态的连续材料", "破损位置的远景、近景及商品型号", "订单、付款凭证和商品价值材料", "签收时间及与商家、平台、快递的沟通记录"],
+    mistakes: ["先丢掉包装，之后才发现无法说明运输状态", "只有破损特写，无法识别是哪件商品", "商家、平台和快递沟通混在一起，没有时间顺序"],
+  }),
+  Object.freeze({
+    slug: "prepaid-service-refund-evidence",
+    title: "预付费课程或会员退款，材料应该如何整理？",
+    description: "预付费服务退款时，整理合同或宣传、付款、已消费情况、停课停业信息、退款沟通和明确金额诉求。",
+    question: "预付费服务退款要把哪些事实说清楚？",
+    intro: "重点是说明最初购买了什么、总共支付多少、已经使用多少、为什么要求终止，以及剩余金额如何计算。无法确认的数字不要估算成确定事实。",
+    checklist: ["合同、报名页面、宣传承诺或服务规则", "付款记录、收据及总金额", "已经上课、使用或核销的次数与记录", "停课、闭店、变更服务或提出退款的原因材料", "退款沟通、对方回复及剩余金额计算说明"],
+    mistakes: ["没有区分总付款、已消费和主张退还金额", "宣传承诺没有保存原页面或出处", "把听说的经营情况当作已经证实的事实"],
+  }),
+]);
+
 const channels = ["wechat-moments", "xhs-note", "zhihu-answer", "landing-page"];
 
 const markets = [
@@ -1086,6 +1215,241 @@ function appendEvent(event) {
   return next;
 }
 
+const PROMOTION_CONTENT_TYPES = Object.freeze([
+  {
+    key: "time",
+    label: "时间对比",
+    title: "30 张商品图，不再一张张改尺寸",
+    opening: "开店后才发现，最耗时间的不是拍图，是同一批图要反复改成不同平台规格。",
+    body: "我做了一个浏览器本地处理的小工具：拖入一批原图，会同时生成淘宝、拼多多、小红书和抖音四套规格，按平台分文件夹并统一命名。最多 30 张原图，先看完整预览，确认能用再决定是否花 6.9 元下载高清 ZIP。图片不会上传。",
+    keywords: ["商品图批量处理", "淘宝主图", "拼多多主图", "网店工具", "开店效率"],
+    demo: "保温杯",
+  },
+  {
+    key: "result",
+    label: "结果展示",
+    title: "1 张原图，直接拿到 4 个平台上架图",
+    opening: "不是 AI 修图，也不承诺提升销量，只解决重复改尺寸、命名和分类这件事。",
+    body: "同一张商品原图，程序会生成淘宝 800×800、拼多多 800×800、小红书 1242×1660、抖音 1080×1440 四个版本。原图在浏览器本地处理，结果先完整预览；需要高清文件时，6.9 元下载整批按平台整理好的 ZIP。",
+    keywords: ["一图多尺寸", "电商图片", "淘宝图片尺寸", "小红书商品图", "抖音商品图"],
+    demo: "帆布包",
+  },
+  {
+    key: "pain",
+    label: "真实问题",
+    title: "商品图尺寸乱、文件名乱，上传前还要整理半天",
+    opening: "如果你也在几个平台同时卖货，应该遇到过：图能用，但尺寸、留白和文件名全不一样。",
+    body: "这个小工具把一批原图统一处理并按淘宝、拼多多、小红书、抖音分目录打包。它不会凭空美化商品，也不是代运营；只是把原本逐张重复的整理工作一次做完。可以免费用自己的图看完整效果，不满意不用付费。",
+    keywords: ["商品图整理", "批量改图片尺寸", "电商运营工具", "小卖家", "上架图片"],
+    demo: "桌面灯",
+  },
+]);
+
+function loadPromotionProgram({ now = new Date() } = {}) {
+  const existing = readJsonFile("promotion-program.json", null);
+  if (existing?.startedAt) return existing;
+  const program = {
+    startedAt: now.toISOString(),
+    budget: 0,
+    weeklyReviewMinutes: 15,
+    primaryChannel: "xiaohongshu",
+    audience: "淘宝、拼多多小卖家",
+    packageStates: {},
+  };
+  writeJsonFile("promotion-program.json", program);
+  return program;
+}
+
+function promotionTrackingUrl(campaignId, source = "xiaohongshu") {
+  const query = new URLSearchParams({
+    source,
+    campaign: campaignId,
+    content: "weekly-promotion-package",
+  });
+  return toPublicUrl(`${PUBLIC_INCOME_PRODUCT.path || "/products/product-image-batch-studio/"}?${query.toString()}`);
+}
+
+function promotionWeekNumber(startedAt, now = new Date()) {
+  const start = Date.parse(startedAt);
+  if (!Number.isFinite(start)) return 1;
+  return Math.max(1, Math.min(5, Math.floor((now.getTime() - start) / (7 * 24 * 60 * 60 * 1000)) + 1));
+}
+
+function promotionPackagesForWeek(week, program = loadPromotionProgram()) {
+  const demoRotation = ["保温杯", "帆布包", "桌面灯", "收纳盒", "运动水杯", "香薰蜡烛"];
+  return PROMOTION_CONTENT_TYPES.map((template, index) => {
+    const campaignId = `xhs-w${week}-${template.key}`;
+    const state = program.packageStates?.[campaignId] || {};
+    const demo = demoRotation[((week - 1) * 3 + index) % demoRotation.length];
+    return {
+      id: campaignId,
+      week,
+      channel: "xiaohongshu",
+      type: template.key,
+      label: template.label,
+      title: week === 1 ? template.title : `${template.title}｜第 ${week} 周实测`,
+      opening: template.opening,
+      body: template.body,
+      keywords: template.keywords,
+      hashtags: template.keywords.map((item) => `#${item}`).join(" "),
+      trackingUrl: promotionTrackingUrl(campaignId),
+      demo,
+      disclosure: `演示示意｜${demo}并非客户订单，实际效果请用自己的原图免费测试`,
+      visual: {
+        format: "1080x1350",
+        beforeLabel: "原图：尺寸与留白未整理",
+        afterLabel: "处理后：四平台规格 + 分类 ZIP",
+        storyboard: ["拖入原图", "一次生成四套规格", "预览满意再下载"],
+      },
+      status: state.status || "draft",
+      publishedAt: state.publishedAt || null,
+      externalUrl: state.externalUrl || "",
+    };
+  });
+}
+
+function uniqueEventCount(events, predicate) {
+  const matched = events.filter((event) => isBuyerSignalEvent(event) && predicate(event));
+  const unique = new Set(
+    matched.map((event) => event.visitorId || event.leadSessionId || event.id)
+  );
+  return unique.size;
+}
+
+function promotionFunnelSnapshot({ now = new Date(), program = loadPromotionProgram({ now }) } = {}) {
+  const events = loadEvents();
+  const checkouts = loadCheckouts();
+  const relevant = (event) => event.experimentId === PUBLIC_INCOME_PRODUCT.id;
+  const visits = uniqueEventCount(events, (event) => relevant(event) && (event.channel === "landing-view" || event.type === "view"));
+  const uploads = uniqueEventCount(events, (event) => relevant(event) && event.channel === "upload-started");
+  const generated = uniqueEventCount(events, (event) => relevant(event) && event.channel === "image-batch-completed");
+  const downloads = uniqueEventCount(events, (event) => relevant(event) && event.channel === "zip-downloaded");
+  const paid = checkouts.filter((item) => item.experimentId === PUBLIC_INCOME_PRODUCT.id && item.status === "paid");
+  const xhsGenerated = uniqueEventCount(
+    events,
+    (event) =>
+      relevant(event) &&
+      event.channel === "image-batch-completed" &&
+      (event.trafficSource === "xiaohongshu" || String(event.campaign || "").startsWith("xhs-"))
+  );
+  const campaignIds = new Set([
+    ...events.map((event) => event.campaign).filter(Boolean),
+    ...Object.keys(program.packageStates || {}),
+  ]);
+  const campaigns = [...campaignIds]
+    .filter((id) => String(id).startsWith("xhs-"))
+    .map((campaign) => ({
+      campaign,
+      visits: uniqueEventCount(events, (event) => relevant(event) && event.campaign === campaign && event.channel === "landing-view"),
+      uploads: uniqueEventCount(events, (event) => relevant(event) && event.campaign === campaign && event.channel === "upload-started"),
+      generated: uniqueEventCount(events, (event) => relevant(event) && event.campaign === campaign && event.channel === "image-batch-completed"),
+      checkouts: checkouts.filter((item) => item.campaign === campaign).length,
+      paid: checkouts.filter((item) => item.campaign === campaign && item.status === "paid").length,
+    }))
+    .sort((left, right) => right.generated - left.generated || right.visits - left.visits);
+  return {
+    visits,
+    uploads,
+    generated,
+    checkouts: checkouts.filter((item) => item.experimentId === PUBLIC_INCOME_PRODUCT.id).length,
+    paid: paid.length,
+    downloads,
+    revenue: Number(paid.reduce((sum, item) => sum + Number(item.paymentAmount || item.amount || 0), 0).toFixed(2)),
+    xhsGenerated,
+    campaigns,
+  };
+}
+
+function promotionDiagnosis(funnel, days) {
+  if (funnel.paid > 0) {
+    return { stage: "first-sale", label: "真实首单已验证", action: "继续复用产生生成和付款的内容结构，并开始测试闲鱼入口。" };
+  }
+  if (funnel.visits >= 50 && funnel.checkouts === 0) {
+    return { stage: "stop-offer", label: "达到止损线", action: "暂停推广当前卖点，验证卖家是否愿意为尺寸整理付费，再决定是否增加白底或去背景能力。" };
+  }
+  if (funnel.checkouts > 0) {
+    return { stage: "payment-friction", label: "有人下单但未付款", action: "检查专属金额、微信收款信任和手机确认反馈，不增加新功能。" };
+  }
+  if (funnel.generated > 0) {
+    return { stage: "value-friction", label: "有人生成但未下单", action: "强化四平台分类 ZIP、统一命名和节省时间的价值表达。" };
+  }
+  if (funnel.visits > 0) {
+    return { stage: "activation-friction", label: "有人访问但未生成", action: "简化上传入口并强调免费完整预览，不急着扩渠道。" };
+  }
+  return {
+    stage: days >= 7 ? "distribution-failed" : "seed-traffic",
+    label: days >= 7 ? "内容尚未带来真人访问" : "等待第一批真人",
+    action: days >= 7 ? "调整封面、标题和搜索关键词；不能据此判断产品没人买。" : "发布本周 3 套真实演示内容，先获得可归因访问。",
+  };
+}
+
+function promotionCenterSnapshot({ now = new Date() } = {}) {
+  const program = loadPromotionProgram({ now });
+  const week = promotionWeekNumber(program.startedAt, now);
+  const days = Math.max(1, Math.floor((now.getTime() - Date.parse(program.startedAt)) / (24 * 60 * 60 * 1000)) + 1);
+  const funnel = promotionFunnelSnapshot({ now, program });
+  const diagnosis = promotionDiagnosis(funnel, days);
+  const milestones = [
+    { day: 7, visits: 10, generated: 3, checkouts: 0, paid: 0 },
+    { day: 14, visits: 25, generated: 8, checkouts: 2, paid: 0 },
+    { day: 30, visits: 50, generated: 15, checkouts: 5, paid: 1 },
+  ].map((target) => ({
+    ...target,
+    reached:
+      funnel.visits >= target.visits &&
+      funnel.generated >= target.generated &&
+      funnel.checkouts >= target.checkouts &&
+      funnel.paid >= target.paid,
+  }));
+  return {
+    program: { ...program, packageStates: undefined },
+    day: days,
+    week,
+    funnel,
+    diagnosis,
+    milestones,
+    xianyu: {
+      unlocked: funnel.xhsGenerated >= 5,
+      generatedRequired: 5,
+      generatedCurrent: funnel.xhsGenerated,
+      reason: funnel.xhsGenerated >= 5
+        ? "小红书已带来至少 5 次真实生成，可以测试一个高意向闲鱼入口。"
+        : "先让小红书累计带来 5 次真实生成；未达标前不增加第二渠道。",
+    },
+    packages: promotionPackagesForWeek(week, program),
+    boundaries: [
+      "程序生成素材、文案、追踪链接和诊断；账号最终发布由你确认。",
+      "不刷量、不群发私信、不伪造客户案例，不绕过平台安全机制。",
+      "SEO 只作为长期资产，不计入首月主动冷启动任务。",
+    ],
+  };
+}
+
+function markPromotionPackagePublished(packageId, { externalUrl = "", now = new Date() } = {}) {
+  const id = String(packageId || "").trim();
+  if (!/^xhs-w[1-5]-(time|result|pain)$/.test(id)) {
+    const error = new Error("推广包编号无效");
+    error.statusCode = 400;
+    throw error;
+  }
+  const program = loadPromotionProgram({ now });
+  program.packageStates = program.packageStates || {};
+  program.packageStates[id] = {
+    status: "published",
+    publishedAt: now.toISOString(),
+    externalUrl: String(externalUrl || "").trim().slice(0, 500),
+  };
+  writeJsonFile("promotion-program.json", program);
+  appendEvent({
+    type: "promotion-published",
+    experimentId: PUBLIC_INCOME_PRODUCT.id,
+    channel: "xiaohongshu",
+    campaign: id,
+    externalUrl: program.packageStates[id].externalUrl,
+  });
+  return promotionCenterSnapshot({ now });
+}
+
 function isCrawlerUserAgent(userAgent = "") {
   const value = String(userAgent || "").toLowerCase();
   if (!value) return false;
@@ -1105,17 +1469,199 @@ function enrichTrafficQuality(event) {
 
 function isBuyerSignalEvent(event) {
   if (!event) return false;
+  if (event.isTest || event.trafficSource === "self-test") return false;
   if (event.isBot || event.isCrawler || event.buyerSignal === false || isCrawlerUserAgent(event.userAgent)) return false;
   return true;
 }
 
+function beijingDateKey(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function productMatrixProgram({ now = new Date() } = {}) {
+  const existing = readJsonFile("product-matrix-program.json", null);
+  if (existing?.startedOn) return existing;
+  const program = {
+    startedOn: beijingDateKey(now),
+    cadence: "one-candidate-per-day",
+    rankingWeights: { paid: 1000, checkout: 120, completed: 25, started: 5, qualifiedVisit: 1 },
+  };
+  writeJsonFile("product-matrix-program.json", program);
+  return program;
+}
+
+function matrixCandidateState(index, program, now = new Date()) {
+  const start = Date.parse(`${program.startedOn}T00:00:00+08:00`);
+  const current = Date.parse(`${beijingDateKey(now)}T00:00:00+08:00`);
+  const dayIndex = Math.max(0, Math.floor((current - start) / (24 * 60 * 60 * 1000)));
+  if (index > dayIndex) return { visible: false, state: "queued", day: index + 1 };
+  return {
+    visible: true,
+    state: "building",
+    day: index + 1,
+    activatedOn: beijingDateKey(new Date(start + index * 24 * 60 * 60 * 1000)),
+  };
+}
+
+function matrixProductFunnel(product, { events = loadEvents(), checkouts = loadCheckouts(), orders = loadOrders() } = {}) {
+  const relevantEvents = events.filter((event) => event.experimentId === product.id && isBuyerSignalEvent(event));
+  const unique = (predicate) =>
+    new Set(
+      relevantEvents
+        .filter(predicate)
+        .map((event) => event.visitorId || event.leadSessionId || `${event.remoteAddress || ""}:${event.userAgent || ""}` || event.id)
+    ).size;
+  const productCheckouts = checkouts.filter(
+    (item) => item.experimentId === product.id && item.status !== "invalid-automation" && item.trafficSource !== "self-test" && !item.isTest
+  );
+  const productOrders = orders.filter((item) => item.experimentId === product.id && item.status !== "refunded");
+  const paidCheckoutIds = new Set(
+    productCheckouts.filter((item) => item.status === "paid").map((item) => item.id)
+  );
+  const paidOrders = productOrders.filter((item) => item.status === "paid" || item.status === "delivered");
+  const paid = Math.max(paidCheckoutIds.size, paidOrders.length);
+  const paidOrderCheckoutIds = new Set(paidOrders.map((item) => item.checkoutId).filter(Boolean));
+  const paidWithoutOrder = productCheckouts.filter(
+    (item) => item.status === "paid" && !paidOrderCheckoutIds.has(item.id)
+  );
+  const visits = unique((event) => event.type === "view" || /(?:landing-view|server:)/.test(String(event.channel || "")));
+  const started = unique((event) => event.channel === product.startEvent);
+  const completed = unique((event) => event.channel === product.resultEvent);
+  const downloads = unique((event) => event.channel === product.downloadEvent);
+  return {
+    visits,
+    started,
+    completed,
+    checkouts: productCheckouts.length,
+    paid,
+    downloads,
+    revenue: Number(
+      [...paidWithoutOrder, ...paidOrders]
+        .reduce((sum, item) => sum + Number(item.paymentAmount || item.amount || 0), 0)
+        .toFixed(2)
+    ),
+  };
+}
+
+function productMatrixSnapshot({ now = new Date() } = {}) {
+  const program = productMatrixProgram({ now });
+  const events = loadEvents();
+  const checkouts = loadCheckouts();
+  const orders = loadOrders();
+  const weights = program.rankingWeights;
+  let candidateIndex = 0;
+  const products = PRODUCT_MATRIX.map((product) => {
+    const candidate = product.status === "candidate"
+      ? matrixCandidateState(candidateIndex++, program, now)
+      : { visible: true, state: product.status };
+    const funnel = matrixProductFunnel(product, { events, checkouts, orders });
+    const score =
+      funnel.paid * weights.paid +
+      funnel.checkouts * weights.checkout +
+      funnel.completed * weights.completed +
+      funnel.started * weights.started +
+      funnel.visits * weights.qualifiedVisit;
+    const sampleEnough = funnel.paid > 0 || funnel.checkouts >= 2 || funnel.completed >= 5 || funnel.visits >= 30;
+    return {
+      ...product,
+      status: candidate.state,
+      visible: candidate.visible,
+      activationDay: candidate.day || null,
+      activatedOn: candidate.activatedOn || product.launchedOn || null,
+      purchasable: product.status === "ready" && Boolean(product.path) && Number(product.price) > 0,
+      funnel,
+      acquisition: productAcquisitionSnapshot(product, { events, checkouts, orders }),
+      score,
+      sampleEnough,
+      rankLabel: sampleEnough ? "真实转化榜" : "实验榜 · 数据不足",
+      campaignUrl: product.path
+        ? toPublicUrl(`${product.path}?source=owner-promotion&campaign=${encodeURIComponent(`matrix-${product.id}`)}`)
+        : "",
+    };
+  });
+  const ranked = products
+    .filter((item) => item.purchasable)
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        right.funnel.paid - left.funnel.paid ||
+        right.funnel.checkouts - left.funnel.checkouts ||
+        right.funnel.completed - left.funnel.completed ||
+        right.funnel.visits - left.funnel.visits ||
+        left.id.localeCompare(right.id)
+    )
+    .map((item, index) => ({ ...item, rank: index + 1 }));
+  const visibleCandidates = products.filter((item) => item.visible && !item.purchasable);
+  const nextCandidate = products.find((item) => !item.visible) || null;
+  return {
+    generatedAt: now.toISOString(),
+    rankingKind: ranked.some((item) => item.sampleEnough) ? "真实转化榜" : "实验榜",
+    rankingNote: "排名只使用真人访问、开始操作、完成结果、创建订单和真实确认付款；不使用点赞或伪造销量。",
+    weights,
+    top: ranked.slice(0, 3),
+    products: [...ranked, ...visibleCandidates],
+    readyCount: ranked.length,
+    visibleCount: ranked.length + visibleCandidates.length,
+    nextCandidate: nextCandidate
+      ? { id: nextCandidate.id, title: nextCandidate.title, activationDay: nextCandidate.activationDay }
+      : null,
+  };
+}
+
+function productAcquisitionSnapshot(product, { events = loadEvents(), checkouts = loadCheckouts(), orders = loadOrders() } = {}) {
+  const campaignIds = new Set([
+    ...events.filter((item) => item.experimentId === product.id && isBuyerSignalEvent(item)).map((item) => item.campaign),
+    ...checkouts.filter((item) => item.experimentId === product.id && item.trafficSource !== "self-test").map((item) => item.campaign),
+  ].filter(Boolean));
+  const campaigns = [...campaignIds].map((campaign) => {
+    const selectedCheckouts = checkouts.filter((item) => item.campaign === campaign && item.trafficSource !== "self-test");
+    const ids = new Set(selectedCheckouts.map((item) => item.id));
+    const funnel = matrixProductFunnel(product, {
+      events: events.filter((item) => item.campaign === campaign),
+      checkouts: selectedCheckouts,
+      orders: orders.filter((item) => ids.has(item.checkoutId)),
+    });
+    const stage = funnel.paid ? "paid" : funnel.checkouts ? "payment" : funnel.completed ? "value" : funnel.started ? "completion" : funnel.visits ? "upload" : "distribution";
+    const actions = {
+      paid: "复用这条入口的真实问题与交付结构，继续验证同类买家。",
+      payment: "有人下单未付款：检查收款说明、信任和手机确认反馈。",
+      value: "有人完成未下单：检查完整 ZIP 是否比免费预览更有用。",
+      completion: "有人开始未完成：检查材料导入、标注和生成错误。",
+      upload: "有访问未上传：先降低首次操作门槛，明确本地隐私处理。",
+      distribution: "没有有效访问：先验证搜索收录和入口曝光，不判断产品失败。",
+    };
+    return { campaign, funnel, stage, action: actions[stage], sampleEnough: funnel.visits >= 30 || funnel.completed >= 5 || funnel.paid > 0 };
+  }).sort((a, b) => b.funnel.paid - a.funnel.paid || b.funnel.checkouts - a.funnel.checkouts || b.funnel.completed - a.funnel.completed || b.funnel.visits - a.funnel.visits);
+  return {
+    campaigns,
+    bestCampaign: campaigns.find((item) => item.funnel.completed > 0 || item.funnel.checkouts > 0)?.campaign || null,
+    note: "优先复用产生真实结果和订单的入口；样本不足时不宣称胜出。自测与已识别爬虫不计入。",
+  };
+}
+
 function inferEventFromPublicPath(urlPath, { userAgent = "", remoteAddress = "" } = {}) {
   const cleanPath = String(urlPath || "/").split("?")[0];
+  const matrixProduct = PRODUCT_MATRIX.find((item) => item.path && cleanPath.startsWith(item.path));
+  if (matrixProduct) {
+    return {
+      type: "view",
+      experimentId: matrixProduct.id,
+      channel: "server:product",
+      path: cleanPath,
+      userAgent,
+      remoteAddress,
+    };
+  }
   if (cleanPath === "/" || /^\/presets\/[^/]+\.html$/i.test(cleanPath)) {
     return {
       type: "view",
-      experimentId: PUBLIC_INCOME_PRODUCT.id,
-      channel: cleanPath === "/" ? "server:storefront" : "server:preset",
+      experimentId: cleanPath === "/" ? "product-matrix" : PUBLIC_INCOME_PRODUCT.id,
+      channel: cleanPath === "/" ? "server:matrix" : "server:preset",
       path: cleanPath,
       userAgent,
       remoteAddress,
@@ -1518,6 +2064,15 @@ function loadCheckouts({ expire = true, now = new Date() } = {}) {
   }
   if (changed) writeJsonFile("checkouts.json", checkouts);
   return checkouts;
+}
+
+function loadAdminPushSubscriptions() {
+  return readJsonFile("admin-push-subscriptions.json", []);
+}
+
+function saveAdminPushSubscriptions(subscriptions) {
+  writeJsonFile("admin-push-subscriptions.json", subscriptions);
+  return subscriptions;
 }
 
 function loadOutbox() {
@@ -3726,7 +4281,9 @@ function buildExecutionQueue({ actionPlan = loadActionPlan(), trafficPlan = load
   for (const task of publishQueue.filter((item) => !["sent", "handed-off"].includes(item.status)).slice(0, 100)) {
     const externallyBlocked =
       task.status === "waiting-for-account-authorization" ||
+      task.status === "waiting-for-owner-review" ||
       task.blockedReason === "external-platform-account-authorization-required" ||
+      task.blockedReason === "owner-final-platform-publish-confirmation-required" ||
       task.channelStatus === "blocked";
     tasks.push({
       id: executionTaskId(["publish", task.id]),
@@ -4624,8 +5181,11 @@ function buildActionPlan({ strategy = buildStrategy(), publishQueue = loadPublis
   }
   const waitingPublish = publishQueue.filter(
     (item) =>
-      !["sent", "handed-off", "waiting-for-account-authorization"].includes(item.status) &&
-      item.blockedReason !== "external-platform-account-authorization-required"
+      !["sent", "handed-off", "waiting-for-account-authorization", "waiting-for-owner-review"].includes(item.status) &&
+      ![
+        "external-platform-account-authorization-required",
+        "owner-final-platform-publish-confirmation-required",
+      ].includes(item.blockedReason)
   );
   if (waitingPublish.length && !gatedTypes.has("fix-adapter-publish")) {
     actions.push({
@@ -7617,15 +8177,140 @@ function adminDashboardHtml(lab) {
 
 function writePublicAssets() {
   fs.copyFileSync(ASSET_QR, path.join(DIST_DIR, "wechat-pay.jpg"));
+  fs.copyFileSync(path.join(ROOT, "public", "favicon.svg"), path.join(DIST_DIR, "favicon.svg"));
   fs.copyFileSync(path.join(ROOT, "public", "styles.css"), path.join(DIST_DIR, "styles.css"));
   fs.copyFileSync(path.join(ROOT, "node_modules", "qrcode-generator", "qrcode.js"), path.join(DIST_DIR, "qrcode.js"));
   fs.copyFileSync(path.join(ROOT, "node_modules", "fflate", "umd", "index.js"), path.join(DIST_DIR, "fflate.js"));
+  fs.writeFileSync(
+    path.join(DIST_DIR, "service.json"),
+    JSON.stringify({ url: "", productId: PUBLIC_INCOME_PRODUCT.id }, null, 2)
+  );
+  copyDir(path.join(ROOT, "public", "admin"), path.join(DIST_DIR, "admin"));
+}
+
+function productMatrixHomeHtml(snapshot = productMatrixSnapshot()) {
+  const readyProducts = snapshot.products.filter((product) => product.purchasable);
+  const primary = readyProducts[0];
+  const secondaryProducts = readyProducts.slice(1);
+  const primaryBenefits =
+    primary?.id === "consumer-evidence-pack"
+      ? ["聊天、订单、付款和物流材料统一编号", "自动生成证据目录、时间线和文件校验清单", "原文件不上传，先免费预览整理结果"]
+      : ["直接使用自己的材料免费生成", "先检查完整结果，再决定是否下载", "文件在当前浏览器本地处理"];
+  const secondaryCards = secondaryProducts
+    .map(
+      (product) => `<article class="tool-card">
+        <div class="tool-card-icon" aria-hidden="true">图</div>
+        <div class="tool-card-copy">
+          <span>${escapeHtml(product.category)}</span>
+          <h3>${escapeHtml(product.title)}</h3>
+          <p>${escapeHtml(product.promise)}</p>
+          <ul>
+            <li>用自己的文件免费查看完整预览</li>
+            <li>满意后再支付 ¥${Number(product.price).toFixed(2)} 下载成品</li>
+          </ul>
+        </div>
+        <a href="${escapeHtml(product.path)}">立即使用 <span>→</span></a>
+      </article>`
+    )
+    .join("");
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="不注册、不安装，打开即用的在线实用工具。文件优先在浏览器本地处理，先看结果再决定是否下载。">
+  <title>LifeYouMe 实用工具箱｜打开即用，先看结果</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="matrix-body">
+  <main class="matrix-shell">
+    <nav class="matrix-nav">
+      <a class="matrix-brand" href="/"><span>LifeYouMe</span><strong>实用工具箱</strong></a>
+      <span class="matrix-nav-note">无需注册 · 打开即用</span>
+    </nav>
+    <section class="matrix-hero">
+      <div>
+        <p class="matrix-kicker">在线实用工具</p>
+        <h1>把麻烦事，<br>在线一次做完</h1>
+        <p>不下载软件，不学习复杂操作。使用自己的材料直接生成结果，先免费检查，确认有用再下载。</p>
+        <a class="matrix-hero-button" href="#tools">查看全部工具</a>
+      </div>
+      <div class="matrix-trust-card">
+        <strong>使用更放心</strong>
+        <span>文件优先在你的浏览器本地处理</span>
+        <span>不强制注册，不收集原文件</span>
+        <span>付费前可以先看完整预览</span>
+      </div>
+    </section>
+
+    ${
+      primary
+        ? `<section class="matrix-recommend">
+      <div class="matrix-section-title">
+        <span>重点推荐</span>
+        <h2>最近遇到消费纠纷？先把材料整理清楚</h2>
+        <p>不用研究复杂格式，把现有截图和凭证放进来，几分钟得到一份结构清楚的证据材料包。</p>
+      </div>
+      <article class="primary-tool">
+        <div class="primary-tool-copy">
+          <span class="primary-tool-label">${escapeHtml(primary.category)} · 免费预览</span>
+          <h3>${escapeHtml(primary.title)}</h3>
+          <p>${escapeHtml(primary.promise)}</p>
+          <ul>${primaryBenefits.map((benefit) => `<li>${escapeHtml(benefit)}</li>`).join("")}</ul>
+          <div class="primary-tool-actions">
+            <a class="matrix-button" href="${escapeHtml(primary.path)}">免费整理我的材料</a>
+            <span>完整证据包 ¥${Number(primary.price).toFixed(2)}</span>
+          </div>
+        </div>
+        <div class="primary-tool-preview" aria-label="证据包交付内容示意">
+          <div class="preview-window">
+            <div class="preview-window-top"><i></i><i></i><i></i><span>证据材料包</span></div>
+            <div class="preview-document">
+              <strong>消费纠纷证据目录</strong>
+              <span>01　订单与付款凭证</span>
+              <span>02　商家沟通记录</span>
+              <span>03　物流与商品照片</span>
+              <span>04　售后处理记录</span>
+              <em>已按时间排序 · 已生成校验清单</em>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>`
+        : ""
+    }
+
+    <section class="matrix-section" id="tools">
+      <div class="matrix-section-head">
+        <div><span>全部工具</span><h2>选择你现在要解决的问题</h2></div>
+        <p>这里只展示已经完成、可以直接生成结果的工具。</p>
+      </div>
+      <div class="tool-grid">${secondaryCards || "<p>更多实用工具正在准备中。</p>"}</div>
+    </section>
+
+    <section class="matrix-section">
+      <div class="matrix-section-head">
+        <div><span>免费材料清单</span><h2>还不知道要准备什么？</h2></div>
+        <p>先按实际问题核对材料，再决定是否需要工具整理。</p>
+      </div>
+      <div class="tool-grid">${CONSUMER_EVIDENCE_GUIDES.map((guide) => `<a class="tool-card guide-discovery-card" href="${escapeHtml(consumerEvidenceGuideUrl(guide))}"><div><h3>${escapeHtml(guide.question)}</h3><p>${escapeHtml(guide.description)}</p></div></a>`).join("")}</div>
+    </section>
+
+    <section class="matrix-footer-note">
+      <strong>为什么这些工具可以先免费用？</strong>
+      <p>你需要先确认结果是否适合自己，所以生成和预览不收费。只有需要下载整理好的完整成品时才付款。</p>
+    </section>
+    <footer class="matrix-footer"><span>LifeYouMe 实用工具箱</span><span>不承诺结果，只交付页面写明的文件</span></footer>
+  </main>
+</body>
+</html>`;
 }
 
 function productImageStudioHtml({ preset = "", title = "", description = "", pathName = "/" } = {}) {
   const source = fs.readFileSync(path.join(ROOT, "public", "product-image-studio.html"), "utf8");
-  const resolvedTitle = title || "商品图批量成品机｜先看整批效果，到账解锁高清 ZIP";
-  const resolvedDescription = description || "批量统一商品图尺寸、主体占比、纯色背景和品牌角标；先看本地预览，付款到账后自动解锁高清 ZIP。";
+  const resolvedTitle = title || "商品图批量成品机｜先看整批效果，微信确认后下载";
+  const resolvedDescription = description || "一批原图生成淘宝、拼多多、小红书和抖音上架图；先看本地预览，扫码付款后由店主手机确认并自动开放高清 ZIP。";
   const canonical = toPublicUrl(pathName);
   const discovery = [
     `<link rel="canonical" href="${escapeHtml(canonical)}">`,
@@ -7642,16 +8327,242 @@ function productImageStudioHtml({ preset = "", title = "", description = "", pat
       url: canonical,
       description: resolvedDescription,
       offers: { "@type": "Offer", price: PUBLIC_INCOME_PRODUCT.price, priceCurrency: "CNY" },
-      featureList: ["批量商品图处理", "自动换纯色背景", "统一主体占比", "统一尺寸与留白", "先预览后付款", "到账解锁高清 ZIP"],
+      featureList: ["批量商品图处理", "四平台上架图套装", "统一主体占比", "统一尺寸与留白", "先预览后付款", "微信人工确认后下载高清 ZIP"],
     })}</script>`,
   ].join("\n  ");
   return source
     .replace("<title>商品图批量成品机｜拖入原图，直接下载上架图包</title>", `<title>${escapeHtml(resolvedTitle)}</title>\n  ${discovery}`)
     .replace(
-      'content="批量统一商品图尺寸、主体占比、纯色背景和品牌角标；先看本地预览，付款到账后自动解锁高清 ZIP。"',
+      'content="一批原图生成淘宝、拼多多、小红书和抖音上架图；先看本地预览，扫码付款后由店主手机确认并自动开放高清 ZIP。"',
       `content="${escapeHtml(resolvedDescription)}"`
     )
     .replace('data-default-preset=""', `data-default-preset="${escapeHtml(preset)}"`);
+}
+
+function consumerEvidencePackHtml() {
+  let html = fs.readFileSync(path.join(ROOT, "public", "consumer-evidence-pack.html"), "utf8");
+  const evolution = readJsonFile("income-evolution.json", {});
+  const variant = evolution.products?.["consumer-evidence-pack"]?.variant || "control";
+  if (variant === "upload-first") {
+    html = html.replace(
+      "<h1>散乱截图和凭证，<br>整理成一份能提交的证据包。</h1>",
+      '<h1>先放入截图，<br>免费检查整理结果。</h1><p><a href="#evidence-upload" style="color:inherit">选择自己的材料，免费开始 →</a></p>'
+    ).replace('<label class="evidence-drop">', '<label class="evidence-drop" id="evidence-upload">');
+  } else if (variant === "delivery-value") {
+    html = html.replace(
+      "¥19.90 下载完整证据包",
+      "¥19.90 下载编号原文件＋目录＋完整报告 ZIP"
+    );
+  }
+  return html.replace("const attribution = {", `const evolutionVariant = ${JSON.stringify(variant)};\n    const attribution = { evolutionVariant,`);
+}
+
+function evaluateIncomeEvolution({ now = new Date(), state = {}, products = [], channels = {} } = {}) {
+  const day = beijingDateKey(now);
+  if (state.lastEvaluatedOn === day) return { ...state, skipped: true };
+  const next = {
+    ...state, lastEvaluatedOn: day, skipped: false,
+    products: { ...(state.products || {}) },
+    history: [...(state.history || [])],
+    channelState: Object.keys(channels).length ? "configured-not-proven" : "no-authorized-publisher",
+    ownerTasks: [],
+  };
+  for (const product of products.filter((item) => item.purchasable)) {
+    const previous = next.products[product.id] || { variant: "control", attempts: [], };
+    const funnel = product.funnel;
+    let decision = "observe";
+    let reason = "样本不足，不因一天没有收入就修改产品。";
+    let variant = previous.variant;
+    let experiment = previous.experiment;
+    const attempts = [...(previous.attempts || [])];
+    if (experiment) {
+      const addedVisits = funnel.visits - experiment.baseline.visits;
+      const addedCompleted = funnel.completed - experiment.baseline.completed;
+      const addedCheckouts = funnel.checkouts - experiment.baseline.checkouts;
+      if (addedVisits >= 30) {
+        const denominator = Math.max(1, experiment.baseline.visits);
+        const before = experiment.kind === "upload-first" ? experiment.baseline.completed / denominator : experiment.baseline.checkouts / denominator;
+        const after = (experiment.kind === "upload-first" ? addedCompleted : addedCheckouts) / addedVisits;
+        decision = after > before ? "retain" : "rollback";
+        reason = after > before ? "增量转化率提高，保留候选改法；这不是因果证明或收入保证。" : "新增样本没有改善转化，恢复原版本，不无限堆改动。";
+        if (decision === "rollback") variant = "control";
+        experiment = null;
+      } else reason = `候选改法继续观察，新增有效访问 ${Math.max(0, addedVisits)}/30。`;
+    } else if (funnel.paid > 0) {
+      decision = "retain";
+      reason = "已有确认付款，保留当前交付；仍需验证持续获客与收益。";
+    } else if (funnel.visits < 30) {
+      decision = "distribution";
+      reason = "曝光样本不足：维护现有搜索提交，不盲目造页面；未授权社交渠道记为不可用，不向用户反复派任务。";
+    } else if (funnel.checkouts > 0) {
+      decision = "payment-observe";
+      reason = "存在下单未付款：保留价格和收款规则，不伪造到账、不自动确认个人微信。";
+    } else if (product.id === "consumer-evidence-pack") {
+      const candidate = funnel.completed >= 5 ? "delivery-value" : "upload-first";
+      if (!attempts.includes(candidate)) {
+        variant = candidate;
+        decision = "apply";
+        reason = candidate === "upload-first" ? "有访问缺完成：自动突出免费上传入口。" : "完成后缺下单：自动突出付费 ZIP 交付物。";
+        attempts.push(candidate);
+        experiment = { kind: candidate, startedOn: day, baseline: { ...funnel } };
+      } else {
+        decision = "stop-variant-churn";
+        reason = "现有有限候选已尝试，不重复轮换或声称自动创造新需求；等待新的有效信号。";
+      }
+    } else {
+      decision = "offer-review";
+      reason = "当前卖点缺乏成交信号，暂停自动扩张，不无边界增加收费能力。";
+    }
+    next.products[product.id] = { variant, attempts, experiment, decision, reason, funnel: { ...funnel } };
+    next.history.push({ day, productId: product.id, decision, variant, reason, funnel: { ...funnel } });
+  }
+  next.history = next.history.slice(-180);
+  return next;
+}
+
+function runIncomeEvolution({ now = new Date(), dryRun = false } = {}) {
+  const next = evaluateIncomeEvolution({
+    now, state: readJsonFile("income-evolution.json", {}),
+    products: productMatrixSnapshot({ now }).products,
+    channels: loadAdapters().channels || {},
+  });
+  if (!dryRun && !next.skipped) writeJsonFile("income-evolution.json", next);
+  return next;
+}
+
+function consumerEvidenceGuideUrl(guide) {
+  return toPublicUrl(`/guides/${guide.slug}/`);
+}
+
+function consumerEvidenceGuideHtml(guide) {
+  const campaign = `guide-${guide.slug}`;
+  const toolUrl = toPublicUrl(
+    `/products/consumer-evidence-pack/?source=search&campaign=${encodeURIComponent(campaign)}`
+  );
+  const canonical = consumerEvidenceGuideUrl(guide);
+  const event = JSON.stringify({
+    type: "view",
+    experimentId: "consumer-evidence-pack",
+    channel: "guide-view",
+    campaign,
+    trafficSource: "search",
+  }).replace(/</g, "\\u003c");
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${escapeHtml(guide.title)}｜LifeYouMe</title>
+  <meta name="description" content="${escapeHtml(guide.description)}">
+  <link rel="canonical" href="${escapeHtml(canonical)}">
+  <link rel="icon" href="${escapeHtml(toPublicUrl("/favicon.svg"))}" type="image/svg+xml">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="${escapeHtml(guide.title)}">
+  <meta property="og:description" content="${escapeHtml(guide.description)}">
+  <meta property="og:url" content="${escapeHtml(canonical)}">
+  <script type="application/ld+json">${jsonScript({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: guide.title,
+    description: guide.description,
+    mainEntityOfPage: canonical,
+    publisher: { "@type": "Organization", name: "LifeYouMe 实用工具箱" },
+  })}</script>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f7f8fa;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.75}
+    a{color:inherit}.guide-nav{height:58px;background:#fff;border-bottom:1px solid #e8ebf0;display:flex;align-items:center;padding:0 20px}.guide-nav a{text-decoration:none;font-weight:800}
+    .guide-shell{width:min(780px,calc(100% - 32px));margin:32px auto 64px}.guide-article{background:#fff;border:1px solid #e5e8ee;border-radius:18px;padding:clamp(24px,5vw,46px);box-shadow:0 12px 36px rgba(20,34,60,.06)}
+    .guide-tag{display:inline-flex;padding:5px 10px;border-radius:99px;background:#eaf5ff;color:#1769aa;font-size:13px;font-weight:700}.guide-article h1{font-size:clamp(28px,6vw,42px);line-height:1.28;margin:16px 0 14px;letter-spacing:-.02em}
+    .guide-lead{font-size:18px;color:#4d596d}.guide-article h2{margin:34px 0 12px;font-size:23px}.guide-list{padding-left:0;list-style:none;counter-reset:item}.guide-list li{counter-increment:item;margin:12px 0;padding:14px 16px 14px 52px;background:#f7f9fc;border-radius:12px;position:relative}
+    .guide-list li:before{content:counter(item);position:absolute;left:16px;top:14px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#1769aa;color:#fff;font-size:13px;font-weight:800}
+    .guide-mistakes{padding-left:22px;color:#4d596d}.guide-mistakes li{margin:10px 0}.guide-cta{margin-top:36px;padding:26px;background:#102f4f;color:#fff;border-radius:16px}.guide-cta h2{margin:0 0 8px}.guide-cta p{color:#d7e6f4;margin:0 0 18px}
+    .guide-button{display:inline-flex;background:#ffcf4a;color:#302500;text-decoration:none;font-weight:800;border-radius:10px;padding:13px 20px}.guide-note{font-size:13px;color:#697386;margin-top:28px;padding-top:20px;border-top:1px solid #e8ebf0}
+    @media(max-width:560px){.guide-shell{margin-top:18px}.guide-article{border-radius:14px}.guide-lead{font-size:16px}}
+  </style>
+</head>
+<body>
+  <nav class="guide-nav"><a href="${escapeHtml(toPublicUrl("/"))}">LifeYouMe 实用工具箱</a></nav>
+  <main class="guide-shell">
+    <article class="guide-article">
+      <span class="guide-tag">消费材料整理清单</span>
+      <h1>${escapeHtml(guide.title)}</h1>
+      <p class="guide-lead">${escapeHtml(guide.intro)}</p>
+      <h2>${escapeHtml(guide.question)}</h2>
+      <ol class="guide-list">${guide.checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ol>
+      <h2>整理时常见的 3 个问题</h2>
+      <ul class="guide-mistakes">${guide.mistakes.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      <section class="guide-cta">
+        <h2>材料很多，不想手工编号？</h2>
+        <p>把自己的图片和 PDF 放进浏览器，免费生成目录、时间线和完整预览。文件不会上传；确认结果适合自己后，再决定是否下载完整 ZIP。</p>
+        <a class="guide-button" href="${escapeHtml(toolUrl)}">用自己的材料免费整理</a>
+      </section>
+      <section class="guide-related">
+        <h2>其他材料整理问题</h2>
+        <ul>${CONSUMER_EVIDENCE_GUIDES.filter((item) => item.slug !== guide.slug).map((item) => `<li><a href="${escapeHtml(consumerEvidenceGuideUrl(item))}">${escapeHtml(item.question)}</a></li>`).join("")}</ul>
+      </section>
+      <p class="guide-note">边界说明：本页仅提供通用的材料整理方法，不构成法律意见，也不承诺投诉、退款、索赔或诉讼结果。具体提交要求请以相关平台、机构或专业人士的最新说明为准。</p>
+    </article>
+  </main>
+  <script>
+    (() => {
+      const payload = ${event};
+      try {
+        payload.visitorId = localStorage.getItem('consumer-evidence-pack:visitor') || crypto.randomUUID();
+        localStorage.setItem('consumer-evidence-pack:visitor', payload.visitorId);
+      } catch {
+        payload.visitorId = String(Date.now()) + Math.random();
+      }
+      if (new URLSearchParams(location.search).get('source') === 'self-test') {
+        payload.trafficSource = 'self-test';
+        const link = document.querySelector('.guide-button');
+        const target = new URL(link.href, location.href);
+        target.searchParams.set('source', 'self-test');
+        link.href = target.href;
+      }
+      const endpoint = ${jsonScript(toPublicUrl("/api/events"))};
+      const body = JSON.stringify(payload);
+      try {
+        if (navigator.sendBeacon(endpoint, new Blob([body], {type:'application/json'}))) return;
+      } catch {}
+      fetch(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body, keepalive:true}).catch(() => {});
+    })();
+  </script>
+</body>
+</html>`;
+}
+
+function writeConsumerEvidenceGuidePages() {
+  for (const guide of CONSUMER_EVIDENCE_GUIDES) {
+    const directory = path.join(DIST_DIR, "guides", guide.slug);
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(directory, "index.html"), consumerEvidenceGuideHtml(guide));
+  }
+}
+
+function publicDiscoveryUrls() {
+  return [
+    toPublicUrl("/"),
+    ...PRODUCT_MATRIX.filter((product) => product.status === "ready" && product.path).map((product) =>
+      toPublicUrl(product.path)
+    ),
+    ...CONSUMER_EVIDENCE_GUIDES.map(consumerEvidenceGuideUrl),
+    ...productImagePresetPages().map((page) => toPublicUrl(`/presets/${page.slug}.html`)),
+  ].filter(Boolean);
+}
+
+function writeMatrixProductPages() {
+  const evidenceDir = path.join(DIST_DIR, "products", "consumer-evidence-pack");
+  const imageDir = path.join(DIST_DIR, "products", "product-image-batch-studio");
+  fs.mkdirSync(evidenceDir, { recursive: true });
+  fs.mkdirSync(imageDir, { recursive: true });
+  fs.writeFileSync(path.join(evidenceDir, "index.html"), consumerEvidencePackHtml());
+  fs.writeFileSync(
+    path.join(imageDir, "index.html"),
+    productImageStudioHtml({
+      pathName: "/products/product-image-batch-studio/",
+      title: "商品图批量成品机｜免费预览四平台图包",
+    })
+  );
 }
 
 function productImagePresetPages() {
@@ -8617,12 +9528,8 @@ ${items}
 }
 
 function sitemapXml(lab) {
-  const featured = featuredExperiment(lab);
   const lastModified = new Date().toISOString().slice(0, 10);
-  const urls = [
-    toPublicUrl("/"),
-    ...productImagePresetPages().map((page) => toPublicUrl(`/presets/${page.slug}.html`)),
-  ].filter(Boolean);
+  const urls = publicDiscoveryUrls();
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((url) => `  <url><loc>${escapeXml(url)}</loc><lastmod>${lastModified}</lastmod></url>`).join("\n")}
@@ -8648,8 +9555,15 @@ function indexNowKey() {
 function writeDistributionFiles(lab) {
   const key = indexNowKey();
   const homeUrl = toPublicUrl("/");
-  const title = "商品图批量成品机";
-  const description = "批量统一商品图尺寸、主体占比、纯色背景、留白和品牌角标；先预览，权威到账后自动解锁高清 ZIP，原图不上传。";
+  const title = "LifeYouMe 实用工具箱";
+  const description = "先免费生成和预览，确认结果适合自己后，再付费下载整理好的完整文件。";
+  const products = PRODUCT_MATRIX.filter((product) => product.status === "ready").map((product) => ({
+    id: product.id,
+    title: product.title,
+    description: product.promise,
+    price: product.price,
+    url: toPublicUrl(product.path),
+  }));
   const feed = {
     version: 1,
     title,
@@ -8662,21 +9576,20 @@ function writeDistributionFiles(lab) {
       description: page.description,
       url: toPublicUrl(`/presets/${page.slug}.html`),
     })),
-    products: [
-      {
-        id: "product-image-batch-studio",
-        title,
-        price: PUBLIC_INCOME_PRODUCT.price,
-        url: homeUrl,
-      },
-    ],
+    products,
+    guides: CONSUMER_EVIDENCE_GUIDES.map((guide) => ({
+      title: guide.title,
+      description: guide.description,
+      url: consumerEvidenceGuideUrl(guide),
+    })),
   };
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel>
   <title>${escapeXml(title)}</title>
   <link>${escapeXml(homeUrl)}</link>
   <description>${escapeXml(description)}</description>
-  <item><guid>${escapeXml(homeUrl)}</guid><title>${escapeXml(title)}</title><link>${escapeXml(homeUrl)}</link><description>${escapeXml(description)}</description></item>
+  ${products.map((product) => `<item><guid>${escapeXml(product.id)}</guid><title>${escapeXml(product.title)}</title><link>${escapeXml(product.url)}</link><description>${escapeXml(product.description)}</description></item>`).join("\n  ")}
+  ${CONSUMER_EVIDENCE_GUIDES.map((guide) => `<item><guid>guide-${escapeXml(guide.slug)}</guid><title>${escapeXml(guide.title)}</title><link>${escapeXml(consumerEvidenceGuideUrl(guide))}</link><description>${escapeXml(guide.description)}</description></item>`).join("\n  ")}
   ${productImagePresetPages().map((page) => `<item><guid>${escapeXml(page.slug)}</guid><title>${escapeXml(page.title)}</title><link>${escapeXml(toPublicUrl(`/presets/${page.slug}.html`))}</link><description>${escapeXml(page.description)}</description></item>`).join("\n  ")}
 </channel></rss>
 `;
@@ -8713,7 +9626,7 @@ function copyDir(source, target) {
 }
 
 function cleanPublicGeneratedFiles() {
-  for (const directory of ["admin", "app", "delivery", "fulfillment", "offer", "delivery-preview", "seo", "tools", "career-tools", "samples", "sample-close", "sales", "objections", "questions", "intent", "demand", "utilities", "markets", "offer-types", "buy-now", "starter", "instant", "rescue", "deals", "promotions", "syndication"]) {
+  for (const directory of ["admin", "app", "products", "guides", "delivery", "fulfillment", "offer", "delivery-preview", "seo", "tools", "career-tools", "samples", "sample-close", "sales", "objections", "questions", "intent", "demand", "utilities", "markets", "offer-types", "buy-now", "starter", "instant", "rescue", "deals", "promotions", "syndication"]) {
     removePathWithRetry(path.join(DIST_DIR, directory), { recursive: true, force: true });
   }
   if (fs.existsSync(DIST_DIR)) {
@@ -8721,6 +9634,7 @@ function cleanPublicGeneratedFiles() {
       if (/^[a-f0-9]{32}\.txt$/i.test(file)) removePathWithRetry(path.join(DIST_DIR, file), { recursive: false, force: true });
     }
   }
+  removePathWithRetry(path.join(DIST_DIR, "wechat-contact.jpg"), { recursive: false, force: true });
 }
 
 function publishStaticSite() {
@@ -11065,10 +11979,7 @@ function loadPaymentFeedFiles(payments = {}) {
 function indexNowUrls(lab = buildLab()) {
   const base = publicBaseUrl();
   const baseHost = isPublicHttpUrl(base) ? new URL(base).hostname.toLowerCase() : "";
-  return [
-    toPublicUrl("/"),
-    ...productImagePresetPages().map((page) => toPublicUrl(`/presets/${page.slug}.html`)),
-  ].filter((url) => {
+  return publicDiscoveryUrls().filter((url) => {
     if (!isPublicHttpUrl(url)) return false;
     if (!baseHost) return true;
     try {
@@ -11082,7 +11993,12 @@ function indexNowUrls(lab = buildLab()) {
 function publicUrlPathForFileLookup(url) {
   try {
     const target = new URL(url);
-    const pathname = decodeURIComponent(target.pathname || "/");
+    let pathname = decodeURIComponent(target.pathname || "/");
+    const base = publicBaseUrl();
+    const basePath = isPublicHttpUrl(base) ? new URL(base).pathname.replace(/\/+$/, "") : "";
+    if (basePath && (pathname === basePath || pathname.startsWith(`${basePath}/`))) {
+      pathname = pathname.slice(basePath.length) || "/";
+    }
     if (pathname === "/" || pathname.endsWith("/")) return path.join(pathname.replace(/^\/+/, ""), "index.html");
     return pathname.replace(/^\/+/, "");
   } catch {
@@ -11472,7 +12388,8 @@ function generateSite(options = {}) {
     const strategy = buildStrategy(options);
     const lab = buildLab({ ...options, strategy });
     const publicLab = publicFeaturedExperiments(lab);
-    saveProductCatalog([PUBLIC_INCOME_PRODUCT, ...lab, ...publicLab]);
+    const matrix = productMatrixSnapshot();
+    saveProductCatalog([...PRODUCT_MATRIX.filter((item) => item.status === "ready"), ...lab, ...publicLab]);
     fs.writeFileSync(
       privateDeliveryFile(PUBLIC_INCOME_PRODUCT.id),
       [
@@ -11484,29 +12401,47 @@ function generateSite(options = {}) {
         "",
       ].join("\n")
     );
+    fs.writeFileSync(
+      privateDeliveryFile("consumer-evidence-pack"),
+      [
+        "# 消费维权证据包付款凭证",
+        "",
+        "完整 ZIP 由买家浏览器根据其本地文件即时生成，原材料不会上传到服务器。",
+        "店主手机确认微信到账后，买家原页面会自动解锁本地 ZIP 下载。",
+        "该工具只做材料整理，不判断责任、不提供法律意见、不承诺任何处理结果。",
+        "",
+      ].join("\n")
+    );
     for (const experiment of publicLab) writeExperimentAssets(experiment, { curated: true });
     if (publicLab[0]) writeCareerUtilityAssets(publicLab[0]);
-    const publishQueue = buildPublishQueue(publicLab).map((task) => ({
-      ...task,
-      status: "waiting-for-account-authorization",
-      externalUrl: "",
-      publishedBy: "",
-      sentAt: "",
-      recommendedHubPage: null,
-      recommendedSeoIntent: null,
-      recommendedUtilityIntent: null,
-      recommendedUrl: toPublicUrl("/#rewrite"),
-      recommendedReason: "公开获客只指向能当场产出结果的免费改写器；未获得外部平台账号授权前不宣称已发布。",
-      trackingUrl: toPublicUrl("/#rewrite"),
-      blockedReason: "external-platform-account-authorization-required",
+    const promotionProgram = loadPromotionProgram();
+    const promotionWeek = promotionWeekNumber(promotionProgram.startedAt);
+    const publishQueue = promotionPackagesForWeek(promotionWeek, promotionProgram).map((item) => ({
+      id: `pub_${item.id}`,
+      experimentId: PUBLIC_INCOME_PRODUCT.id,
+      channel: "xhs-note",
+      label: item.label,
+      status: item.status === "published" ? "sent" : "waiting-for-owner-review",
+      externalUrl: item.externalUrl,
+      publishedBy: item.status === "published" ? "owner-confirmed" : "",
+      sentAt: item.publishedAt || "",
+      recommendedUrl: item.trackingUrl,
+      recommendedReason: "指向商品图免费完整预览，并使用独立 campaign 参数追踪真实生成与下单。",
+      trackingUrl: item.trackingUrl,
+      text: [item.title, item.opening, item.body, item.disclosure, item.hashtags, item.trackingUrl].join("\n\n"),
+      campaign: item.id,
+      contentType: item.type,
+      disclosure: item.disclosure,
+      blockedReason: item.status === "published" ? "" : "owner-final-platform-publish-confirmation-required",
+      createdAt: item.publishedAt || new Date().toISOString(),
     }));
     writeJsonFile("publish-queue.json", publishQueue);
     const trafficPlan = loadTrafficPlan();
     const localDrafts = [];
-    fs.writeFileSync(path.join(DIST_DIR, "index.html"), productImageStudioHtml());
+    fs.writeFileSync(path.join(DIST_DIR, "index.html"), productMatrixHomeHtml(matrix));
+    writeMatrixProductPages();
+    writeConsumerEvidenceGuidePages();
     writeProductImagePresetPages();
-    fs.mkdirSync(path.join(DIST_DIR, "admin"), { recursive: true });
-    fs.writeFileSync(path.join(DIST_DIR, "admin", "index.html"), adminDashboardHtml(lab));
     fs.writeFileSync(path.join(DIST_DIR, "manifest.json"), JSON.stringify({ generatedAt: new Date().toISOString(), strategy, trafficPlan, experiments: lab }, null, 2));
     const hubPages = [];
     const buyNowPages = [];
@@ -11523,6 +12458,7 @@ function generateSite(options = {}) {
       actionPlan,
       executionQueue,
       product: PUBLIC_INCOME_PRODUCT,
+      matrix,
       legacyCommerceProduct: featuredExperiment(publicLab),
       publish,
       publishQueue,
@@ -11531,13 +12467,23 @@ function generateSite(options = {}) {
         "index.html",
         "manifest.json",
         "feed.json",
+        "favicon.svg",
         "rss.xml",
+        "service.json",
         "sitemap.xml",
         "robots.txt",
         "wechat-pay.jpg",
         "fflate.js",
         "qrcode.js",
         "styles.css",
+        "admin/index.html",
+        "admin/mobile-admin.css",
+        "admin/mobile-admin.js",
+        "admin/manifest.webmanifest",
+        "admin/sw.js",
+        "products/consumer-evidence-pack/index.html",
+        "products/product-image-batch-studio/index.html",
+        ...CONSUMER_EVIDENCE_GUIDES.map((guide) => `guides/${guide.slug}/index.html`),
         ...productImagePresetPages().map((page) => `presets/${page.slug}.html`),
         "deals/today.html",
         ...publicLab.flatMap((item) => [
@@ -11818,7 +12764,7 @@ function inferExperimentFromId(id) {
 
 function knownExperiments() {
   const byId = new Map();
-  for (const item of [canonicalPublicProduct(), ...loadProductCatalog(), ...loadManifestExperiments(), ...buildLab(), PUBLIC_INCOME_PRODUCT]) {
+  for (const item of [canonicalPublicProduct(), ...PRODUCT_MATRIX.filter((product) => product.status === "ready"), ...loadProductCatalog(), ...loadManifestExperiments(), ...buildLab(), PUBLIC_INCOME_PRODUCT]) {
     if (item?.id) byId.set(item.id, item);
   }
   if (fs.existsSync(PRIVATE_DELIVERY_DIR)) {
@@ -12316,6 +13262,14 @@ async function runStorefrontCommerceCycle({
   searchSubmitter = submitSearchIndex,
   now = () => new Date().toISOString(),
 } = {}) {
+  const evolution = runIncomeEvolution({ now: new Date(now()), dryRun });
+  const socialSchedule = await require("./social-scheduler").runSocialScheduler({
+    dataDir: DATA_DIR,
+    configPath: path.join(ROOT, "config", "social-publishing-schedule.json"),
+    now: new Date(now()),
+    publisher: require("./social-scheduler").configuredPublisher(),
+    dryRun,
+  }).catch(error => ({ status: "failed", reason: "scheduler-error", error: error.message }));
   const site = await siteBuilder();
   const publicLab = [PUBLIC_INCOME_PRODUCT];
   const deploy = await deployer({ dryRun });
@@ -12347,6 +13301,8 @@ async function runStorefrontCommerceCycle({
     funnel,
     orders: status.orders,
     revenue: status.revenue,
+    evolution,
+    socialSchedule,
   };
   writeJsonFile("storefront-commerce-cycle.json", summary);
   return summary;
@@ -12628,7 +13584,7 @@ async function runAutonomousSupervisorOnce(options = {}) {
 }
 
 function systemStatus() {
-  const lab = [PUBLIC_INCOME_PRODUCT];
+  const lab = PRODUCT_MATRIX.filter((product) => product.status === "ready");
   const publishQueue = loadPublishQueue();
   const outbox = loadOutbox();
   const orders = loadOrders();
@@ -12655,7 +13611,9 @@ function systemStatus() {
       total: publishQueue.length,
       sent: publishQueue.filter((item) => item.status === "sent").length,
       handedOff: publishQueue.filter((item) => item.status === "handed-off").length,
-      blocked: publishQueue.filter((item) => item.blockedReason || item.status === "waiting-for-account-authorization").length,
+      blocked: publishQueue.filter(
+        (item) => item.blockedReason || ["waiting-for-account-authorization", "waiting-for-owner-review"].includes(item.status)
+      ).length,
       failed: publishQueue.filter((item) => item.status === "failed").length,
       routing: publishQueueRoutingSummary(publishQueue),
     },
@@ -12740,6 +13698,9 @@ function systemStatus() {
     lastHandoffReconcile: readJsonFile("last-handoff-reconcile.json", null),
     lastOwnedSitePublisher: readJsonFile("last-owned-site-publisher.json", null),
     storefrontCommerceCycle: readJsonFile("storefront-commerce-cycle.json", null),
+    productMatrix: productMatrixSnapshot(),
+    incomeEvolution: readJsonFile("income-evolution.json", null),
+    socialSchedule: readJsonFile("social-schedule-state.json", null),
   };
 }
 
@@ -12763,6 +13724,8 @@ function createCheckout(input) {
   const variantId = input.variantId || input.offerVariantId || null;
   const leadSessionId = input.leadSessionId || input.sessionId || "";
   const source = input.source || "";
+  const trafficSource = cleanBuyerField(input.trafficSource, 80);
+  const campaign = cleanBuyerField(input.campaign, 120);
   const buyerContext = buyerContextFromInput(input);
   if (leadSessionId && source) {
     const existing = checkouts.find(
@@ -12772,6 +13735,8 @@ function createCheckout(input) {
         item.status === "pending" &&
         item.source === source &&
         (item.offer || null) === offer &&
+        (item.checkoutMode || "authoritative-payment") ===
+          (input.checkoutMode === "manual-wechat" ? "manual-wechat" : "authoritative-payment") &&
         item.leadSessionId === leadSessionId
     );
     if (existing) {
@@ -12782,12 +13747,15 @@ function createCheckout(input) {
   const random = crypto.randomBytes(5).toString("base64url").toUpperCase();
   const id = `checkout_${crypto.randomBytes(24).toString("base64url")}`;
   const paymentRemark = `${experiment.id}#${random}`;
+  const checkoutMode = input.checkoutMode === "manual-wechat" ? "manual-wechat" : "authoritative-payment";
   const activeAmounts = new Set(
     checkouts
       .filter((item) => ["pending", "proof-submitted", "underpaid"].includes(item.status))
       .map((item) => Number(item.paymentAmount || 0).toFixed(2))
   );
-  const maxDiscountCents = Math.min(99, Math.max(0, Math.floor(amount * 100) - 1));
+  const maxDiscountCents = checkoutMode === "manual-wechat"
+    ? 9
+    : Math.min(99, Math.max(0, Math.floor(amount * 100) - 1));
   const startOffset = maxDiscountCents ? crypto.randomInt(1, maxDiscountCents + 1) : 0;
   let paymentAmount = amount;
   let paymentMatchMode = "remark";
@@ -12799,6 +13767,11 @@ function createCheckout(input) {
     paymentMatchMode = "exact-amount";
     break;
   }
+  if (checkoutMode === "manual-wechat" && paymentMatchMode !== "exact-amount") {
+    const error = new Error("当前待确认订单较多，请稍后再创建付款订单");
+    error.statusCode = 503;
+    throw error;
+  }
   const checkout = {
     id,
     experimentId: experiment.id,
@@ -12808,21 +13781,90 @@ function createCheckout(input) {
     paymentAmount,
     paymentDiscount: Number((amount - paymentAmount).toFixed(2)),
     paymentMatchMode,
+    checkoutMode,
+    contactReference: `WX-${random}`,
     offer,
     paymentRemark,
     statusUrl: toPublicUrl(`/checkout/${encodeURIComponent(id)}`),
     status: "pending",
     source,
+    trafficSource,
+    campaign,
     leadScore: input.leadScore === undefined ? null : Number(input.leadScore || 0),
     leadSessionId,
     ...buyerContext,
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+    expiresAt: new Date(Date.now() + (checkoutMode === "manual-wechat" ? 30 : 120) * 60 * 1000).toISOString(),
   };
   checkouts.push(checkout);
   writeJsonFile("checkouts.json", checkouts);
-  appendEvent({ type: "checkout-created", experimentId: experiment.id, variantId, checkoutId: checkout.id });
+  appendEvent({
+    type: "checkout-created",
+    experimentId: experiment.id,
+    variantId,
+    checkoutId: checkout.id,
+    channel: "checkout-created",
+    trafficSource,
+    campaign,
+    visitorId: cleanBuyerField(input.visitorId, 120),
+  });
   return checkout;
+}
+
+function confirmManualCheckoutDirect(checkoutIdOrReference) {
+  const checkouts = loadCheckouts({ expire: false });
+  const checkout = checkouts.find(
+    (item) => item.id === checkoutIdOrReference || item.contactReference === checkoutIdOrReference
+  );
+  if (!checkout) {
+    const error = new Error("checkout not found");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (checkout.checkoutMode !== "manual-wechat") {
+    const error = new Error("checkout is not a manual WeChat checkout");
+    error.statusCode = 409;
+    throw error;
+  }
+  if (checkout.status === "paid") {
+    return {
+      checkout,
+      order: checkout.orderId ? loadOrders().find((item) => item.id === checkout.orderId) || null : null,
+      duplicate: true,
+    };
+  }
+  if (checkout.status !== "pending") {
+    const error = new Error(`checkout cannot be confirmed in status ${checkout.status}`);
+    error.statusCode = 409;
+    throw error;
+  }
+  const confirmedAt = new Date().toISOString();
+  const order = recordOrder({
+    experimentId: checkout.experimentId,
+    variantId: checkout.variantId || null,
+    amount: Number(checkout.paymentAmount || checkout.amount),
+    payerNote: `手机管理端人工确认 ${checkout.contactReference}`,
+    externalPaymentId: `mobile-admin:${checkout.id}`,
+    checkoutId: checkout.id,
+    source: "mobile-admin-confirmation",
+    status: "paid",
+  });
+  checkout.status = "paid";
+  checkout.orderId = order.id;
+  checkout.receivedAmount = Number(checkout.paymentAmount || checkout.amount);
+  checkout.expectedAmount = Number(checkout.paymentAmount || checkout.amount);
+  checkout.paymentSource = "mobile-admin-confirmation";
+  checkout.manualConfirmedAt = confirmedAt;
+  checkout.paidAt = confirmedAt;
+  writeJsonFile("checkouts.json", checkouts);
+  appendEvent({
+    type: "mobile-admin-payment-confirmed",
+    experimentId: checkout.experimentId,
+    checkoutId: checkout.id,
+    orderId: order.id,
+    amount: checkout.receivedAmount,
+  });
+  return { checkout, order, duplicate: false };
 }
 
 function updateCheckoutLeadContext(checkoutId, context) {
@@ -13595,11 +14637,21 @@ module.exports = {
   starterOfferPrice,
   utilityIntentPagesFor,
   acquisitionFunnelSnapshot,
+  promotionCenterSnapshot,
+  productMatrixSnapshot,
+  evaluateIncomeEvolution,
+  runIncomeEvolution,
+  productAcquisitionSnapshot,
+  searchContentFingerprint,
+  indexNowUrls,
+  markPromotionPackagePublished,
   appendEvent,
   appendServerViewEvent,
   loadEvents,
   loadOrders,
   loadCheckouts,
+  loadAdminPushSubscriptions,
+  saveAdminPushSubscriptions,
   loadOutbox,
   loadRecoveryOutbox,
   loadDeliveryTokens,
@@ -13660,6 +14712,7 @@ module.exports = {
   validateAuthoritativePaymentNotification,
   knownExperiments,
   createCheckout,
+  confirmManualCheckoutDirect,
   processLeadToolResult,
   processSampleLead,
   processSalesAssistantMessage,

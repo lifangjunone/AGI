@@ -126,6 +126,44 @@ class AuthStoreTests(unittest.TestCase):
         actions = [item["action"] for item in self.store.recent_admin_audit()]
         self.assertEqual(["product.enabled", "product.disabled"], actions)
 
+    def test_product_click_stats_and_ranking_settings_are_persistent(self):
+        self.store.record_product_click("decision-studio", now=10_000)
+        self.store.record_product_click("decision-studio", now=10_000 - 90_000)
+        self.store.record_product_click("privacy-vault", now=10_000 - 700_000)
+        stats = self.store.product_click_stats(
+            ["decision-studio", "privacy-vault", "new-product"], now=10_000
+        )
+        self.assertEqual(
+            {"clicks_24h": 1, "clicks_7d": 2, "total": 2},
+            stats["decision-studio"],
+        )
+        self.assertEqual(
+            {"clicks_24h": 0, "clicks_7d": 0, "total": 1},
+            stats["privacy-vault"],
+        )
+        self.assertEqual(
+            {"clicks_24h": 0, "clicks_7d": 0, "total": 0},
+            stats["new-product"],
+        )
+        trend = self.store.product_click_trend(
+            ["decision-studio", "privacy-vault"], days=3, now=10_000
+        )
+        self.assertEqual(3, len(trend))
+        self.assertEqual([0, 0, 2], [item["total"] for item in trend])
+
+        self.store.set_pinned_priority(
+            "decision-studio", 20, "admin", now=10_001
+        )
+        self.store.set_rotation_minutes(15, "admin", now=10_002)
+        self.assertEqual(
+            20, self.store.pinned_priorities(["decision-studio"])["decision-studio"]
+        )
+        self.assertEqual(15, self.store.rotation_minutes())
+        actions = [item["action"] for item in self.store.recent_admin_audit()]
+        self.assertEqual(
+            ["product.rotation_updated", "product.ranking_pinned"], actions
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

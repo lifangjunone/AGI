@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-22
+
+### feat
+
+- Added `flowframe-studio`, an AI video creation workspace with provider model verification, generation jobs, owned uploads, image-to-video handling, project persistence, timeline state, deployment assets, and `/flowframe/` Nginx route packaging.
+- Added `nexora-suite` as a normal top-level product directory under the shared AGI repository, with Core, Control, MaaS, and Studio services, Go APIs, Next.js consoles, OpenAPI/event contracts, Docker Compose, Helm, Kubernetes docs, and edition smoke scripts.
+- Added `skill-radar`, a public AI Agent Skill ranking site with collector tests, static UI, daily data history, visual review evidence, Nginx route installation, static push script, and systemd timer/service units.
+- Expanded `autonomous-income-engine` with a consumer evidence pack product, mobile admin PWA, social publishing scheduler, product matrix ranking, promotion evidence, WeChat payment/contact assets, runtime verification, and safer shared Nginx deployment behavior.
+- Expanded `novel-series-factory` into a deployable Story Studio product with server APIs, production deploy scripts, service units, desktop icon build assets, richer pipeline continuity, quality gates, and end-to-end production tests.
+- Expanded `lifeyoume-platform` with product access/login policy controls, persistent auth store capabilities, favicon assets, MeYou certificate renewal helper, and catalog entries for Story Studio, MeYou, FlowFrame, and Skill Radar.
+- Added MeYou Agent Network as a LifeYouMe product with Agent identity, privacy tiers, continuous matching, anonymous mutual-like mode, personal and business reception, community matching, usage plans, PostgreSQL/Redis/BullMQ infrastructure, and bilingual responsive UI.
+
+### docs
+
+- Added workspace `AGENTS.md` shared Nginx safety rules and a root `.gitignore` update to keep TypeScript build info and local Go binaries out of the single top-level repository.
+- Added root `COMMIT_GUIDELINES.md` to define commit requirements, README and changelog synchronization, commit message types, forbidden files, testing expectations, shared Nginx safety, push verification, and post-commit reporting.
+- Linked the commit guidelines from the root README repository conventions.
+
 ## 2026-10-13
 
 ### feat

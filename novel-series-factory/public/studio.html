@@ -4,10 +4,10 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>故事片场</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23252d25'/%3E%3Cpath d='M18 17h28v6H25v8h18v6H25v10h21v6H18z' fill='%23d9e6a0'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/studio.css">
+  <link rel="stylesheet" href="studio.css">
 </head>
 <body>
-  <header class="titlebar"><span>故事片场 <i>/</i> STORY STUDIO</span><span class="local">● 本地工作空间</span></header>
+  <header class="titlebar"><span>故事片场 <i>/</i> STORY STUDIO</span><span class="local" id="workspace-kind">● 本地工作空间</span></header>
   <aside>
     <div class="wordmark">故事<span>片场</span><small>让故事，有下一幕。</small></div>
     <nav><button id="nav-create" class="nav active">＋ 开始创作</button><button id="nav-library" class="nav">▦ 我的作品</button><button id="nav-settings" class="nav">⚙ 制片配置</button></nav>
@@ -98,9 +98,10 @@
         </header>
         <div id="pipeline-activity" class="pipeline-activity" role="status" aria-live="polite">
           <span class="pipeline-activity-pulse"></span>
-          <div><strong id="pipeline-activity-title">正在确认任务状态</strong><small id="pipeline-activity-detail">请稍候…</small></div>
+          <div class="pipeline-activity-copy"><strong id="pipeline-activity-title">正在确认任务状态</strong><small id="pipeline-activity-detail">请稍候…</small><small id="pipeline-activity-updated"></small></div>
           <div class="pipeline-activity-progress"><i id="pipeline-activity-progress"></i></div>
           <time id="pipeline-activity-time"></time>
+          <button type="button" id="pipeline-activity-action" class="primary" hidden></button>
         </div>
         <div id="pipeline-stages" class="pipeline-stages" role="tablist" aria-label="制作流水线"></div>
       </section>
@@ -319,6 +320,19 @@
       </footer>
     </section>
   </div>
+  <div id="episode-preview-dialog" class="episode-preview-dialog" role="dialog" aria-modal="true" aria-labelledby="episode-preview-title" hidden>
+    <section>
+      <header>
+        <div><span class="badge">EPISODE PREVIEW</span><h2 id="episode-preview-title">分集预览</h2><p id="episode-preview-meta"></p></div>
+        <button type="button" id="episode-preview-close" aria-label="关闭分集预览">×</button>
+      </header>
+      <video id="episode-preview-player" controls playsinline></video>
+      <footer>
+        <span>这是单集预览，不会改变最终成品播放器。</span>
+        <button type="button" id="episode-preview-done" class="secondary">关闭预览</button>
+      </footer>
+    </section>
+  </div>
   <div id="image-lightbox" class="image-lightbox" role="dialog" aria-modal="true" aria-labelledby="lightbox-title" hidden>
     <button type="button" id="lightbox-close" class="lightbox-close" aria-label="关闭大图">×</button>
     <button type="button" id="lightbox-prev" class="lightbox-nav lightbox-prev" aria-label="上一张">‹</button>
@@ -329,6 +343,6 @@
     <button type="button" id="lightbox-next" class="lightbox-nav lightbox-next" aria-label="下一张">›</button>
   </div>
   <input type="file" id="web-file" accept=".txt" hidden>
-  <script src="/studio.js"></script>
+  <script src="studio.js"></script>
 </body>
 </html>

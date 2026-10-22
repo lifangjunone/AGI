@@ -1,0 +1,31 @@
+[Unit]
+Description=LifeYouMe Story Studio
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=story-studio
+Group=story-studio
+WorkingDirectory=/data/app/story-studio/current
+EnvironmentFile=-/data/app/story-studio/shared/runtime.env
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=4361
+Environment=NSF_BASE_PATH=/story-studio
+Environment=NSF_REQUIRE_USER_HEADER=true
+Environment=NSF_DATA_DIR=/data/app/story-studio/shared/data
+Environment=NSF_CONFIG_DIR=/data/app/story-studio/shared/config
+Environment=ALLOW_BILLABLE_GENERATION=false
+ExecStart=/opt/node20/bin/node server.mjs
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/app/story-studio/shared
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

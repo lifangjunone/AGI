@@ -1,0 +1,12 @@
+dependencies:
+- name: nexora-infrastructure
+  repository: file://../../infrastructure
+  version: 1.0.0
+- name: nexora-core
+  repository: file://../../../../nexora-core/deploy/helm
+  version: 1.0.0
+- name: nexora-maas
+  repository: file://../../../../nexora-maas/deploy/helm
+  version: 1.0.0
+digest: sha256:0600a00cfbe43fc2f97f35a2bf5322981b794c7d62828aadcd6922e3b04fc626
+generated: "2026-10-21T20:31:12.536529+08:00"

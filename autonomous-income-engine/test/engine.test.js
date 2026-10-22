@@ -11,6 +11,8 @@ const {
   PUBLIC_SITE_DIR,
   aggregateMetrics,
   acquisitionFunnelSnapshot,
+  promotionCenterSnapshot,
+  markPromotionPackagePublished,
   appendEvent,
   buildLab,
   buildAdapterReadinessPlan,
@@ -132,6 +134,7 @@ function snapshotData() {
   fs.mkdirSync(dataDir, { recursive: true });
   const files = [
     "adapters.json",
+    "admin-push-subscriptions.json",
     "checkouts.json",
     "delivery-tokens.json",
     "events.json",
@@ -167,6 +170,7 @@ function snapshotData() {
     "recovery-outbox.json",
     "publish.json",
     "publish-queue.json",
+    "promotion-program.json",
     "strategy.json",
     "action-plan.json",
     "last-action-execution.json",
@@ -343,8 +347,8 @@ test("generates multiple money experiments with unique offer and delivery assets
   assert.match(storefront, /项目经历还是流水账/);
   assert.match(storefront, /立即购买，生成付款备注/);
   assert.doesNotMatch(storefront, /成交角度自动学习|实验排行榜|机器生成清单/);
-  assert.match(admin, /成交角度自动学习/);
-  assert.match(admin, /自动聚合入口页/);
+  assert.match(admin, /手机收款确认/);
+  assert.match(admin, /管理密码/);
   const resumeChecklist = result.lab.find(
     (item) => item.marketId === "jobseekers" && item.offerTypeId === "checklist"
   );
@@ -544,6 +548,7 @@ test("generates multiple money experiments with unique offer and delivery assets
 test("public storefront stays curated while the private lab keeps all experiments", () => {
   const result = generateSite({ seed: 20261012, count: 8 });
   const storefront = fs.readFileSync(path.join(DIST_DIR, "index.html"), "utf8");
+  const imageStudio = fs.readFileSync(path.join(DIST_DIR, "products", "product-image-batch-studio", "index.html"), "utf8");
   const sitemap = fs.readFileSync(path.join(DIST_DIR, "sitemap.xml"), "utf8");
   const manifest = JSON.parse(fs.readFileSync(path.join(DIST_DIR, "manifest.json"), "utf8"));
   const htmlFiles = [];
@@ -561,25 +566,27 @@ test("public storefront stays curated while the private lab keeps all experiment
   assert.equal(result.product.id, "product-image-batch-studio");
   assert.equal(result.legacyCommerceProduct.marketId, "jobseekers");
   assert.equal(result.legacyCommerceProduct.offerTypeId, "checklist");
-  assert.equal(htmlFiles.length <= 20, true);
-  assert.equal((sitemap.match(/<url>/g) || []).length < 20, true);
+  assert.equal(htmlFiles.length <= 28, true);
+  assert.equal((sitemap.match(/<url>/g) || []).length <= 16, true);
   assert.match(storefront, /商品图批量成品机/);
-  assert.match(storefront, /data-file-input/);
-  assert.match(storefront, /生成整批效果预览/);
-  assert.match(storefront, /¥6\.90 解锁高清 ZIP/);
-  assert.match(storefront, /下载已购高清 ZIP/);
-  assert.match(storefront, /fflate\.zipSync/);
-  assert.match(storefront, /图片不会上传到服务器/);
-  assert.match(storefront, /data-support hidden/);
-  assert.match(storefront, /src="\/wechat-pay\.jpg"/);
-  assert.match(storefront, /image-batch-completed/);
-  assert.match(storefront, /apiUrl\('\/api\/checkouts'\)/);
-  assert.match(storefront, /payload\.checkout\.status === 'paid'/);
-  assert.doesNotMatch(storefront, /实验排行榜|机器生成清单|最高分实验/);
+  assert.match(storefront, /把麻烦事/);
+  assert.match(storefront, /消费维权证据包生成器/);
+  assert.match(imageStudio, /data-file-input/);
+  assert.match(imageStudio, /生成四平台整批预览/);
+  assert.match(imageStudio, /¥6\.90 微信购买高清 ZIP/);
+  assert.match(imageStudio, /下载已购高清 ZIP/);
+  assert.match(imageStudio, /fflate\.zipSync/);
+  assert.match(imageStudio, /图片不会上传到服务器/);
+  assert.match(imageStudio, /data-support hidden/);
+  assert.match(imageStudio, /src="\/wechat-pay\.jpg"/);
+  assert.match(imageStudio, /image-batch-completed/);
+  assert.match(imageStudio, /apiUrl\('\/api\/checkouts'\)/);
+  assert.match(imageStudio, /payload\.checkout\.status === 'paid'/);
+  assert.doesNotMatch(storefront, /机器生成清单|最高分实验/);
   assert.equal(fs.existsSync(path.join(DIST_DIR, "utilities")), false);
-  assert.equal(htmlFiles.length, 20);
+  assert.equal(htmlFiles.length, 28);
   assert.equal(fs.existsSync(path.join(DIST_DIR, "fflate.js")), true);
-  assert.equal((sitemap.match(/<url>/g) || []).length, 8);
+  assert.equal((sitemap.match(/<url>/g) || []).length, 16);
   assert.match(sitemap, /<loc>[^<]+\/<\/loc>/);
   const presetExpectations = {
     "white-main-image.html": "white-main",
@@ -597,7 +604,7 @@ test("public storefront stays curated while the private lab keeps all experiment
     assert.match(sitemap, new RegExp(`/presets/${file.replace(".", "\\.")}`));
   }
   assert.doesNotMatch(sitemap, /feed\.json|rss\.xml|delivery-preview/);
-  assert.equal((sitemap.match(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g) || []).length, 8);
+  assert.equal((sitemap.match(/<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/g) || []).length, 16);
   const trafficPlan = buildTrafficPlan({ lab: [result.product] });
   const queue = buildExecutionQueue({
     actionPlan: buildActionPlan({ publishQueue: result.publishQueue }),
@@ -2248,9 +2255,9 @@ test("public product identity and price never drift with internal experiment inp
   const restore = snapshotData();
   try {
     const first = generateSite({ seed: 20261010, count: 1 });
-    const firstHome = fs.readFileSync(path.join(DIST_DIR, "index.html"), "utf8");
+    const firstHome = fs.readFileSync(path.join(DIST_DIR, "products", "product-image-batch-studio", "index.html"), "utf8");
     const second = generateSite({ seed: 20269999, count: 16, adaptive: false });
-    const secondHome = fs.readFileSync(path.join(DIST_DIR, "index.html"), "utf8");
+    const secondHome = fs.readFileSync(path.join(DIST_DIR, "products", "product-image-batch-studio", "index.html"), "utf8");
     for (const product of [first.product, second.product]) {
       assert.equal(product.id, "product-image-batch-studio");
       assert.equal(product.price, 6.9);
@@ -2270,7 +2277,7 @@ test("public product identity and price never drift with internal experiment inp
     for (const home of [firstHome, secondHome]) {
       assert.match(home, /商品图批量成品机/);
       assert.match(home, /product-image-batch-studio/);
-      assert.match(home, /¥6\.90 解锁高清 ZIP/);
+      assert.match(home, /¥6\.90 微信购买高清 ZIP/);
       assert.match(home, /下载已购高清 ZIP/);
       assert.match(home, /payload\.checkout\.status === 'paid'/);
       assert.doesNotMatch(home, /<strong>¥19<\/strong>|<strong>¥29<\/strong>|<strong>¥39<\/strong>/);
@@ -3254,9 +3261,12 @@ test("public commerce readiness disables checkout without exposing payment inter
     const body = JSON.parse(response.body.toString("utf8"));
     assert.equal(response.status, 200);
     assert.equal(body.ok, true);
-    assert.equal(body.checkoutEnabled, false);
+    assert.equal(body.checkoutEnabled, true);
+    assert.equal(body.checkoutMode, "manual-wechat");
+    assert.equal(body.manualWechatEnabled, true);
+    assert.equal(body.automaticCheckoutEnabled, false);
     assert.equal(body.paymentSourceStatus, "waiting");
-    assert.match(body.message, /暂不收款/);
+    assert.match(body.message, /手机管理端/);
     assert.doesNotMatch(response.body.toString("utf8"), /feedDir|webhookSecret|payment-inbox/);
   } finally {
     delete process.env.REQUIRE_AUTHORITATIVE_PAYMENT_SOURCE;
@@ -5698,8 +5708,8 @@ test("product image studio counts real usage without counting crawlers", async (
     generateSite({ seed: 20261010, count: 1 });
     const humanHeaders = { "User-Agent": "Mozilla/5.0 RealBuyer/1.0" };
     const crawlerHeaders = { "User-Agent": "curl/8.7.1" };
-    assert.equal((await request(server, "/", { headers: humanHeaders })).status, 200);
-    assert.equal((await request(server, "/", { headers: crawlerHeaders })).status, 200);
+    assert.equal((await request(server, "/products/product-image-batch-studio/", { headers: humanHeaders })).status, 200);
+    assert.equal((await request(server, "/products/product-image-batch-studio/", { headers: crawlerHeaders })).status, 200);
     const forgedAutomationEvent = await request(server, "/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json", "User-Agent": "Playwright/1.0" },
@@ -5719,7 +5729,7 @@ test("product image studio counts real usage without counting crawlers", async (
     assert.equal(funnel.traffic.botOrCrawlerViews, 1);
     assert.equal(funnel.traffic.imageBatchesCompleted, 0);
     assert.equal(
-      loadEvents().filter((item) => item.experimentId === product.id && item.channel === "server:storefront").length,
+      loadEvents().filter((item) => item.experimentId === product.id && item.channel === "server:product").length,
       2
     );
     appendEvent({
@@ -5804,24 +5814,33 @@ test("stable public front is portable under a project path and only indexes file
     });
     const front = result.directory;
     const home = fs.readFileSync(path.join(front, "index.html"), "utf8");
+    const imageStudio = fs.readFileSync(path.join(front, "products", "product-image-batch-studio", "index.html"), "utf8");
     const sitemap = fs.readFileSync(path.join(front, "sitemap.xml"), "utf8");
     const robots = fs.readFileSync(path.join(front, "robots.txt"), "utf8");
     const service = JSON.parse(fs.readFileSync(path.join(front, "service.json"), "utf8"));
 
     assert.match(home, /href="\.\/styles\.css"/);
-    assert.match(home, /src="\.\/fflate\.js"/);
-    assert.match(home, /src="\.\/wechat-pay\.jpg"/);
+    assert.match(home, /href="\.\/favicon\.svg"/);
     assert.match(home, /商品图批量成品机/);
-    assert.match(home, /data-file-input/);
-    assert.match(home, /¥6\.90 解锁高清 ZIP/);
-    assert.match(home, /下载已购高清 ZIP/);
-    assert.match(home, /fflate\.zipSync/);
+    assert.match(home, /消费维权证据包生成器/);
+    assert.doesNotMatch(home, /实验榜|真人访问|确认付款|得分 0/);
+    assert.match(imageStudio, /src="\.\.\/\.\.\/fflate\.js"/);
+    assert.match(imageStudio, /src="\.\.\/\.\.\/wechat-pay\.jpg"/);
+    assert.match(imageStudio, /data-file-input/);
+    assert.match(imageStudio, /¥6\.90 微信购买高清 ZIP/);
+    assert.match(imageStudio, /下载已购高清 ZIP/);
+    assert.match(imageStudio, /fflate\.zipSync/);
     assert.doesNotMatch(home, /src="\/|href="\//);
-    assert.match(home, /service\.json/);
+    assert.match(imageStudio, /service\.json/);
     assert.equal(service.url, "https://pay-service.example");
     assert.equal(service.productId, "product-image-batch-studio");
     assert.match(sitemap, /https:\/\/seller\.example\/autonomous-income-engine\//);
-    assert.equal((sitemap.match(/<url>/g) || []).length, 8);
+    assert.equal((sitemap.match(/<url>/g) || []).length, 16);
+    const guide = fs.readFileSync(path.join(front, "guides", "12315-complaint-evidence-list", "index.html"), "utf8");
+    assert.match(home, /href="\.\/guides\/12315-complaint-evidence-list\//);
+    assert.match(guide, /href="\.\.\/\.\.\/products\/consumer-evidence-pack\/\?/);
+    assert.match(guide, /https:\/\/pay-service\.example\/api\/events/);
+    assert.match(sitemap, /\/guides\/12315-complaint-evidence-list\//);
     for (const [file, preset] of Object.entries({
       "white-main-image.html": "white-main",
       "portrait-product-image.html": "portrait-product",
@@ -5834,6 +5853,7 @@ test("stable public front is portable under a project path and only indexes file
       const presetHtml = fs.readFileSync(path.join(front, "presets", file), "utf8");
       assert.match(presetHtml, new RegExp(`data-default-preset="${preset}"`));
       assert.match(presetHtml, /href="\.\.\/styles\.css"/);
+      assert.match(presetHtml, /href="\.\.\/favicon\.svg"/);
       assert.match(presetHtml, /src="\.\.\/fflate\.js"/);
       assert.match(presetHtml, /src="\.\.\/wechat-pay\.jpg"/);
       assert.doesNotMatch(presetHtml, /src="\/|href="\//);
@@ -5859,9 +5879,12 @@ test("public front release gate stages only the audited whitelist and refuses se
     const result = buildPublicFront();
     const verified = verifyPublicFront(result.directory);
     assert.equal(verified.ok, true);
-    assert.equal(verified.files.length, 17);
+    assert.equal(verified.files.length, 26);
+    assert.equal(verified.files.includes("favicon.svg"), true);
     assert.equal(verified.files.includes("fflate.js"), true);
     assert.equal(verified.files.includes("wechat-pay.jpg"), true);
+    assert.equal(verified.files.includes("products/consumer-evidence-pack/index.html"), true);
+    assert.equal(verified.files.includes("products/product-image-batch-studio/index.html"), true);
     assert.equal(verified.files.includes("app/resume-builder.html"), false);
     assert.equal(verified.files.includes("presets/white-main-image.html"), true);
     assert.equal(verified.files.includes("presets/portrait-product-image.html"), true);
@@ -7157,6 +7180,104 @@ test("admin API secret protects operational state and mutation endpoints", async
   }
 });
 
+test("mobile admin confirms a unique-amount WeChat checkout and buyer unlocks automatically", async () => {
+  const restore = snapshotData();
+  const previousSecret = process.env.ADMIN_API_SECRET;
+  const previousMobilePassword = process.env.ADMIN_MOBILE_PASSWORD;
+  const previousPaymentSource = process.env.REQUIRE_AUTHORITATIVE_PAYMENT_SOURCE;
+  process.env.ADMIN_API_SECRET = "manual-checkout-admin-secret";
+  process.env.ADMIN_MOBILE_PASSWORD = "phone-only-password";
+  process.env.REQUIRE_AUTHORITATIVE_PAYMENT_SOURCE = "1";
+  const server = http.createServer(handler);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    generateSite({ seed: 20261014, count: 1 });
+    const created = await request(server, "/api/checkouts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId: "product-image-batch-studio",
+        variantId: "browser-hd-zip",
+        source: "product-image-preview",
+        leadSessionId: "manual-wechat-flow",
+        checkoutMode: "manual-wechat",
+      }),
+    });
+    assert.equal(created.status, 201);
+    const createdBody = JSON.parse(created.body.toString("utf8"));
+    const checkoutId = createdBody.checkout.id;
+    assert.equal(createdBody.checkout.checkoutMode, "manual-wechat");
+    assert.match(createdBody.checkout.contactReference, /^WX-[-_A-Z0-9]+$/);
+    assert.equal(createdBody.checkout.amount, 6.9);
+    assert.equal(createdBody.checkout.paymentAmount >= 6.81, true);
+    assert.equal(createdBody.checkout.paymentAmount <= 6.89, true);
+    assert.equal(createdBody.checkout.paymentMatchMode, "exact-amount");
+    assert.equal(loadOrders().length, 0);
+
+    const rejectedOrders = await request(server, "/api/admin-mobile/orders");
+    assert.equal(rejectedOrders.status, 401);
+    const badLogin = await request(server, "/api/admin-mobile/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: "wrong-password" }),
+    });
+    assert.equal(badLogin.status, 401);
+    assert.equal(loadOrders().length, 0);
+
+    const login = await request(server, "/api/admin-mobile/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-Proto": "https" },
+      body: JSON.stringify({ password: "phone-only-password" }),
+    });
+    assert.equal(login.status, 200);
+    assert.match(login.headers["set-cookie"][0], /HttpOnly/);
+    assert.match(login.headers["set-cookie"][0], /Secure/);
+    assert.match(login.headers["set-cookie"][0], /SameSite=Strict/);
+    const cookie = login.headers["set-cookie"][0].split(";")[0];
+
+    const orders = await request(server, "/api/admin-mobile/orders", { headers: { Cookie: cookie } });
+    assert.equal(orders.status, 200);
+    const ordersBody = JSON.parse(orders.body.toString("utf8"));
+    assert.equal(ordersBody.summary.pending, 1);
+    assert.equal(ordersBody.orders[0].amount, createdBody.checkout.paymentAmount);
+
+    const confirmed = await request(server, `/api/admin-mobile/orders/${checkoutId}/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: "{}",
+    });
+    assert.equal(confirmed.status, 200);
+    const confirmedBody = JSON.parse(confirmed.body.toString("utf8"));
+    assert.equal(confirmedBody.checkout.status, "paid");
+    assert.equal(confirmedBody.duplicate, false);
+    assert.equal(loadOrders().length, 1);
+    assert.equal(loadOrders()[0].source, "mobile-admin-confirmation");
+    assert.equal(loadOrders()[0].amount, createdBody.checkout.paymentAmount);
+
+    const anonymousStatus = await request(server, `/api/checkouts/${checkoutId}`);
+    assert.equal(anonymousStatus.status, 200);
+    assert.equal(JSON.parse(anonymousStatus.body.toString("utf8")).checkout.status, "paid");
+
+    const replay = await request(server, `/api/admin-mobile/orders/${checkoutId}/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: "{}",
+    });
+    assert.equal(replay.status, 200);
+    assert.equal(JSON.parse(replay.body.toString("utf8")).duplicate, true);
+    assert.equal(loadOrders().length, 1);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    if (previousSecret === undefined) delete process.env.ADMIN_API_SECRET;
+    else process.env.ADMIN_API_SECRET = previousSecret;
+    if (previousMobilePassword === undefined) delete process.env.ADMIN_MOBILE_PASSWORD;
+    else process.env.ADMIN_MOBILE_PASSWORD = previousMobilePassword;
+    if (previousPaymentSource === undefined) delete process.env.REQUIRE_AUTHORITATIVE_PAYMENT_SOURCE;
+    else process.env.REQUIRE_AUTHORITATIVE_PAYMENT_SOURCE = previousPaymentSource;
+    restore();
+  }
+});
+
 test("buyer checkout APIs redact payment internals and contact context", async () => {
   const restore = snapshotData();
   const server = http.createServer(handler);
@@ -7298,6 +7419,107 @@ test("publish agent endpoints reject forged workers when a token is configured",
     assert.equal(JSON.parse(resultAccepted.body.toString("utf8")).task.externalUrl, "https://example.com/ok");
   } finally {
     await new Promise((resolve) => server.close(resolve));
+    restore();
+  }
+});
+
+test("promotion center prepares three product-image packages and gates Xianyu on attributed generations", () => {
+  const restore = snapshotData();
+  try {
+    fs.writeFileSync(
+      path.join(dataDir, "adapters.json"),
+      JSON.stringify({ publicBaseUrl: "https://lifeyoume.icu/image", channels: {}, fulfillment: {}, payments: {} })
+    );
+    const initial = promotionCenterSnapshot({ now: new Date("2026-10-16T08:00:00.000Z") });
+    assert.equal(initial.packages.length, 3);
+    assert.deepEqual(initial.packages.map((item) => item.type), ["time", "result", "pain"]);
+    assert.equal(initial.packages.every((item) => item.trackingUrl.includes("lifeyoume.icu/image/")), true);
+    assert.equal(initial.packages.every((item) => item.disclosure.includes("并非客户订单")), true);
+    assert.equal(initial.xianyu.unlocked, false);
+    assert.doesNotMatch(JSON.stringify(initial.packages), /简历|rewrite|保证销量/);
+
+    for (let index = 0; index < 5; index += 1) {
+      appendEvent({
+        type: "interaction",
+        experimentId: "product-image-batch-studio",
+        channel: "landing-view",
+        trafficSource: "xiaohongshu",
+        campaign: "xhs-w1-time",
+        visitorId: `buyer-${index}`,
+      });
+      appendEvent({
+        type: "interaction",
+        experimentId: "product-image-batch-studio",
+        channel: "image-batch-completed",
+        trafficSource: "xiaohongshu",
+        campaign: "xhs-w1-time",
+        visitorId: `buyer-${index}`,
+      });
+    }
+    appendEvent({
+      type: "interaction",
+      experimentId: "product-image-batch-studio",
+      channel: "image-batch-completed",
+      trafficSource: "xiaohongshu",
+      campaign: "xhs-w1-time",
+      visitorId: "crawler",
+      userAgent: "Googlebot/2.1",
+    });
+
+    const unlocked = promotionCenterSnapshot({ now: new Date("2026-10-16T09:00:00.000Z") });
+    assert.equal(unlocked.funnel.visits, 5);
+    assert.equal(unlocked.funnel.generated, 5);
+    assert.equal(unlocked.funnel.xhsGenerated, 5);
+    assert.equal(unlocked.xianyu.unlocked, true);
+
+    const published = markPromotionPackagePublished("xhs-w1-time", {
+      now: new Date("2026-10-16T10:00:00.000Z"),
+    });
+    assert.equal(published.packages.find((item) => item.id === "xhs-w1-time").status, "published");
+  } finally {
+    restore();
+  }
+});
+
+test("mobile promotion center is private and records owner-confirmed publishing", async () => {
+  const restore = snapshotData();
+  const previousSecret = process.env.ADMIN_API_SECRET;
+  const previousPassword = process.env.ADMIN_MOBILE_PASSWORD;
+  process.env.ADMIN_API_SECRET = "promotion-admin-secret";
+  process.env.ADMIN_MOBILE_PASSWORD = "promotion-phone-password";
+  const server = http.createServer(handler);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const rejected = await request(server, "/api/admin-mobile/promotion-center");
+    assert.equal(rejected.status, 401);
+
+    const login = await request(server, "/api/admin-mobile/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: "promotion-phone-password" }),
+    });
+    assert.equal(login.status, 200);
+    const cookie = login.headers["set-cookie"][0].split(";")[0];
+    const center = await request(server, "/api/admin-mobile/promotion-center", { headers: { Cookie: cookie } });
+    assert.equal(center.status, 200);
+    assert.equal(JSON.parse(center.body.toString("utf8")).promotion.packages.length, 3);
+
+    const marked = await request(server, "/api/admin-mobile/promotion-packages/xhs-w1-result/published", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: "{}",
+    });
+    assert.equal(marked.status, 200);
+    const resultPackage = JSON.parse(marked.body.toString("utf8")).promotion.packages.find(
+      (item) => item.id === "xhs-w1-result"
+    );
+    assert.equal(resultPackage.status, "published");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    if (previousSecret === undefined) delete process.env.ADMIN_API_SECRET;
+    else process.env.ADMIN_API_SECRET = previousSecret;
+    if (previousPassword === undefined) delete process.env.ADMIN_MOBILE_PASSWORD;
+    else process.env.ADMIN_MOBILE_PASSWORD = previousPassword;
     restore();
   }
 });

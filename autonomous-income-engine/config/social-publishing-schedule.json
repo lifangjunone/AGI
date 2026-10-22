@@ -1,0 +1,70 @@
+{
+  "channel": "xiaohongshu",
+  "timezone": "Asia/Shanghai",
+  "dailySlots": [
+    { "id": "morning", "time": "08:00", "content": "实际问题与免费材料清单" },
+    { "id": "noon", "time": "12:00", "content": "真实工具操作与交付演示" },
+    { "id": "evening", "time": "20:00", "content": "具体场景与整理前后对照" }
+  ],
+  "contentPackages": {
+    "morning": [
+      {
+        "id": "consumer-evidence-checklist-01",
+        "productId": "consumer-evidence-pack",
+        "title": "投诉前先把这5类材料整理好",
+        "body": "退款、售后、快递破损这些事，真正费时间的不是截图，而是让别人看懂：谁买了什么、什么时候出问题、沟通过什么、现在要怎么处理。我的做法是先按交易对象、订单付款、问题照片、沟通记录、具体诉求五类整理，再把每张材料编号。这个工具可以先免费导入自己的图片或PDF，补日期和证明内容，预览完整目录、时间线和报告，满意后再付费下载分类ZIP。文件只在本机浏览器处理，不上传。配图为虚构演示，不是真实客户案例；工具不代写事实、不提供法律意见、不保证退款结果。",
+        "assets": [
+          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png",
+          "docs/promotion/consumer-evidence-first-post/02-zip-structure.png"
+        ],
+        "topicQueries": ["证据整理", "消费维权", "售后沟通"],
+        "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
+        "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
+      }
+    ],
+    "noon": [
+      {
+        "id": "consumer-evidence-delivery-01",
+        "productId": "consumer-evidence-pack",
+        "title": "几十张截图最后应该交付成什么",
+        "body": "很多人以为维权材料就是把截图全发过去，但接收方最怕的是看不出顺序和对应关系。我现在把交付物固定成三类：编号原文件、证据目录和事件时间线，再额外生成一份可打印报告。你可以先免费试自己的材料，看到完整预览后再决定是否下载ZIP。这个小工具卖的是节省整理时间和降低遗漏，不是承诺谁一定退款或投诉成功。所有图片和PDF都在浏览器本地处理，不上传；配图是虚构保温杯破损演示，不是真实客户案例。",
+        "assets": [
+          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png",
+          "docs/promotion/consumer-evidence-first-post/02-zip-structure.png"
+        ],
+        "topicQueries": ["证据目录", "截图整理", "消费维权"],
+        "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
+        "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
+      }
+    ],
+    "evening": [
+      {
+        "id": "consumer-evidence-screenshot-chaos-01",
+        "productId": "consumer-evidence-pack",
+        "title": "投诉截图太乱？先变成这3份材料",
+        "body": "遇到退款、售后扯皮时，最费时间的往往不是截图，而是把几十张截图说清楚。我做了一个浏览器里的证据整理工具：一是原文件按时间排序并保留编号，二是自动生成证据目录和事件时间线，三是分类打包原文件并附一份可打印报告。你可以先导入自己的图片或PDF，补充日期和证明内容，完整预览满意后，再决定是否花19.90元下载分类ZIP。原文件只在本机浏览器处理，不上传。它不自动识别聊天、不代写事实、不代办投诉，也不承诺退款结果。配图是虚构保温杯破损演示，不是真实客户案例。",
+        "assets": [
+          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png",
+          "docs/promotion/consumer-evidence-first-post/02-zip-structure.png"
+        ],
+        "topicQueries": ["证据整理", "售后沟通", "截图整理"],
+        "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
+        "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
+      }
+    ]
+  },
+  "desiredPostsPerDay": 3,
+  "runtimeEnabled": true,
+  "status": "scheduler-enabled-publisher-not-connected",
+  "rules": {
+    "deduplicationKey": "channel:beijing-date:slot",
+    "doNotRepeatSamePost": true,
+    "selectNativeTopics": true,
+    "verifyTopicIdsBeforeSubmit": true,
+    "discloseMarketingAndDemo": true,
+    "publishedRequiresPlatformEvidence": true,
+    "verifyBeforeRetryToAvoidDuplicates": true,
+    "doNotClaimGuaranteedIncome": true
+  },
+  "note": "Scheduler runs inside the commerce loop. Actual publication requires SOCIAL_PUBLISHER_URL and SOCIAL_PUBLISHER_TOKEN for a supported publisher with lookup, native topic selection and verified platform receipts. Missing publisher produces blocked tasks, never published."
+}

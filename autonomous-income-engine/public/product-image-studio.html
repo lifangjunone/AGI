@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="批量统一商品图尺寸、主体占比、纯色背景和品牌角标；先看本地预览，付款到账后自动解锁高清 ZIP。">
+  <meta name="description" content="一批原图生成淘宝、拼多多、小红书和抖音上架图；先看本地预览，扫码付款后由店主手机确认并自动开放高清 ZIP。">
   <title>商品图批量成品机｜拖入原图，直接下载上架图包</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="/wechat-pay.jpg" as="image">
   <link rel="stylesheet" href="/styles.css">
   <script src="/fflate.js"></script>
@@ -13,10 +14,10 @@
   <main class="page image-studio">
     <section class="hero card image-studio-hero">
       <p class="eyebrow">商品图批量处理工具</p>
-      <h1>批量整理商品图，预览满意再下载</h1>
-      <p class="lead">上传原图后自动统一尺寸、主体占比、留白和背景，确认整批效果后导出 ZIP。所有图片只在当前浏览器处理，不会上传。</p>
+      <h1>一批原图，生成四个平台上架图</h1>
+      <p class="lead">同时生成淘宝、拼多多、小红书和抖音规格，自动统一主体、留白和文件名，按平台分目录打包。所有图片只在当前浏览器处理，不会上传。</p>
       <div class="hero-proof">
-        <span>原图不上传</span><span>最多 30 张</span><span>先看完整预览</span><span>高清 ZIP</span>
+        <span>1 张交付 4 张</span><span>最多 120 张成品</span><span>先看完整预览</span><span>原图不上传</span>
       </div>
     </section>
 
@@ -48,6 +49,13 @@
       </div>
 
       <div class="studio-controls">
+        <fieldset class="delivery-mode">
+          <legend>交付方案</legend>
+          <label><input type="radio" name="delivery" value="marketplace-kit" checked> 四平台上架套装 <small>1 张原图交付 4 张成品</small></label>
+          <label><input type="radio" name="delivery" value="single"> 单一规格图包 <small>按下方选择交付</small></label>
+          <p data-delivery-estimate>将按淘宝、拼多多、小红书、抖音分目录打包。</p>
+        </fieldset>
+
         <fieldset>
           <legend>成品尺寸</legend>
           <label><input type="radio" name="size" value="square" checked> 1:1 主图 <small>1200 × 1200</small></label>
@@ -114,7 +122,7 @@
       </div>
 
       <div class="studio-actions">
-        <button class="button" type="button" data-process disabled>生成整批效果预览</button>
+        <button class="button" type="button" data-process disabled>生成四平台整批预览</button>
         <button class="button ghost" type="button" data-clear disabled>清空</button>
         <span role="status" aria-live="polite" data-status>图片不会上传到服务器。</span>
       </div>
@@ -124,11 +132,12 @@
       <section class="studio-result" data-result hidden>
         <div>
           <p class="eyebrow">处理完成</p>
-          <h2><span data-result-count>0</span> 张上架图预览已生成</h2>
+          <h2><span data-result-count>0</span> 张可上架成品预览已生成</h2>
           <p data-result-summary></p>
+          <p class="purchase-reason" data-purchase-reason></p>
         </div>
         <div class="result-actions">
-          <button class="button" type="button" data-unlock>¥6.90 解锁高清 ZIP</button>
+          <button class="button" type="button" data-unlock>¥6.90 微信购买高清 ZIP</button>
           <button class="button" type="button" data-download hidden>下载已购高清 ZIP</button>
           <button class="button ghost" type="button" data-share-card hidden>分享处理效果</button>
         </div>
@@ -137,21 +146,29 @@
       <div class="result-preview-grid" data-preview-grid hidden></div>
 
       <section class="support checkout-panel" data-support hidden>
-        <p class="eyebrow">确认效果后再付款 · 到账自动解锁</p>
-        <h2>微信扫码支付 <strong data-payment-amount>本单金额</strong></h2>
-        <p data-payment-instruction>点击上方解锁按钮后，程序会生成本单唯一金额。</p>
-        <img src="/wechat-pay.jpg" alt="微信收款二维码">
-        <p class="checkout-live-status" role="status" aria-live="polite" data-payment-status>尚未创建订单。</p>
+        <p class="eyebrow">扫码付款 · 店主手机确认后自动交付</p>
+        <h2>请精确支付 <strong data-payment-amount>本单金额</strong></h2>
+        <div class="direct-payment-card">
+          <img src="/wechat-pay.jpg" alt="微信收款二维码">
+          <div>
+            <p data-payment-instruction>本单会生成专属金额，请不要修改金额。</p>
+            <strong class="payment-wait-title">付款后留在本页，无需加微信或发送消息</strong>
+            <p>店主核对到账后会在手机上确认，本页将自动开放高清 ZIP 下载。</p>
+            <p class="checkout-live-status" role="status" aria-live="polite" data-payment-status>尚未创建订单。</p>
+          </div>
+        </div>
       </section>
     </section>
 
     <section class="card value-proof">
-      <p class="eyebrow">程序替你完成的工作</p>
+      <p class="eyebrow">你付费下载的是什么</p>
+      <h2>一批原图，直接拿到四个平台的上架图包</h2>
+      <p class="value-intro">同一张原图自动生成淘宝、拼多多、小红书和抖音四种规格，按平台分文件夹并统一命名。先用自己的原图检查全部结果，确认能用后才支付 ¥6.90 下载无预览标识的高清 ZIP。</p>
       <div class="benefit-grid">
-        <article><strong>01</strong><h3>统一平台规格</h3><p>把横图、竖图和不同分辨率原图统一为同一套成品尺寸。</p></article>
-        <article><strong>02</strong><h3>自动换纯色背景</h3><p>从图片四角识别白、灰或棚拍纯色底并替换；复杂背景会保留原图。</p></article>
-        <article><strong>03</strong><h3>批量品牌角标</h3><p>一次填写品牌名，程序自动应用到全部成品，不必逐张操作。</p></article>
-        <article><strong>04</strong><h3>到账自动交付 ZIP</h3><p>买家先看整批效果；权威到账匹配后浏览器自动开放高清 ZIP，不需要人工确认或返图。</p></article>
+        <article><strong>01</strong><h3>先验货，再决定</h3><p>用你自己的图片生成整批预览，不靠示例图或宣传承诺判断效果。</p></article>
+        <article><strong>02</strong><h3>一图四种规格</h3><p>每张原图同时生成淘宝、拼多多、小红书和抖音版本，最多一次 30 张原图。</p></article>
+        <article><strong>03</strong><h3>按平台直接交付</h3><p>高清 ZIP 已按平台分目录并完成尺寸、命名和格式整理，不必再手工分类。</p></article>
+        <article><strong>04</strong><h3>不满意就不付</h3><p>预览免费生成；只有结果确实能用时，才支付整批下载费用。</p></article>
       </div>
     </section>
 
@@ -177,8 +194,34 @@
       xhs: [1242, 1660, 'xhs-3x4'],
       douyin: [1080, 1440, 'douyin-3x4']
     };
+    const marketplaceKit = [
+      {key: 'taobao', folder: '淘宝-800x800', label: '淘宝', size: 'taobao', fit: 'contain', matte: 'replace', normalize: true, background: '#ffffff', padding: 7},
+      {key: 'pdd', folder: '拼多多-800x800', label: '拼多多', size: 'pdd', fit: 'contain', matte: 'replace', normalize: true, background: '#ffffff', padding: 5},
+      {key: 'xhs', folder: '小红书-1242x1660', label: '小红书', size: 'xhs', fit: 'contain', matte: 'keep', normalize: true, background: '#f7f3ed', padding: 4},
+      {key: 'douyin', folder: '抖音-1080x1440', label: '抖音', size: 'douyin', fit: 'cover', matte: 'keep', normalize: false, background: '#ffffff', padding: 0}
+    ];
     const extensions = {'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/png': 'png'};
-    const state = { files: [], zipBlob: null, zipName: '', checkoutId: '', previewUrls: [], paid: false, pollTimer: null, shareBlob: null, firstRenderedBlob: null };
+    const query = new URLSearchParams(location.search);
+    const attribution = {
+      trafficSource: String(query.get('source') || 'direct').slice(0, 80),
+      campaign: String(query.get('campaign') || '').slice(0, 120),
+      content: String(query.get('content') || '').slice(0, 120)
+    };
+    let visitorId = '';
+    try {
+      visitorId = localStorage.getItem('product-image-batch-studio:visitor') || '';
+      if (!visitorId) {
+        visitorId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random();
+        localStorage.setItem('product-image-batch-studio:visitor', visitorId);
+      }
+      if (attribution.trafficSource !== 'direct' || attribution.campaign) {
+        localStorage.setItem('product-image-batch-studio:attribution', JSON.stringify(attribution));
+      } else {
+        const saved = JSON.parse(localStorage.getItem('product-image-batch-studio:attribution') || 'null');
+        if (saved) Object.assign(attribution, saved);
+      }
+    } catch {}
+    const state = { files: [], zipBlob: null, zipName: '', checkoutId: '', previewUrls: [], paid: false, pollTimer: null, shareBlob: null, firstOriginalFile: null, firstRenderedBlob: null };
     const $ = (selector) => document.querySelector(selector);
     const input = $('[data-file-input]');
     const dropzone = $('[data-dropzone]');
@@ -195,14 +238,18 @@
     const paymentStatus = $('[data-payment-status]');
     const apiBasePromise = (async () => {
       try {
-        const servicePath = location.pathname.includes('/presets/') ? '../service.json' : './service.json';
+        const servicePath = location.pathname.includes('/products/')
+          ? '../../service.json'
+          : location.pathname.includes('/presets/') ? '../service.json' : './service.json';
         const response = await fetch(servicePath, {cache: 'no-store'});
         const payload = await response.json();
         if (response.ok && /^https:\/\//i.test(payload.url || '')) return String(payload.url).replace(/\/+$/, '');
       } catch {}
-      const appUrl = location.pathname.includes('/presets/')
-        ? new URL('../', location.href)
-        : new URL('./', location.href);
+      const appUrl = location.pathname.includes('/products/')
+        ? new URL('../../', location.href)
+        : location.pathname.includes('/presets/')
+          ? new URL('../', location.href)
+          : new URL('./', location.href);
       return appUrl.href.replace(/\/+$/, '');
     })();
 
@@ -210,15 +257,21 @@
       return (await apiBasePromise) + path;
     }
 
-    async function trackEvent(channel) {
+    async function trackEvent(channel, extra = {}) {
       const eventsUrl = await apiUrl('/api/events');
       navigator.sendBeacon?.(eventsUrl, new Blob([JSON.stringify({
         type: 'interaction',
         experimentId: 'product-image-batch-studio',
         variantId: document.body.dataset.defaultPreset || 'direct',
-        channel
+        channel,
+        visitorId,
+        trafficSource: attribution.trafficSource,
+        campaign: attribution.campaign,
+        content: attribution.content,
+        ...extra
       })], {type: 'application/json'}));
     }
+    trackEvent('landing-view');
 
     async function refreshCommerceReadiness() {
       try {
@@ -226,19 +279,17 @@
         const payload = await response.json();
         if (response.ok && payload.checkoutEnabled) {
           unlockButton.disabled = false;
-          unlockButton.textContent = '¥6.90 解锁高清 ZIP';
+          unlockButton.textContent = '¥6.90 微信购买高清 ZIP';
           unlockButton.title = '';
           return true;
         }
-        unlockButton.disabled = true;
-        unlockButton.textContent = '付款通道未就绪';
-        unlockButton.title = payload.message || '暂不创建无法自动核验的付款';
-        status.textContent = '效果预览可正常使用；可靠到账确认源尚未就绪，程序暂不收款。';
+        unlockButton.disabled = false;
+        unlockButton.textContent = '¥6.90 微信购买高清 ZIP';
+        unlockButton.title = '';
         return false;
       } catch {
-        unlockButton.disabled = true;
-        unlockButton.textContent = '付款服务暂不可用';
-        status.textContent = '效果预览可正常使用；付款服务暂时无法连接。';
+        unlockButton.disabled = false;
+        unlockButton.textContent = '¥6.90 微信购买高清 ZIP';
         return false;
       }
     }
@@ -265,6 +316,7 @@
       state.previewUrls.forEach((url) => URL.revokeObjectURL(url));
       state.previewUrls = [];
       state.shareBlob = null;
+      state.firstOriginalFile = accepted[0] || null;
       state.firstRenderedBlob = null;
       previewGrid.replaceChildren();
       previewGrid.hidden = true;
@@ -277,6 +329,7 @@
       processButton.disabled = accepted.length === 0;
       clearButton.disabled = accepted.length === 0;
       $('[data-file-count]').textContent = accepted.length ? accepted.length + ' 张待处理' : '还未选择图片';
+      updateDeliveryEstimate();
       queue.hidden = accepted.length === 0;
       queue.replaceChildren(...accepted.map((file, index) => {
         const item = document.createElement('article');
@@ -297,6 +350,7 @@
         return item;
       }));
       status.textContent = rejected.length ? '已忽略：' + rejected.join('；') : (accepted.length ? '已读取 ' + accepted.length + ' 张图片，等待生成。' : '图片不会上传到服务器。');
+      if (accepted.length) trackEvent('upload-started', {imageCount: accepted.length});
     }
 
     input.addEventListener('change', () => setFiles(input.files));
@@ -325,6 +379,26 @@
     $('[data-quality]').addEventListener('input', (event) => $('[data-quality-output]').value = event.target.value + '%');
     $('[data-tolerance]').addEventListener('input', (event) => $('[data-tolerance-output]').value = event.target.value);
 
+    function deliveryMode() {
+      return document.querySelector('input[name="delivery"]:checked').value;
+    }
+
+    function updateDeliveryEstimate() {
+      const kit = deliveryMode() === 'marketplace-kit';
+      const outputCount = state.files.length * (kit ? marketplaceKit.length : 1);
+      $('[data-delivery-estimate]').textContent = state.files.length
+        ? (kit
+          ? state.files.length + ' 张原图将交付 ' + outputCount + ' 张成品，并按 4 个平台分目录。'
+          : state.files.length + ' 张原图将交付 ' + outputCount + ' 张单一规格成品。')
+        : (kit ? '将按淘宝、拼多多、小红书、抖音分目录打包。' : '按下方选择的单一规格打包。');
+      processButton.textContent = kit ? '生成四平台整批预览' : '生成整批效果预览';
+    }
+    document.querySelectorAll('input[name="delivery"]').forEach((input) => input.addEventListener('change', updateDeliveryEstimate));
+    document.querySelectorAll('input[name="size"]').forEach((input) => input.addEventListener('change', () => {
+      document.querySelector('input[name="delivery"][value="single"]').checked = true;
+      updateDeliveryEstimate();
+    }));
+
     const presets = {
       'white-main': {size: 'square', fit: 'contain', matte: 'replace', normalize: true, background: '#ffffff', padding: 8, format: 'image/jpeg', quality: 92},
       'portrait-product': {size: 'portrait', fit: 'contain', matte: 'keep', normalize: true, background: '#ffffff', padding: 6, format: 'image/jpeg', quality: 92},
@@ -338,6 +412,7 @@
       button.addEventListener('click', () => {
         const preset = presets[button.dataset.preset];
         if (!preset) return;
+        document.querySelector('input[name="delivery"][value="single"]').checked = true;
         document.querySelector('input[name="size"][value="' + preset.size + '"]').checked = true;
         document.querySelector('input[name="fit"][value="' + preset.fit + '"]').checked = true;
         document.querySelector('input[name="matte"][value="' + preset.matte + '"]').checked = true;
@@ -350,6 +425,7 @@
         $('[data-quality]').value = preset.quality;
         $('[data-quality-output]').value = preset.quality + '%';
         document.querySelectorAll('[data-preset]').forEach((item) => item.classList.toggle('active', item === button));
+        updateDeliveryEstimate();
         status.textContent = button.textContent.trim() + '预设已应用，可以继续调整。';
       });
     });
@@ -416,7 +492,8 @@
     }
 
     async function createShareCard(summary) {
-      if (!state.firstRenderedBlob) return null;
+      if (!state.firstRenderedBlob || !state.firstOriginalFile) return null;
+      const original = await decodeImage(state.firstOriginalFile);
       const image = await decodeImage(state.firstRenderedBlob);
       try {
         const canvas = document.createElement('canvas');
@@ -431,32 +508,42 @@
         context.fillStyle = '#397050';
         context.font = '700 28px Arial, sans-serif';
         context.fillText(summary.slice(0, 54), 64, 150);
-        const frame = {x: 64, y: 200, width: 952, height: 930};
+        const frame = {x: 64, y: 200, width: 952, height: 850};
         context.fillStyle = '#fff';
         context.beginPath();
         context.roundRect(frame.x, frame.y, frame.width, frame.height, 28);
         context.fill();
-        const scale = Math.min((frame.width - 64) / image.width, (frame.height - 64) / image.height);
-        const width = image.width * scale;
-        const height = image.height * scale;
-        context.drawImage(image, frame.x + (frame.width - width) / 2, frame.y + (frame.height - height) / 2, width, height);
-        context.fillStyle = 'rgba(14,45,28,.72)';
-        context.font = '800 44px Arial, sans-serif';
+        const halfWidth = (frame.width - 84) / 2;
+        const drawInto = (source, x) => {
+          const scale = Math.min(halfWidth / source.width, (frame.height - 120) / source.height);
+          const width = source.width * scale;
+          const height = source.height * scale;
+          context.drawImage(source, x + (halfWidth - width) / 2, frame.y + 70 + (frame.height - 120 - height) / 2, width, height);
+        };
+        drawInto(original, frame.x + 28);
+        drawInto(image, frame.x + 56 + halfWidth);
+        context.fillStyle = '#0e2d1c';
+        context.font = '800 28px Arial, sans-serif';
         context.textAlign = 'center';
-        context.fillText('效果预览', canvas.width / 2, frame.y + frame.height / 2);
+        context.fillText('处理前', frame.x + 28 + halfWidth / 2, frame.y + 45);
+        context.fillText('处理后', frame.x + 56 + halfWidth + halfWidth / 2, frame.y + 45);
         context.textAlign = 'left';
         context.fillStyle = '#0e2d1c';
         context.font = '800 38px Arial, sans-serif';
-        context.fillText('商品图批量成品机', 64, 1210);
+        context.fillText('免费用自己的图片试一次', 64, 1125);
         context.fillStyle = '#397050';
         context.font = '600 25px Arial, sans-serif';
-        context.fillText('图片不上传 · 自动统一规格、背景与主体占比', 64, 1255);
-        context.fillText('打开分享链接，自己拖图就能看处理效果', 64, 1295);
+        context.fillText('图片不上传 · 一次生成淘宝 / 拼多多 / 小红书 / 抖音规格', 64, 1170);
+        context.fillText('先看完整预览，满意再下载四平台分类 ZIP', 64, 1210);
+        context.fillStyle = '#7b897d';
+        context.font = '600 22px Arial, sans-serif';
+        context.fillText('由当前使用者主动分享，图片不会用于公开推广', 64, 1270);
         state.shareBlob = await canvasBlob(canvas, 'image/png', 1);
         shareButton.hidden = false;
         await trackEvent('share-card-created');
         return state.shareBlob;
       } finally {
+        if (typeof original.close === 'function') original.close();
         if (typeof image.close === 'function') image.close();
       }
     }
@@ -647,11 +734,11 @@
       downloadButton.hidden = true;
       unlockButton.hidden = false;
       shareButton.hidden = true;
-      const sizeKey = document.querySelector('input[name="size"]:checked').value;
-      const [width, height, ratio] = sizes[sizeKey];
       const type = $('[data-format]').value;
-      const options = {
-        width, height, ratio, type,
+      const sizeKey = document.querySelector('input[name="size"]:checked').value;
+      const singleSize = sizes[sizeKey];
+      const baseOptions = {
+        type,
         fit: document.querySelector('input[name="fit"]:checked').value,
         matte: document.querySelector('input[name="matte"]:checked').value,
         normalize: $('[data-normalize-subject]').checked,
@@ -661,35 +748,68 @@
         quality: Number($('[data-quality]').value) / 100,
         brand: String($('[data-brand]').value || '').trim().slice(0, 24)
       };
+      const outputs = deliveryMode() === 'marketplace-kit'
+        ? marketplaceKit.map((platform) => {
+            const [width, height, ratio] = sizes[platform.size];
+            return {
+              ...baseOptions,
+              ...platform,
+              width,
+              height,
+              ratio
+            };
+          })
+        : [{
+            ...baseOptions,
+            key: sizeKey,
+            folder: '',
+            label: singleSize[2],
+            width: singleSize[0],
+            height: singleSize[1],
+            ratio: singleSize[2]
+          }];
       const prefix = cleanName($('[data-prefix]').value);
       const zipFiles = {};
       let matteReplacedCount = 0;
       let subjectNormalizedCount = 0;
+      let completedCount = 0;
+      const totalOutputCount = state.files.length * outputs.length;
       try {
         for (let index = 0; index < state.files.length; index += 1) {
-          status.textContent = '正在处理第 ' + (index + 1) + ' / ' + state.files.length + ' 张…';
-          const rendered = await renderFile(state.files[index], options);
-          if (!state.firstRenderedBlob) state.firstRenderedBlob = rendered.blob;
-          if (rendered.matteReplaced) matteReplacedCount += 1;
-          if (rendered.subjectNormalized) subjectNormalizedCount += 1;
-          const bytes = new Uint8Array(await rendered.blob.arrayBuffer());
-          zipFiles[prefix + '-' + String(index + 1).padStart(2, '0') + '-' + ratio + '.' + extensions[type]] = bytes;
-          await previewUrl(rendered.blob, '第 ' + (index + 1) + ' 张');
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          for (const output of outputs) {
+            completedCount += 1;
+            status.textContent = '正在生成第 ' + completedCount + ' / ' + totalOutputCount + ' 张 · ' + output.label + '…';
+            const rendered = await renderFile(state.files[index], output);
+            if (!state.firstRenderedBlob) state.firstRenderedBlob = rendered.blob;
+            if (rendered.matteReplaced) matteReplacedCount += 1;
+            if (rendered.subjectNormalized) subjectNormalizedCount += 1;
+            const bytes = new Uint8Array(await rendered.blob.arrayBuffer());
+            const filename = prefix + '-' + String(index + 1).padStart(2, '0') + '-' + output.ratio + '.' + extensions[type];
+            zipFiles[(output.folder ? output.folder + '/' : '') + filename] = bytes;
+            await previewUrl(rendered.blob, output.label + ' · 原图 ' + String(index + 1).padStart(2, '0'));
+            await new Promise((resolve) => setTimeout(resolve, 0));
+          }
         }
         status.textContent = '正在打包 ZIP…';
         const zipped = window.fflate.zipSync(zipFiles, {level: 6});
         state.zipBlob = new Blob([zipped], {type: 'application/zip'});
-        state.zipName = prefix + '-' + ratio + '-' + state.files.length + 'pcs.zip';
-        $('[data-result-count]').textContent = state.files.length;
-        const matteSummary = options.matte === 'replace'
-          ? ' · 成功换底 ' + matteReplacedCount + '/' + state.files.length
+        const kitMode = deliveryMode() === 'marketplace-kit';
+        state.zipName = prefix + '-' + (kitMode ? '4-platforms-' : outputs[0].ratio + '-') + totalOutputCount + 'pcs.zip';
+        $('[data-result-count]').textContent = totalOutputCount;
+        const matteSummary = outputs.some((output) => output.matte === 'replace')
+          ? ' · 成功换底 ' + matteReplacedCount + '/' + totalOutputCount
           : '';
-        const normalizeSummary = options.normalize
-          ? ' · 主体统一 ' + subjectNormalizedCount + '/' + state.files.length
+        const normalizeSummary = outputs.some((output) => output.normalize)
+          ? ' · 主体统一 ' + subjectNormalizedCount + '/' + totalOutputCount
           : '';
-        const resultSummary = width + ' × ' + height + ' · ' + extensions[type].toUpperCase() + ' · ' + fileLabel(state.zipBlob.size) + matteSummary + normalizeSummary;
+        const resultSummary = (kitMode ? '淘宝 / 拼多多 / 小红书 / 抖音 · ' : outputs[0].width + ' × ' + outputs[0].height + ' · ') +
+          extensions[type].toUpperCase() + ' · ' + fileLabel(state.zipBlob.size) + matteSummary + normalizeSummary;
         $('[data-result-summary]').textContent = resultSummary;
+        const unitPrice = (6.9 / totalOutputCount).toFixed(2);
+        $('[data-purchase-reason]').textContent =
+          '这次下载包含 ' + totalOutputCount + ' 张已统一规格并完成命名的高清图' +
+          (kitMode ? '，ZIP 内已按淘宝、拼多多、小红书、抖音分为 4 个目录' : '') +
+          '。整批 ¥6.90，约 ¥' + unitPrice + '/张成品。请先检查全部预览，确认能直接使用再付款。';
         result.hidden = false;
         previewGrid.hidden = false;
         status.textContent = '预览已生成，没有上传任何原图。确认效果后可解锁高清 ZIP。';
@@ -721,8 +841,7 @@
       downloadButton.hidden = false;
       unlockButton.hidden = true;
       support.hidden = false;
-      $('[data-payment-amount]').textContent = '已到账';
-      paymentStatus.textContent = '真实到账已匹配，高清 ZIP 已自动解锁。请在关闭页面前下载。';
+      paymentStatus.textContent = '解锁成功，高清 ZIP 已开放。请在关闭页面前下载。';
       if (state.pollTimer) clearInterval(state.pollTimer);
     }
 
@@ -738,13 +857,12 @@
         }
         const amount = payload.checkout.paymentAmount || payload.checkout.amount;
         $('[data-payment-amount]').textContent = '¥' + amount;
-        $('[data-payment-instruction]').textContent = payload.checkout.paymentInstruction || '请按本单金额精确支付；到账后自动解锁。';
-        paymentStatus.textContent = payload.checkout.status === 'underpaid'
-          ? '已收到部分款项，还差 ¥' + payload.checkout.shortAmount + '。补足后自动解锁。'
-          : '正在等待独立到账通知，页面会自动检查。买家自报付款不会解锁。';
+        $('[data-payment-instruction]').textContent =
+          '请精确支付 ¥' + amount + '，不要改成 ¥6.90；本金额在 30 分钟内对应当前订单。';
+        paymentStatus.textContent = '等待店主核对到账并在手机上确认，确认后本页自动解锁。';
         return false;
       } catch {
-        paymentStatus.textContent = '暂时无法查询到账状态，程序会继续重试。';
+        paymentStatus.textContent = '暂时无法查询订单，请检查网络后重试。';
         return false;
       }
     }
@@ -753,15 +871,19 @@
       try { state.checkoutId = localStorage.getItem(checkoutStorageKey()) || ''; } catch {}
       if (!state.checkoutId) return;
       const paid = await refreshPaymentStatus();
-      if (!paid) state.checkoutId = '';
+      if (!paid) {
+        support.hidden = false;
+        unlockButton.hidden = true;
+        state.pollTimer = setInterval(refreshPaymentStatus, 3000);
+      }
     }
 
     unlockButton.addEventListener('click', async () => {
       if (!state.zipBlob) return;
       unlockButton.disabled = true;
-      unlockButton.textContent = '正在生成本单金额…';
+      unlockButton.textContent = '正在生成本单专属金额…';
       support.hidden = false;
-      paymentStatus.textContent = '正在创建安全付款记录。';
+      paymentStatus.textContent = '正在创建待确认订单。';
       try {
         const leadSessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random();
         const response = await fetch(await apiUrl('/api/checkouts'), {
@@ -772,23 +894,30 @@
             variantId: 'browser-hd-zip',
             source: 'product-image-preview',
             leadSessionId,
-            amount: .01
+            checkoutMode: 'manual-wechat',
+            visitorId,
+            trafficSource: attribution.trafficSource,
+            campaign: attribution.campaign
           })
         });
         const payload = await response.json();
         if (!response.ok || !payload.ok || !payload.checkout?.id) throw new Error(payload.error || '订单创建失败');
         rememberCheckout(payload.checkout.id);
-        $('[data-payment-amount]').textContent = '¥' + (payload.checkout.paymentAmount || payload.checkout.amount);
-        $('[data-payment-instruction]').textContent = payload.checkout.paymentInstruction;
-        paymentStatus.textContent = '等待真实到账；匹配成功后本页自动开放高清 ZIP。';
-        state.pollTimer = setInterval(refreshPaymentStatus, 4000);
+        const paymentAmount = payload.checkout.paymentAmount || payload.checkout.amount;
+        $('[data-payment-amount]').textContent = '¥' + paymentAmount;
+        $('[data-payment-instruction]').textContent =
+          '请精确支付 ¥' + paymentAmount + '，不要修改金额；本金额在 30 分钟内对应当前订单。';
+        paymentStatus.textContent = '付款后无需操作。等待店主手机确认，本页将自动开放下载。';
+        unlockButton.hidden = true;
+        state.pollTimer = setInterval(refreshPaymentStatus, 3000);
+        support.scrollIntoView({behavior: 'smooth', block: 'center'});
       } catch (error) {
         support.hidden = true;
         paymentStatus.textContent = error.message;
         status.textContent = '付款入口暂不可用：' + error.message + '。预览仍保留，可以稍后重试。';
       } finally {
         unlockButton.disabled = false;
-        unlockButton.textContent = '¥6.90 解锁高清 ZIP';
+        unlockButton.textContent = '¥6.90 微信购买高清 ZIP';
       }
     });
 
@@ -800,6 +929,7 @@
       link.download = state.zipName;
       link.click();
       setTimeout(() => URL.revokeObjectURL(link.href), 1500);
+      trackEvent('zip-downloaded');
     });
 
     shareButton.addEventListener('click', async () => {
@@ -836,7 +966,7 @@
       setFiles([]);
     });
     refreshCommerceReadiness();
-    if (new URLSearchParams(location.search).get('source') === 'share-card') trackEvent('share-card-referral');
+    if (query.get('source') === 'share-card') trackEvent('share-card-referral');
   })();
   </script>
 </body>

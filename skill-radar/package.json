@@ -1,0 +1,16 @@
+{
+  "name": "skill-radar",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A daily, evidence-backed directory of popular AI agent skills.",
+  "scripts": {
+    "collect": "node scripts/collect-skills.mjs",
+    "serve": "node scripts/serve.mjs",
+    "test": "node --test test/*.test.mjs",
+    "deploy": "bash deploy/push-static.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

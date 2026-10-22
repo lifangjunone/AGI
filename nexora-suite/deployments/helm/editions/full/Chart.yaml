@@ -1,0 +1,21 @@
+apiVersion: v2
+name: nexora-full-edition
+description: Nexora Core, MaaS, Studio, and Control
+type: application
+version: 1.0.0
+dependencies:
+  - name: nexora-infrastructure
+    version: 1.0.0
+    repository: file://../../infrastructure
+  - name: nexora-core
+    version: 1.0.0
+    repository: file://../../../../nexora-core/deploy/helm
+  - name: nexora-studio
+    version: 1.0.0
+    repository: file://../../../../nexora-studio/deploy/helm
+  - name: nexora-control
+    version: 1.0.0
+    repository: file://../../../../nexora-control/deploy/helm
+  - name: nexora-maas
+    version: 1.0.0
+    repository: file://../../../../nexora-maas/deploy/helm

@@ -1,0 +1,131 @@
+{
+  "snapshots": [
+    {
+      "date": "2026-10-21",
+      "collectedAt": "2026-10-21T14:11:40.948Z",
+      "total": 180,
+      "leaders": [
+        {
+          "id": "vercel-labs/skills/find-skills",
+          "installs": 3969699,
+          "weeklyLatest": 121189,
+          "score": 96
+        },
+        {
+          "id": "vercel-labs/agent-browser/agent-browser",
+          "installs": 1200049,
+          "weeklyLatest": 75456,
+          "score": 96
+        },
+        {
+          "id": "anthropics/skills/frontend-design",
+          "installs": 1014184,
+          "weeklyLatest": 27828,
+          "score": 96
+        },
+        {
+          "id": "vercel-labs/agent-skills/vercel-react-best-practices",
+          "installs": 824951,
+          "weeklyLatest": 25064,
+          "score": 96
+        },
+        {
+          "id": "vercel-labs/agent-skills/web-design-guidelines",
+          "installs": 766358,
+          "weeklyLatest": 30623,
+          "score": 96
+        },
+        {
+          "id": "remotion-dev/skills/remotion-best-practices",
+          "installs": 655832,
+          "weeklyLatest": 37218,
+          "score": 96
+        },
+        {
+          "id": "microsoft/azure-skills/microsoft-foundry",
+          "installs": 572528,
+          "weeklyLatest": 9841,
+          "score": 96
+        },
+        {
+          "id": "microsoft/azure-skills/azure-diagnostics",
+          "installs": 563981,
+          "weeklyLatest": 9459,
+          "score": 95.9
+        },
+        {
+          "id": "supabase/agent-skills/supabase-postgres-best-practices",
+          "installs": 454145,
+          "weeklyLatest": 9704,
+          "score": 95.9
+        },
+        {
+          "id": "microsoft/azure-skills/azure-prepare",
+          "installs": 563148,
+          "weeklyLatest": 9157,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-ai",
+          "installs": 562960,
+          "weeklyLatest": 9206,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-deploy",
+          "installs": 562740,
+          "weeklyLatest": 9137,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-storage",
+          "installs": 561587,
+          "weeklyLatest": 9093,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-compliance",
+          "installs": 561191,
+          "weeklyLatest": 9132,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/appinsights-instrumentation",
+          "installs": 561018,
+          "weeklyLatest": 9134,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-kusto",
+          "installs": 560626,
+          "weeklyLatest": 9137,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-quotas",
+          "installs": 465231,
+          "weeklyLatest": 9145,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-upgrade",
+          "installs": 458141,
+          "weeklyLatest": 9128,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-enterprise-infra-planner",
+          "installs": 435003,
+          "weeklyLatest": 9106,
+          "score": 95.8
+        },
+        {
+          "id": "microsoft/azure-skills/azure-validate",
+          "installs": 562105,
+          "weeklyLatest": 9078,
+          "score": 95.7
+        }
+      ]
+    }
+  ]
+}

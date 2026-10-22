@@ -1,0 +1,12 @@
+nexora-infrastructure:
+  enabled: true
+nexora-core:
+  config:
+    products: studio
+    studioPublicURL: https://studio.nexora.example
+    controlPublicURL: ""
+    maasPublicURL: ""
+nexora-studio:
+  config:
+    coreURL: http://nexora-core-api:8080
+    controlURL: ""

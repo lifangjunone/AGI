@@ -1,0 +1,11 @@
+[Unit]
+Description=Update Skill Radar every morning
+
+[Timer]
+OnCalendar=*-*-* 08:15:00 Asia/Shanghai
+Persistent=true
+RandomizedDelaySec=300
+Unit=skill-radar-update.service
+
+[Install]
+WantedBy=timers.target

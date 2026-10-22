@@ -1,0 +1,63 @@
+name: Nexora CI
+on:
+  push:
+  pull_request:
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        product: [nexora-core, nexora-studio, nexora-control, nexora-maas]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.23" }
+      - run: go test ./...
+        working-directory: ${{ matrix.product }}/api
+      - run: go vet ./...
+        working-directory: ${{ matrix.product }}/api
+  web:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        product: [nexora-core, nexora-studio, nexora-control, nexora-maas]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: "${{ matrix.product }}/web/package-lock.json" }
+      - run: npm ci
+        working-directory: ${{ matrix.product }}/web
+      - run: npm run lint && npm run build
+        working-directory: ${{ matrix.product }}/web
+  images:
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    strategy:
+      matrix:
+        product: [nexora-core, nexora-studio, nexora-control, nexora-maas]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.product }}
+          push: false
+          tags: "nexora/${{ matrix.product }}:${{ github.sha }}"
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.product }}/web
+          push: false
+          tags: "nexora/${{ matrix.product }}-web:${{ github.sha }}"
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose -f deployments/docker-compose.yml config --quiet
+      - name: Lint and render Helm editions
+        uses: azure/setup-helm@v4
+      - run: |
+          for edition in studio control maas full; do
+            helm dependency update "deployments/helm/editions/$edition"
+            helm lint "deployments/helm/editions/$edition"
+            helm template nexora "deployments/helm/editions/$edition" > "/tmp/nexora-$edition.yaml"
+          done

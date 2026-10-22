@@ -2,6 +2,7 @@ const http = require("node:http");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const webPush = require("web-push");
 const {
   DIST_DIR,
   appendEvent,
@@ -13,6 +14,9 @@ const {
   checkAdapterHealth,
   configureAdaptersFromEnv,
   createCheckout,
+  confirmManualCheckoutDirect,
+  loadAdminPushSubscriptions,
+  saveAdminPushSubscriptions,
   processLeadToolResult,
   processSampleLead,
   processSalesAssistantMessage,
@@ -21,6 +25,9 @@ const {
   purchaseConfirmationHtml,
   checkoutRecoveryHtml,
   submitCheckoutPaymentProof,
+  promotionCenterSnapshot,
+  productMatrixSnapshot,
+  markPromotionPackagePublished,
   claimPublishTasks,
   deliverPrepared,
   executeActionPlan,
@@ -71,8 +78,11 @@ const types = {
   ".xml": "application/xml; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
   ".jpg": "image/jpeg",
+  ".svg": "image/svg+xml; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
 };
 const publicRateLimitBuckets = new Map();
+const ADMIN_SESSION_COOKIE = "aie_admin_session";
 
 function staticSiteRoot() {
   const deployTarget = loadAdapters().deploy?.targetDir;
@@ -96,6 +106,84 @@ function parseCookies(header = "") {
 
 function cookieValue(value) {
   return encodeURIComponent(String(value || "")).replace(/[()]/g, escape);
+}
+
+function parseAdminSession(req, env = process.env) {
+  const token = parseCookies(req.headers.cookie || "")[ADMIN_SESSION_COOKIE] || "";
+  const [expiresRaw, nonce, signature] = token.split(".");
+  const expiresAt = Number(expiresRaw);
+  if (!expiresRaw || !nonce || !signature || !Number.isFinite(expiresAt) || expiresAt <= Date.now()) return null;
+  const secret = adminApiSecret(env);
+  if (!secret) return null;
+  const expected = crypto.createHmac("sha256", secret).update(`${expiresRaw}.${nonce}`).digest("base64url");
+  if (!safeEqual(signature, expected)) return null;
+  return { expiresAt };
+}
+
+function createAdminSession(env = process.env) {
+  const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+  const nonce = crypto.randomBytes(18).toString("base64url");
+  const unsigned = `${expiresAt}.${nonce}`;
+  const signature = crypto.createHmac("sha256", adminApiSecret(env)).update(unsigned).digest("base64url");
+  return { token: `${unsigned}.${signature}`, expiresAt };
+}
+
+function adminSessionCookie(token, maxAge = 7 * 24 * 60 * 60, { secure = true } = {}) {
+  return `${ADMIN_SESSION_COOKIE}=${cookieValue(token)}; Path=/; Max-Age=${maxAge}; HttpOnly;${secure ? " Secure;" : ""} SameSite=Strict`;
+}
+
+function requestUsesHttps(req, env = process.env) {
+  if (env.NODE_ENV === "production") return true;
+  return String(req.headers["x-forwarded-proto"] || "").toLowerCase() === "https";
+}
+
+function assertMobileAdminAllowed(req) {
+  if (parseAdminSession(req) || adminApiAuthorized(req)) return;
+  const error = new Error("mobile admin login is required");
+  error.statusCode = 401;
+  throw error;
+}
+
+function adminPushConfig(env = process.env) {
+  return {
+    publicKey: String(env.WEB_PUSH_PUBLIC_KEY || ""),
+    privateKey: String(env.WEB_PUSH_PRIVATE_KEY || ""),
+    subject: String(env.WEB_PUSH_SUBJECT || "mailto:admin@lifeyoume.icu"),
+  };
+}
+
+function configureWebPush(env = process.env) {
+  const config = adminPushConfig(env);
+  if (!config.publicKey || !config.privateKey) return null;
+  webPush.setVapidDetails(config.subject, config.publicKey, config.privateKey);
+  return config;
+}
+
+async function notifyAdminNewCheckout(checkout) {
+  const config = configureWebPush();
+  if (!config) return { sent: 0, removed: 0, status: "not-configured" };
+  const subscriptions = loadAdminPushSubscriptions();
+  const valid = [];
+  let sent = 0;
+  let removed = 0;
+  const payload = JSON.stringify({
+    title: `新订单 ¥${checkout.paymentAmount}`,
+    body: "请核对微信到账金额后，在手机管理端确认。",
+    url: "./",
+    tag: checkout.id,
+  });
+  for (const item of subscriptions) {
+    try {
+      await webPush.sendNotification(item.subscription, payload, { TTL: 1800, urgency: "high" });
+      valid.push(item);
+      sent += 1;
+    } catch (error) {
+      if ([404, 410].includes(error.statusCode)) removed += 1;
+      else valid.push(item);
+    }
+  }
+  if (removed) saveAdminPushSubscriptions(valid);
+  return { sent, removed, status: "attempted" };
 }
 
 function sendJson(res, status, body) {
@@ -272,6 +360,10 @@ function adminApiSecret(env = process.env) {
   return String(env.ADMIN_API_SECRET || "");
 }
 
+function adminMobilePassword(env = process.env) {
+  return String(env.ADMIN_MOBILE_PASSWORD || "");
+}
+
 function adminApiAuthorized(req, env = process.env) {
   const secret = adminApiSecret(env);
   if (!secret) return true;
@@ -356,14 +448,13 @@ function commerceReadiness(env = process.env) {
         ? "payment-feed-unreachable"
         : "payment-feed-empty";
   return {
-    checkoutEnabled,
+    checkoutEnabled: true,
+    checkoutMode: "manual-wechat",
+    manualWechatEnabled: true,
+    automaticCheckoutEnabled: checkoutEnabled,
     paymentSourceStatus: checkoutEnabled ? "ready" : "waiting",
     paymentSourceReason,
-    message: checkoutEnabled
-      ? "付款与自动交付通道已就绪。"
-      : paymentSourceReason === "payment-feed-empty"
-        ? "到账源已配置，但尚未收到可核验的真实到账事件；暂不收款，商品图效果预览仍可使用。"
-        : "可靠到账确认源尚未就绪，暂不收款；商品图效果预览仍可直接使用。",
+    message: "扫码付款已开放：买家支付本单专属金额，店主在手机管理端核对到账并确认后自动开放下载。",
   };
 }
 
@@ -386,8 +477,9 @@ function buyerCheckoutView(checkout = null) {
   if (!checkout) return null;
   const paymentAmount = checkout.paymentAmount || checkout.amount;
   const paymentMatchMode = checkout.paymentMatchMode || "remark";
-  const paymentInstruction =
-    paymentMatchMode === "exact-amount"
+  const paymentInstruction = checkout.checkoutMode === "manual-wechat"
+    ? `请精确支付 ¥${paymentAmount}；店主手机确认到账后，本页自动开放下载`
+    : paymentMatchMode === "exact-amount"
       ? `请精确支付 ¥${paymentAmount}，无需填写长备注`
       : `付款备注：${checkout.paymentRemark}`;
   return {
@@ -399,6 +491,8 @@ function buyerCheckoutView(checkout = null) {
     paymentAmount,
     paymentDiscount: checkout.paymentDiscount || 0,
     paymentMatchMode,
+    checkoutMode: checkout.checkoutMode || "authoritative-payment",
+    contactReference: checkout.contactReference || "",
     offer: checkout.offer || null,
     paymentRemark: checkout.paymentRemark,
     paymentInstruction,
@@ -449,7 +543,7 @@ async function handler(req, res) {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "Content-Type, X-Admin-Secret, Authorization",
       "Access-Control-Max-Age": "86400",
     });
     return res.end();
@@ -482,6 +576,13 @@ async function handler(req, res) {
   ) {
     return;
   }
+  if (
+    req.method === "POST" &&
+    urlPath === "/api/admin-mobile/login" &&
+    !enforcePublicRateLimit(req, res, { scope: "admin-mobile-login", limit: 5, windowMs: 15 * 60 * 1000 })
+  ) {
+    return;
+  }
   const publicApiRoute =
     (req.method === "GET" && (["/api/status", "/api/commerce-readiness"].includes(urlPath) || urlPath.startsWith("/api/checkouts/"))) ||
     (req.method === "POST" &&
@@ -494,12 +595,144 @@ async function handler(req, res) {
         "/api/orders",
         "/api/payment-notify",
         "/api/wechat-notify",
+        "/api/admin-mobile/login",
       ].includes(urlPath) ||
         (urlPath.startsWith("/api/checkouts/") && urlPath.endsWith("/payment-proof")) ||
         urlPath.startsWith("/api/publish-agent/")));
   if (urlPath.startsWith("/api/") && !publicApiRoute) {
     try {
-      assertAdminApiAllowed(req);
+      if (urlPath.startsWith("/api/admin-mobile/")) assertMobileAdminAllowed(req);
+      else assertAdminApiAllowed(req);
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "POST" && urlPath === "/api/admin-mobile/login") {
+    try {
+      const body = await readJson(req);
+      if (!adminMobilePassword() || !safeEqual(body.password, adminMobilePassword())) {
+        const error = new Error("管理密码不正确");
+        error.statusCode = 401;
+        throw error;
+      }
+      const session = createAdminSession();
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "Set-Cookie": adminSessionCookie(session.token, 7 * 24 * 60 * 60, { secure: requestUsesHttps(req) }),
+      });
+      return res.end(JSON.stringify({ ok: true, expiresAt: new Date(session.expiresAt).toISOString() }));
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "POST" && urlPath === "/api/admin-mobile/logout") {
+    res.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Set-Cookie": adminSessionCookie("", 0, { secure: requestUsesHttps(req) }),
+    });
+    return res.end(JSON.stringify({ ok: true }));
+  }
+
+  if (req.method === "GET" && urlPath === "/api/admin-mobile/session") {
+    return sendJson(res, 200, {
+      ok: true,
+      authenticated: true,
+      pushConfigured: Boolean(adminPushConfig().publicKey && adminPushConfig().privateKey),
+      pushPublicKey: adminPushConfig().publicKey,
+    });
+  }
+
+  if (req.method === "GET" && urlPath === "/api/admin-mobile/orders") {
+    const checkouts = loadCheckouts({ expire: true });
+    const now = Date.now();
+    const items = checkouts
+      .filter((item) => item.checkoutMode === "manual-wechat")
+      .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+      .slice(0, 100)
+      .map((item) => ({
+        id: item.id,
+        experimentId: item.experimentId,
+        productTitle: knownExperiments().find((product) => product.id === item.experimentId)?.title || item.experimentId,
+        contactReference: item.contactReference,
+        amount: item.paymentAmount || item.amount,
+        status: item.status,
+        createdAt: item.createdAt,
+        expiresAt: item.expiresAt,
+        expiresInSeconds: Math.max(0, Math.floor((Date.parse(item.expiresAt) - now) / 1000)),
+        paidAt: item.paidAt || null,
+      }));
+    return sendJson(res, 200, {
+      ok: true,
+      orders: items,
+      summary: {
+        pending: items.filter((item) => item.status === "pending").length,
+        paid: items.filter((item) => item.status === "paid").length,
+        revenue: Number(
+          items.filter((item) => item.status === "paid").reduce((sum, item) => sum + Number(item.amount || 0), 0).toFixed(2)
+        ),
+      },
+    });
+  }
+
+  if (req.method === "GET" && urlPath === "/api/admin-mobile/promotion-center") {
+    return sendJson(res, 200, { ok: true, promotion: promotionCenterSnapshot() });
+  }
+
+  if (req.method === "GET" && urlPath === "/api/admin-mobile/product-matrix") {
+    return sendJson(res, 200, { ok: true, matrix: productMatrixSnapshot() });
+  }
+
+  if (req.method === "POST" && urlPath.startsWith("/api/admin-mobile/promotion-packages/") && urlPath.endsWith("/published")) {
+    try {
+      const packageId = decodeURIComponent(urlPath.split("/")[4] || "");
+      const body = await readJson(req);
+      const promotion = markPromotionPackagePublished(packageId, { externalUrl: body.externalUrl });
+      return sendJson(res, 200, { ok: true, promotion });
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "POST" && urlPath === "/api/admin-mobile/push-subscriptions") {
+    try {
+      const body = await readJson(req);
+      const subscription = body.subscription;
+      if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+        const error = new Error("有效的推送订阅信息是必需的");
+        error.statusCode = 400;
+        throw error;
+      }
+      const subscriptions = loadAdminPushSubscriptions().filter(
+        (item) => item.subscription?.endpoint !== subscription.endpoint
+      );
+      subscriptions.push({
+        id: crypto.randomBytes(12).toString("base64url"),
+        subscription,
+        createdAt: new Date().toISOString(),
+        userAgent: String(req.headers["user-agent"] || "").slice(0, 300),
+      });
+      saveAdminPushSubscriptions(subscriptions.slice(-20));
+      return sendJson(res, 201, { ok: true });
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "POST" && urlPath.startsWith("/api/admin-mobile/orders/") && urlPath.endsWith("/confirm")) {
+    try {
+      const checkoutId = urlPath.split("/")[4];
+      const result = confirmManualCheckoutDirect(checkoutId);
+      return sendJson(res, 200, {
+        ok: true,
+        duplicate: result.duplicate,
+        checkout: buyerCheckoutView(result.checkout),
+        order: buyerOrderView(result.order),
+      });
     } catch (error) {
       return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
     }
@@ -571,6 +804,13 @@ async function handler(req, res) {
 
   if (req.method === "GET" && urlPath === "/api/commerce-readiness") {
     return sendPublicJson(res, 200, { ok: true, ...commerceReadiness() });
+  }
+
+  if (req.method === "GET" && urlPath === "/service.json") {
+    return sendPublicJson(res, 200, {
+      url: "",
+      productId: "product-image-batch-studio",
+    });
   }
 
   if (req.method === "GET" && urlPath === "/api/adapters") {
@@ -763,12 +1003,19 @@ async function handler(req, res) {
 
   if (req.method === "POST" && urlPath === "/api/checkouts") {
     try {
-      if (!authoritativePaymentSourceReady()) {
+      const body = await readJson(req);
+      const manualWechatCheckout =
+        body.checkoutMode === "manual-wechat" &&
+        ["product-image-batch-studio", "consumer-evidence-pack"].includes(body.productId || body.experimentId);
+      if (!manualWechatCheckout && !authoritativePaymentSourceReady()) {
         const error = new Error("付款入口正在等待可靠到账确认源，暂未开放收款；请稍后再试。");
         error.statusCode = 503;
         throw error;
       }
-      const checkout = createCheckout(await readJson(req));
+      const checkout = createCheckout(body);
+      if (manualWechatCheckout) {
+        notifyAdminNewCheckout(checkout).catch(() => {});
+      }
       return sendPublicJson(res, 201, { ok: true, checkout: buyerCheckoutView(checkout) });
     } catch (error) {
       return sendPublicJson(res, error.statusCode || 500, { ok: false, error: error.message });
@@ -930,7 +1177,12 @@ async function handler(req, res) {
 
   if (!fs.existsSync(path.join(DIST_DIR, "index.html"))) generateSite();
 
-  const relative = urlPath === "/" ? "index.html" : urlPath.replace(/^\/+/, "");
+  const relative =
+    urlPath === "/"
+      ? "index.html"
+      : urlPath.endsWith("/")
+        ? `${urlPath.replace(/^\/+/, "")}index.html`
+        : urlPath.replace(/^\/+/, "");
   const siteRoot = staticSiteRoot();
   const file = path.resolve(siteRoot, relative);
   if (!file.startsWith(`${siteRoot}${path.sep}`) && file !== path.join(siteRoot, "index.html")) {

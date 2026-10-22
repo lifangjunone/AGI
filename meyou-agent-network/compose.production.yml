@@ -1,0 +1,100 @@
+services:
+  postgres:
+    image: docker.m.daocloud.io/library/postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 384m
+    mem_reservation: 128m
+    cpus: 0.75
+    env_file: private/api.env
+    environment:
+      POSTGRES_USER: meyou
+      POSTGRES_DB: meyou
+    command:
+      - postgres
+      - -c
+      - max_connections=40
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - effective_cache_size=192MB
+      - -c
+      - maintenance_work_mem=16MB
+      - -c
+      - work_mem=2MB
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meyou -d meyou"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: docker.m.daocloud.io/library/redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 128m
+    mem_reservation: 32m
+    cpus: 0.25
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 64mb
+      - --maxmemory-policy
+      - noeviction
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    image: meyou-agent-network:latest
+    mem_limit: 192m
+    cpus: 0.5
+    env_file: private/api.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["node", "apps/api/dist/migrate.js"]
+    restart: "no"
+
+  api:
+    image: meyou-agent-network:latest
+    build: .
+    restart: unless-stopped
+    mem_limit: 256m
+    mem_reservation: 96m
+    cpus: 1.0
+    env_file: private/api.env
+    ports:
+      - "127.0.0.1:43180:43180"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:43180/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  worker:
+    image: meyou-agent-network:latest
+    restart: unless-stopped
+    mem_limit: 256m
+    mem_reservation: 64m
+    cpus: 0.75
+    env_file: private/api.env
+    depends_on:
+      api:
+        condition: service_healthy
+    command: ["node", "apps/worker/dist/worker.js"]
+
+volumes:
+  postgres-data:
+  redis-data:

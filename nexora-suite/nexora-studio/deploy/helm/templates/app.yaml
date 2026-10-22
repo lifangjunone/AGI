@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: nexora-studio-api, labels: { app.kubernetes.io/name: nexora-studio-api } }
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: nexora-studio-api }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: nexora-studio-api }
+    spec:
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: [{ name: http, containerPort: 8080 }]
+          env:
+            - { name: ADDR, value: ":8080" }
+            - { name: CORE_URL, value: "{{ .Values.config.coreURL }}" }
+            - { name: CONTROL_URL, value: "{{ .Values.config.controlURL }}" }
+            - name: NEXORA_JWT_SECRET
+              valueFrom: { secretKeyRef: { name: "{{ .Values.config.secretName }}", key: jwt-secret } }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: "{{ .Values.config.secretName }}", key: "{{ .Values.config.databaseURLKey }}" } }
+          readinessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 3, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 10, periodSeconds: 10 }
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: nexora-studio-api }
+spec:
+  selector: { app.kubernetes.io/name: nexora-studio-api }
+  ports: [{ name: http, port: 8080, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: nexora-studio-web, labels: { app.kubernetes.io/name: nexora-studio-web } }
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: { app.kubernetes.io/name: nexora-studio-web }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: nexora-studio-web }
+    spec:
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: web
+          image: "{{ .Values.webImage.repository }}:{{ .Values.webImage.tag }}"
+          imagePullPolicy: {{ .Values.webImage.pullPolicy }}
+          ports: [{ name: http, containerPort: 3001 }]
+          readinessProbe: { httpGet: { path: /, port: http }, initialDelaySeconds: 5, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /, port: http }, initialDelaySeconds: 15, periodSeconds: 10 }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: ["ALL"] } }
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: nexora-studio-web }
+spec:
+  selector: { app.kubernetes.io/name: nexora-studio-web }
+  ports: [{ name: http, port: 3001, targetPort: http }]
+---
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: { name: nexora-studio }
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts: [{{ .Values.ingress.host | quote }}]
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend: { service: { name: nexora-studio-api, port: { number: 8080 } } }
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: nexora-studio-web, port: { number: 3001 } } }
+{{- end }}
+---
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: nexora-studio-api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: nexora-studio-api }
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }} } }
+{{- end }}

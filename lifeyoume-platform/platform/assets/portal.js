@@ -4,7 +4,8 @@
     const viewTitles = {
       overview: '平台总览',
       users: '账号管理',
-      products: '产品登录',
+      products: '产品访问',
+      heat: '产品运营看板',
       audit: '操作审计',
     }
     const views = [...adminApp.querySelectorAll('[data-admin-view]')]

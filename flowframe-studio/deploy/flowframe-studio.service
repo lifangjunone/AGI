@@ -1,0 +1,26 @@
+[Unit]
+Description=FlowFrame AI Video Studio
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=flowframe
+Group=flowframe
+WorkingDirectory=/data/app/flowframe-studio/current
+Environment=NODE_ENV=production
+Environment=PORT=4390
+Environment=FLOWFRAME_DATA_DIR=/data/app/flowframe-studio/shared/data
+ExecStart=/opt/node20/bin/node server.mjs --production
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/app/flowframe-studio/shared/data
+MemoryMax=160M
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

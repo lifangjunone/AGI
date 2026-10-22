@@ -1,0 +1,22 @@
+[Unit]
+Description=Collect and publish the daily Skill Radar snapshot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=skillradar
+Group=skillradar
+WorkingDirectory=/data/app/skill-radar/current
+Environment=NODE_ENV=production
+Environment=SKILL_RADAR_LIMIT=180
+ExecStart=/usr/bin/node /data/app/skill-radar/current/scripts/collect-skills.mjs
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/app/skill-radar/current/data /data/app/skill-radar/current/public/data
+UMask=0022
+
+[Install]
+WantedBy=multi-user.target

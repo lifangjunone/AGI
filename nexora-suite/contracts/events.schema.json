@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nexora.local/contracts/events/v1",
+  "title": "Nexora event envelope",
+  "type": "object",
+  "required": ["event_id", "event_type", "schema_version", "tenant_id", "occurred_at", "resource_id", "data"],
+  "properties": {
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_type": {
+      "enum": ["agent.published", "agent.version_withdrawn", "registry.updated", "credential.revoked", "policy.changed", "model.registered", "model.route_changed", "model.credential_rotated"]
+    },
+    "schema_version": { "const": "1.0" },
+    "tenant_id": { "type": "string", "minLength": 1 },
+    "occurred_at": { "type": "string", "format": "date-time" },
+    "resource_id": { "type": "string", "minLength": 1 },
+    "data": { "type": "object" }
+  },
+  "additionalProperties": false
+}

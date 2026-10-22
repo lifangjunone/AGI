@@ -1,0 +1,27 @@
+{
+  "name": "meyou-agent-network",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c cyan,magenta \"npm run dev -w @meyou/api\" \"npm run dev -w @meyou/web\"",
+    "build": "npm run build -w @meyou/shared && npm run build -w @meyou/api && npm run build -w @meyou/worker && npm run build -w @meyou/web",
+    "test": "npm run build -w @meyou/shared && npm run test -w @meyou/shared && npm run test -w @meyou/api && npm run test -w @meyou/web",
+    "typecheck": "npm run build -w @meyou/shared && npm run typecheck --workspaces --if-present",
+    "db:generate": "npm run db:generate -w @meyou/api",
+    "db:migrate": "npm run db:migrate -w @meyou/api",
+    "db:seed": "npm run db:seed -w @meyou/api",
+    "start": "npm run start -w @meyou/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

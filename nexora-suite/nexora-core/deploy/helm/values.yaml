@@ -1,0 +1,36 @@
+replicaCount: 2
+image:
+  repository: nexora/nexora-core
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+webImage:
+  repository: nexora/nexora-core-web
+  tag: "1.0.0"
+  pullPolicy: IfNotPresent
+service:
+  apiPort: 8080
+  webPort: 3000
+ingress:
+  enabled: true
+  className: nginx
+  host: core.nexora.local
+  tls: { enabled: false, secretName: nexora-core-tls }
+resources:
+  requests: { cpu: 100m, memory: 128Mi }
+  limits: { cpu: 500m, memory: 512Mi }
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+config:
+  products: studio,control,maas
+  studioPublicURL: https://studio.nexora.local
+  controlPublicURL: https://control.nexora.local
+  maasPublicURL: https://maas.nexora.local
+  secretName: nexora-platform-secrets
+  jwtSecretKey: jwt-secret
+  databaseURLKey: core-database-url
+  products: studio,control
+  studioPublicURL: https://studio.nexora.example
+  controlPublicURL: https://control.nexora.example
