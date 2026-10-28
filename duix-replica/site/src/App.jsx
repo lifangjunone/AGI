@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import LocalWorkspace from "./LocalWorkspace";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -59,15 +60,7 @@ function ArrowIcon({ direction = "right" }) {
   );
 }
 
-function ExternalIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M8 5h11v11M19 5 5 19" />
-    </svg>
-  );
-}
-
-function Header({ menuOpen, setMenuOpen }) {
+function Header({ menuOpen, setMenuOpen, openPanel }) {
   return (
     <header className="site-header">
       <div className="nav-shell">
@@ -75,20 +68,14 @@ function Header({ menuOpen, setMenuOpen }) {
           <img src="/assets/logo.svg" alt="Duix" />
         </a>
         <nav className="desktop-nav" aria-label="Primary navigation">
-          <a href="https://docs.duix.com/documentation/introduction" target="_blank" rel="noreferrer">
-            Docs <ExternalIcon />
-          </a>
+          <button onClick={() => openPanel("docs")}>Docs</button>
           <a href="#capabilities">Capabilities</a>
           <a href="#developer">Developer</a>
           <a href="#about">About</a>
         </nav>
         <div className="nav-actions">
-          <a className="button button-small button-outline desktop-action" href="https://github.com/duixcom" target="_blank" rel="noreferrer">
-            Open source <ExternalIcon />
-          </a>
-          <a className="button button-small desktop-action" href="https://www.duix.com/login?redirect=/dashboard" target="_blank" rel="noreferrer">
-            Join in
-          </a>
+          <button className="button button-small button-outline desktop-action" onClick={() => openPanel("library")}>My avatars</button>
+          <button className="button button-small desktop-action" onClick={() => openPanel("create")}>Create locally</button>
           <button
             className="menu-button"
             aria-expanded={menuOpen}
@@ -105,8 +92,8 @@ function Header({ menuOpen, setMenuOpen }) {
         <a href="#use-cases" onClick={() => setMenuOpen(false)}>Use cases</a>
         <a href="#capabilities" onClick={() => setMenuOpen(false)}>Capabilities</a>
         <a href="#developer" onClick={() => setMenuOpen(false)}>Developer</a>
-        <a href="https://docs.duix.com/documentation/introduction" target="_blank" rel="noreferrer">Docs <ExternalIcon /></a>
-        <a className="button" href="https://www.duix.com/login?redirect=/dashboard" target="_blank" rel="noreferrer">Join in</a>
+        <button onClick={() => { openPanel("docs"); setMenuOpen(false); }}>Docs</button>
+        <button className="button" onClick={() => { openPanel("create"); setMenuOpen(false); }}>Create locally</button>
       </div>
     </header>
   );
@@ -120,6 +107,8 @@ function App() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
+  const [panel, setPanel] = useState(null);
+  const closePanel = useCallback(() => setPanel(null), []);
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -202,7 +191,7 @@ function App() {
 
   return (
     <div ref={root} id="top">
-      <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+      <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} openPanel={setPanel} />
       <main>
         <section className="hero section-shell">
           <div className="hero-copy">
@@ -217,12 +206,8 @@ function App() {
               Customize appearance and voice, support multiple languages, seamlessly integrate with knowledge bases, and significantly boost your business revenue.
             </p>
             <div className="hero-actions">
-              <a className="button button-large" href="https://www.duix.com/login?redirect=/dashboard" target="_blank" rel="noreferrer">
-                Start for free
-              </a>
-              <a className="button button-large button-outline" href="mailto:support@duix.com">
-                Contact sales
-              </a>
+              <button className="button button-large" onClick={() => setPanel("create")}>Start locally</button>
+              <button className="button button-large button-outline" onClick={() => setPanel("contact")}>Plan a project</button>
             </div>
             <small>No payment required</small>
           </div>
@@ -231,9 +216,7 @@ function App() {
             <button className="video-control" onClick={toggleVideo} aria-label={isPlaying ? "Pause hero video" : "Play hero video"}>
               {isPlaying ? "Pause" : "Play"}
             </button>
-            <a className="button button-large talk-button" href="https://www.duix.com/login?redirect=/dashboard" target="_blank" rel="noreferrer">
-              Start talk for free
-            </a>
+            <button className="button button-large talk-button" onClick={() => setPanel("create")}>Start local preview</button>
           </div>
         </section>
 
@@ -275,9 +258,7 @@ function App() {
             <p>
               200ms TTFB latency, expressive voice, and true-to-life avatars deliver real-time two-way interactions that can improve engagement and service quality.
             </p>
-            <a className="button button-light button-large" href="https://www.duix.com/login?redirect=/dashboard" target="_blank" rel="noreferrer">
-              Create your AI avatar
-            </a>
+            <button className="button button-light button-large" onClick={() => setPanel("create")}>Create your AI avatar</button>
           </div>
           <div className="business-image">
             <img src="/assets/business.webp" alt="Duix visual AI agent" />
@@ -302,9 +283,7 @@ function App() {
               <p className="eyebrow">Developer</p>
               <h2>Seamlessly integrate with our API</h2>
               <p>Connect your product to real-time interactive digital humans with a focused API and platform SDKs.</p>
-              <a className="text-link" href="https://docs.duix.com/documentation/introduction" target="_blank" rel="noreferrer">
-                Read the documentation <ArrowIcon />
-              </a>
+              <button className="text-link" onClick={() => setPanel("docs")}>Read the local guide <ArrowIcon /></button>
             </div>
             <div className="code-window reveal">
               <div className="code-header">
@@ -338,9 +317,7 @@ function App() {
             <h2>Make every conversation feel present.</h2>
             <p>Build an AI avatar with a face, a voice, and knowledge that is uniquely yours.</p>
           </div>
-          <a className="button button-large button-light" href="https://www.duix.com/login?redirect=/dashboard" target="_blank" rel="noreferrer">
-            Start for free <ArrowIcon />
-          </a>
+          <button className="button button-large button-light" onClick={() => setPanel("create")}>Start locally <ArrowIcon /></button>
         </section>
       </main>
 
@@ -348,12 +325,18 @@ function App() {
         <div className="footer-grid section-shell">
           <a className="footer-logo" href="#top" aria-label="Back to top"><img src="/assets/logo.svg" alt="Duix" /></a>
           <div><h3>Interactive AI avatar</h3>{useCases.map((item) => <a key={item.name} href="#use-cases">{item.name}</a>)}</div>
-          <div><h3>Legal &amp; support</h3><a href="https://www.duix.com/privacy-policy" target="_blank" rel="noreferrer">Privacy policy</a><a href="https://www.duix.com/terms-of-service" target="_blank" rel="noreferrer">Terms of service</a><a href="https://github.com/duixcom" target="_blank" rel="noreferrer">GitHub</a></div>
-          <div><h3>Contact us</h3><a href="mailto:support@duix.com">support@duix.com</a><p>Built with DUIX.COM</p></div>
+          <div><h3>Local project</h3><button onClick={() => setPanel("docs")}>Developer guide</button><button onClick={() => setPanel("legal")}>Privacy &amp; licenses</button><button onClick={() => setPanel("library")}>Saved avatars</button></div>
+          <div><h3>Workspace</h3><button onClick={() => setPanel("contact")}>Project inquiry</button><p>No external submission</p><p>Built with DUIX.COM</p></div>
           <p className="copyright">© 2026 DUIX. All rights reserved.</p>
           <a className="back-top" href="#top" aria-label="Back to top"><ArrowIcon direction="up" /></a>
         </div>
       </footer>
+      <LocalWorkspace
+        panel={panel}
+        onClose={closePanel}
+        previewImage={useCases[activeCase].image}
+        initialRole={useCases[activeCase].name}
+      />
     </div>
   );
 }

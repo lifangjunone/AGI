@@ -22,6 +22,8 @@ function readLocal(key, fallback) {
 export default function LocalWorkspace({ panel, onClose, previewImage, initialRole }) {
   const firstControl = useRef(null);
   const errorSummary = useRef(null);
+  const sheet = useRef(null);
+  const previousFocus = useRef(null);
   const [draft, setDraft] = useState(() => readLocal(draftKey, emptyDraft));
   const [avatars, setAvatars] = useState(() => readLocal(avatarsKey, []));
   const [errors, setErrors] = useState({});
@@ -30,17 +32,34 @@ export default function LocalWorkspace({ panel, onClose, previewImage, initialRo
 
   useEffect(() => {
     if (!panel) return undefined;
+    previousFocus.current = document.activeElement;
     if (initialRole) setDraft((current) => ({ ...current, role: initialRole }));
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.setTimeout(() => firstControl.current?.focus(), 0);
     const handleKey = (event) => {
       if (event.key === "Escape") onClose();
+      if (event.key === "Tab") {
+        const controls = sheet.current?.querySelectorAll(
+          "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+        );
+        if (!controls?.length) return;
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", handleKey);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKey);
+      previousFocus.current?.focus();
     };
   }, [panel, initialRole, onClose]);
 
@@ -107,7 +126,7 @@ export default function LocalWorkspace({ panel, onClose, previewImage, initialRo
     <div className="workspace-backdrop" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <section className="workspace-sheet" role="dialog" aria-modal="true" aria-labelledby="workspace-title">
+      <section ref={sheet} className="workspace-sheet" role="dialog" aria-modal="true" aria-labelledby="workspace-title">
         <header className="workspace-header">
           <div>
             <span className="local-badge">Local workspace</span>

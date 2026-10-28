@@ -8,6 +8,7 @@
 - Added `model-radar`, a LifeYouMe model-ranking product that refreshes public AI model signals hourly from Hugging Face Trending and OpenRouter Models, with cache fallback and `/models/` deployment support.
 - Added `lifeyoume-staffdeck`, a localized StaffDeck workspace snapshot for evaluating enterprise digital employees, SOP skills, document-structure-aware retrieval, desktop packaging, and execution loops.
 - Added `duix-replica`, a Duix product replica workspace with a high-fidelity marketing site, official avatar client source, documentation source, skills source, and explicit licensing/product-boundary notes.
+- Expanded `duix-replica` with local in-app avatar creation, saved-avatar library, project inquiry, documentation, licensing panels, focus trapping, and refreshed desktop/mobile evidence screenshots.
 - Expanded LifeYouMe Platform, MeYou Agent Network, Nexora Suite, Autonomous Income Engine, Short Video Studio, Technology Intelligence, and Trend Forum with product registration, admin, automation, runtime, and deployment updates.
 
 ### docs

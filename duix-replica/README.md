@@ -23,6 +23,6 @@ Read `upstream/Duix-Avatar/README_zh.md` before installation. The inference stac
 
 ## Product and licensing boundary
 
-The website project reproduces the public marketing experience for local development and evaluation. Public Duix marketing assets are recorded in `site/public/assets/SOURCES.txt`; Duix retains all applicable rights. Account, billing, cloud generation, and production APIs are not imitated. Those actions lead to the official Duix website.
+The website project reproduces the public marketing experience for local development and evaluation. Public Duix marketing assets are recorded in `site/public/assets/SOURCES.txt`; Duix retains all applicable rights. All primary actions remain inside the local app: avatar drafts, saved avatars, and project inquiries use browser local storage. Account, billing, cloud generation, and production APIs are not imitated or linked from the local product flow.
 
 The bundled `Duix-Avatar` source is governed by its own `LICENSE`, including attribution and commercial-use conditions. In particular, redistributed products must prominently display “Built with DUIX.COM.”

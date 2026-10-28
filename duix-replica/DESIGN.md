@@ -20,4 +20,4 @@ Large areas of calm white space, real people as the visual subject, and purple r
 
 ## Honest limitations
 
-The official marketing-site source is not publicly available. Cloud account, billing, avatar generation, and live conversation services require Duix infrastructure and credentials, so the local replica links those actions to the official service. The official open-source avatar client is included unchanged but its GPU inference runtime cannot run on the current macOS host.
+The official marketing-site source is not publicly available. Cloud account, billing, avatar generation, and live conversation services require Duix infrastructure and credentials. The replica keeps its product flow local with a browser-persisted creator, library, preview, guide, and inquiry form; it does not redirect these actions or claim that GPU generation occurred. The official open-source avatar client is included unchanged but its GPU inference runtime cannot run on the current macOS host.
