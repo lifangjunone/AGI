@@ -3,7 +3,7 @@ export type Locale = "zh-CN" | "en";
 const copy = {
   "zh-CN": {
     today: "今日", discover: "遇见", messages: "消息", communities: "社群", customers: "客户",
-    agent: "我的 Agent", hello: "早上好", intro: "小遇已经替你处理了 12 次沟通。现在有 3 件事值得你亲自看看。",
+    agent: "我的 Agent", hello: "你好", intro: "先处理需要你决定的事项，再去遇见值得认识的人。",
     attention: "需要你决定", matches: "值得认识的人", seeAll: "查看全部", explain: "为什么推荐",
     accept: "愿意认识", later: "稍后", active: "正在替你工作", quota: "本月用量",
     plaza: "广场", searchContacts: "搜索联系人或目标", createSearch: "创建持续寻找",
@@ -35,7 +35,7 @@ const copy = {
   },
   en: {
     today: "Today", discover: "Discover", messages: "Messages", communities: "Communities", customers: "Customers",
-    agent: "My Agent", hello: "Good morning", intro: "Xiaoyu handled 12 conversations for you. Three things deserve your attention.",
+    agent: "My Agent", hello: "Hello", intro: "Review the things that need your decision, then meet people worth knowing.",
     attention: "Needs your decision", matches: "People worth meeting", seeAll: "See all", explain: "Why this match",
     accept: "Meet them", later: "Later", active: "Working for you", quota: "Monthly usage",
     plaza: "Plaza", searchContacts: "Search people or goals", createSearch: "Create a recurring search",
@@ -56,7 +56,7 @@ const copy = {
     noSchedule: "No real events yet", noScheduleDetail: "Events appear here after you connect a calendar or propose a meeting time.",
     calendarUnavailable: "Calendar connector not configured", calendarUnavailableDetail: "You can coordinate times in chat now. Sync becomes available after a connector is authorized.",
     workingNow: "Working now", pausedUpper: "Paused", agentPausedDetail: "Automatic actions are paused. You can still review existing conversations and records.",
-    agentWorkingDetail: "Watching for new community members and welcoming visitors to your public profile.",
+    agentWorkingDetail: "Actions follow your permissions, schedule, and usage limits. Being enabled does not mean the Agent is currently replying.",
     currentTask: "Current task", noMission: "No recurring search", waitingMission: "Waiting for you to create a task",
     lastScan: "Last scan", workLog: "View activity log", matchFit: "fit",
     anonymousCandidate: "Anonymous match", partner: "Potential partner",

@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: nexora-runtime-api }
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector: { matchLabels: { app.kubernetes.io/name: nexora-runtime-api } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: nexora-runtime-api } }
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: [{ name: http, containerPort: 8084 }]
+          env:
+            - { name: ADDR, value: ":8084" }
+            - { name: NATIVE_WORKER_URL, value: "http://nexora-native-runtime:8094" }
+            - name: NEXORA_JWT_SECRET
+              valueFrom: { secretKeyRef: { name: "{{ .Values.config.secretName }}", key: jwt-secret } }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: "{{ .Values.config.secretName }}", key: "{{ .Values.config.databaseURLKey }}" } }
+          readinessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 3, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 10, periodSeconds: 10 }
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: nexora-runtime-api }
+spec:
+  selector: { app.kubernetes.io/name: nexora-runtime-api }
+  ports: [{ name: http, port: 8084, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: nexora-native-runtime }
+spec:
+  replicas: {{ .Values.workerReplicaCount }}
+  selector: { matchLabels: { app.kubernetes.io/name: nexora-native-runtime } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: nexora-native-runtime } }
+    spec:
+      initContainers:
+        - name: agentloop-engine
+          image: "{{ .Values.engineImage.repository }}{{- if .Values.engineImage.digest }}@{{ .Values.engineImage.digest }}{{- else }}:{{ .Values.engineImage.tag }}{{- end }}"
+          imagePullPolicy: {{ .Values.engineImage.pullPolicy }}
+          command: ["/bin/sh", "-c", "cp /usr/local/bin/omp /engine/engine && chmod 0755 /engine/engine"]
+          volumeMounts: [{ name: engine, mountPath: /engine }]
+      containers:
+        - name: worker
+          image: "{{ .Values.workerImage.repository }}:{{ .Values.workerImage.tag }}"
+          imagePullPolicy: {{ .Values.workerImage.pullPolicy }}
+          ports: [{ name: http, containerPort: 8094 }]
+          env:
+            - { name: ADDR, value: ":8094" }
+            - { name: OMP_BINARY, value: "/engine/engine" }
+            - { name: NATIVE_ENGINE_VERSION, value: "{{ .Values.engineImage.tag }}" }
+            - { name: NATIVE_TOOL_DIALECT, value: "qwen3" }
+            - { name: NATIVE_MODEL_CONTEXT_WINDOW, value: "4096" }
+            - { name: NATIVE_MODEL_MAX_TOKENS, value: "2048" }
+            - { name: MAAS_URL, value: "{{ .Values.config.maasURL }}" }
+          readinessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 3, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 10, periodSeconds: 10 }
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts: [{ name: engine, mountPath: /engine, readOnly: true }]
+      volumes: [{ name: engine, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: nexora-native-runtime }
+spec:
+  selector: { app.kubernetes.io/name: nexora-native-runtime }
+  ports: [{ name: http, port: 8094, targetPort: http }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: nexora-runtime-web }
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector: { matchLabels: { app.kubernetes.io/name: nexora-runtime-web } }
+  template:
+    metadata: { labels: { app.kubernetes.io/name: nexora-runtime-web } }
+    spec:
+      containers:
+        - name: web
+          image: "{{ .Values.webImage.repository }}:{{ .Values.webImage.tag }}"
+          imagePullPolicy: {{ .Values.webImage.pullPolicy }}
+          ports: [{ name: http, containerPort: 3004 }]
+          env: [{ name: API_PROXY_TARGET, value: "http://nexora-runtime-api:8084" }]
+          readinessProbe: { httpGet: { path: /, port: http }, initialDelaySeconds: 5, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /, port: http }, initialDelaySeconds: 15, periodSeconds: 10 }
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata: { name: nexora-runtime-web }
+spec:
+  selector: { app.kubernetes.io/name: nexora-runtime-web }
+  ports: [{ name: http, port: 3004, targetPort: http }]
+{{- if .Values.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: nexora-runtime-api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: nexora-runtime-api }
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }} }
+{{- end }}
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: { name: nexora-runtime }
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: nexora-runtime-web, port: { number: 3004 } } }
+{{- end }}

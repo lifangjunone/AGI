@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workforce Lab · 数字员工校园</title><link rel="stylesheet" href="campus.css"></head>
+<body>
+<a class="skip" href="#main">跳到操作面板</a>
+<header><a class="brand" href="#teach"><span class="brand-icon">w↗</span>Workforce <span>Lab</span></a><span class="header-divider"></span><span class="workspace-name">小林的数字校园</span><div class="header-end"><span class="prototype">交互原型</span><button class="quiet" data-action="help">使用说明</button><span class="profile">林</span></div></header>
+<div class="page-title"><div><p class="eyebrow">YOUR KNOWLEDGE. A GROWING WORKFORCE.</p><h1>你的经验，在这里成为工作能力。</h1></div><p>教员工 · 发任务 · 看成果</p></div>
+<div class="workspace">
+<section class="campus" aria-label="数字员工校园">
+ <div class="campus-head"><span><i class="dot"></i> 我的校园 <small id="campus-status">等待第一位数字员工</small></span><div class="map-controls"><button class="quiet" data-action="pause" id="motion-button" aria-pressed="false">暂停动效</button></div></div>
+ <div class="map">
+  <svg class="landscape" viewBox="0 0 1000 680" role="img" aria-label="教学室、任务发布台、交付大厅与中央协作广场">
+   <defs><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#d3dcd0"/></pattern><filter id="shadow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+   <rect width="1000" height="680" fill="#e8eee1"/><rect width="1000" height="680" fill="url(#grid)" opacity=".4"/>
+   <path d="M40 235Q170 85 432 101Q733 67 956 214L1000 470Q821 640 524 630Q219 650 20 476Z" fill="#f5f1e3"/>
+   <path d="M202 265Q355 349 484 365Q690 438 836 329M484 365Q408 502 277 548M484 365Q619 505 782 550" stroke="#fffdf3" stroke-width="44" fill="none" stroke-linecap="round"/>
+   <path d="M200 220Q470 91 803 212Q1000 378 789 568Q470 675 191 532Q50 376 200 220Z" fill="none" stroke="#c9d3c0" stroke-width="3" stroke-dasharray="7 14" stroke-linecap="round"/>
+   <ellipse cx="500" cy="386" rx="137" ry="69" fill="#e2e8d7" stroke="#c5d2b9" stroke-width="2"/>
+   <ellipse cx="500" cy="378" rx="84" ry="41" fill="#f7f5e9" stroke="#ced8c0" stroke-width="2"/>
+   <ellipse cx="500" cy="383" rx="29" ry="14" fill="#8fae9d"/><ellipse cx="500" cy="374" rx="25" ry="12" fill="#c3d9cf"/>
+   <g class="decor-tree" fill="#8ba88b"><ellipse cx="103" cy="285" rx="24" ry="8" fill="#cad1be"/><path d="M102 278v-24" stroke="#958263" stroke-width="7"/><circle cx="101" cy="248" r="18"/><circle cx="91" cy="257" r="13"/><circle cx="115" cy="258" r="12"/></g>
+   <g class="decor-tree" transform="translate(688,-80)" fill="#8ba88b"><ellipse cx="103" cy="285" rx="24" ry="8" fill="#cad1be"/><path d="M102 278v-24" stroke="#958263" stroke-width="7"/><circle cx="101" cy="248" r="18"/><circle cx="91" cy="257" r="13"/><circle cx="115" cy="258" r="12"/></g>
+   <g class="decor-tree" transform="translate(765,220)" fill="#8ba88b"><ellipse cx="103" cy="285" rx="24" ry="8" fill="#cad1be"/><path d="M102 278v-24" stroke="#958263" stroke-width="7"/><circle cx="101" cy="248" r="18"/><circle cx="91" cy="257" r="13"/><circle cx="115" cy="258" r="12"/></g>
+   <g class="decor-tree" transform="translate(40,255)" fill="#8ba88b"><ellipse cx="103" cy="285" rx="24" ry="8" fill="#cad1be"/><path d="M102 278v-24" stroke="#958263" stroke-width="7"/><circle cx="101" cy="248" r="18"/><circle cx="91" cy="257" r="13"/><circle cx="115" cy="258" r="12"/></g>
+   <g class="decor-tree" transform="translate(438,323)" fill="#8ba88b"><ellipse cx="103" cy="285" rx="24" ry="8" fill="#cad1be"/><path d="M102 278v-24" stroke="#958263" stroke-width="7"/><circle cx="101" cy="248" r="18"/><circle cx="91" cy="257" r="13"/><circle cx="115" cy="258" r="12"/></g>
+  </svg>
+  <button class="building teaching" data-space="teach" aria-label="教学室，教我的数字员工">
+   <svg viewBox="0 0 200 180" aria-hidden="true"><ellipse cx="100" cy="151" rx="76" ry="15" fill="#61755626" filter="url(#shadow)"/><path d="M25 64 103 29 176 65 100 103Z" fill="#6f918a"/><path d="M25 64v62l75 36v-59Z" fill="#d5e2d9"/><path d="M100 103v59l76-36V65Z" fill="#91b4a5"/><path d="m19 64 84-44 81 45-84 42Z" fill="#608981"/><path d="m36 87 13 6v19l-13-6Zm24 12 13 6v19l-13-6Z" fill="#fffcf0"/><path d="m133 102 19-9v36l-19 9Z" fill="#faf8eb"/><path d="m95 43 17-8 17 8-17 8Z" fill="#d9e9d9"/><path d="m95 43v12l17 8V51m0 0 17-8v12l-17 8" fill="#edf3e6"/></svg>
+   <strong>教学室</strong><small>把你的经验教给它</small><span class="place-status" id="teaching-status">从一位员工开始</span>
+  </button>
+  <button class="building publishing" data-space="publish" aria-label="任务发布台，发布任务">
+   <svg viewBox="0 0 200 180" aria-hidden="true"><ellipse cx="104" cy="150" rx="68" ry="15" fill="#61755626" filter="url(#shadow)"/><path d="m34 60 71-35 65 32-71 36Z" fill="#c0a26c"/><path d="M34 60v66l65 34V93Z" fill="#f0dfbd"/><path d="M99 93v67l71-34V57Z" fill="#cdb387"/><path d="m26 60 79-43 74 40-80 41Z" fill="#bf9c5a"/><path d="m45 85 36 18v37l-36-17Z" fill="#fff6dc"/><path d="m50 92 24 12m-24-3 24 12m-24-3 15 7" stroke="#b9a174" stroke-width="3"/><path d="m129 101 18-9v32l-18 9Z" fill="#fff9e8"/><path d="m103 37 18 8-18 9-18-8Z" fill="#f7e9c2"/></svg>
+   <strong>任务发布台</strong><small>目标交给合适的员工</small><span class="place-status" id="publishing-status">等待一个新目标</span>
+  </button>
+  <button class="building delivering" data-space="delivery" aria-label="交付大厅，查看任务进度与结果">
+   <svg viewBox="0 0 200 180" aria-hidden="true"><ellipse cx="103" cy="153" rx="76" ry="15" fill="#61755626" filter="url(#shadow)"/><path d="m22 75 80-37 77 37-80 40Z" fill="#c28a71"/><path d="M22 75v56l77 37v-53Z" fill="#f0d3bf"/><path d="M99 115v53l80-37V75Z" fill="#d6ab94"/><path d="m14 75 88-48 86 48-89 43Z" fill="#bf8065"/><path d="m38 95 14 7v19l-14-7m27-6 15 8v18l-15-7" fill="#fff9ed"/><path d="m130 116 22-11v34l-22 11Z" fill="#fff9ed"/><path d="m90 51 14-7 17 8-15 8Z" fill="#f8e6d5"/><path d="m90 51v10l16 9V60l15-8v9l-15 9" fill="#fff6e8"/></svg>
+   <strong>交付大厅</strong><small>进度与成果，一处看清</small><span class="place-status" id="delivery-status">还没有任务</span>
+  </button>
+  <div class="plaza-label"><strong>协作广场</strong><span>独立开始 · 需要时找到伙伴</span></div>
+  <div id="employees"></div><div id="project-room"></div>
+  <div class="campus-caption" id="campus-caption">知识从教学室出发，工作在交付大厅完成。</div>
+ </div>
+ <nav class="quick-nav" aria-label="三个核心功能"><button data-space="teach"><b>01</b><span>教我的数字员工</span>→</button><button data-space="publish"><b>02</b><span>发布任务</span>→</button><button data-space="delivery"><b>03</b><span>看进度与成果</span>→</button></nav>
+</section>
+<main id="main" class="panel" tabindex="-1" aria-label="当前空间操作"></main>
+</div>
+<section class="task-strip" id="task-strip" aria-label="我的任务"></section>
+<footer><span>Workforce Lab · 可操作的数字校园</span><span>交互原型：样例逻辑，无模型或后端执行。</span><button class="quiet" data-action="reset">重新演示</button></footer>
+<dialog id="modal" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title"></h2><button class="close" data-action="close" aria-label="关闭弹窗">×</button></div><div id="modal-body"></div></dialog>
+<div class="toast" role="status" aria-live="polite" id="toast"></div>
+<script src="campus.js"></script>
+</body></html>

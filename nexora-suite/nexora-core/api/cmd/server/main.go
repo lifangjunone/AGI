@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type app struct {
@@ -32,6 +34,7 @@ type user struct {
 	ID             string    `json:"id"`
 	Email          string    `json:"email"`
 	Password       string    `json:"-"`
+	PasswordHash   string    `json:"-"`
 	TenantID       string    `json:"tenant_id"`
 	Name           string    `json:"name"`
 	Roles          []string  `json:"roles"`
@@ -62,10 +65,11 @@ type role struct {
 }
 
 type persistedState struct {
-	Users         map[string]user         `json:"users"`
-	Organizations map[string]organization `json:"organizations"`
-	Roles         map[string]role         `json:"roles"`
-	Audits        []audit                 `json:"audits"`
+	Users          map[string]user         `json:"users"`
+	Organizations  map[string]organization `json:"organizations"`
+	Roles          map[string]role         `json:"roles"`
+	Audits         []audit                 `json:"audits"`
+	PasswordHashes map[string]string       `json:"password_hashes,omitempty"`
 }
 
 type claims struct {
@@ -102,7 +106,7 @@ func newApp(secret, adminPassword, dataFile string) *app {
 	now := time.Now().UTC()
 	a := &app{
 		secret:   []byte(secret),
-		products: enabledProducts(env("NEXORA_PRODUCTS", "studio,control,maas")),
+		products: enabledProducts(env("NEXORA_PRODUCTS", "studio,control,maas,runtime")),
 		dataFile: dataFile,
 		users: map[string]user{
 			"admin@nexora.local": {ID: "usr_admin", Email: "admin@nexora.local", Password: adminPassword, TenantID: "tenant_nexora", Name: "Nexora Admin", Roles: []string{"owner"}, OrganizationID: "org_platform", Status: "active", Locale: "zh-CN", CreatedAt: now, LastActiveAt: now},
@@ -121,10 +125,18 @@ func newApp(secret, adminPassword, dataFile string) *app {
 	if err := a.load(); err != nil {
 		log.Printf("load core state: %v", err)
 	}
-	// The deployment password remains authoritative so persisted demo state cannot lock out the operator.
+	// Bootstrap only: an existing hash must never be reset by an environment variable.
 	admin := a.users["admin@nexora.local"]
-	admin.Password = adminPassword
+	if admin.PasswordHash == "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
+		if err != nil {
+			panic("invalid bootstrap password")
+		}
+		admin.PasswordHash = string(hash)
+	}
+	admin.Password = ""
 	a.users["admin@nexora.local"] = admin
+	a.persistLocked()
 	return a
 }
 
@@ -600,6 +612,12 @@ func (a *app) load() error {
 		a.roles = state.Roles
 	}
 	a.audits = state.Audits
+	for email, hash := range state.PasswordHashes {
+		if item, ok := a.users[email]; ok {
+			item.PasswordHash = hash
+			a.users[email] = item
+		}
+	}
 	return nil
 }
 
@@ -608,6 +626,12 @@ func (a *app) persistLocked() {
 		return
 	}
 	state := persistedState{Users: a.users, Organizations: a.organizations, Roles: a.roles, Audits: a.audits}
+	state.PasswordHashes = map[string]string{}
+	for email, item := range a.users {
+		if item.PasswordHash != "" {
+			state.PasswordHashes[email] = item.PasswordHash
+		}
+	}
 	raw, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		log.Printf("persist core state: %v", err)
@@ -635,7 +659,7 @@ func (a *app) login(w http.ResponseWriter, r *http.Request) {
 	a.mu.RLock()
 	u, ok := a.users[strings.ToLower(in.Email)]
 	a.mu.RUnlock()
-	if !ok || !hmac.Equal([]byte(u.Password), []byte(in.Password)) {
+	if !ok || u.Status != "active" || u.PasswordHash == "" || bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(in.Password)) != nil {
 		errorJSON(w, http.StatusUnauthorized, "invalid_credentials", "email or password is invalid")
 		return
 	}
@@ -710,6 +734,7 @@ func (a *app) listProducts(w http.ResponseWriter, _ *http.Request, c claims) {
 		"studio":  env("STUDIO_PUBLIC_URL", "http://localhost:3001"),
 		"control": env("CONTROL_PUBLIC_URL", "http://localhost:3002"),
 		"maas":    env("MAAS_PUBLIC_URL", "http://localhost:3003"),
+		"runtime": env("RUNTIME_PUBLIC_URL", "http://localhost:3004"),
 	}
 	items := make([]map[string]any, 0, len(c.Products))
 	for _, product := range c.Products {
@@ -856,10 +881,10 @@ func env(k, fallback string) string {
 
 func enabledProducts(value string) []string {
 	seen := map[string]bool{}
-	result := make([]string, 0, 3)
+	result := make([]string, 0, 4)
 	for _, item := range strings.Split(value, ",") {
 		item = strings.ToLower(strings.TrimSpace(item))
-		if (item == "studio" || item == "control" || item == "maas") && !seen[item] {
+		if (item == "studio" || item == "control" || item == "maas" || item == "runtime") && !seen[item] {
 			result = append(result, item)
 			seen[item] = true
 		}

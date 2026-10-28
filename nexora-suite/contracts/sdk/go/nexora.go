@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -22,7 +23,19 @@ type AgentManifest struct {
 	Version       string         `json:"version"`
 	Endpoint      string         `json:"endpoint"`
 	Capabilities  []string       `json:"capabilities"`
+	ExecutionType string         `json:"execution_type,omitempty"`
+	Runtime       *RuntimeConfig `json:"runtime,omitempty"`
 	Metadata      map[string]any `json:"metadata,omitempty"`
+}
+
+type RuntimeConfig struct {
+	RuntimeID         string `json:"runtime_id,omitempty"`
+	DeploymentMode    string `json:"deployment_mode,omitempty"`
+	Endpoint          string `json:"endpoint,omitempty"`
+	CredentialRef     string `json:"credential_ref,omitempty"`
+	PermissionProfile string `json:"permission_profile,omitempty"`
+	MaxSteps          int    `json:"max_steps,omitempty"`
+	TimeoutSeconds    int    `json:"timeout_seconds,omitempty"`
 }
 
 func (c Client) RegisterAgent(ctx context.Context, manifest AgentManifest) (map[string]any, error) {
@@ -36,6 +49,14 @@ func (c Client) RegisterAgent(ctx context.Context, manifest AgentManifest) (map[
 
 func (c Client) Invoke(ctx context.Context, agentID, input string) (map[string]any, error) {
 	return c.do(ctx, http.MethodPost, "/api/v1/gateway/agents/"+agentID+"/invoke", map[string]string{"input": input})
+}
+
+func (c Client) RuntimeTask(ctx context.Context, taskID string) (map[string]any, error) {
+	return c.do(ctx, http.MethodGet, "/api/v1/tasks/"+url.PathEscape(taskID), nil)
+}
+
+func (c Client) CancelRuntimeTask(ctx context.Context, taskID string) (map[string]any, error) {
+	return c.do(ctx, http.MethodPost, "/api/v1/tasks/"+url.PathEscape(taskID)+"/cancel", nil)
 }
 
 func (c Client) do(ctx context.Context, method, path string, body any) (map[string]any, error) {

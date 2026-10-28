@@ -1,0 +1,26 @@
+---
+title: 'Proguard configuration'
+description: 'Proguard rules required to prevent essential Duix SDK classes from being obfuscated during release builds.'
+---
+
+## Overview
+
+When building a **release version** of your app with code shrinking or obfuscation enabled  
+(e.g., using **Proguard** or **R8**), certain SDK dependencies must be excluded from obfuscation  
+to ensure stable runtime behavior.
+
+Add the following rules to your project’s **`proguard-rules.pro`** file:
+
+---
+
+```proguard
+# Prevent WebRTC classes from being obfuscated
+-keep class org.webrtc.** { *; }
+
+# Preserve MQTT client classes
+-keep class org.eclipse.paho.client.** { *; }
+-keep class org.eclipse.paho.uri.** { *; }
+
+# (Optional) Preserve Duix SDK classes if referenced by reflection
+-keep class com.guiji.sdk.** { *; }
+```

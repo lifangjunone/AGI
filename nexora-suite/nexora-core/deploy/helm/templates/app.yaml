@@ -23,6 +23,7 @@ spec:
             - { name: STUDIO_PUBLIC_URL, value: "{{ .Values.config.studioPublicURL }}" }
             - { name: CONTROL_PUBLIC_URL, value: "{{ .Values.config.controlPublicURL }}" }
             - { name: MAAS_PUBLIC_URL, value: "{{ .Values.config.maasPublicURL }}" }
+            - { name: RUNTIME_PUBLIC_URL, value: "{{ .Values.config.runtimePublicURL }}" }
             - name: NEXORA_JWT_SECRET
               valueFrom: { secretKeyRef: { name: "{{ .Values.config.secretName }}", key: "{{ .Values.config.jwtSecretKey }}" } }
             - name: DATABASE_URL

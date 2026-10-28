@@ -34,8 +34,9 @@
 
       <nav class="tabs" aria-label="管理功能">
         <button class="tab active" type="button" data-tab="orders">收款确认</button>
+        <button class="tab" type="button" data-tab="actions">待处理</button>
         <button class="tab" type="button" data-tab="matrix">产品榜</button>
-        <button class="tab" type="button" data-tab="promotion">推广中心</button>
+        <button class="tab" type="button" data-tab="promotion">自主经营</button>
       </nav>
 
       <section data-orders-page>
@@ -58,6 +59,22 @@
         </section>
       </section>
 
+      <section data-actions-page hidden>
+        <section class="promotion-head">
+          <div>
+            <span class="brand">只在确实需要你时通知</span>
+            <h2>待处理任务</h2>
+            <p>小红书登录失效时在这里扫码；完成后确认，程序会重新核验登录并继续发布。</p>
+          </div>
+          <button class="secondary" type="button" data-refresh-actions>刷新任务</button>
+        </section>
+        <section class="action-task-summary">
+          <article><span>待处理</span><strong data-action-pending>0</strong></article>
+          <article><span>已确认</span><strong data-action-confirmed>0</strong></article>
+        </section>
+        <div class="action-task-list" data-action-tasks aria-live="polite"></div>
+      </section>
+
       <section data-matrix-page hidden>
         <section class="promotion-head">
           <div>
@@ -75,21 +92,18 @@
       <section data-promotion-page hidden>
         <section class="promotion-head">
           <div>
-            <span class="brand">30 天零预算验证</span>
-            <h2>本周只需发布 3 条</h2>
-            <p>程序准备素材结构、文案和独立追踪链接；你集中审核并完成平台最终发布。</p>
+            <span class="brand">零预算自主经营</span>
+            <h2>经营结果与进化状态</h2>
+            <p>程序每天优化一个主要变量、每周调整产品排名；这里只展示结果和确实无法自动完成的任务。</p>
           </div>
-          <button class="secondary" type="button" data-refresh-promotion>刷新数据</button>
+          <button class="secondary" type="button" data-refresh-business>刷新状态</button>
         </section>
-        <section class="funnel" data-funnel></section>
-        <section class="diagnosis" data-diagnosis></section>
-        <section class="milestones" data-milestones></section>
-        <section class="xianyu-gate" data-xianyu></section>
-        <div class="package-list" data-promotion-packages></div>
-        <section class="boundaries">
-          <h3>自动化边界</h3>
-          <ul data-boundaries></ul>
-        </section>
+        <section class="diagnosis" data-business-mode></section>
+        <section class="funnel" data-business-summary></section>
+        <section class="business-block" data-channel-health></section>
+        <section class="business-block" data-payment-migration></section>
+        <section class="business-block" data-lifecycle></section>
+        <section class="business-block" data-decisions></section>
       </section>
     </section>
   </main>

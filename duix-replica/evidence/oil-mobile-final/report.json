@@ -1,0 +1,325 @@
+[
+  {
+    "file": "idle.png",
+    "state": "idle",
+    "size": "390x844",
+    "zoom": 1,
+    "animationWaitMs": 77,
+    "issues": [],
+    "lint": [
+      {
+        "rule": "eyebrow",
+        "label": "标题上方的眉标",
+        "count": 4,
+        "examples": [
+          "p.eyebrow「AVAILABLE 24/7」",
+          "p.eyebrow「BUILT FOR REAL TEAMS」",
+          "p.eyebrow「DEVELOPER」"
+        ]
+      },
+      {
+        "rule": "contrastLow",
+        "label": "文字对比度不达标（正文低于 4.5:1，大字低于 3:1）",
+        "count": 1,
+        "examples": [
+          "p「Customize appearance and」（4.41:1）"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "idle-@2x.png",
+    "state": "idle",
+    "size": "390x844",
+    "zoom": 2,
+    "animationWaitMs": 91,
+    "issues": [],
+    "lint": [
+      {
+        "rule": "eyebrow",
+        "label": "标题上方的眉标",
+        "count": 4,
+        "examples": [
+          "p.eyebrow「AVAILABLE 24/7」",
+          "p.eyebrow「BUILT FOR REAL TEAMS」",
+          "p.eyebrow「DEVELOPER」"
+        ]
+      }
+    ]
+  },
+  {
+    "file": "motion-probe-idle",
+    "state": "idle",
+    "size": "390x844",
+    "zoom": 1,
+    "group": "idle",
+    "motion": {
+      "load": {
+        "elements": 6,
+        "loops": 0,
+        "maxMove": 36,
+        "maxSize": 0.027,
+        "maxOpacity": 1,
+        "top": [
+          {
+            "el": "div.headshots-mobile",
+            "move": 36,
+            "size": 0,
+            "opacity": 1,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "h1",
+            "move": 36,
+            "size": 0,
+            "opacity": 1,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "p",
+            "move": 36,
+            "size": 0,
+            "opacity": 1,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "div.hero-actions",
+            "move": 36,
+            "size": 0,
+            "opacity": 1,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "small",
+            "move": 36,
+            "size": 0,
+            "opacity": 1,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "img",
+            "move": 9,
+            "size": 0.027,
+            "opacity": 0.75,
+            "loop": false,
+            "sources": [
+              "css:case-enter"
+            ]
+          }
+        ]
+      },
+      "steps": {
+        "elements": 7,
+        "loops": 2,
+        "maxMove": 5005,
+        "maxSize": 0.119,
+        "maxOpacity": 0.96,
+        "top": [
+          {
+            "el": "div#mobile-menu.mobile-menu",
+            "move": 5005,
+            "size": 0,
+            "opacity": 0.96,
+            "loop": false,
+            "sources": [
+              "transition:opacity",
+              "transition:transform"
+            ]
+          },
+          {
+            "el": "img",
+            "move": 93,
+            "size": 0.119,
+            "opacity": 0,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "section#use-cases.use-cases.section-shell",
+            "move": 48,
+            "size": 0,
+            "opacity": 0.96,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "div.business-copy.reveal",
+            "move": 48,
+            "size": 0,
+            "opacity": 0.96,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "section#about.trust.section-shell",
+            "move": 48,
+            "size": 0,
+            "opacity": 0.96,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "div.developer-copy.reveal",
+            "move": 48,
+            "size": 0,
+            "opacity": 0.96,
+            "loop": true,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "div.code-window.reveal",
+            "move": 48,
+            "size": 0,
+            "opacity": 0.96,
+            "loop": true,
+            "sources": [
+              "js:style"
+            ]
+          }
+        ]
+      },
+      "hero": {
+        "elements": 0,
+        "loops": 0,
+        "maxMove": 0,
+        "maxSize": 0,
+        "maxOpacity": 0,
+        "top": [],
+        "layers": 0
+      },
+      "scroll": {
+        "elements": 2,
+        "loops": 0,
+        "maxMove": 93,
+        "maxSize": 0.119,
+        "maxOpacity": 0.96,
+        "top": [
+          {
+            "el": "img",
+            "move": 93,
+            "size": 0.119,
+            "opacity": 0,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          },
+          {
+            "el": "section#capabilities.capabilities.section-shell",
+            "move": 48,
+            "size": 0,
+            "opacity": 0.96,
+            "loop": false,
+            "sources": [
+              "js:style"
+            ]
+          }
+        ],
+        "scrollable": true
+      }
+    },
+    "issues": []
+  },
+  {
+    "file": "motion-entry-end.jpg",
+    "state": "idle",
+    "size": "390x844",
+    "zoom": 1,
+    "group": "entry",
+    "issues": [],
+    "frames": {
+      "start": {
+        "file": "motion-entry-start.jpg",
+        "source": "Page.screencastFrame",
+        "timeMs": 165
+      },
+      "mid": {
+        "file": "motion-entry-mid.jpg",
+        "source": "Page.screencastFrame",
+        "timeMs": 401
+      },
+      "end": {
+        "file": "motion-entry-end.jpg",
+        "source": "Page.captureScreenshot",
+        "timeMs": 1865
+      }
+    },
+    "sampling": {
+      "mode": "entry"
+    },
+    "durationMs": 1865,
+    "consistency": {
+      "status": "matched",
+      "reference": "motion-entry-end.jpg",
+      "different": false,
+      "changedPixels": 0,
+      "maxTilePixels": 0,
+      "pixelRatio": 0
+    }
+  },
+  {
+    "file": "motion-idle-end.jpg",
+    "state": "idle",
+    "size": "390x844",
+    "zoom": 1,
+    "group": "idle",
+    "issues": [],
+    "frames": {
+      "start": {
+        "file": "motion-idle-start.jpg",
+        "source": "Page.captureScreenshot",
+        "timeMs": 659
+      },
+      "mid": {
+        "file": "motion-idle-mid.jpg",
+        "source": "Page.screencastFrame",
+        "timeMs": 764
+      },
+      "end": {
+        "file": "motion-idle-end.jpg",
+        "source": "Page.captureScreenshot",
+        "timeMs": 3596
+      }
+    },
+    "sampling": {
+      "mode": "action",
+      "step": 2,
+      "action": "click",
+      "raw": "click .menu-button"
+    },
+    "durationMs": 3596,
+    "consistency": {
+      "status": "matched",
+      "reference": "motion-idle-end.jpg",
+      "different": false,
+      "changedPixels": 0,
+      "maxTilePixels": 0,
+      "pixelRatio": 0
+    }
+  }
+]

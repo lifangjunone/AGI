@@ -1,0 +1,29 @@
+---
+title: 'Quick start'
+description: 'Initialize and start a Duix session after microphone authorization in iOS.'
+---
+
+## Overview
+
+Before initializing the **Duix iOS SDK**, ensure that microphone permissions are granted.  
+The following example demonstrates how to request access and start a digital human session  
+after successful authorization.
+
+---
+
+```objective-c
+- (void)toStart {
+    // Initialize SDK after microphone access is granted
+    [[DigitalManager manager] initNewWithAppId:AppId
+                                         appKey:AppKey
+                                  conversationId:ConversationId
+                                          region:REGION
+                                           block:^(BOOL isSuccee, NSString *errorMsg) {
+        if (isSuccee) {
+            // Start the digital human session
+            [[DigitalManager manager] toStart];
+        } else {
+            NSLog(@"GJDigitalDemo error: %@", errorMsg);
+        }
+    }];
+}

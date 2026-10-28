@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity, ArrowRight, Bot, Check, ChevronRight, CircleAlert, Clock, Eye, EyeOff,
-  Gauge, KeyRound, ListChecks, RefreshCw, Save, Server, ShieldCheck,
+  Gauge, KeyRound, ListChecks, Power, RefreshCw, Save, Server, ShieldCheck,
   SlidersHorizontal, Sparkles, UserRound
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 interface AdminSession {
@@ -86,7 +86,12 @@ async function adminApi<T>(path: string, init?: RequestInit): Promise<T> {
       api_key_required: "首次保存或测试时必须填写 API Key",
       model_provider_error: "模型服务返回异常",
       model_timeout: "模型连接超时，请检查地址或适当增加超时时间",
-      model_connection_failed: "无法连接模型服务，请检查 Endpoint、网络和密钥"
+      model_connection_failed: "无法连接模型服务，请检查 Endpoint、网络和密钥",
+      invalid_model_status: "模型开关状态无效",
+      model_configuration_required: "请先保存模型连接配置，再开启服务",
+      secret_reveal_origin_denied: "请从 MeYou 管理页面发起查看操作",
+      secret_reveal_confirmation_required: "请先确认查看敏感密钥",
+      api_key_not_configured: "当前没有已保存的密钥"
     };
     const code = String(body.error ?? "");
     const providerStatus = code.startsWith("model_provider_error:") ? code.split(":")[1] : "";
@@ -105,11 +110,34 @@ function AdminMark() {
 }
 
 export function AdminLogin() {
+  const queryClient = useQueryClient();
+  const [email, setEmail] = useState("admin@lifeyoume.local");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
   const session = useQuery({
     queryKey: ["admin-session"],
     queryFn: () => adminApi<AdminSession>("/api/v1/admin/session"),
     retry: false
   });
+
+  async function login(event: React.FormEvent) {
+    event.preventDefault();
+    setLoginError("");
+    setLoggingIn(true);
+    try {
+      await adminApi("/api/v1/admin/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password })
+      });
+      await queryClient.invalidateQueries({ queryKey: ["admin-session"] });
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : "登录未完成");
+    } finally {
+      setLoggingIn(false);
+    }
+  }
 
   return <main className="admin-login-page">
     <section className="admin-login-story">
@@ -122,7 +150,22 @@ export function AdminLogin() {
       <footer><span><ShieldCheck /> 平台管理员</span><span><KeyRound /> 密钥不回显</span><span><Activity /> 真实连接测试</span></footer>
     </section>
     <section className="admin-login-panel">
-      <div className="admin-platform-card">
+      {session.data?.localFallbackEnabled && !session.data.admin ? <form onSubmit={login}>
+        <header><span>LOCAL DEVELOPMENT</span><h2>本地管理员登录</h2><p>仅在开发环境启用，用于配置和测试模型；线上仍由 LifeYouMe 统一鉴权。</p></header>
+        <label>管理员邮箱<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" required /></label>
+        <label>管理员密码<span className="admin-password-input">
+          <input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)}
+            autoComplete="current-password" required />
+          <button type="button" aria-label={showPassword ? "隐藏密码" : "显示密码"} onClick={() => setShowPassword((value) => !value)}>
+            {showPassword ? <EyeOff /> : <Eye />}
+          </button>
+        </span></label>
+        {loginError && <div className="admin-form-error"><CircleAlert />{loginError}</div>}
+        <button className="admin-primary" type="submit" disabled={loggingIn || !email.trim() || !password}>
+          {loggingIn ? <RefreshCw className="spin" /> : <ShieldCheck />}{loggingIn ? "正在登录…" : "进入本地控制台"}
+        </button>
+        <small className="admin-login-note"><ShieldCheck /> 本地账号只存在于当前开发进程。</small>
+      </form> : <div className="admin-platform-card">
         <header><span>UNIFIED ADMIN</span><h2>从 LifeYouMe 管理后台进入</h2><p>MeYou 不再维护独立管理员账号和密码。</p></header>
         {session.isLoading ? <div className="admin-alert success"><RefreshCw className="spin" /><span>正在检查平台管理员会话…</span></div>
           : session.data?.admin ? <div className="admin-alert success"><Check /><span><b>已识别平台管理员</b><small>{session.data.admin.email}</small></span></div>
@@ -134,7 +177,7 @@ export function AdminLogin() {
           打开 LifeYouMe 管理后台 <ArrowRight />
         </a>
         <small className="admin-login-note"><ShieldCheck /> 管理员会话、退出和权限统一由 LifeYouMe 底座管理。</small>
-      </div>
+      </div>}
     </section>
   </main>;
 }
@@ -186,8 +229,62 @@ export function AdminConsole() {
   });
   const [section, setSection] = useState<AdminSection>("model");
   const [showKey, setShowKey] = useState(false);
+  const [revealConfirm, setRevealConfirm] = useState(false);
+  const [revealedKey, setRevealedKey] = useState("");
+  const [revealing, setRevealing] = useState(false);
+  const [revealError, setRevealError] = useState("");
+  const revealVersion = useRef(0);
+  function clearRevealedKey() {
+    revealVersion.current += 1;
+    setRevealedKey("");
+    setRevealConfirm(false);
+    setRevealing(false);
+  }
+  useEffect(() => {
+    clearRevealedKey();
+  }, [section, configuration.data]);
+  useEffect(() => {
+    if (!revealedKey) return;
+    const timer = setTimeout(clearRevealedKey, 30_000);
+    return () => clearTimeout(timer);
+  }, [revealedKey]);
+  useEffect(() => {
+    const hide = () => { if (document.hidden) clearRevealedKey(); };
+    const blur = () => clearRevealedKey();
+    document.addEventListener("visibilitychange", hide);
+    window.addEventListener("blur", blur);
+    window.addEventListener("pagehide", blur);
+    return () => {
+      revealVersion.current += 1;
+      document.removeEventListener("visibilitychange", hide);
+      window.removeEventListener("blur", blur);
+      window.removeEventListener("pagehide", blur);
+    };
+  }, []);
+  async function revealSavedKey() {
+    if (revealing) return;
+    const version = ++revealVersion.current;
+    setRevealing(true); setRevealError("");
+    try {
+      const result = await adminApi<{ apiKey: string }>("/api/v1/admin/model-config/reveal-key", {
+        method: "POST",
+        body: JSON.stringify({ confirmation: "reveal-saved-model-key" }),
+        cache: "no-store"
+      });
+      if (version === revealVersion.current && !document.hidden) {
+        setRevealedKey(result.apiKey);
+        setRevealConfirm(false);
+      }
+    } catch (error) {
+      if (version === revealVersion.current) setRevealError(error instanceof Error ? error.message : "查看失败");
+    } finally {
+      if (version === revealVersion.current) setRevealing(false);
+    }
+  }
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
   const [notice, setNotice] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [testResult, setTestResult] = useState<{ latencyMs: number; responsePreview: string } | null>(null);
   const configurationReady = Boolean(configuration.data?.configuration);
@@ -266,6 +363,31 @@ export function AdminConsole() {
     }
   }
 
+  async function updateModelStatus(enabled: boolean) {
+    setStatusUpdating(true);
+    setNotice(null);
+    try {
+      await adminApi("/api/v1/admin/model-config/status", {
+        method: "PATCH",
+        body: JSON.stringify({ enabled })
+      });
+      setForm((value) => ({ ...value, enabled }));
+      setDisableConfirmOpen(false);
+      setNotice({
+        type: "success",
+        text: enabled
+          ? "模型服务已开启，新模型任务可以开始调用。"
+          : "模型服务已关闭，后续新模型任务将停止调用。"
+      });
+      await configuration.refetch();
+      await queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+    } catch (caught) {
+      setNotice({ type: "error", text: caught instanceof Error ? caught.message : "模型开关更新失败" });
+    } finally {
+      setStatusUpdating(false);
+    }
+  }
+
   function returnToPlatform() {
     queryClient.setQueryData<AdminSession>(["admin-session"], {
       admin: null,
@@ -294,15 +416,34 @@ export function AdminConsole() {
     <main className="admin-main">
       <header className="admin-topbar">
         <div><span>{section === "model" ? "MODEL INFRASTRUCTURE" : section === "usage" ? "USAGE & QUOTA" : "SECURITY AUDIT"}</span><h1>{section === "model" ? "模型控制台" : section === "usage" ? "调用与配额" : "安全审计"}</h1></div>
-        <div className={`admin-live ${current?.enabled ? "on" : ""}`}><i />{current?.enabled ? "模型服务已启用" : "模型服务未启用"}</div>
+        {section === "model" && <div className={`admin-model-power ${current?.enabled ? "on" : "off"}`}>
+          <div><i /><span><b>{current?.enabled ? "模型服务运行中" : "模型服务已关闭"}</b><small>{current?.enabled ? "新任务允许调用" : "新任务不会调用模型"}</small></span></div>
+          <button type="button" role="switch" aria-checked={Boolean(current?.enabled)}
+            aria-label={current?.enabled ? "关闭模型服务" : "开启模型服务"}
+            disabled={!configurationReady || statusUpdating}
+            onClick={() => current?.enabled ? setDisableConfirmOpen(true) : void updateModelStatus(true)}>
+            <span /><em>{statusUpdating ? "更新中" : current?.enabled ? "关闭" : "开启"}</em>
+          </button>
+        </div>}
       </header>
       <div className="admin-content">
         <section className="admin-status-strip">
           <div><span className="admin-status-icon"><Server /></span><p><small>当前来源</small><b>{current?.source === "database" ? "管理端配置" : "服务器环境变量"}</b></p></div>
           <div><span className="admin-status-icon"><Bot /></span><p><small>当前模型</small><b>{current?.modelId || "尚未配置"}</b></p></div>
-          <div><span className="admin-status-icon"><KeyRound /></span><p><small>API Key</small><b>{current?.apiKeyMasked || "尚未配置"}</b></p></div>
+          <div><span className="admin-status-icon"><KeyRound /></span><p><small>API Key</small><b>{current?.apiKeyMasked || "尚未配置"}</b>
+            {section === "model" && current?.hasApiKey && <button className="admin-secret-trigger" type="button" onClick={() => { setRevealError(""); setRevealConfirm(true); }}>查看已保存密钥</button>}
+          </p></div>
           <div><span className="admin-status-icon"><Activity /></span><p><small>最近更新</small><b>{current?.updatedAt ? new Date(current.updatedAt).toLocaleString("zh-CN") : "跟随环境配置"}</b></p></div>
         </section>
+        {section === "model" && revealedKey && <section className="admin-secret-panel" aria-label="已保存的模型密钥">
+          <header><b>已保存的 API Key</b><button className="admin-secondary" type="button" onClick={clearRevealedKey}><EyeOff />立即隐藏</button></header>
+          <code>{revealedKey}</code><p>30 秒后自动隐藏，切换窗口或离开页面也会清除。请勿截图或分享。</p>
+        </section>}
+        {section === "model" && revealConfirm && <section className="admin-secret-panel" aria-label="确认查看模型密钥">
+          <b>确认查看完整密钥？</b><p>此操作将重新校验你的管理员会话并记录审计。完整密钥可访问模型服务，请确认周围没有旁观者。</p>
+          {revealError && <p role="alert">{revealError}</p>}
+          <div><button className="admin-secondary" type="button" onClick={clearRevealedKey}>取消</button><button className="admin-primary" type="button" disabled={revealing} onClick={() => void revealSavedKey()}>{revealing ? "正在验证…" : "确认查看，30 秒后隐藏"}</button></div>
+        </section>}
 
         {section === "model" && <section className="admin-workspace">
           <div className="admin-config-card">
@@ -330,7 +471,7 @@ export function AdminConsole() {
                     onChange={(event) => setForm({ ...form, apiKey: event.target.value })}
                     placeholder={current?.hasApiKey ? `保持当前密钥（${current.apiKeyMasked}）` : "输入 API Key"} />
                   <button type="button" onClick={() => setShowKey((value) => !value)}
-                    aria-label={showKey ? "隐藏 API Key" : "显示 API Key"}>{showKey ? <EyeOff /> : <Eye />}</button>
+                    aria-label={showKey ? "隐藏新输入的密钥" : "显示新输入的密钥"}>{showKey ? <EyeOff /> : <Eye />}</button>
                 </span>
                 <small>留空表示继续使用当前密钥。密钥只会发送到 MeYou 服务端。</small>
               </label>
@@ -346,13 +487,10 @@ export function AdminConsole() {
                   onChange={(event) => setForm({ ...form, temperature: Number(event.target.value) })} />
               </label>
             </div>
-            <div className="admin-switches">
+            <div className="admin-switches single">
               <label><input type="checkbox" checked={form.thinkingEnabled}
                 onChange={(event) => setForm({ ...form, thinkingEnabled: event.target.checked })} />
                 <span><b>默认开启深度思考</b><small>任务可按自身需求显式关闭</small></span></label>
-              <label><input type="checkbox" checked={form.enabled}
-                onChange={(event) => setForm({ ...form, enabled: event.target.checked })} />
-                <span><b>启用此模型配置</b><small>关闭后不会作为活动配置使用</small></span></label>
             </div>
             {notice && <div className={`admin-alert ${notice.type}`}>
               {notice.type === "success" ? <Check /> : <CircleAlert />}<span>{notice.text}</span>
@@ -384,7 +522,8 @@ export function AdminConsole() {
               <h3>密钥与权限边界</h3>
               <ul>
                 <li><Check />API Key 使用 AES-256-GCM 加密保存</li>
-                <li><Check />浏览器只读取掩码，不读取密钥正文</li>
+                <li><Check />默认仅显示掩码，管理员确认后可短暂查看</li>
+                <li><Check />每次查看密钥记录审计，30 秒后自动隐藏</li>
                 <li><Check />平台管理员身份由 LifeYouMe 底座统一校验</li>
                 <li><Check />每次配置变更写入审计记录</li>
               </ul>
@@ -437,7 +576,23 @@ export function AdminConsole() {
                 : <AdminEmptyState icon={<ShieldCheck />} title="暂无审计时间线" copy="这里不会展示 mock；真实 Agent 行为和管理操作发生后才会出现。" />}
             </section>
           </>}
-        </section>}      </div>
+        </section>}
+      </div>
+      {disableConfirmOpen && <div className="admin-confirm-layer" role="dialog" aria-modal="true" aria-labelledby="disable-model-title">
+        <button className="admin-confirm-backdrop" aria-label="取消关闭模型服务" onClick={() => setDisableConfirmOpen(false)} />
+        <section className="admin-confirm-card">
+          <span className="admin-confirm-icon"><Power /></span>
+          <small>GLOBAL MODEL SWITCH</small>
+          <h2 id="disable-model-title">关闭模型服务？</h2>
+          <p>关闭后，广场群聊、自动回复、持续搜索等所有后续新模型任务都会停止调用。已经产生的历史消息不会删除。</p>
+          <div>
+            <button className="admin-secondary" onClick={() => setDisableConfirmOpen(false)} disabled={statusUpdating}>取消</button>
+            <button className="admin-danger" onClick={() => void updateModelStatus(false)} disabled={statusUpdating}>
+              <Power />{statusUpdating ? "正在关闭…" : "确认关闭"}
+            </button>
+          </div>
+        </section>
+      </div>}
     </main>
   </div>;
 }

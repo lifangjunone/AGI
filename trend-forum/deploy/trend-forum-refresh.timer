@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh Trend Forum every 6 hours
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:00:00 Asia/Shanghai
+Persistent=true
+RandomizedDelaySec=0
+Unit=trend-forum-refresh.service
+
+[Install]
+WantedBy=timers.target

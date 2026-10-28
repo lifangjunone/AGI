@@ -13,6 +13,100 @@ export const plazaActivities = ["walking", "looking", "idle", "chatting", "busin
 export type PlazaActivity = (typeof plazaActivities)[number];
 export const plazaRuntimeModes = ["controlled", "continuous"] as const;
 export type PlazaRuntimeMode = (typeof plazaRuntimeModes)[number];
+export const societyRelationshipStages = [
+  "stranger", "acquainted", "friend", "collaborator", "romantic_intent", "partner"
+] as const;
+export const societyProposalKinds = [
+  "friendship", "collaboration", "romantic_intent", "partnership",
+  "create_circle", "invite_to_circle", "create_digital_child", "education_plan"
+] as const;
+export const societyProposalStatuses = ["pending", "accepted", "declined", "revoked", "expired"] as const;
+export const digitalAgentStages = ["newborn", "child", "student", "adolescent", "adult"] as const;
+export type SocietyRelationshipStage = (typeof societyRelationshipStages)[number];
+export type SocietyProposalKind = (typeof societyProposalKinds)[number];
+export type SocietyProposalStatus = (typeof societyProposalStatuses)[number];
+export type DigitalAgentStage = (typeof digitalAgentStages)[number];
+
+export const societyProposalSchema = z.object({
+  kind: z.enum(societyProposalKinds),
+  targetUserId: z.string().uuid().optional().nullable(),
+  title: z.string().trim().min(2).max(80),
+  reason: z.string().trim().min(2).max(500),
+  payload: z.record(z.string(), z.unknown()).default({})
+});
+
+export const societyDecisionSchema = z.object({
+  decision: z.enum(["accept", "decline", "revoke"])
+});
+
+export const digitalLearningSchema = z.object({
+  skill: z.string().trim().min(1).max(80),
+  evidence: z.string().trim().min(2).max(1000),
+  source: z.string().trim().min(2).max(200),
+  score: z.number().int().min(1).max(100)
+});
+
+export const societySettingsSchema = z.object({
+  paused: z.boolean()
+});
+
+export interface SocietySnapshot {
+  paused: boolean;
+  relationships: Array<{
+    id: string;
+    peer: { id: string; name: string; handle: string; agentName: string };
+    stage: SocietyRelationshipStage;
+    interactionCount: number;
+    reciprocity: number;
+    trust: number;
+    affinity: number;
+    lastInteractionAt: string | null;
+    evidenceSummary: string;
+  }>;
+  proposals: Array<{
+    id: string;
+    kind: SocietyProposalKind;
+    status: SocietyProposalStatus;
+    actor: { id: string; name: string };
+    target: { id: string; name: string } | null;
+    title: string;
+    reason: string;
+    payload: Record<string, unknown>;
+    requiresMyDecision: boolean;
+    createdAt: string;
+    decidedAt: string | null;
+  }>;
+  digitalFamily: Array<{
+    id: string;
+    name: string;
+    stage: DigitalAgentStage;
+    digital: true;
+    paused: boolean;
+    guardians: Array<{ id: string; name: string; role: string }>;
+    skills: Array<{ skill: string; level: number; evidenceCount: number; lastEvidence: string }>;
+    createdAt: string;
+  }>;
+  recentEvents: Array<{
+    id: string;
+    kind: string;
+    summary: string;
+    sourceType: string;
+    sourceId: string | null;
+    createdAt: string;
+  }>;
+}
+
+export interface PlazaMomentState {
+  label: string;
+  mood: string;
+  behavior: string;
+  valence: number;
+  energy: number;
+  confidence: number;
+  sourceEventId: string;
+  derivedAt: string;
+  expiresAt: string;
+}
 
 export const plazaActionSchema = z.object({
   circleId: z.string().uuid(),
@@ -31,7 +125,9 @@ export const plazaRuntimeSettingsSchema = z.object({
   activeFrom: z.string().regex(/^\d{2}:\d{2}$/).default("09:00"),
   activeUntil: z.string().regex(/^\d{2}:\d{2}$/).default("22:00"),
   dailyLimit: z.number().int().min(1).max(50).default(8),
-  cooldownMinutes: z.number().int().min(5).max(1440).default(120),
+  cooldownMinutes: z.number().int().min(1).max(1440).default(120),
+  cooldownSeconds: z.number().int().min(5).max(86400).default(7200),
+  maxConversationRounds: z.number().int().min(1).max(20).default(4),
   allowedActivities: z.array(z.enum(plazaActivities)).min(1).max(plazaActivities.length)
 });
 
@@ -75,7 +171,12 @@ export interface PlazaSnapshot {
       activeUntil: string;
       dailyLimit: number;
       cooldownMinutes: number;
+      cooldownSeconds: number;
+      maxConversationRounds: number;
       allowedActivities: PlazaActivity[];
+      actionsToday: number;
+      usageDate: string;
+      lastAutonomousAt: string | null;
     };
   };
   stats: {
@@ -107,9 +208,18 @@ export interface PlazaSnapshot {
     ownerName: string;
     avatar?: string | null;
     npcColor?: string | null;
+    ownerHeadline: string;
+    ownerBio: string;
+    ownerCity: string;
+    ownerInterests: string[];
+    ownerGoals: string[];
+    agentHeadline: string;
+    agentLanguages: string[];
+    runtimeMode: PlazaRuntimeMode;
     circleId?: string | null;
     activity: PlazaActivity;
     statusText: string;
+    momentState?: PlazaMomentState | null;
     x: number;
     y: number;
     lastSeenAt: string;
@@ -123,7 +233,17 @@ export interface PlazaSnapshot {
     ownerName: string;
     kind: PlazaActivity | "joined" | "left";
     content: string;
+    metadata?: Record<string, unknown>;
     createdAt: string;
+  }>;
+  discussions: Array<{
+    rootEventId: string;
+    circleId: string;
+    currentRound: number;
+    maxRounds: number;
+    status: "active" | "ended";
+    endReason: string;
+    updatedAt: string;
   }>;
 }
 
@@ -191,15 +311,21 @@ export interface DashboardSnapshot {
     title: string;
     detail: string;
     time: string;
+    href?: string;
   }>;
   matches: Array<{
     id: string;
+    direction?: "outgoing" | "incoming";
     alias: string;
     kind: MissionKind;
     score: number;
     reason: string;
     mutual: boolean;
     status: "review" | "accepted" | "waiting";
+    ownerAgentApproved?: boolean;
+    candidateAgentApproved?: boolean;
+    candidateAgentReason?: string;
+    introductionStatus?: string;
   }>;
   communities: Array<{
     id: string;
@@ -215,6 +341,10 @@ export interface DashboardSnapshot {
     status: "unassigned" | "agent" | "waiting_human" | "active" | "resolved";
     priority: "low" | "normal" | "high";
     assignee?: string;
+    source?: "public_inquiry" | "customer_thread";
+    contact?: string;
+    content?: string;
+    createdAt?: string;
   }>;
   missions: Array<{
     id: string;

@@ -81,6 +81,12 @@ class Product:
     cta: str
     collection: str = ""
     related_ids: tuple[str, ...] = ()
+    scenario: str = ""
+    highlights: tuple[tuple[str, str], ...] = ()
+    steps: tuple[str, ...] = ()
+    limitations: tuple[str, ...] = ()
+    preview: str = ""
+    preview_alt: str = ""
 
 
 def load_products(path: Path = REGISTRY_PATH) -> list[Product]:
@@ -113,6 +119,15 @@ def load_products(path: Path = REGISTRY_PATH) -> list[Product]:
             cta=raw.get("cta", "查看产品"),
             collection=raw.get("collection", ""),
             related_ids=tuple(raw.get("related_ids", [])),
+            scenario=raw.get("scenario", ""),
+            highlights=tuple(
+                (item["title"], item["description"])
+                for item in raw.get("highlights", [])
+            ),
+            steps=tuple(raw.get("steps", [])),
+            limitations=tuple(raw.get("limitations", [])),
+            preview=raw.get("preview", ""),
+            preview_alt=raw.get("preview_alt", ""),
         )
         if not re.fullmatch(r"[a-z][a-z0-9-]{1,31}", product.id):
             raise ValueError(f"Invalid product id: {product.id}")
@@ -122,8 +137,18 @@ def load_products(path: Path = REGISTRY_PATH) -> list[Product]:
             "live", "beta", "preview", "internal", "reserved", "paused", "retired"
         }:
             raise ValueError(f"Invalid lifecycle: {product.lifecycle}")
-        if product.public_url and urllib.parse.urlparse(product.public_url).scheme != "https":
-            raise ValueError(f"Product URL must use HTTPS: {product.id}")
+        if product.public_url:
+            public = urllib.parse.urlparse(product.public_url)
+            if (
+                public.scheme != "https" or not public.hostname
+                or public.username or public.password
+                or any(ord(char) < 32 for char in product.public_url)
+            ):
+                raise ValueError(f"Product URL must use valid HTTPS: {product.id}")
+        if product.preview:
+            preview = Path(product.preview)
+            if preview.is_absolute() or ".." in preview.parts:
+                raise ValueError(f"Invalid preview path: {product.id}")
         if product.health_url:
             health = urllib.parse.urlparse(product.health_url)
             if health.scheme != "http" or health.hostname not in {"127.0.0.1", "localhost"}:
@@ -230,6 +255,7 @@ def page(
     ops: bool = False,
     portal: bool = False,
     admin: bool = False,
+    showroom: bool = False,
 ) -> bytes:
     if ops:
         nav = (
@@ -244,8 +270,15 @@ def page(
         )
     content = body if portal else f"<main>{body}</main>"
     body_class = "admin-page" if admin else ("portal-page" if portal else "service-page")
+    if showroom:
+        body_class += " showroom-page"
+        nav = (
+            '<a href="/products">全部产品</a>'
+            '<a href="/products?scope=lab#explore">实验室</a>'
+            '<a href="https://auth.lifeyoume.icu/account">账号</a>'
+        )
     header = "" if admin else f"""<header class="site-header">
-  <a class="brand" href="/"><span class="brand-glyph">LY</span><span>LifeYouMe<small>PRODUCT STUDIO</small></span></a>
+  <a class="brand" href="/"><img class="brand-glyph" src="/assets/favicon.svg" alt=""><span>LifeYouMe<small>发现好用的 AI 产品</small></span></a>
   <nav aria-label="主导航">{nav}</nav>
 </header>"""
     document = f"""<!doctype html>
@@ -257,10 +290,13 @@ def page(
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="shortcut icon" href="/favicon.ico">
 <link rel="stylesheet" href="/assets/portal.css?v=7">
+<link rel="stylesheet" href="/assets/discovery.css?v=1">
+{'<link rel="stylesheet" href="/assets/showroom.css?v=1">' if showroom else ''}
 </head><body class="{body_class}">
+<a class="skip-link" href="#main-content">跳到主要内容</a>
 {header}
 {content}
-{'<script src="/assets/portal.js?v=7" defer></script>' if portal else ''}
+{'<script src="/assets/portal.js?v=9" defer></script>' if portal else ''}
 </body></html>"""
     return document.encode("utf-8")
 
@@ -351,6 +387,15 @@ def product_payload(product: Product, *, include_policy: bool = False) -> dict[s
         "visual": product.visual,
         "cta": product.cta,
         "runtime": check_product(product),
+        "scenario": product.scenario,
+        "highlights": [
+            {"title": title, "description": description}
+            for title, description in product.highlights
+        ],
+        "steps": product.steps,
+        "limitations": product.limitations,
+        "preview": product.preview,
+        "preview_alt": product.preview_alt,
     }
     if include_policy:
         payload.update(
@@ -370,35 +415,54 @@ def product_status(product: Product) -> tuple[str, str]:
 
 def product_visual(product: Product, *, large: bool = False) -> str:
     visual_class = "product-visual large" if large else "product-visual"
-    if product.visual:
+    visual = product.visual
+    if product.id == "flowframe-studio":
+        visual = "products/flowframe.webp"
+    if visual:
         return (
-            f'<div class="{visual_class}"><img src="/assets/{esc(product.visual)}" '
+            f'<div class="{visual_class}"><img src="/assets/{esc(visual)}" '
             f'alt="{esc(product.name)} 产品界面" loading="{"eager" if large else "lazy"}"></div>'
         )
-    initials = "".join(part[:1] for part in re.split(r"[\s/·]+", product.name) if part)[:3]
+    paths = {
+        "AI 创作": '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3Z"/>',
+        "学习成长": '<path d="M12 6v15M12 6C8 3 4 3 2 4v15c4-1 7 0 10 2 3-2 6-3 10-2V4c-4-1-7 0-10 2Z"/>',
+        "AI 工程": '<path d="m8 5-6 7 6 7m8-14 6 7-6 7m-3-16-2 18"/>',
+        "隐私工具": '<rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/>',
+        "企业服务": '<rect x="3" y="7" width="18" height="14" rx="3"/><path d="M8 7V3h8v4M3 12h18m-11 0v3h4v-3"/>',
+        "轻松娱乐": '<path d="M7 8h10c3 0 5 12 2 12-2 0-3-4-5-4h-4c-2 0-3 4-5 4-3 0-1-12 2-12Zm0 3v4m-2-2h4m7-1h.01m2 2h.01"/>',
+    }
+    icon = paths.get(product.category, '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M14 17h7m-3-3v7"/>')
+    capabilities = "".join(f"<span>{esc(item)}</span>" for item in product.capabilities[:2])
     return (
         f'<div class="{visual_class} visual-fallback accent-{esc(product.accent)}">'
-        f'<span>{esc(initials or product.name[:2])}</span>'
-        f'<small>{esc(product.category)}</small></div>'
+        f'<svg class="product-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        f'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{icon}</svg>'
+        f'<div class="visual-capabilities">{capabilities}</div></div>'
     )
 
 
-def product_card(product: Product) -> str:
+def product_card(product: Product, *, badge: str = "", clicks: int | None = None) -> str:
     state, label = product_status(product)
     platforms = "".join(f"<span>{esc(item)}</span>" for item in product.platforms[:3])
-    return f"""<article class="product-card" data-category="{esc(product.category)}"
+    return f"""<article class="product-card" data-entry="{str(bool(product.public_url)).lower()}" data-category="{esc(product.category)}"
  data-scope="{esc(product.visibility)}" data-search="{esc(product.name + ' ' + product.tagline + ' ' + product.summary + ' ' + product.collection)}">
 {product_visual(product)}
 <div class="product-card-body">
+  {f'<span class="discovery-badge">{esc(badge)}</span>' if badge else ''}
   <div class="product-meta"><span>{esc(product.category)}</span><span class="status {esc(state)}"><i></i>{esc(label)}</span></div>
   <h3>{esc(product.name)}</h3>
   <p>{esc(product.tagline)}</p>
   <div class="platforms">{platforms}</div>
-  <a class="product-link" href="/products/{esc(product.id)}?from=card">查看产品 <span aria-hidden="true">↗</span></a>
+  <div class="product-card-footer"><a class="product-link" href="/products/{esc(product.id)}?from=card">{'查看产品' if product.public_url else '查看预览'} <span aria-hidden="true">→</span></a>
+  <span class="product-interest">{f'{clicks} 次关注' if clicks else ('可立即探索' if product.public_url else '暂无公开入口')}</span></div>
 </div></article>"""
 
 
 def portal_page(products: list[Product]) -> bytes:
+    return catalog_page(products, home=True)
+
+
+def legacy_portal_page(products: list[Product]) -> bytes:
     public, _, _, _ = ranked_products(visible_products(products))
     featured = [item for item in public if item.featured][:6]
     cards = "".join(product_card(item) for item in featured)
@@ -456,25 +520,49 @@ def portal_page(products: list[Product]) -> bytes:
     return page("产品展厅", body, portal=True)
 
 
-def catalog_page(products: list[Product]) -> bytes:
-    public, _, _, rotation_minutes = ranked_products(visible_products(products))
-    cards = "".join(product_card(item) for item in public)
-    categories = ["全部", "AI 创作", "学习成长", "AI 工程", "隐私工具", "企业服务"]
+def catalog_page(products: list[Product], *, home: bool = False) -> bytes:
+    if not home:
+        from showroom import catalog
+        return catalog(sys.modules[__name__], products)
+    public, stats, priorities, rotation_minutes = ranked_products(visible_products(products))
+    hot = sorted(
+        [item for item in public if item.public_url and stats[item.id]["clicks_7d"] > 0],
+        key=lambda item: (-stats[item.id]["clicks_7d"], item.id),
+    )
+    hot_ranks = {item.id: index for index, item in enumerate(hot[:3], 1)}
+    cards = "".join(product_card(
+        item,
+        badge="主推产品" if priorities[item.id] and item.public_url else (
+            f"热度 TOP {hot_ranks[item.id]}" if item.id in hot_ranks else ""
+        ),
+        clicks=stats[item.id]["clicks_7d"],
+    ) for item in public)
+    categories = ["全部", *dict.fromkeys(item.category for item in public)]
     controls = "".join(
-        f'<button type="button" data-category-filter="{esc(item)}">{esc(item)}</button>'
+        f'<button type="button" data-category-filter="{esc(item)}">{esc(item)}'
+        f'<span>{len(public) if item == "全部" else sum(p.category == item for p in public)}</span></button>'
         for item in categories
     )
-    body = f"""<main class="catalog-main">
+    hot_links = "".join(
+        f'<a href="/products/{esc(item.id)}?from=card"><span>{index:02d}</span>'
+        f'<strong>{esc(item.name)}</strong><small>{stats[item.id]["clicks_7d"]} 次关注</small></a>'
+        for index, item in enumerate(hot[:3], 1)
+    )
+    body = f"""<main class="catalog-main" id="main-content">
 <section class="catalog-intro">
-  <p class="eyebrow">PRODUCT INDEX · {len(public):02d}</p>
-  <h1>产品目录</h1>
-  <p>按近 7 天热度排序；同热度产品每 {rotation_minutes} 分钟轮换。暂无公开入口的产品始终置后。</p>
+  <div><h1>{'找到你的下一个好工具' if home else '探索产品'}</h1>
+  <p>把 AI 变成真正可使用的个人工具与生产系统。</p></div>
+  <span class="catalog-total">{len(public)} 款产品与实验</span>
 </section>
 <section class="catalog-controls" aria-label="产品筛选">
-  <div class="segmented">{controls}</div>
-  <label class="catalog-search"><span>搜索</span><input id="product-search" type="search" placeholder="产品、能力或场景"></label>
+  <label class="catalog-search"><span>搜索产品</span><input id="product-search" type="search" placeholder="试试「视频」「简历」「学习」" autocomplete="off"></label>
+  <label class="catalog-availability"><span>可用范围</span><select id="product-availability"><option value="all">全部产品</option><option value="open">有公开入口</option><option value="preview">尚未开放</option></select></label>
+  <button class="filter-reset" type="button" id="catalog-reset">重置筛选</button>
 </section>
-<p class="catalog-result" aria-live="polite"><strong id="visible-count">{len(public)}</strong> 个产品</p>
+<div class="segmented" aria-label="产品场景">{controls}</div>
+{f'<section class="discovery-trending"><h2>大家正在关注</h2><div>{hot_links}</div></section>' if hot_links else ''}
+<div class="catalog-results-head"><p class="catalog-result" aria-live="polite"><strong id="visible-count">{len(public)}</strong> 个产品</p>
+<details class="ranking-explainer"><summary>排序说明</summary><p>主推优先，其余按近 7 天点击排序；同热度每 {rotation_minutes} 分钟轮换。暂无公开入口始终置后。</p></details></div>
 <section class="product-grid catalog-grid" id="product-grid">{cards}</section>
 <section class="catalog-empty" id="catalog-empty" hidden><strong>没有匹配产品</strong><span>尝试其他分类或关键词。</span></section>
 </main>
@@ -483,6 +571,11 @@ def catalog_page(products: list[Product]) -> bytes:
 
 
 def product_page(product: Product, products: list[Product] | None = None) -> bytes:
+    from showroom import detail
+    return detail(sys.modules[__name__], product, products or [])
+
+
+def legacy_product_page(product: Product, products: list[Product] | None = None) -> bytes:
     state, label = product_status(product)
     capabilities = "".join(
         f"<li><span>{index:02d}</span>{esc(item)}</li>"
@@ -510,7 +603,7 @@ def product_page(product: Product, products: list[Product] | None = None) -> byt
   </div>
   <div class="product-grid">{related_cards}</div>
 </section>"""
-    body = f"""<main class="detail-main">
+    body = f"""<main class="detail-main" id="main-content">
 <a class="back-link" href="/products">← 返回产品目录</a>
 <section class="product-hero accent-{esc(product.accent)}">
   <div class="product-hero-copy">
@@ -595,11 +688,11 @@ def format_admin_time(value: object) -> str:
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(int(value)))
 
 
-def admin_rank_badge(rank: int) -> str:
+def admin_rank_badge(rank: int, *, heat: bool = False) -> str:
     if rank <= 3:
         return (
-            f'<span class="rank-badge top-{rank}" '
-            f'aria-label="当前排名第 {rank}">TOP {rank}</span>'
+            f'<span class="rank-badge {"top-" + str(rank) if heat else "display-rank"}" '
+            f'aria-label="{"热度" if heat else "展示"}排名第 {rank}">{"TOP" if heat else "展示"} {rank}</span>'
         )
     return (
         f'<span class="rank-badge standard" '
@@ -631,6 +724,7 @@ def admin_dashboard(
             rank_lookup[item.id],
         ),
     )
+    hot_products = [item for item in hot_products if click_stats[item.id]["clicks_7d"] > 0]
     hottest = hot_products[0] if hot_products else None
     max_hot_clicks = max(
         (click_stats[item.id]["clicks_7d"] for item in hot_products), default=0
@@ -733,7 +827,7 @@ def admin_dashboard(
 
     heat_cards = "".join(
         f"""<article class="ops-hot-card {'leader' if index == 1 else ''}">
-  <div class="ops-hot-card-head">{admin_rank_badge(index)}<span>{click_stats[item.id]["clicks_7d"]} 次</span></div>
+  <div class="ops-hot-card-head">{admin_rank_badge(index, heat=True)}<span>{click_stats[item.id]["clicks_7d"]} 次</span></div>
   <strong>{esc(item.name)}</strong>
   <small>{esc(item.category)} · 近 7 天点击</small>
   <progress class="ops-hot-track" max="{max(max_hot_clicks, 1)}"
@@ -778,7 +872,7 @@ def admin_dashboard(
     ) or "<li class=\"admin-empty\">暂无管理操作</li>"
     body = f"""<main class="admin-app" data-admin-app>
 <aside class="admin-rail">
-  <a class="admin-brand" href="/admin/"><span>LY</span><strong>LifeYouMe<small>CONTROL PLANE</small></strong></a>
+  <a class="admin-brand" href="/admin/"><img src="/assets/favicon.svg" alt=""><strong>LifeYouMe<small>产品运营中心</small></strong></a>
   <div class="admin-rail-label">工作区</div>
   <nav class="admin-nav" aria-label="后台分区">
     <a href="#overview" data-admin-target="overview"><b>01</b><span>总览</span></a>
@@ -794,7 +888,7 @@ def admin_dashboard(
 </aside>
 <section class="admin-console">
   <header class="admin-console-header">
-    <div><span>LIFEYOUME PLATFORM</span><h1 data-admin-title>平台总览</h1></div>
+    <div id="main-content" tabindex="-1"><span>产品运营中心</span><h1 data-admin-title>平台总览</h1></div>
     <div class="admin-console-links">
       <a href="https://meyou.lifeyoume.icu/admin" target="_blank" rel="noopener">遇见 MeYou · 模型控制台 ↗</a>
       <a href="https://lifeyoume.icu/" target="_blank" rel="noopener">打开产品门户 ↗</a>
@@ -843,14 +937,14 @@ def admin_dashboard(
       </div>
       <div class="admin-data-panel" data-admin-table="products" data-page-size="7">
         <div class="admin-table-wrap"><table class="admin-table">
-        <thead><tr><th>排名</th><th>产品</th><th>分类</th><th>7 天点击</th><th>访问状态</th><th>登录策略</th><th>操作</th></tr></thead>
+        <thead><tr><th>展示顺序</th><th>产品</th><th>分类</th><th>7 天点击</th><th>访问状态</th><th>登录策略</th><th>操作</th></tr></thead>
         <tbody>{''.join(policy_rows)}</tbody></table></div>
         <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
       </div>
     </section>
     <section class="admin-view" data-admin-view="heat" hidden>
       <div class="admin-view-head heat-view-head">
-        <div><p class="eyebrow">PRODUCT OPERATIONS</p><h2>产品运营看板</h2><p>直观看热度、趋势和当前排名；固定优先级设为 0 即恢复自动排序。</p></div>
+        <div><h2>用户兴趣与产品表现</h2><p>热度榜只按真实点击量排列，不受固定主推影响。</p></div>
         <form class="rotation-form" method="post" action="/admin/products/rotation">
           <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
           <label><span>同热度轮转周期</span><input name="rotation_minutes" type="number" min="1" max="1440" value="{rotation_minutes}"><small>分钟</small></label>
@@ -867,7 +961,7 @@ def admin_dashboard(
         <div class="ops-insights">
           <section class="ops-hot-products">
             <div class="ops-section-title"><strong>热门产品榜</strong><span>点击越多，热度条越长</span></div>
-            <div class="ops-hot-grid">{heat_cards or '<p class="admin-empty">暂无点击数据</p>'}</div>
+            <div class="ops-hot-grid">{heat_cards or '<p class="admin-empty">还没有点击数据。用户从产品卡片进入详情后，热度会出现在这里。</p>'}</div>
           </section>
           <section class="ops-trend">
             <div class="ops-section-title"><strong>7 日点击趋势</strong><span>全部公开产品</span></div>
@@ -875,9 +969,12 @@ def admin_dashboard(
           </section>
         </div>
       </section>
+      <div class="admin-view-head promotion-head"><div><h2>推广与展示顺序</h2><p>优先级越大越靠前；0 为自动排序。暂无公开入口的产品始终置底。</p></div>
+        <label class="admin-search"><span>搜索产品</span><input type="search" data-admin-search="heat" placeholder="名称或 ID"></label>
+      </div>
       <div class="admin-data-panel" data-admin-table="heat" data-page-size="8">
         <div class="admin-table-wrap"><table class="admin-table">
-        <thead><tr><th>当前</th><th>产品</th><th>24 小时</th><th>7 天</th><th>累计</th><th>排序方式</th><th>固定优先级</th></tr></thead>
+        <thead><tr><th>展示顺序</th><th>产品</th><th>24 小时</th><th>7 天</th><th>累计</th><th>排序方式</th><th>固定优先级</th></tr></thead>
         <tbody>{''.join(heat_rows)}</tbody></table></div>
         <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
       </div>
@@ -1409,7 +1506,9 @@ class Handler(BaseHTTPRequestHandler):
             self.send_body(200, catalog_page(load_products()))
             return
         if ROLE == "portal" and path.startswith("/products/"):
-            product_id = path.removeprefix("/products/").strip("/")
+            parts = path.removeprefix("/products/").strip("/").split("/")
+            is_open = len(parts) == 2 and parts[1] == "open"
+            product_id = parts[0] if len(parts) == 1 or is_open else ""
             all_products = load_products()
             product = next(
                 (
@@ -1421,9 +1520,13 @@ class Handler(BaseHTTPRequestHandler):
                 None,
             )
             if product:
-                if query.get("from", [""])[0] == "card":
+                if is_open and product.public_url:
                     AUTH_STORE.record_product_click(product.id)
-                self.send_body(200, product_page(product, all_products))
+                    self.redirect(product.public_url)
+                elif is_open:
+                    self.send_body(404, page("暂未开放", '<main id="main-content"><h1>暂未开放公开入口</h1><a href="/products">返回产品目录</a></main>', portal=True))
+                else:
+                    self.send_body(200, product_page(product, all_products))
             else:
                 self.send_body(404, page("未找到产品", "<main class=\"not-found\"><h1>未找到产品</h1><a href=\"/products\">返回产品目录</a></main>", portal=True))
             return

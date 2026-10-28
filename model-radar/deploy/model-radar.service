@@ -1,0 +1,33 @@
+[Unit]
+Description=LifeYouMe Model Radar
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=model-radar
+Group=model-radar
+WorkingDirectory=/data/app/model-radar/current
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=4417
+Environment=NODE_OPTIONS=--dns-result-order=ipv4first
+Environment=HUGGINGFACE_API_BASE=https://hf-mirror.com
+Environment=CURL_FETCH_FALLBACK=true
+Environment=SNAPSHOT_PATH=/data/app/model-radar/data/latest-snapshot.json
+ExecStart=/opt/node20/bin/node /data/app/model-radar/current/server.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/data/app/model-radar
+ReadWritePaths=/data/app/model-radar/data
+CapabilityBoundingSet=
+LockPersonality=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

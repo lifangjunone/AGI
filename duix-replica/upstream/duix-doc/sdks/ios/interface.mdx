@@ -1,0 +1,206 @@
+---
+title: 'Key interfaces'
+description: 'Core Objective-C interfaces and delegate callbacks provided by the Duix iOS SDK.'
+---
+
+## Overview
+
+This section lists the **primary interfaces** and **delegate callbacks**  
+used to integrate and control the **Duix iOS SDK**.  
+These APIs cover initialization, session control, speech interaction,  
+and real-time audio-video event handling.
+
+---
+
+## SDK Core Interfaces
+
+```objective-c
+/**
+ * SDK initialization
+ *
+ * @param appId          Application ID
+ * @param appKey         Application key
+ * @param conversationId Session ID
+ * @param block          Initialization callback
+ */
+- (void)initWithAppId:(NSString *)appId
+               appKey:(NSString *)appKey
+        conversationId:(NSString *)conversationId
+                block:(void (^)(BOOL isSuccee, NSString *errorMsg))block;
+
+/**
+ * Start session
+ */
+- (void)toStart;
+
+/**
+ * End session
+ */
+- (void)toStop;
+
+/**
+ * Speak with text
+ *
+ * @param text      Text content
+ * @param interrupt Whether to interrupt the previous speech
+ */
+- (void)commandEventWithText:(NSString *)text interrupt:(BOOL)interrupt;
+
+/**
+ * Speak with audio URL
+ *
+ * @param audioUrl  Audio URL
+ * @param interrupt Whether to interrupt the previous speech
+ */
+- (void)commandEventWithAudioUrl:(NSString *)audioUrl interrupt:(BOOL)interrupt;
+
+/**
+ * Ask a question (text)
+ *
+ * @param text      Text content
+ * @param interrupt Whether to interrupt the previous speech
+ */
+- (void)commandAskWithText:(NSString *)text interrupt:(BOOL)interrupt;
+
+/**
+ * Interrupt current speech
+ */
+- (void)toBreakDigital;
+
+/**
+ * Microphone capture control
+ *
+ * @param isEnabled YES to enable microphone pickup, NO to mute
+ */
+- (void)setMute:(BOOL)isEnabled;
+
+/**
+ * Mute or unmute digital human audio
+ *
+ * @param enable YES to mute, NO to unmute
+ */
+- (void)toSpeakerMute:(BOOL)enable;
+
+
+```
+SDK Delegate: DigitalViewDelegate
+The delegate provides callbacks for SDK events such as loading progress,
+speech recognition, playback status, and WebRTC connection changes.
+
+```objective-c
+@protocol DigitalViewDelegate <NSObject>
+
+/**
+ * Load digital human resources
+ *
+ * @param isSuccess Whether loading succeeded
+ * @param progress  Loading progress
+ */
+- (void)onVideoShow:(BOOL)isSuccess progress:(float)progress;
+
+/**
+ * Error callback
+ *
+ * @param errorCode Error code
+ * @param errorMsg  Error message
+ */
+- (void)onError:(NSInteger)errorCode errorMsg:(NSString *)errorMsg;
+
+@optional
+
+/**
+ * ASR start
+ */
+- (void)toWebrtcAsrStart;
+
+/**
+ * ASR result
+ *
+ * @param asrText  Recognized text
+ * @param isFinish Whether recognition has finished
+ */
+- (void)toWebrtcAsrText:(NSString *)asrText isFinish:(BOOL)isFinish;
+
+/**
+ * Speak start
+ *
+ * @param dict Dictionary containing speech start info
+ */
+- (void)toSpeakStart:(NSDictionary *)dict;
+
+/**
+ * Speak text
+ *
+ * @param dict Dictionary containing speech text info
+ */
+- (void)toSpeakText:(NSDictionary *)dict;
+
+/**
+ * Speak stop
+ *
+ * @param dict Dictionary containing speech stop info
+ */
+- (void)toSpeakStop:(NSDictionary *)dict;
+
+/**
+ * TTS speak start
+ *
+ * @param dict Dictionary containing TTS start info
+ */
+- (void)toTTSSpeakStart:(NSDictionary *)dict;
+
+/**
+ * TTS speak stop
+ *
+ * @param dict Dictionary containing TTS stop info
+ */
+- (void)toTTSSpeakStop:(NSDictionary *)dict;
+
+/**
+ * Controller ends the call and sends a bye event
+ */
+- (void)onByeBye;
+
+/**
+ * Remote video communication completed
+ */
+- (void)onRTCReomteSuccess;
+
+/**
+ * Audio load result
+ *
+ * @param isSuccess Whether loading succeeded
+ */
+- (void)onAudioShow:(BOOL)isSuccess;
+
+/**
+ * WebRTC connection state changed
+ *
+ * @param state RTCIceConnectionState
+ */
+- (void)didIceConnectionChange:(RTCIceConnectionState)state;
+
+/**
+ * Rendering endpoint information retrieved
+ *
+ * @param ID   Identifier
+ * @param name Name
+ */
+- (void)onRender:(NSString *)ID name:(NSString *)name;
+
+/**
+ * Local video stream capture
+ *
+ * @param capturer Video capturer
+ * @param frame    Captured frame
+ */
+- (void)capturer:(RTCVideoCapturer *)capturer didCaptureVideoFrame:(RTCVideoFrame *)frame;
+
+/**
+ * Remote audio stream buffer
+ *
+ * @param sampleBuffer Audio buffer reference
+ */
+- (void)onRemoteAudioBuffer:(CMSampleBufferRef)sampleBuffer;
+
+@end

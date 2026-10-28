@@ -1,0 +1,58 @@
+---
+title: 'Download and installation (Android)'
+description: 'Download and set up the Duix Android SDK demo project to quickly test real-time digital human capabilities.'
+---
+
+## Overview
+
+This guide explains how to download and run the **Duix Android demo project**,
+which showcases real-time digital human rendering, speech interaction,
+and SDK initialization within an Android environment.
+
+---
+
+## Step 1: Download the Sample Project
+
+Click below to download the latest **Duix Android demo** package:
+
+👉 [**duix-cloud-global-demo_1.3.0.zip**](https://duix-sgp.obs.ap-southeast-3.myhuaweicloud.com/duix/sdk/duix-cloud-global-demo_1.3.0.zip)
+
+> **Note:**
+> The demo project includes all required SDK dependencies and Gradle configuration for quick testing.
+
+---
+
+## Step 2: Open in Android Studio
+
+1. Extract the downloaded `.zip` file.
+2. Open the extracted project in **Android Studio (version 2021.3 or later)**.
+3. Wait for Gradle to sync automatically.
+4. Verify that your **Android SDK version** is **API Level 29 or higher**.
+
+---
+
+## Step 3: Build and Run
+
+1. Connect an Android device or start an emulator.
+2. Click **Run ▶️** in Android Studio to launch the demo.
+3. The digital human should appear and respond once initialization completes.
+
+---
+
+## Environment Requirements
+
+| Component | Minimum Version | Notes |
+|------------|------------------|-------|
+| **Android Studio** | 2021.3 (Arctic Fox) | Required for Gradle 7+ compatibility |
+| **Android SDK** | API Level 29+ | Recommended API Level 33+ |
+| **JDK** | 11+ | Ensure JAVA_HOME is set correctly |
+| **Network** | HTTPS (TLS 1.2+) | Required for WebRTC and SDK initialization |
+
+---
+
+## Troubleshooting
+
+- **Gradle Sync Failed?** Ensure your network allows Maven Central and Google repositories.
+- **Build Failed?** Try selecting “Sync Project with Gradle Files” and cleaning the build.
+- **App Crash at Launch?** Confirm camera and microphone permissions are granted.
+- **Network Timeout?** Ensure your device can access `duix.com` over HTTPS.

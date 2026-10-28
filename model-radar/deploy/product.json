@@ -1,0 +1,20 @@
+{
+  "id": "model-radar",
+  "name": "模型雷达",
+  "tagline": "每小时发现最新、最热的 AI 模型",
+  "summary": "聚合公开模型趋势、发布时间与社区采用信号，按厂商和模型类型整理每小时热榜，快速发现当前值得关注的新模型。",
+  "public_url": "https://lifeyoume.icu/models/",
+  "health_url": "http://127.0.0.1:4417/health",
+  "lifecycle": "live",
+  "availability": "online",
+  "category": "AI 工程",
+  "owner": "Model Radar",
+  "audience": "关注 AI 模型动态的开发者、产品经理、研究者与创作者",
+  "platforms": ["Web"],
+  "capabilities": ["每小时自动更新", "厂商与类型分类", "统一热度榜", "公开信号溯源"],
+  "featured": true,
+  "visibility": "public",
+  "visual": "",
+  "accent": "vermilion",
+  "cta": "查看模型热榜"
+}

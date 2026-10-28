@@ -53,7 +53,7 @@
             <div class="intro-copy">
               <div class="eyebrow">PRODUCT CONTENT KIT</div>
               <h1>商品内容包</h1>
-              <p>把商品卖点整理成可以直接发布的短视频内容。</p>
+              <p>填写商品卖点，先看一条标题和口播。满意后解锁完整内容包。</p>
             </div>
             <div class="intro-offer">
               <span>完整内容包</span>
@@ -61,7 +61,7 @@
               <small>先免费预览</small>
             </div>
             <div class="proof-strip" aria-label="内容包包含">
-              <span><b>10</b> 个标题</span>
+              <span><b>1</b> 条免费标题 + <b>9</b> 条解锁标题</span>
               <span><b>3</b> 条口播</span>
               <span><b>3</b> 套分镜</span>
               <span><b>7</b> 天计划</span>
@@ -74,12 +74,15 @@
                 <span class="step-number">A</span>
                 <div><span class="eyebrow">STEP 01 · 商品信息</span><h2>先说清楚你卖什么</h2></div>
               </div>
+              <div id="pack-errors" role="alert" tabindex="-1" hidden></div>
+              <button type="button" class="pack-example" id="fill-pack-example">没有思路？填入演示商品试一次</button>
               <label class="field-label" for="product-name">商品或服务名称</label>
               <input id="product-name" name="productName" maxlength="80" placeholder="例如：轻薄防晒外套" required />
               <label class="field-label" for="audience">目标客户</label>
               <input id="audience" name="audience" maxlength="120" placeholder="例如：通勤、怕晒又不想闷热的女生" required />
               <label class="field-label" for="selling-points">核心卖点</label>
-              <textarea id="selling-points" name="sellingPoints" maxlength="500" placeholder="材质、功能、使用体验、价格优势……至少写 8 个字" required></textarea>
+              <textarea id="selling-points" name="sellingPoints" minlength="8" maxlength="500" placeholder="只填写可核实的材质、功能、价格和适用场景，至少 8 个字" required aria-describedby="selling-points-hint"></textarea>
+              <small id="selling-points-hint">不代写虚构体验，不保证销量。发布前请核对产品事实。</small>
               <div class="pack-form-row">
                 <div><label class="field-label" for="pack-platform">发布平台</label><select id="pack-platform" name="platform"><option>抖音</option><option>小红书</option><option>视频号</option></select></div>
                 <div><label class="field-label" for="pack-tone">表达风格</label><select id="pack-tone" name="tone"><option>真实种草</option><option>专业测评</option><option>轻松口语</option></select></div>
@@ -87,7 +90,9 @@
               <label class="field-label" for="pack-offer">优惠或行动引导 <span>可选</span></label>
               <input id="pack-offer" name="offer" maxlength="120" placeholder="例如：首单立减 20 元" />
               <button class="pack-submit" type="submit"><span>免费生成预览</span><i data-lucide="arrow-up-right"></i></button>
-              <small class="form-note">不需要注册。点击解锁后会跳转支付宝收银台。</small>
+              <small class="form-note">无需注册 · 本机保存输入草稿 · 解锁前显示实际金额</small>
+              <a id="restore-pack-order" class="pack-example" hidden>查看上次订单 / 恢复已付款内容</a>
+              <p id="pack-payment-feedback" role="status" hidden></p>
             </form>
 
             <section class="pack-result" id="content-pack-result" aria-live="polite">
@@ -95,8 +100,8 @@
                 <span class="result-corner">PREVIEW / 预览</span>
                 <div class="empty-mark"><i data-lucide="sparkles"></i></div>
                 <span class="eyebrow">STEP 02 · 免费预览</span>
-                <h2>先生成一个标题</h2>
-                <p>确认内容方向后，再解锁完整内容包。</p>
+                <h2>先试自己的商品，再决定是否付款</h2>
+                <p>免费预览一条标题和口播。付费增加 9 条标题、另外 2 条口播与分镜，以及 7 天发布计划。当前使用模板生成，不是视频成片。</p>
                 <div class="preview-flow"><span>输入卖点</span><i data-lucide="arrow-right"></i><span>生成预览</span><i data-lucide="arrow-right"></i><span>解锁内容</span></div>
               </div>
               <div class="result-content" id="pack-content" hidden>
@@ -115,6 +120,8 @@
                 </div>
                 <div class="pack-sample">
                   <span>示例口播</span><p id="sample-script"></p>
+                  <button type="button" class="pack-example" id="copy-pack-preview">复制免费标题与口播</button>
+                  <p class="form-note">基于你填写的卖点生成的模板草稿。请核对事实后发布，未生成或承诺视频成片。</p>
                 </div>
               </div>
             </section>

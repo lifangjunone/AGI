@@ -1,10 +1,20 @@
 export interface AgentManifest {
-  schema_version: "1.0";
+  schema_version: "1.0" | "1.1";
   agent_id: string;
   name: string;
   version: string;
   endpoint: string;
   capabilities: string[];
+  execution_type?: "workflow" | "agent_loop";
+  runtime?: {
+    runtime_id?: string;
+    deployment_mode?: string;
+    endpoint?: string;
+    credential_ref?: string;
+    permission_profile?: string;
+    max_steps?: number;
+    timeout_seconds?: number;
+  };
   metadata?: Record<string, unknown>;
 }
 
@@ -30,9 +40,17 @@ export class NexoraClient {
     return this.request(`/api/v1/gateway/agents/${agentID}/invoke`, { input });
   }
 
-  private async request(path: string, body: unknown) {
+  runtimeTask(taskID: string) {
+    return this.request(`/api/v1/tasks/${encodeURIComponent(taskID)}`, undefined, "GET");
+  }
+
+  cancelRuntimeTask(taskID: string) {
+    return this.request(`/api/v1/tasks/${encodeURIComponent(taskID)}/cancel`, {});
+  }
+
+  private async request(path: string, body: unknown, method = "POST") {
     const response = await fetch(`${this.baseURL.replace(/\/$/, "")}${path}`, {
-      method: "POST",
+      method,
       headers: {
         Authorization: `Bearer ${this.token}`,
         "Content-Type": "application/json",

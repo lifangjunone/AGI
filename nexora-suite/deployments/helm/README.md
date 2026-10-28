@@ -1,6 +1,6 @@
 # Helm deployment editions
 
-Choose one commercial deployment edition. Core is included in every edition; MaaS, Studio, and Control are independently optional.
+Choose one commercial deployment edition. Core is included in every edition; MaaS, Studio, Runtime, and Control are independently optional.
 
 ```bash
 # Core + Studio
@@ -15,7 +15,11 @@ helm upgrade --install nexora editions/control
 helm dependency build editions/maas
 helm upgrade --install nexora editions/maas
 
-# Core + MaaS + Studio + Control
+# Core + Runtime
+helm dependency build editions/runtime
+helm upgrade --install nexora editions/runtime
+
+# Core + MaaS + Studio + Runtime + Control
 helm dependency build editions/full
 helm upgrade --install nexora editions/full
 ```

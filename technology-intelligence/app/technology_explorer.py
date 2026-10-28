@@ -26,13 +26,23 @@ from dataclasses import asdict, dataclass
 from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from tkinter import END, BOTH, LEFT, RIGHT, VERTICAL, X, Y, BooleanVar, StringVar, Tk, Toplevel, messagebox
-from tkinter import ttk
+try:
+    from tkinter import END, BOTH, LEFT, RIGHT, VERTICAL, X, Y, BooleanVar, StringVar, Tk, Toplevel, messagebox
+    from tkinter import ttk
+except ImportError:
+    END = BOTH = LEFT = RIGHT = VERTICAL = X = Y = None
+    BooleanVar = StringVar = Tk = Toplevel = None
+    messagebox = ttk = None
 from typing import Optional
 
 
 APP_NAME = "Technology Exploration Agent"
-SUPPORT_DIR = Path.home() / "Library" / "Application Support" / APP_NAME
+SUPPORT_DIR = Path(
+    os.environ.get(
+        "TECH_EXPLORER_SUPPORT_DIR",
+        Path.home() / "Library" / "Application Support" / APP_NAME,
+    )
+).expanduser()
 REPORT_DIR = SUPPORT_DIR / "reports"
 CONFIG_PATH = SUPPORT_DIR / "config.json"
 JOB_DIR = SUPPORT_DIR / "jobs"

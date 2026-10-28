@@ -78,6 +78,64 @@
     }
   }
 
+  function renderActionTasks(payload) {
+    $('[data-action-pending]').textContent = payload.summary.pending;
+    $('[data-action-confirmed]').textContent = payload.summary.confirmed;
+    const visible = payload.tasks.filter((task) => ['pending', 'owner-confirmed', 'expired'].includes(task.status));
+    $('[data-action-tasks]').replaceChildren(...(visible.length ? visible : [{ empty: true }]).map((task) => {
+      if (task.empty) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = '当前没有需要你处理的任务';
+        return empty;
+      }
+      const card = document.createElement('article');
+      card.className = 'action-task';
+      const pending = task.status === 'pending';
+      const confirmed = task.status === 'owner-confirmed';
+      const loginTask = task.type === 'xiaohongshu-login';
+      const migrationTask = task.type === 'merchant-payment-migration';
+      card.innerHTML = `
+        <div class="order-top">
+          <strong>${task.title}</strong>
+          <span class="status ${confirmed ? 'paid' : ''}">${pending ? (loginTask ? '待扫码' : '待办理') : confirmed ? '已确认' : '已过期'}</span>
+        </div>
+        <p>${task.message}</p>
+        ${task.qrImageUrl && pending && loginTask ? `<img class="login-qr" src="${task.qrImageUrl}" alt="小红书登录二维码">` : ''}
+        <div class="order-meta">创建于 ${timeLabel(task.createdAt)} · ${pending ? (loginTask ? '请在二维码过期前完成' : '完成商户实名认证和签约后，系统会验证官方回调') : confirmed ? '确认于 ' + timeLabel(task.confirmedAt) : '等待系统生成新二维码'}</div>
+        ${pending && loginTask ? '<button class="confirm-login" type="button">我已完成扫码认证</button>' : ''}
+        ${pending && migrationTask ? '<p class="disclosure">为防止伪造自动收款，只有官方支付回调通过小额真实订单验证后，系统才会关闭人工到账确认。</p>' : ''}
+      `;
+      card.querySelector('.confirm-login')?.addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = '正在通知发布程序…';
+        try {
+          await api(`../api/admin-mobile/action-tasks/${encodeURIComponent(task.id)}/confirm`, {
+            method: 'POST',
+            body: '{}'
+          });
+          appMessage.textContent = '已收到你的确认。系统正在重新检查小红书登录状态，通过后会继续发布。';
+          await loadActionTasks();
+        } catch (error) {
+          appMessage.textContent = error.message;
+          button.disabled = false;
+          button.textContent = '我已完成扫码认证';
+        }
+      });
+      return card;
+    }));
+  }
+
+  async function loadActionTasks() {
+    try {
+      renderActionTasks(await api('../api/admin-mobile/action-tasks'));
+    } catch (error) {
+      if (error.status === 401) showLogin();
+      else appMessage.textContent = error.message;
+    }
+  }
+
   function copyText(value, message) {
     return navigator.clipboard.writeText(value).then(() => {
       appMessage.textContent = message;
@@ -188,6 +246,63 @@
     }
   }
 
+  function renderBusiness(payload) {
+    const business = payload.business;
+    $('[data-business-mode]').innerHTML = `
+      <strong>${business.operatingMode}</strong>
+      <p>${business.fullyAutonomous ? '当前已满足全链路无人运行条件。' : business.autonomyBlockers.join('；')}</p>
+    `;
+    const totals = business.products.reduce((sum, product) => ({
+      visits: sum.visits + Number(product.funnel.visits || 0),
+      completed: sum.completed + Number(product.funnel.completed || 0),
+      checkouts: sum.checkouts + Number(product.funnel.checkouts || 0),
+      paid: sum.paid + Number(product.funnel.paid || 0),
+      revenue: sum.revenue + Number(product.funnel.revenue || 0)
+    }), { visits: 0, completed: 0, checkouts: 0, paid: 0, revenue: 0 });
+    $('[data-business-summary]').replaceChildren(...[
+      ['有效访问', totals.visits],
+      ['完成结果', totals.completed],
+      ['创建订单', totals.checkouts],
+      ['真实付款', totals.paid],
+      ['收入', '¥' + totals.revenue.toFixed(2)]
+    ].map(([label, value]) => {
+      const card = document.createElement('article');
+      card.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+      return card;
+    }));
+    const xhs = business.channelHealth.xiaohongshu;
+    $('[data-channel-health]').innerHTML = `
+      <h3>渠道健康</h3>
+      <p><strong>小红书：${xhs.state}</strong> · 已排期 ${xhs.scheduled} · 已发布 ${xhs.published} · 异常 ${xhs.failed}</p>
+      <p>不可用时自动降级到自有站和搜索入口，不重复提交未知结果。</p>
+    `;
+    const migration = business.paymentMigration;
+    $('[data-payment-migration]').innerHTML = `
+      <h3>支付自动化</h3>
+      <p><strong>${migration.status === 'action-required' ? '达到迁移门槛' : '个人微信确认阶段'}</strong></p>
+      <p>本月真实付款 ${migration.monthlyPaidOrders}/${migration.threshold}；${migration.remaining ? `还差 ${migration.remaining} 单触发官方商户支付迁移。` : '请在待处理页完成一次性商户签约。'}</p>
+    `;
+    $('[data-lifecycle]').innerHTML = `<h3>产品生命周期</h3>` + business.products.map((product) => `
+      <article class="business-row">
+        <div><strong>${product.title}</strong><span>${product.lifecycle} · ${product.lifecycleReason}</span></div>
+        <b>${product.rank ? 'TOP ' + product.rank : product.quality.score + '分'}</b>
+      </article>
+    `).join('');
+    const latest = business.evolutionDecisions.latest.slice(-5).reverse();
+    $('[data-decisions]').innerHTML = `<h3>最近自动决策</h3>` + (latest.length ? latest.map((item) => `
+      <article class="business-row"><div><strong>${item.day} · ${item.decision}</strong><span>${item.reason}</span></div><b>${item.variant}</b></article>
+    `).join('') : '<p>等待第一轮有效数据后生成决策。</p>');
+  }
+
+  async function loadBusiness() {
+    try {
+      renderBusiness(await api('../api/admin-mobile/business-state'));
+    } catch (error) {
+      if (error.status === 401) showLogin();
+      else appMessage.textContent = error.message;
+    }
+  }
+
   function renderMatrix(payload) {
     const matrix = payload.matrix;
     $('[data-matrix-summary]').replaceChildren(...[
@@ -248,11 +363,13 @@
     activeTab = tab;
     document.querySelectorAll('[data-tab]').forEach((button) => button.classList.toggle('active', button.dataset.tab === tab));
     $('[data-orders-page]').hidden = tab !== 'orders';
+    $('[data-actions-page]').hidden = tab !== 'actions';
     $('[data-matrix-page]').hidden = tab !== 'matrix';
     $('[data-promotion-page]').hidden = tab !== 'promotion';
-    $('[data-page-title]').textContent = tab === 'orders' ? '待确认收款' : tab === 'matrix' ? '产品榜' : '推广中心';
+    $('[data-page-title]').textContent = tab === 'orders' ? '待确认收款' : tab === 'actions' ? '待处理任务' : tab === 'matrix' ? '产品榜' : '推广中心';
+    if (tab === 'actions') loadActionTasks();
     if (tab === 'matrix') loadMatrix();
-    if (tab === 'promotion') loadPromotion();
+    if (tab === 'promotion') loadBusiness();
   }
 
   function showLogin() {
@@ -266,8 +383,13 @@
     login.hidden = true;
     app.hidden = false;
     loadOrders();
+    const requested = location.hash === '#actions' ? 'actions' : activeTab;
+    selectTab(requested);
     if (refreshTimer) clearInterval(refreshTimer);
-    refreshTimer = setInterval(loadOrders, 5000);
+    refreshTimer = setInterval(() => {
+      loadOrders();
+      if (activeTab === 'actions') loadActionTasks();
+    }, 5000);
   }
 
   $('[data-login-form]').addEventListener('submit', async (event) => {
@@ -299,7 +421,8 @@
     showLogin();
   });
   $('[data-refresh]').addEventListener('click', loadOrders);
-  $('[data-refresh-promotion]').addEventListener('click', loadPromotion);
+  $('[data-refresh-actions]').addEventListener('click', loadActionTasks);
+  $('[data-refresh-business]').addEventListener('click', loadBusiness);
   $('[data-refresh-matrix]').addEventListener('click', loadMatrix);
   document.querySelectorAll('[data-tab]').forEach((button) => button.addEventListener('click', () => selectTab(button.dataset.tab)));
   $('[data-enable-push]').addEventListener('click', async (event) => {

@@ -7,7 +7,7 @@
   "properties": {
     "event_id": { "type": "string", "format": "uuid" },
     "event_type": {
-      "enum": ["agent.published", "agent.version_withdrawn", "registry.updated", "credential.revoked", "policy.changed", "model.registered", "model.route_changed", "model.credential_rotated"]
+      "enum": ["agent.published", "agent.version_withdrawn", "registry.updated", "credential.revoked", "policy.changed", "model.registered", "model.route_changed", "model.credential_rotated", "runtime.registered", "runtime.health_changed", "runtime.credential_rotated", "runtime.task_started", "runtime.task_completed", "runtime.task_failed"]
     },
     "schema_version": { "const": "1.0" },
     "tenant_id": { "type": "string", "minLength": 1 },

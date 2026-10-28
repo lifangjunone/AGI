@@ -57,25 +57,36 @@ type edge struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
 }
+type runtimeConfig struct {
+	RuntimeID         string `json:"runtime_id,omitempty"`
+	DeploymentMode    string `json:"deployment_mode,omitempty"`
+	Endpoint          string `json:"endpoint,omitempty"`
+	CredentialRef     string `json:"credential_ref,omitempty"`
+	PermissionProfile string `json:"permission_profile,omitempty"`
+	MaxSteps          int    `json:"max_steps,omitempty"`
+	TimeoutSeconds    int    `json:"timeout_seconds,omitempty"`
+}
 type agent struct {
-	ID            string    `json:"id"`
-	TenantID      string    `json:"tenant_id"`
-	Name          string    `json:"name"`
-	Description   string    `json:"description"`
-	Status        string    `json:"status"`
-	OwnerID       string    `json:"owner_id"`
-	Nodes         []node    `json:"nodes"`
-	Edges         []edge    `json:"edges"`
-	Template      string    `json:"template,omitempty"`
-	Model         string    `json:"model,omitempty"`
-	SystemPrompt  string    `json:"system_prompt,omitempty"`
-	KnowledgeBase []string  `json:"knowledge_base,omitempty"`
-	Tools         []string  `json:"tools,omitempty"`
-	Intents       []string  `json:"intents,omitempty"`
-	Skills        []string  `json:"skills,omitempty"`
-	Plugins       []string  `json:"plugins,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID            string        `json:"id"`
+	TenantID      string        `json:"tenant_id"`
+	Name          string        `json:"name"`
+	Description   string        `json:"description"`
+	ExecutionType string        `json:"execution_type"`
+	Runtime       runtimeConfig `json:"runtime"`
+	Status        string        `json:"status"`
+	OwnerID       string        `json:"owner_id"`
+	Nodes         []node        `json:"nodes"`
+	Edges         []edge        `json:"edges"`
+	Template      string        `json:"template,omitempty"`
+	Model         string        `json:"model,omitempty"`
+	SystemPrompt  string        `json:"system_prompt,omitempty"`
+	KnowledgeBase []string      `json:"knowledge_base,omitempty"`
+	Tools         []string      `json:"tools,omitempty"`
+	Intents       []string      `json:"intents,omitempty"`
+	Skills        []string      `json:"skills,omitempty"`
+	Plugins       []string      `json:"plugins,omitempty"`
+	CreatedAt     time.Time     `json:"created_at"`
+	UpdatedAt     time.Time     `json:"updated_at"`
 }
 type version struct {
 	ID, AgentID, TenantID, Version, Endpoint string
@@ -97,6 +108,7 @@ type app struct {
 	secret     []byte
 	controlURL string
 	maasURL    string
+	runtimeURL string
 	client     *http.Client
 	agents     map[string]agent
 	versions   []version
@@ -115,6 +127,7 @@ func main() {
 		secret:     []byte(env("NEXORA_JWT_SECRET", "nexora-development-secret-change-me")),
 		controlURL: strings.TrimRight(os.Getenv("CONTROL_URL"), "/"),
 		maasURL:    strings.TrimRight(os.Getenv("MAAS_URL"), "/"),
+		runtimeURL: strings.TrimRight(os.Getenv("RUNTIME_URL"), "/"),
 		client:     &http.Client{Timeout: 120 * time.Second},
 		agents:     map[string]agent{},
 		dataFile:   env("NEXORA_DATA_FILE", ""),
@@ -139,12 +152,89 @@ func main() {
 	mux.HandleFunc("POST /api/v1/agents/{id}/evaluate", a.auth(a.evaluate))
 	mux.HandleFunc("POST /api/v1/agents/{id}/publish", a.auth(a.publish))
 	mux.HandleFunc("GET /api/v1/agents/{id}/versions", a.auth(a.listVersions))
+	mux.HandleFunc("GET /api/v1/runtimes", a.auth(a.listRuntimes))
 	mux.HandleFunc("GET /api/v1/resources", a.auth(a.listResources))
 	mux.HandleFunc("POST /api/v1/resources", a.auth(a.createResource))
 	mux.HandleFunc("POST /api/v1/resources/{id}/documents", a.auth(a.uploadResourceDocuments))
 	addr := env("ADDR", ":8080")
 	log.Printf("Nexora Studio API listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, cors(mux)))
+}
+
+func (a *app) listRuntimes(w http.ResponseWriter, r *http.Request, _ claims) {
+	if a.runtimeURL == "" {
+		fail(w, 503, "runtime_not_configured", "Nexora Runtime is not configured for Studio")
+		return
+	}
+	req, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, a.runtimeURL+"/api/v1/runtime-profiles", nil)
+	req.Header.Set("Authorization", r.Header.Get("Authorization"))
+	res, err := a.client.Do(req)
+	if err != nil {
+		fail(w, 502, "runtime_unavailable", err.Error())
+		return
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(io.LimitReader(res.Body, 2<<20))
+	if res.StatusCode >= 300 {
+		fail(w, res.StatusCode, "runtime_unavailable", strings.TrimSpace(string(body)))
+		return
+	}
+	var profiles struct {
+		Items []struct {
+			ID                string `json:"id"`
+			Name              string `json:"name"`
+			AdapterID         string `json:"adapter_id"`
+			Endpoint          string `json:"endpoint"`
+			DeploymentMode    string `json:"deployment_mode"`
+			PermissionProfile string `json:"permission_profile"`
+			Status            string `json:"status"`
+		} `json:"items"`
+		Total int `json:"total"`
+	}
+	if err := json.Unmarshal(body, &profiles); err != nil {
+		fail(w, 502, "runtime_protocol_error", err.Error())
+		return
+	}
+	items := make([]map[string]any, 0, len(profiles.Items))
+	for _, item := range profiles.Items {
+		items = append(items, map[string]any{
+			"id": item.ID, "name": item.Name, "vendor": item.AdapterID, "category": "profile",
+			"description": "Managed by Nexora Runtime", "transport": "nexora-runtime-v1",
+			"deployment_modes": []string{item.DeploymentMode}, "capabilities": []string{"stream"},
+			"status": item.Status, "endpoint": item.Endpoint, "permission_profile": item.PermissionProfile,
+		})
+	}
+	write(w, 200, map[string]any{"items": items, "total": profiles.Total, "protocol_version": "nexora-runtime-v1"})
+}
+
+func normalizeExecutionType(value string) string {
+	switch strings.TrimSpace(value) {
+	case "", "workflow":
+		return "workflow"
+	case "agent_loop":
+		return "agent_loop"
+	default:
+		return ""
+	}
+}
+
+func validateAgentRuntime(executionType string, config runtimeConfig) error {
+	if executionType == "workflow" {
+		return nil
+	}
+	if strings.TrimSpace(config.RuntimeID) == "" {
+		return errors.New("select a Runtime profile")
+	}
+	if config.MaxSteps < 1 || config.MaxSteps > 100 {
+		return errors.New("max_steps must be between 1 and 100")
+	}
+	if config.TimeoutSeconds < 10 || config.TimeoutSeconds > 3600 {
+		return errors.New("timeout_seconds must be between 10 and 3600")
+	}
+	if config.PermissionProfile == "" {
+		return errors.New("permission_profile is required")
+	}
+	return nil
 }
 
 func (a *app) list(w http.ResponseWriter, r *http.Request, c claims) {
@@ -370,16 +460,18 @@ func (a *app) seedResources() {
 }
 func (a *app) create(w http.ResponseWriter, r *http.Request, c claims) {
 	var in struct {
-		Name          string   `json:"name"`
-		Description   string   `json:"description"`
-		Template      string   `json:"template"`
-		Model         string   `json:"model"`
-		SystemPrompt  string   `json:"system_prompt"`
-		KnowledgeBase []string `json:"knowledge_base"`
-		Tools         []string `json:"tools"`
-		Intents       []string `json:"intents"`
-		Skills        []string `json:"skills"`
-		Plugins       []string `json:"plugins"`
+		Name          string        `json:"name"`
+		Description   string        `json:"description"`
+		ExecutionType string        `json:"execution_type"`
+		Runtime       runtimeConfig `json:"runtime"`
+		Template      string        `json:"template"`
+		Model         string        `json:"model"`
+		SystemPrompt  string        `json:"system_prompt"`
+		KnowledgeBase []string      `json:"knowledge_base"`
+		Tools         []string      `json:"tools"`
+		Intents       []string      `json:"intents"`
+		Skills        []string      `json:"skills"`
+		Plugins       []string      `json:"plugins"`
 	}
 	if !decode(w, r, &in) || strings.TrimSpace(in.Name) == "" {
 		if strings.TrimSpace(in.Name) == "" {
@@ -387,8 +479,41 @@ func (a *app) create(w http.ResponseWriter, r *http.Request, c claims) {
 		}
 		return
 	}
+	executionType := normalizeExecutionType(in.ExecutionType)
+	if executionType == "" {
+		fail(w, 422, "execution_type_invalid", "execution_type must be workflow or agent_loop")
+		return
+	}
+	if executionType == "agent_loop" {
+		if in.Runtime.RuntimeID == "" {
+			in.Runtime.RuntimeID = "nexora-native"
+		}
+		if in.Runtime.DeploymentMode == "" {
+			in.Runtime.DeploymentMode = "managed"
+		}
+		if in.Runtime.PermissionProfile == "" {
+			in.Runtime.PermissionProfile = "tools_only"
+		}
+		if in.Runtime.MaxSteps == 0 {
+			in.Runtime.MaxSteps = 20
+		}
+		if in.Runtime.TimeoutSeconds == 0 {
+			in.Runtime.TimeoutSeconds = 300
+		}
+		if err := validateAgentRuntime(executionType, in.Runtime); err != nil {
+			fail(w, 422, "runtime_invalid", err.Error())
+			return
+		}
+	}
 	now := time.Now().UTC()
-	v := agent{ID: id("agt"), TenantID: c.TenantID, Name: in.Name, Description: in.Description, Template: in.Template, Model: in.Model, SystemPrompt: in.SystemPrompt, KnowledgeBase: in.KnowledgeBase, Tools: in.Tools, Intents: in.Intents, Skills: in.Skills, Plugins: in.Plugins, Status: "draft", OwnerID: c.Sub, Nodes: []node{{ID: "start", Type: "input", Label: "Input"}, {ID: "model", Type: "model", Label: "LLM"}, {ID: "end", Type: "output", Label: "Output"}}, Edges: []edge{{ID: "e1", Source: "start", Target: "model"}, {ID: "e2", Source: "model", Target: "end"}}, CreatedAt: now, UpdatedAt: now}
+	nodes := []node{{ID: "start", Type: "input", Label: "Input"}, {ID: "model", Type: "model", Label: "LLM"}, {ID: "end", Type: "output", Label: "Output"}}
+	edges := []edge{{ID: "e1", Source: "start", Target: "model"}, {ID: "e2", Source: "model", Target: "end"}}
+	if executionType == "agent_loop" {
+		// Agent Loop plans are runtime state, not a persisted workflow graph.
+		nodes = []node{}
+		edges = []edge{}
+	}
+	v := agent{ID: id("agt"), TenantID: c.TenantID, Name: in.Name, Description: in.Description, ExecutionType: executionType, Runtime: in.Runtime, Template: in.Template, Model: in.Model, SystemPrompt: in.SystemPrompt, KnowledgeBase: in.KnowledgeBase, Tools: in.Tools, Intents: in.Intents, Skills: in.Skills, Plugins: in.Plugins, Status: "draft", OwnerID: c.Sub, Nodes: nodes, Edges: edges, CreatedAt: now, UpdatedAt: now}
 	a.mu.Lock()
 	a.agents[v.ID] = v
 	a.persistLocked()
@@ -410,18 +535,20 @@ func (a *app) update(w http.ResponseWriter, r *http.Request, c claims) {
 		return
 	}
 	var in struct {
-		Name          string   `json:"name"`
-		Description   string   `json:"description"`
-		Template      string   `json:"template"`
-		Model         string   `json:"model"`
-		SystemPrompt  string   `json:"system_prompt"`
-		KnowledgeBase []string `json:"knowledge_base"`
-		Tools         []string `json:"tools"`
-		Intents       []string `json:"intents"`
-		Skills        []string `json:"skills"`
-		Plugins       []string `json:"plugins"`
-		Nodes         []node   `json:"nodes"`
-		Edges         []edge   `json:"edges"`
+		Name          string         `json:"name"`
+		Description   string         `json:"description"`
+		ExecutionType string         `json:"execution_type"`
+		Runtime       *runtimeConfig `json:"runtime"`
+		Template      string         `json:"template"`
+		Model         string         `json:"model"`
+		SystemPrompt  string         `json:"system_prompt"`
+		KnowledgeBase []string       `json:"knowledge_base"`
+		Tools         []string       `json:"tools"`
+		Intents       []string       `json:"intents"`
+		Skills        []string       `json:"skills"`
+		Plugins       []string       `json:"plugins"`
+		Nodes         []node         `json:"nodes"`
+		Edges         []edge         `json:"edges"`
 	}
 	if !decode(w, r, &in) {
 		return
@@ -431,6 +558,24 @@ func (a *app) update(w http.ResponseWriter, r *http.Request, c claims) {
 	}
 	if in.Description != "" {
 		v.Description = in.Description
+	}
+	if in.ExecutionType != "" {
+		executionType := normalizeExecutionType(in.ExecutionType)
+		if executionType == "" {
+			fail(w, 422, "execution_type_invalid", "execution_type must be workflow or agent_loop")
+			return
+		}
+		v.ExecutionType = executionType
+	}
+	if v.ExecutionType == "" {
+		v.ExecutionType = "workflow"
+	}
+	if in.Runtime != nil {
+		v.Runtime = *in.Runtime
+	}
+	if err := validateAgentRuntime(v.ExecutionType, v.Runtime); err != nil {
+		fail(w, 422, "runtime_invalid", err.Error())
+		return
 	}
 	if in.Template != "" {
 		v.Template = in.Template
@@ -461,6 +606,12 @@ func (a *app) update(w http.ResponseWriter, r *http.Request, c claims) {
 	}
 	if in.Edges != nil {
 		v.Edges = in.Edges
+	}
+	if v.ExecutionType == "agent_loop" {
+		// Planning state belongs to an individual runtime task, never to the
+		// persisted Agent definition.
+		v.Nodes = []node{}
+		v.Edges = []edge{}
 	}
 	v.UpdatedAt = time.Now().UTC()
 	a.mu.Lock()
@@ -701,6 +852,13 @@ func (a *app) chatStream(w http.ResponseWriter, r *http.Request, c claims) {
 		fail(w, 404, "not_found", "agent not found")
 		return
 	}
+	if v.ExecutionType == "" {
+		v.ExecutionType = "workflow"
+	}
+	if v.ExecutionType == "agent_loop" {
+		a.proxyRuntimeStream(w, r, c, v)
+		return
+	}
 	if v.Model == "" || a.maasURL == "" || !contains(c.Products, "maas") {
 		fail(w, 422, "model_route_required", "select an active Nexora MaaS model route before streaming")
 		return
@@ -719,7 +877,15 @@ func (a *app) chatStream(w http.ResponseWriter, r *http.Request, c claims) {
 	}
 	started := time.Now()
 	traceID := id("trc")
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.Header().Set("X-Nexora-Trace-ID", traceID)
+	w.WriteHeader(http.StatusOK)
+	sendSSE(w, "meta", map[string]any{"trace_id": traceID, "runtime_mode": "maas_llm", "model_route": v.Model})
+	sendSSE(w, "progress", map[string]any{"stage": "knowledge", "label": "正在检索已绑定知识库", "status": "running"})
 	citations, knowledgeSteps := a.retrieveKnowledge(v, in.Input)
+	sendSSE(w, "progress", map[string]any{"stage": "knowledge", "label": "知识检索完成", "status": "completed", "detail": fmt.Sprintf("找到 %d 条相关引用", len(citations))})
 	payload := map[string]any{
 		"model": v.Model, "messages": modelMessages(v, in.Input, in.Messages, citations),
 		"temperature": 0.3, "stream": true, "stream_options": map[string]any{"include_usage": true},
@@ -727,30 +893,27 @@ func (a *app) chatStream(w http.ResponseWriter, r *http.Request, c claims) {
 	raw, _ := json.Marshal(payload)
 	upstream, err := http.NewRequestWithContext(r.Context(), http.MethodPost, a.maasURL+"/v1/chat/completions", bytes.NewReader(raw))
 	if err != nil {
-		fail(w, 500, "request_error", err.Error())
+		sendSSE(w, "error", map[string]string{"message": err.Error()})
 		return
 	}
 	upstream.Header.Set("Authorization", r.Header.Get("Authorization"))
 	upstream.Header.Set("Content-Type", "application/json")
+	sendSSE(w, "progress", map[string]any{"stage": "model", "label": "正在连接 MaaS 模型路由", "status": "running", "detail": v.Model})
 	res, err := a.client.Do(upstream)
 	if err != nil {
-		fail(w, 502, "maas_unavailable", err.Error())
+		sendSSE(w, "error", map[string]string{"message": err.Error()})
 		return
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
-		fail(w, 502, "maas_rejected", fmt.Sprintf("MaaS returned HTTP %d: %s", res.StatusCode, strings.TrimSpace(string(body))))
+		sendSSE(w, "error", map[string]string{"message": fmt.Sprintf("MaaS returned HTTP %d: %s", res.StatusCode, strings.TrimSpace(string(body)))})
 		return
 	}
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("X-Accel-Buffering", "no")
-	w.Header().Set("X-Nexora-Trace-ID", traceID)
-	w.WriteHeader(http.StatusOK)
-	sendSSE(w, "meta", map[string]any{"trace_id": traceID, "runtime_mode": "maas_llm", "model_route": v.Model, "citations": citations})
+	sendSSE(w, "progress", map[string]any{"stage": "model", "label": "模型已连接，正在推理", "status": "running", "detail": v.Model})
 
 	var answer strings.Builder
+	var reasoning strings.Builder
 	scanner := bufio.NewScanner(res.Body)
 	scanner.Buffer(make([]byte, 4096), 2<<20)
 	for scanner.Scan() {
@@ -765,14 +928,30 @@ func (a *app) chatStream(w http.ResponseWriter, r *http.Request, c claims) {
 		var chunk struct {
 			Choices []struct {
 				Delta struct {
-					Content string `json:"content"`
+					Content          string `json:"content"`
+					ReasoningContent string `json:"reasoning_content"`
+					Reasoning        string `json:"reasoning"`
+					ReasoningText    string `json:"reasoning_text"`
 				} `json:"delta"`
 			} `json:"choices"`
 		}
-		if json.Unmarshal([]byte(data), &chunk) == nil && len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
-			token := chunk.Choices[0].Delta.Content
-			answer.WriteString(token)
-			sendSSE(w, "delta", map[string]string{"content": token})
+		if json.Unmarshal([]byte(data), &chunk) == nil && len(chunk.Choices) > 0 {
+			delta := chunk.Choices[0].Delta
+			reasonToken := delta.ReasoningContent
+			if reasonToken == "" {
+				reasonToken = delta.Reasoning
+			}
+			if reasonToken == "" {
+				reasonToken = delta.ReasoningText
+			}
+			if reasonToken != "" {
+				reasoning.WriteString(reasonToken)
+				sendSSE(w, "reasoning", map[string]string{"content": reasonToken})
+			}
+			if delta.Content != "" {
+				answer.WriteString(delta.Content)
+				sendSSE(w, "delta", map[string]string{"content": delta.Content})
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -786,10 +965,92 @@ func (a *app) chatStream(w http.ResponseWriter, r *http.Request, c claims) {
 	sendSSE(w, "done", map[string]any{
 		"trace_id": traceID, "runtime_mode": "maas_llm", "runtime_notice": fmt.Sprintf("已通过 Nexora MaaS 路由 %s 调用真实模型并完成流式返回。", v.Model),
 		"model_route": v.Model, "maas_request_id": res.Header.Get("X-Nexora-Request-ID"),
-		"message": map[string]string{"role": "assistant", "content": answer.String()},
-		"plan":    []string{"理解用户目标", "检索已绑定知识库", "调用 MaaS 模型路由", "流式返回回答"}, "steps": steps, "citations": citations,
+		"message":   map[string]string{"role": "assistant", "content": answer.String()},
+		"reasoning": reasoning.String(),
+		"plan":      []string{"理解用户目标", "检索已绑定知识库", "调用 MaaS 模型路由", "流式返回回答"}, "steps": steps, "citations": citations,
 		"latency_ms": time.Since(started).Milliseconds(),
 	})
+}
+
+func (a *app) proxyRuntimeStream(w http.ResponseWriter, r *http.Request, c claims, v agent) {
+	var in struct {
+		Input    string        `json:"input"`
+		Messages []chatMessage `json:"messages"`
+	}
+	if !decode(w, r, &in) {
+		return
+	}
+	in.Input = strings.TrimSpace(in.Input)
+	if in.Input == "" {
+		fail(w, 422, "input_required", "input is required")
+		return
+	}
+	if a.runtimeURL == "" {
+		fail(w, 503, "runtime_not_configured", "Nexora Runtime is not configured for Studio")
+		return
+	}
+	payload := map[string]any{
+		"protocol_version": "nexora-runtime-v1",
+		"task_id":          id("task"),
+		"tenant_id":        c.TenantID,
+		"agent_id":         v.ID,
+		"runtime_id":       v.Runtime.RuntimeID,
+		"input":            in.Input,
+		"messages":         in.Messages,
+		"model_route":      v.Model,
+		"system_prompt":    v.SystemPrompt,
+		"resources": map[string]any{
+			"knowledge_base": v.KnowledgeBase,
+			"tools":          v.Tools,
+			"skills":         v.Skills,
+			"plugins":        v.Plugins,
+		},
+		"limits":             map[string]int{"max_steps": v.Runtime.MaxSteps, "timeout_seconds": v.Runtime.TimeoutSeconds},
+		"permission_profile": v.Runtime.PermissionProfile,
+	}
+	raw, _ := json.Marshal(payload)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Duration(v.Runtime.TimeoutSeconds)*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, a.runtimeURL+"/api/v1/tasks/stream", bytes.NewReader(raw))
+	if err != nil {
+		fail(w, 502, "runtime_unavailable", err.Error())
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Authorization", r.Header.Get("Authorization"))
+	req.Header.Set("X-Nexora-Runtime-ID", v.Runtime.RuntimeID)
+	res, err := a.client.Do(req)
+	if err != nil {
+		fail(w, 502, "runtime_unavailable", err.Error())
+		return
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(res.Body, 1<<20))
+		fail(w, 502, "runtime_rejected", fmt.Sprintf("runtime returned HTTP %d: %s", res.StatusCode, strings.TrimSpace(string(body))))
+		return
+	}
+	if !strings.Contains(res.Header.Get("Content-Type"), "text/event-stream") {
+		fail(w, 502, "runtime_protocol_error", "runtime must return text/event-stream")
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.Header().Set("X-Nexora-Runtime-ID", v.Runtime.RuntimeID)
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.Copy(flushWriter{ResponseWriter: w}, io.LimitReader(res.Body, 32<<20))
+}
+
+type flushWriter struct {
+	http.ResponseWriter
+}
+
+func (w flushWriter) Write(value []byte) (int, error) {
+	n, err := w.ResponseWriter.Write(value)
+	_ = http.NewResponseController(w.ResponseWriter).Flush()
+	return n, err
 }
 
 func sendSSE(w http.ResponseWriter, event string, value any) {
@@ -904,7 +1165,7 @@ func (a *app) evaluate(w http.ResponseWriter, r *http.Request, c claims) {
 		fail(w, 404, "not_found", "agent not found")
 		return
 	}
-	write(w, 201, map[string]any{"evaluation_id": id("eval"), "status": "completed", "score": 0.92, "metrics": map[string]float64{"relevance": .94, "groundedness": .90}})
+	fail(w, http.StatusNotImplemented, "evaluation_not_configured", "No evaluation runner or dataset is configured. No evaluation was executed and no score was produced.")
 }
 func (a *app) publish(w http.ResponseWriter, r *http.Request, c claims) {
 	v, ok := a.tenantAgent(r.PathValue("id"), c.TenantID)
@@ -920,7 +1181,7 @@ func (a *app) publish(w http.ResponseWriter, r *http.Request, c claims) {
 		}
 	}
 	ver := version{ID: id("ver"), AgentID: v.ID, TenantID: c.TenantID, Version: fmt.Sprintf("1.%d.0", count), Endpoint: "/api/v1/runtime/agents/" + v.ID, PublishedAt: time.Now().UTC()}
-	ver.Manifest = map[string]any{"schema_version": "1.0", "agent_id": v.ID, "name": v.Name, "version": ver.Version, "endpoint": ver.Endpoint, "capabilities": []string{"chat", "stream"}, "nodes": v.Nodes}
+	ver.Manifest = map[string]any{"schema_version": "1.1", "agent_id": v.ID, "name": v.Name, "version": ver.Version, "endpoint": ver.Endpoint, "capabilities": []string{"chat", "stream"}, "execution_type": v.ExecutionType, "runtime": v.Runtime, "nodes": v.Nodes}
 	a.versions = append(a.versions, ver)
 	v.Status, v.UpdatedAt = "published", time.Now().UTC()
 	a.agents[v.ID] = v
@@ -986,9 +1247,21 @@ func (a *app) load() error {
 	if state.Agents != nil {
 		a.agents = state.Agents
 	}
+	graphsMigrated := false
+	for agentID, item := range a.agents {
+		if item.ExecutionType == "agent_loop" && (len(item.Nodes) > 0 || len(item.Edges) > 0) {
+			item.Nodes = []node{}
+			item.Edges = []edge{}
+			a.agents[agentID] = item
+			graphsMigrated = true
+		}
+	}
 	a.versions = state.Versions
 	if state.Resources != nil {
 		a.resources = state.Resources
+	}
+	if graphsMigrated {
+		a.persistLocked()
 	}
 	return nil
 }

@@ -1,0 +1,172 @@
+---
+title: 'Key interfaces'
+description: ''
+---
+
+# Key Interfaces
+
+### 1). Initialization
+
+Initialize the SDK with your `appId` and `appSecret`, then obtain a `Player` instance:
+
+```kotlin
+VirtualFactory.init("your appId", "your appSecret")
+player = VirtualFactory.getPlayer(mContext, eglBaseContext)
+```
+
+
+### 2) Connect to the digital human
+
+Connect using your platform `conversationId`:
+
+```
+    player?.addCallback(callback)
+    player?.connect("your conversation id")
+```
+
+The player exposes the following callbacks:
+
+#### `onShow` — Digital human is ready to display
+```
+void onShow();
+```
+
+#### `onError` — Error occurred during connection
+
+```
+void onError(int msgType, int msgSubType, String msg);
+```
+
+Parameters:
+
+| Parameter Name   | Type     | Description      |
+|----------------|--------|---------|
+| msgType        | int    | Error type    |
+| msgSubType     | int    | Sub-error type   |
+| msg            | String | Exception message    |
+
+Possible `msgType` values:
+
+| Value     | Description       |     | 
+|--------|----------|-----|
+| 1000   | Authorization exception     |     |   
+| 1001   | Session creation exception   |     |   
+| 1002   | Resource retrieval exception   |     | 
+| 1010   | IM connection creation failed |     |
+| 1011   | Rendering service returned exception |     |
+| 1020   | RTC status exception |     |
+| 1030   | Rendering service actively closed |     | 
+| 1040   | IM connection lost   |     | 
+| 1050   | RTC connection lost  |     | 
+
+
+#### `onVideoTrack` — RTC media channel created successfully
+
+Bind your digital human view to the track in this callback
+
+```
+void onVideoTrack(VideoTrack track);
+```
+
+| Parameter Name   | Type              | Description         |
+|----------------|-----------------|------------|
+| track          | VideoTrack      | Video media track  |
+
+#### `onAudioSamples` — Local audio sampling data callback
+
+Use this callback for audio visualization or processing.
+```
+default void onAudioSamples(int audioFormat, int channelCount, int sampleRat, byte[] data){}
+```
+
+#### `onTtsSpeakStart` — TTS playback started
+
+```
+default void onTtsSpeakStart(){}
+```
+
+#### `onTtsSpeakText` — TTS text content
+
+```
+default void onTtsSpeakText(String text){}
+```
+
+#### `onTtsSpeakStop` — TTS playback completed
+
+```
+default void onTtsSpeakStop(){}
+```
+
+#### `onSpeakStart` — Speaking started
+
+```
+default void onSpeakStart(){}
+```
+
+#### `onSpeakText` — Spoken text content
+
+```
+default void onSpeakText(String text){}
+```
+
+#### `onSpeakStop` — Speaking completed
+
+```
+default void onSpeakStop(){}
+```
+
+#### `onAsrResult` — ASR recognition result
+
+```
+default void onAsrResult(String text, boolean sentenceEnd){}
+```
+
+
+### 3) Drive the digital human to speak with an audio URL
+
+Use a WAV audio URL with 16 kHz sample rate, 16‑bit, mono channel to drive speech
+
+```kotlin
+player?.speakWithWav(wavUrl, true)
+```
+
+| Parameter Name          | Type      | Description         |
+|-----------------------|---------|------------|
+| wavUrl                | String  | URL of the WAV audio file |
+| interrupt             | boolean | Whether to interrupt the current speaking state |
+
+
+### 4) Drive the digital human to speak with text
+
+Provide text input. The digital human will speak using the session’s configured voice.
+
+```kotlin
+player?.speakWithTxt(text, true)
+```
+
+| Parameter Name          | Type      | Description          |
+|-----------------------|---------|-------------|
+| text                  | String  | Text for the digital human to speak |
+| interrupt             | boolean | Whether to interrupt the current speaking state  |
+
+
+### 5) Q&A Interaction
+
+Ask a question and receive a response from the digital human.
+
+```kotlin
+player?.speakWithQuestion(text, true)
+```
+
+| Parameter Name          | Type      | Description         |
+|-----------------------|---------|------------|
+| text                  | String  | Express your question to the digital human |
+| interrupt             | boolean | Whether to interrupt the current speaking state |
+
+### 6) Interrupt speaking
+
+Stop the current speech immediately.
+
+```kotlin
+player?.stopAudio()
+```

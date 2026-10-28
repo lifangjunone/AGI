@@ -19,7 +19,17 @@
       "visibility": "public",
       "visual": "products/frame60.jpg",
       "accent": "vermilion",
-      "cta": "在线使用"
+      "cta": "开始创作",
+      "scenario": "商品信息写好了，把标题、口播和分镜一起准备好。",
+      "highlights": [
+        {"title": "商品内容包", "description": "把商品、客群和卖点组织成标题、口播、分镜与发布计划。"},
+        {"title": "视频任务可恢复", "description": "后台生成保留任务进度，离开页面后可以回来查看结果。"},
+        {"title": "多场景文案", "description": "从商品介绍到文章与社群内容，在同一个工作台开始创作。"}
+      ],
+      "steps": ["选择商品、文章或社群内容工具。", "填写真实信息、目标平台与核心卖点。", "检查内容预览；视频任务按实际模型配置和价格开始生成。"],
+      "limitations": ["商品内容包预览使用本地模板引擎，不应理解为所有内容均由大模型生成。", "视频生成与付费内容以产品内配置、价格及实际开放范围为准。"],
+      "preview": "products/frame60-preview.webp",
+      "preview_alt": "智助乖乖公开产品首页与内容工具入口"
     },
     {
       "id": "decision-studio",
@@ -59,7 +69,17 @@
       "visibility": "public",
       "visual": "",
       "accent": "forest",
-      "cta": "整理照片"
+      "cta": "整理照片",
+      "scenario": "旅行拍了太多照片？先看看精选，再决定留下哪一张。",
+      "highlights": [
+        {"title": "先看整理任务", "description": "把旅行精选、相似照片和待确认照片放在前面，减少整理压力。"},
+        {"title": "人工确认精选", "description": "按景色筛选，手动加入或移出精选，保留你的决定权。"},
+        {"title": "本地照片预览", "description": "在浏览器里导入照片查看，不上传原始照片。"}
+      ],
+      "steps": ["进入照片整理工作台，查看任务与分类。", "导入本地照片进行预览。", "筛选照片并手动调整精选结果。"],
+      "limitations": ["当前是本地优先原型；完整 EXIF 地理归类、人脸聚类与真实模型分析仍在后续路线中。", "页面内预置照片和推荐内容用于展示整理体验，不代表已分析你的相册。"],
+      "preview": "products/travel-preview.webp",
+      "preview_alt": "旅拍管家公开首页的整理任务与相册浏览界面"
     },
     {
       "id": "game-hub",
@@ -99,7 +119,17 @@
       "visibility": "public",
       "visual": "",
       "accent": "forest",
-      "cta": "在线使用"
+      "cta": "打开隐匣",
+      "scenario": "让私密记录留在自己的浏览器里，用主密码保护它们。",
+      "highlights": [
+        {"title": "整体加密档案", "description": "标题、字段与备注整体加密，使用 AES-256-GCM 保存在浏览器。"},
+        {"title": "自动锁定", "description": "五分钟无操作自动锁定，解锁密钥只存在当前页面内存。"},
+        {"title": "密文备份", "description": "导出加密备份文件，在其他浏览器用原主密码恢复。"}
+      ],
+      "steps": ["用统一账号进入产品，创建独立的保险库主密码。", "添加分类档案，保存到当前浏览器。", "定期导出加密备份并妥善保管。"],
+      "limitations": ["主密码无法找回；忘记主密码后，数据与备份均无法恢复。", "保险库数据不提供云同步；清除浏览器数据可能导致档案丢失。"],
+      "preview": "products/vault-preview.webp",
+      "preview_alt": "隐匣公开介绍页，未解锁任何私人保险库"
     },
     {
       "id": "audit",
@@ -140,6 +170,16 @@
       "visual": "",
       "accent": "vermilion",
       "cta": "开始写简历",
+      "scenario": "把真实经历对齐目标岗位，写出有依据的一页简历。",
+      "highlights": [
+        {"title": "岗位关键词诊断", "description": "从 JD 提取关键词，解释命中与缺失，而不只是给一个分数。"},
+        {"title": "证据化表达", "description": "用动作、任务、数字和结果组织经历，不自动编造业绩。"},
+        {"title": "一页预览与导出", "description": "实时查看 A4 版式与一页风险，导出可打印 HTML。"}
+      ],
+      "steps": ["填写目标岗位 JD 和真实经历。", "根据关键词和逐条诊断调整表述。", "检查一页预览，导出 HTML 并打印为 PDF。"],
+      "limitations": ["当前不调用模型 API，不会自动补造经历。", "草稿只保存在当前浏览器；不提供自动投递、云端简历存储或可购买的 Pro 套餐。"],
+      "preview": "products/resume-preview.webp",
+      "preview_alt": "简历锻造厂公开工作台的编辑、诊断与简历预览",
       "collection": "求职成长产品线",
       "related_ids": ["fde-playbook", "english-speaking-coach", "english-immersion-studio", "english-foundation"]
     },
@@ -429,7 +469,17 @@
       "visibility": "public",
       "visual": "",
       "accent": "vermilion",
-      "cta": "进入 MeYou"
+      "cta": "进入 MeYou",
+      "scenario": "让 Agent 先寻找、筛选和破冰，把值得的联系交给你。",
+      "highlights": [
+        {"title": "持续找人", "description": "围绕朋友、商务、招聘或自定义目标，让 Agent 持续寻找合适联系。"},
+        {"title": "有边界的破冰", "description": "分场景授权与双向同意，让真人保留确认、撤回和接管的权利。"},
+        {"title": "关系与接待", "description": "个人主页、社群撮合与企业收件箱，在不同场景接住联系。"}
+      ],
+      "steps": ["进入 Beta，按提示建立你的 Agent 身份与目标。", "设置场景和授权边界，发起找人或接待任务。", "查看介绍与待确认联系，在需要时接管。"],
+      "limitations": ["当前为 Beta；套餐升档通过邀请码或后台开放，不接真实支付。", "匹配和模型能力取决于实际配置，不保证找到特定对象或产生关系结果。"],
+      "preview": "products/meyou-preview.webp",
+      "preview_alt": "遇见 MeYou 的公开产品介绍与 Agent 网络入口"
     },
     {
       "id": "flowframe-studio",
@@ -449,7 +499,17 @@
       "visibility": "public",
       "visual": "",
       "accent": "violet",
-      "cta": "进入 FlowFrame"
+      "cta": "进入 FlowFrame",
+      "scenario": "从一句灵感到生成任务，再把素材放进双轨时间线。",
+      "highlights": [
+        {"title": "多种生成模式", "description": "支持文生视频、图生视频和多图参考，并跟踪后台生成任务。"},
+        {"title": "双轨时间线", "description": "统一素材、预览与属性编辑，编辑状态刷新后恢复。"},
+        {"title": "模型配置验证", "description": "服务端核对模型连接，未验证的草稿不会进入创作流程。"}
+      ],
+      "steps": ["进入工作台，选择灵感或创建项目。", "配置并验证模型，填写提示词或上传素材。", "查看生成任务，把素材组织到时间线中。"],
+      "limitations": ["生成需要有效的供应商模型配置，API Key 仅保存在服务端。", "服务端成片渲染与导出队列仍待接入，不能将时间线预览理解为已导出成片。"],
+      "preview": "products/flowframe.webp",
+      "preview_alt": "FlowFrame 实际工作台：灵感素材、生成配置和编辑入口"
     },
     {
       "id": "avatar-generator-service",
@@ -490,6 +550,26 @@
       "visual": "",
       "accent": "cobalt",
       "cta": "查看 Skill"
+    },
+    {
+      "id": "model-radar",
+      "name": "模型雷达",
+      "tagline": "每小时发现最新、最热的 AI 模型",
+      "summary": "聚合公开模型趋势、发布时间与社区采用信号，按厂商和模型类型整理每小时热榜，快速发现当前值得关注的新模型。",
+      "public_url": "https://lifeyoume.icu/models/",
+      "health_url": "",
+      "lifecycle": "live",
+      "availability": "online",
+      "category": "AI 工程",
+      "owner": "Model Radar",
+      "audience": "关注 AI 模型动态的开发者、产品经理、研究者与创作者",
+      "platforms": ["Web"],
+      "capabilities": ["每小时自动更新", "厂商与类型分类", "统一热度榜", "公开信号溯源"],
+      "featured": true,
+      "visibility": "public",
+      "visual": "",
+      "accent": "cobalt",
+      "cta": "查看模型热榜"
     }
   ]
 }

@@ -15,5 +15,6 @@ config:
   coreURL: http://nexora-core-api:8080
   # Leave empty for the Core + Studio edition.
   controlURL: ""
+  runtimeURL: http://nexora-runtime-api:8084
   secretName: nexora-platform-secrets
   databaseURLKey: studio-database-url

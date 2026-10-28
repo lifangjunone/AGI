@@ -1,4 +1,4 @@
-const CACHE = 'aie-admin-v2';
+const CACHE = 'aie-admin-v3';
 const SHELL = ['./', './mobile-admin.css', './mobile-admin.js', './manifest.webmanifest', '../favicon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -17,9 +17,9 @@ self.addEventListener('fetch', (event) => {
 });
 self.addEventListener('push', (event) => {
   const payload = event.data?.json() || {};
-  event.waitUntil(self.registration.showNotification(payload.title || '新订单', {
-    body: payload.body || '请打开管理端核对到账。',
-    tag: payload.tag || 'new-order',
+  event.waitUntil(self.registration.showNotification(payload.title || '经营任务待处理', {
+    body: payload.body || '请打开管理端处理。',
+    tag: payload.tag || 'owner-action',
     icon: '../favicon.svg',
     badge: '../favicon.svg',
     data: { url: payload.url || './' }

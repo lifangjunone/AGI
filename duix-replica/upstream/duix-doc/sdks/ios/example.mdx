@@ -1,0 +1,92 @@
+---
+title: 'Code example'
+description: 'Objective-C code example demonstrating how to initialize, start, and handle errors using the Duix iOS SDK.'
+---
+
+## Overview
+
+The following Objective-C example demonstrates the basic workflow for integrating the **Duix iOS SDK**,  
+including initialization, session management, view setup, and error handling.  
+For the complete implementation, see the full demo project:  
+👉 [**duix-cloud-demo-ios_1.2.6.zip**](https://duix-sgp.obs.ap-southeast-3.myhuaweicloud.com/duix/sdk/duix-cloud-demo-ios_1.2.6.zip)
+
+---
+
+## Full Example
+
+```objective-c
+/// Assign a custom view for digital human rendering
+[DigitalManager manager].remote_view = self.customView;
+
+#pragma mark - SDK Initialization
+[[GJAccess manager] getCamerapermissions:^(bool isPermis) {
+    if (isPermis)  {
+        [[DigitalManager manager] initNewWithAppId:AppId
+                                             appKey:AppKey
+                                      conversationId:ConversationId
+                                              region:REGION
+                                               block:^(BOOL isSuccee, NSString *errorMsg) {
+            if (isSuccee) {
+                [[DigitalManager manager] toStart];  // Start digital human session
+            } else {
+                NSLog(@"GJDigitalDemo==errorMsg==%@", errorMsg);
+            }
+        }];
+    }
+}];
+
+#pragma mark - End Conversation
+- (void)toStop {
+    self.digitalShow = NO;                      // Hide the digital human
+    [[DigitalManager manager] toStop];          // Stop the active session
+}
+
+#pragma mark - SDK Delegate (DigitalViewDelegate)
+#pragma mark - Video Load Completion
+- (void)onVideoShow:(BOOL)isSuccess progress:(float)progress {
+    if (isSuccess) {
+        self.digitalShow = YES;
+        NSLog(@"GJDigitalDemo==Load Complete");
+    } else {
+        NSLog(@"GJDigitalDemo==Loading Progress: %lf", progress);
+    }
+}
+
+#pragma mark - Error Handling
+- (void)onError:(NSInteger)error_code errorMsg:(NSString *)errorMsg {
+    // Handle specific error codes
+    switch (error_code) {
+        case -1:
+        case -2:
+            // MQTT connection issues
+            break;
+        case 50001:
+            // Invalid or empty AppId
+            break;
+        case 50002:
+            // Resource check failed (contact administrator)
+            break;
+        case 50003:
+            // Resource occupied; please check and retry
+            break;
+        case 50004:
+            // Human request timeout
+            break;
+        case 50005:
+            // Error retrieving resources from group
+            break;
+        case 50006:
+            // Signature verification failed
+            break;
+        case 50007:
+            // Insufficient total concurrency of resources
+            break;
+        case 50009:
+            // Resource timeout or not configured
+            break;
+        default:
+            // Unknown error
+            break;
+    }
+    NSLog(@"GJDigitalDemo==errorMsg==%@", errorMsg);
+}

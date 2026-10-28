@@ -2,10 +2,11 @@ nexora-infrastructure:
   enabled: true
 nexora-core:
   config:
-    products: studio,control,maas
+    products: studio,control,maas,runtime
     studioPublicURL: https://studio.nexora.example
     controlPublicURL: https://control.nexora.example
     maasPublicURL: https://maas.nexora.example
+    runtimePublicURL: https://runtime.nexora.example
 nexora-studio:
   config:
     coreURL: http://nexora-core-api:8080
@@ -16,3 +17,6 @@ nexora-control:
 nexora-maas:
   config:
     coreURL: http://nexora-core-api:8080
+nexora-runtime:
+  config:
+    maasURL: http://nexora-maas-api:8080

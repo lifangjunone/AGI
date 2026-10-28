@@ -1,0 +1,28 @@
+---
+title: 'Add dependencies'
+description: 'Integrate the Duix Android SDK by adding the required AAR package and Gradle dependencies.'
+---
+
+## Overview
+
+This section explains how to import the **Duix Android SDK** into your project  
+and configure all necessary dependencies for MQTT, WebRTC, and JWT authentication.
+
+# Add Dependencies
+
+1. **Import the SDK Package**  
+   Download the AAR package named `duix_cloud_sdk_release_${version}.aar`.  
+   Create a `libs` directory under your app module, and place the AAR file inside.
+
+2. **Configure Gradle**  
+   Add the following dependency settings to your module’s `build.gradle` file:
+
+   ```gradle
+   dependencies {
+       implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
+
+       implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+       implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+       implementation "org.webrtc:google-webrtc:1.0.32006"
+       implementation 'com.auth0:java-jwt:3.18.1'
+   }

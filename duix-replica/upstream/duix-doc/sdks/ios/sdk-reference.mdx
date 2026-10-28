@@ -1,0 +1,38 @@
+---
+title: 'SDK reference'
+description: 'Integration guide for the Duix iOS SDK, including framework setup and required permissions.'
+---
+
+## Overview
+
+This section describes how to integrate the **Duix iOS SDK** into your Xcode project,  
+including framework import and permission configuration.
+
+---
+
+## Step 1: Add SDK Frameworks
+
+1. Drag the following frameworks into your Xcode project’s **Resources** or **Frameworks** folder:
+   - `GJDigitalSDK.framework`
+   - `WebRTC.framework`
+
+2. In **Xcode → Project → General → Frameworks, Libraries, and Embedded Content**,  
+   set both frameworks to:
+
+```
+```Embed & Sign```
+```
+This ensures the SDK and WebRTC dependencies are correctly embedded during build and code signing.
+
+---
+## Step 2: Add Required Permissions
+
+Add the following permission descriptions to your project’s **Info.plist** file:
+
+```plist
+<key>NSLocalNetworkUsageDescription</key>
+<string>Obtain local network permissions</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>Recording rights are required for speech recognition</string>
+
+```

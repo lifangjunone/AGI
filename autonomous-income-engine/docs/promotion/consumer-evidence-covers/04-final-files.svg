@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <rect width="1080" height="1440" fill="#FCFCF8"/>
+  <rect x="48" y="48" width="984" height="1344" rx="46" fill="#EDF3FF"/>
+  <rect x="78" y="82" width="924" height="1276" rx="34" fill="#FFFFFF"/>
+  <rect x="90" y="112" width="520" height="58" rx="29" fill="#2D6CDF"/>
+  <text x="350" y="151" text-anchor="middle" class="eyebrow">整理完成后的 4 份交付物</text>
+  <text x="90" y="330" class="title">原图、目录、时间线</text>
+  <text x="90" y="450" class="title">再加可打印报告</text>
+  <rect x="90" y="548" width="900" height="10" rx="5" fill="#2D6CDF"/>
+  <text x="90" y="666" class="label">你最终会得到</text>
+
+    <g transform="translate(90 790)">
+      <circle cx="30" cy="30" r="30" fill="#2D6CDF"/>
+      <text x="30" y="43" text-anchor="middle" class="index">1</text>
+      <text x="88" y="44" class="point">文件统一命名</text>
+    </g>
+    <g transform="translate(90 902)">
+      <circle cx="30" cy="30" r="30" fill="#2D6CDF"/>
+      <text x="30" y="43" text-anchor="middle" class="index">2</text>
+      <text x="88" y="44" class="point">材料对应清楚</text>
+    </g>
+    <g transform="translate(90 1014)">
+      <circle cx="30" cy="30" r="30" fill="#2D6CDF"/>
+      <text x="30" y="43" text-anchor="middle" class="index">3</text>
+      <text x="88" y="44" class="point">一键打包下载</text>
+    </g>
+  <rect x="90" y="1190" width="900" height="112" rx="24" fill="#EDF3FF"/>
+  <text x="540" y="1259" text-anchor="middle" class="footer">演示内容为虚构案例，不冒充客户订单</text>
+  <style>
+    text { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .eyebrow { fill: #FFFFFF; font-size: 27px; font-weight: 600; }
+    .title { fill: #14231B; font-size: 72px; font-weight: 700; letter-spacing: -2px; }
+    .label { fill: #607067; font-size: 32px; font-weight: 600; }
+    .index { fill: #FFFFFF; font-size: 30px; font-weight: 700; }
+    .point { fill: #14231B; font-size: 47px; font-weight: 650; }
+    .footer { fill: #263E31; font-size: 30px; font-weight: 600; }
+  </style>
+</svg>

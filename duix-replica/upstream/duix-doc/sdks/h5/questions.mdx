@@ -1,0 +1,57 @@
+---
+title: 'Frequently asked questions'
+description: 'Common issues and troubleshooting tips when integrating the Duix H5 SDK.'
+---
+
+## Playback & Autoplay Issues
+
+**Q1. Why does the digital human not appear or play automatically?**  
+Some browsers (especially on mobile) require a **user gesture** to start media playback.  
+Always trigger `duix.start()` **from a click handler** (e.g., a button).  
+Even if muted, certain browsers may not render the digital human until a user interaction occurs.
+
+**Q2. What should I do when autoplay is still blocked after user interaction?**  
+Some mobile browsers enforce autoplay restrictions even after a click.  
+If you encounter **error code `4009`**, call `duix.resume()` in response to a user action to manually resume playback.
+
+---
+
+## Microphone & Permission Issues
+
+**Q3. Why do I need to call `navigator.mediaDevices.getUserMedia` on iOS?**  
+On certain iOS-based browsers (especially within **WeChat**),  
+you must explicitly call `navigator.mediaDevices.getUserMedia` to pre-authorize microphone access before remote streams can play.
+
+**Q4. Why does ASR fail to capture voice input?**  
+If **Automatic Speech Recognition (ASR)** is enabled, the browser must have active microphone permission.  
+Browsers also typically require **HTTPS** for `getUserMedia` access during local debugging or deployment.
+
+---
+
+## Integration & Compatibility
+
+**Q5. How can I integrate the SDK into a WeChat Mini Program?**  
+Use the built-in **`web-view`** component to embed the SDK page within your Mini Program environment.
+
+**Q6. Why does the SDK not handle wake words or interruption phrases?**  
+The SDK only provides core real-time interaction capabilities.  
+To implement **wake words, interruption phrases, or scripted openings**,  
+fetch them via **OpenAPI → Get Session Details** and manage the logic on your business layer.
+
+**Q7. Which browsers are incompatible with Duix SDK?**  
+Some mobile browsers do not support WebRTC (e.g., **Xiaomi Browser**).  
+For the best experience, use modern Chromium-based browsers such as **Chrome**, **Edge**, or **Samsung Internet**.
+
+---
+
+## Network & Security
+
+**Q8. Why doesn’t WebRTC work on HTTP or IP addresses?**  
+WebRTC strictly requires **HTTPS** and a valid **domain name**.  
+Connections over plain HTTP or direct IP addresses are not supported due to security and permission policies.
+
+---
+
+> **Tip:**  
+> Always test integrations on HTTPS in a real browser environment,  
+> as certain permissions and autoplay behaviors cannot be simulated in headless or local file contexts.

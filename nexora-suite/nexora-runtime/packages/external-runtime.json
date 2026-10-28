@@ -1,0 +1,18 @@
+{
+  "id": "external-runtime",
+  "display_name": "External Runtime",
+  "description": "Connect any customer or vendor runtime that implements the Nexora Runtime Protocol.",
+  "category": "protocol_runtime",
+  "protocol": "nexora-runtime-v1",
+  "integration": "protocol_bridge",
+  "deployment_drivers": ["external_endpoint"],
+  "capabilities": ["stream", "reasoning", "tools", "skills", "mcp"],
+  "config_schema": {
+    "type": "object",
+    "required": ["endpoint"],
+    "properties": {
+      "endpoint": {"type": "string", "format": "uri"},
+      "credential_ref": {"type": "string"}
+    }
+  }
+}

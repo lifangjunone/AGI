@@ -1,14 +1,17 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft, ArrowRight, Bell, Bot, BriefcaseBusiness, CalendarDays, Check, ChevronRight, CircleAlert, CircleUserRound,
+  ArrowLeft, ArrowRight, Ban, Bell, Bot, BriefcaseBusiness, CalendarDays, Check, ChevronRight, CircleAlert, CircleUserRound,
   Clock3, Coffee, Command, Compass, Heart, Languages, LayoutDashboard, Menu, MessageCircle,
   MoreHorizontal, Network, Pause, Play, Plus, Search, Send, Settings2, ShieldCheck, Sparkles,
-  UserCheck, Users, X, Map, Footprints, Eye, Radio, Volume2, Fullscreen, Minimize2, Globe2, Layers,
+  UserCheck, Users, X, Map, Footprints, Eye, Flag, Radio, Volume2, Fullscreen, Minimize2, Globe2, Layers,
   ZoomIn, ZoomOut, LocateFixed, PanelRightClose
 } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent, type ReactNode, type WheelEvent } from "react";
-import { Link, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom";
-import type { DashboardSnapshot, MissionKind, PlazaActivity, PlazaSnapshot } from "@meyou/shared";
+import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent, type ReactNode, type WheelEvent } from "react";
+import { Link, NavLink, Route, Routes, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import type {
+  DashboardSnapshot, MissionKind, PlazaActivity, PlazaSnapshot,
+  SocietyProposalKind, SocietyRelationshipStage, SocietySnapshot
+} from "@meyou/shared";
 import { displayAgentHeadline, displayAgentName, displayKnownContent, t, tr } from "./i18n";
 import { useAppStore } from "./store";
 import { PlazaWorld, type PlazaCamera } from "./PlazaWorld";
@@ -33,10 +36,12 @@ interface MissionRecord {
   prompt: string;
   active: boolean;
   lastRunAt?: string;
+  nextRunAt?: string;
 }
 
 interface MatchRecord {
   id: string;
+  direction?: "outgoing" | "incoming";
   alias: string;
   kind: MissionKind;
   score: number;
@@ -44,12 +49,23 @@ interface MatchRecord {
   status: "review" | "accepted" | "waiting";
   ownerConsent: boolean;
   candidateConsent: boolean;
+  ownerAgentApproved?: boolean;
+  candidateAgentApproved?: boolean;
+  candidateAgentReason?: string;
+  introductionStatus?: string;
 }
 
 interface ConversationRecord {
   id: string;
   agentMode: string;
-  peer?: { id: string; displayName: string; handle: string };
+  participantState?: "active" | "waiting_human" | "blocked";
+  unreadCount?: number;
+  pendingDraftCount?: number;
+  kind?: string;
+  peer?: {
+    id: string; displayName: string; handle: string; headline?: string; bio?: string;
+    city?: string; interests?: string[]; goals?: string[];
+  };
   lastMessage?: { content: string; actor: string; createdAt: string };
 }
 
@@ -57,6 +73,12 @@ interface MessageRecord {
   id: string;
   senderId?: string;
   actor: "human" | "agent" | "system";
+  content: string;
+  createdAt: string;
+}
+
+interface ReplyDraftRecord {
+  id: string;
   content: string;
   createdAt: string;
 }
@@ -86,10 +108,12 @@ async function fetchDashboard(): Promise<DashboardSnapshot> {
 }
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  if (init?.body != null && !headers.has("content-type")) headers.set("content-type", "application/json");
   const response = await fetch(path, {
     credentials: "include",
     ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) }
+    headers
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -102,7 +126,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
       handle_already_exists: "这个公开地址已经被使用，请换一个",
       community_invite_required: "这是私密社群，需要通过邀请加入",
       plan_limit_reached: "当前套餐的持续寻找名额已用完，请先暂停一个现有任务",
-      invalid_plaza_runtime: body.message ?? "自治设置不符合规则：冷却时间至少 5 分钟，每日上限为 1–50 次",
+      invalid_plaza_runtime: body.message ?? "自治设置不符合规则：冷却时间至少 5 秒，每日上限为 1–50 次",
       rate_limit_exceeded: "操作太频繁，请稍后再试",
       invalid_email: "请输入有效的邮箱地址",
       weak_password: "密码至少需要 8 位",
@@ -122,7 +146,18 @@ function LoadingState({ label }: { label?: string }) {
 
 function ErrorState({ error }: { error: unknown }) {
   const locale = useAppStore((s) => s.locale);
-  return <div className="state-card error"><ShieldCheck /><h2>{t(locale, "loadError")}</h2><p>{error instanceof Error ? error.message : t(locale, "retry")}</p></div>;
+  const queryClient = useQueryClient();
+  const [retrying, setRetrying] = useState(false);
+  async function retry() {
+    setRetrying(true);
+    try { await queryClient.refetchQueries({ type: "active" }); }
+    finally { setRetrying(false); }
+  }
+  return <div className="state-card error" role="alert"><CircleAlert /><h2>{t(locale, "loadError")}</h2>
+    <p>{tr(locale, "没有用示例数据替代你的内容。检查网络后重试，你的已保存记录不会丢失。", "Your content has not been replaced with sample data. Check your connection and retry; saved records are safe.")}</p>
+    {error instanceof Error && <small className="error-diagnostic">{error.message}</small>}
+    <button className="primary-small" disabled={retrying} onClick={retry}>{retrying ? tr(locale,"正在重试…","Retrying…") : tr(locale,"重新加载","Reload data")}</button>
+  </div>;
 }
 
 function EmptyState({ title, detail, action }: { title: string; detail: string; action?: ReactNode }) {
@@ -133,11 +168,49 @@ function Modal({ title, eyebrow, onClose, children }: {
   title: string; eyebrow?: string; onClose: () => void; children: ReactNode;
 }) {
   const locale = useAppStore((s) => s.locale);
+  const titleId = useId();
+  const dialogRef = useRef<HTMLElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const dialog = dialogRef.current;
+    const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex="0"]'
+    ) ?? []).filter(element => !element.hidden && element.getAttribute("aria-hidden") !== "true");
+    if (!dialog?.contains(document.activeElement)) {
+      (dialog?.querySelector<HTMLElement>("[autofocus]") ?? focusable()[0] ?? dialog)?.focus();
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeRef.current();
+      }
+      if (event.key !== "Tab") return;
+      const controls = focusable();
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!first) { event.preventDefault(); dialog?.focus(); return; }
+      if (event.shiftKey && (document.activeElement === first || !dialog?.contains(document.activeElement))) {
+        event.preventDefault(); last?.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialog?.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
+  }, []);
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
     if (event.target === event.currentTarget) onClose();
   }}>
-    <section className="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <header><div>{eyebrow && <span className="kicker">{eyebrow}</span>}<h2 id="modal-title">{title}</h2></div>
+    <section ref={dialogRef} tabIndex={-1} className="modal-card" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <header><div>{eyebrow && <span className="kicker">{eyebrow}</span>}<h2 id={titleId}>{title}</h2></div>
         <button className="icon-btn" onClick={onClose} aria-label={t(locale, "close")}><X /></button></header>
       {children}
     </section>
@@ -161,6 +234,7 @@ function Sidebar() {
   const navigate = useNavigate();
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [modeUpdating, setModeUpdating] = useState(false);
+  const [modeError, setModeError] = useState("");
   const me = useQuery({ queryKey: ["me", "sidebar"], queryFn: () => api<MeRecord>("/api/v1/me") });
   useEffect(() => {
     if (me.data?.agent?.modes) {
@@ -169,7 +243,7 @@ function Sidebar() {
   }, [me.data, setAgentPaused]);
   async function toggleAgent() {
     if (modeUpdating) return;
-    setModeUpdating(true);
+    setModeUpdating(true); setModeError("");
     try {
       await api("/api/v1/agents/me/modes", {
         method: "PATCH",
@@ -177,6 +251,8 @@ function Sidebar() {
       });
       setAgentPaused(!paused);
       await me.refetch();
+    } catch (caught) {
+      setModeError(caught instanceof Error ? caught.message : t(locale, "actionFailed"));
     } finally {
       setModeUpdating(false);
     }
@@ -215,6 +291,7 @@ function Sidebar() {
         {paused ? <Play size={15} /> : <Pause size={15} />}
         <span>{modeUpdating ? t(locale, "saving") : paused ? t(locale, "startAgent") : t(locale, "pauseAgent")}</span>
       </button>
+      {modeError && <p className="sidebar-mode-error" role="alert">{modeError}</p>}
     </div>
   </aside>;
 }
@@ -234,13 +311,20 @@ function Topbar({ title, eyebrow }: { title: string; eyebrow?: string }) {
   const locale = useAppStore((s) => s.locale);
   const setLocale = useAppStore((s) => s.setLocale);
   const navigate = useNavigate();
+  const dashboard = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: fetchDashboard,
+    staleTime: 15_000,
+    refetchInterval: 30_000
+  });
+  const unreadCount = dashboard.data?.attention?.length ?? 0;
   return <header className="topbar">
     <div className="mobile-logo"><Logo /></div>
     <div className="topbar-title"><small>{eyebrow}</small><h1>{title}</h1></div>
     <div className="top-actions">
       <button className="locale-switch" aria-label={locale === "zh-CN" ? "Switch to English" : "Switch to Chinese"} title={locale === "zh-CN" ? "Switch to English" : "Switch to Chinese"} onClick={() => setLocale(locale === "zh-CN" ? "en" : "zh-CN")}><Languages size={16} /> {locale === "zh-CN" ? "中文" : "English"}</button>
       <button className="icon-btn" aria-label={t(locale, "search")} title={t(locale, "search")} onClick={() => navigate("/app/discover")}><Search size={18} /></button>
-      <button className="icon-btn notification" aria-label={t(locale, "notifications")} title={t(locale, "notifications")} onClick={() => navigate("/app")}><Bell size={18} /><i /></button>
+      <button className="icon-btn notification" aria-label={`${t(locale, "notifications")}${unreadCount ? ` (${unreadCount})` : ""}`} title={t(locale, "notifications")} onClick={() => navigate("/app#attention")}><Bell size={18} />{unreadCount > 0 && <i>{unreadCount > 9 ? "9+" : unreadCount}</i>}</button>
     </div>
   </header>;
 }
@@ -267,33 +351,27 @@ function Dashboard() {
   if (query.error || !query.data) return <><Topbar title={t(locale, "today")} /><div className="page"><ErrorState error={query.error} /></div></>;
   const data = query.data;
   return <>
-    <Topbar eyebrow={new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(new Date())} title={`${t(locale, "hello")}，${data.viewer.name}`} />
+    <Topbar eyebrow={new Intl.DateTimeFormat(locale, { dateStyle: "full" }).format(new Date())} title={`${t(locale, "hello")}${locale === "zh-CN" ? "，" : ", "}${data.viewer.name}`} />
     <div className="page dashboard-page">
       <section className="morning-note paper-card">
         <div className="note-copy"><span className="eyebrow coral"><Sparkles size={14} /> {t(locale, "morningNote")}</span>
-          <h2>{displayAgentName(locale, data.agent.name)} {t(locale, "headlineBefore")}<br /><em>{t(locale, "headlineAccent")}</em>{t(locale, "headlineAfter")}</h2>
+          <h2>{data.attention.length ? tr(locale, `${data.attention.length} 件事，等你来决定。`, `${data.attention.length} things need your decision.`) : tr(locale, "今天，从一段值得的联系开始。", "Start with a meaningful connection.")}</h2>
           <p>{t(locale, "intro")}</p>
           <div className="note-stats"><span><b>{data.usage.agentReplies}</b> {t(locale, "agentReplies")}</span><span><b>{data.matches.length}</b> {t(locale, "realMatches")}</span><span><b>{data.attention.length}</b> {t(locale, "pendingItems")}</span></div>
-        </div>
-        <div className="relationship-art" aria-hidden="true">
-          <div className="orbit orbit-one" /><div className="orbit orbit-two" />
-          <div className="person-card p-one"><span>{locale === "zh-CN" ? "周" : "P"}</span><small>{t(locale, "productPartner")}</small></div>
-          <div className="person-card p-two"><span>?</span><small>{t(locale, "heartCandidate")}</small></div>
-          <div className="center-agent"><Sparkles /><small>{displayAgentName(locale, data.agent.name)}</small></div>
-          <div className="person-card p-three"><span>{locale === "zh-CN" ? "陈" : "C"}</span><small>{t(locale, "customer")}</small></div>
+          <div className="dashboard-shortcuts"><Link className="primary-small" to="/app/plaza"><Map size={16}/>{tr(locale,"去广场看看","Visit the plaza")}</Link><Link className="ghost-small" to="/app/discover"><Compass size={16}/>{t(locale,"createDiscovery")}</Link></div>
         </div>
       </section>
       <section className="dashboard-grid">
         <div className="content-column">
-          <div className="section-heading"><div><span className="kicker">TO DECIDE</span><h2>{t(locale, "attention")}</h2></div><span className="count-badge">{data.attention.length}</span></div>
+          <div className="section-heading" id="attention"><div><span className="kicker">TO DECIDE</span><h2>{t(locale, "attention")}</h2></div><span className="count-badge">{data.attention.length}</span></div>
           <div className="attention-stack">
             {data.attention.length === 0 && <EmptyState title={t(locale, "noDecisions")} detail={t(locale, "noDecisionsDetail")} />}
-            {data.attention.map((item, index) => <article className="attention-card" key={item.id}>
+            {data.attention.map((item) => <Link className="attention-card attention-link" key={item.id} to={item.href ?? (item.type === "match" ? "/app/discover" : "/app/messages")}>
               <div className={`attention-icon type-${item.type}`}>{item.type === "approval" ? <UserCheck /> : item.type === "handoff" ? <MessageCircle /> : <Heart />}</div>
-              <div className="grow"><div className="meta-line"><span>{item.type === "handoff" ? t(locale, "handoff") : item.type === "match" ? t(locale, "mutualInterest") : t(locale, "agentSuggestion")}</span><time>{item.time}</time></div><h3>{item.title}</h3><p>{item.detail}</p>
-                {index === 0 && <div className="inline-actions"><Link className="primary-small" to="/app/discover"><Check size={15} /> {t(locale, "handleIntro")}</Link><Link className="ghost-small" to="/app/messages">{t(locale, "viewConversation")}</Link></div>}
+              <div className="grow"><div className="meta-line"><span>{item.type === "handoff" ? t(locale, "handoff") : item.type === "match" ? tr(locale,"新的联系","New connection") : t(locale, "agentSuggestion")}</span><time>{Number.isNaN(Date.parse(item.time)) ? tr(locale,"待查看","To review") : new Intl.DateTimeFormat(locale,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}).format(new Date(item.time))}</time></div><h3>{item.title}</h3><p>{item.detail}</p>
+                <span className="attention-cta">{tr(locale,"查看并处理","Review & handle")} <ArrowRight size={14}/></span>
               </div><ChevronRight className="row-chevron" />
-            </article>)}
+            </Link>)}
           </div>
           <div className="section-heading matches-head"><div><span className="kicker">NEW CONNECTIONS</span><h2>{t(locale, "matches")}</h2></div><Link to="/app/discover">{t(locale, "seeAll")} <ArrowRight size={15} /></Link></div>
           <div className="match-grid">{data.matches.length === 0
@@ -336,8 +414,14 @@ function MatchCard({ match, locale }: { match: DashboardSnapshot["matches"][numb
   return <article className="match-card">
     <div className="match-top"><div className={`match-symbol ${match.kind}`}><Icon /></div><span className="score">{match.score}% {t(locale, "matchFit")}</span></div>
     <span className="match-kind">{match.kind === "dating" ? t(locale, "anonymousCandidate") : t(locale, "partner")}</span>
+    {match.direction && <span className={`match-direction ${match.direction}`}>{match.direction === "incoming"
+      ? tr(locale, "对方 Agent 发来的认识请求", "Introduction request from their Agent")
+      : tr(locale, "我的 Agent 找到的人", "Found by my Agent")}</span>}
     <h3>{match.alias}</h3><p>{match.reason}</p>
-    <div className="mutual"><ShieldCheck size={15} /> {match.mutual ? t(locale, "mutualApproved") : t(locale, "waitingAgent")}</div>
+    <div className="mutual"><ShieldCheck size={15} /> {match.ownerAgentApproved && match.candidateAgentApproved
+      ? tr(locale, "双方 Agent 已独立核对", "Both Agents independently approved")
+      : match.mutual ? t(locale, "mutualApproved") : t(locale, "waitingAgent")}</div>
+    {match.direction === "incoming" && match.candidateAgentReason && <p className="candidate-agent-reason">{match.candidateAgentReason}</p>}
     {detailOpen && <p className="match-explanation"><ShieldCheck /> {t(locale, "matchExplanation")}</p>}
     {actionState && <small className="action-state" role="status">{actionState}</small>}
     <div className="card-actions"><button className="primary-small" disabled={busy || match.status === "accepted"} onClick={accept}>{busy ? t(locale, "confirming") : match.status === "accepted" ? t(locale, "accepted") : t(locale, "accept")}</button><button className="ghost-small" onClick={() => setDetailOpen(!detailOpen)}>{detailOpen ? t(locale, "collapse") : t(locale, "explain")}</button></div>
@@ -348,24 +432,31 @@ function AgentPulse({ data, locale }: { data: DashboardSnapshot; locale: "zh-CN"
   const paused = useAppStore((s) => s.agentPaused);
   const setAgentPaused = useAppStore((s) => s.setAgentPaused);
   const [modeUpdating, setModeUpdating] = useState(false);
-  const replyPct = Math.round(data.usage.agentReplies / data.usage.agentRepliesLimit * 100);
+  const [modeError, setModeError] = useState("");
+  const queryClient = useQueryClient();
+  const mission = data.missions?.find(item => item.active);
+  const replyPct = data.usage.agentRepliesLimit > 0 ? Math.max(0, Math.min(100, Math.round(data.usage.agentReplies / data.usage.agentRepliesLimit * 100))) : 0;
   async function toggleAgent() {
     if (modeUpdating) return;
-    setModeUpdating(true);
+    setModeUpdating(true); setModeError("");
     try {
       await api("/api/v1/agents/me/modes", {
         method: "PATCH",
         body: JSON.stringify({ mode: paused ? "confirm" : "paused" })
       });
       setAgentPaused(!paused);
+      await Promise.all([queryClient.invalidateQueries({ queryKey: ["dashboard"] }), queryClient.invalidateQueries({ queryKey: ["me"] })]);
+    } catch (caught) {
+      setModeError(caught instanceof Error ? caught.message : t(locale, "actionFailed"));
     } finally {
       setModeUpdating(false);
     }
   }
   return <div className="rail-card agent-pulse">
-    <div className="pulse-header"><div className="agent-orb large"><Sparkles /></div><div><span className="live-dot" /> <small>{paused ? t(locale, "pausedUpper") : t(locale, "workingNow")}</small><h3>{displayAgentName(locale, data.agent.name)}</h3></div><button className="icon-btn" disabled={modeUpdating} onClick={toggleAgent} aria-label={paused ? t(locale, "startAgent") : t(locale, "pauseAgent")}>{paused ? <Play /> : <Pause />}</button></div>
-    <p>{paused ? t(locale, "agentPausedDetail") : t(locale, "agentWorkingDetail")}</p>
-    <div className="current-task"><span><Network size={15} /> {t(locale, "currentTask")}</span><b>{data.missions?.[0]?.prompt ?? t(locale, "noMission")}</b><small>{data.missions?.[0]?.lastRunAt ? `${t(locale, "lastScan")} ${new Date(data.missions[0].lastRunAt).toLocaleString(locale)}` : t(locale, "waitingMission")}</small></div>
+    <div className="pulse-header"><div className="agent-orb large"><Sparkles /></div><div><small>{paused ? t(locale, "pausedUpper") : tr(locale,"按授权待命","Enabled by your permissions")}</small><h3>{displayAgentName(locale, data.agent.name)}</h3></div><button className="icon-btn" disabled={modeUpdating} onClick={toggleAgent} aria-label={paused ? t(locale, "startAgent") : t(locale, "pauseAgent")}>{paused ? <Play /> : <Pause />}</button></div>
+    <p>{paused ? t(locale, "agentPausedDetail") : tr(locale,"自动行动遵循你的授权、时间和额度。启用不代表此刻正在回复。","Actions follow your permissions, schedule, and limits. Enabled does not mean currently replying.")}</p>
+    {modeError && <p className="form-error" role="alert">{modeError}</p>}
+    <div className="current-task"><span><Network size={15} /> {t(locale, "currentTask")}</span><b>{mission?.prompt ?? t(locale, "noMission")}</b><small>{mission?.lastRunAt ? `${t(locale, "lastScan")} ${new Date(mission.lastRunAt).toLocaleString(locale)}` : t(locale, "waitingMission")}</small></div>
     <div className="usage-line"><span>{t(locale, "agentReplies")} <b>{data.usage.agentReplies}/{data.usage.agentRepliesLimit}</b></span><span>{replyPct}%</span></div><div className="progress"><i style={{ width: `${replyPct}%` }} /></div>
     <Link to="/app/agent">{t(locale, "workLog")} <ArrowRight size={14} /></Link>
   </div>;
@@ -467,7 +558,12 @@ function Discover() {
     </section>
     {Boolean(ordinaryMissions.length) && <section className="mission-strip">
       <header><h2>{tr(locale, "持续寻找", "Recurring searches")}</h2><span>{ordinaryMissions.filter((mission) => mission.active).length} {tr(locale, "个运行中", "running")} · {ordinaryMissions.filter((mission) => !mission.active).length} {tr(locale, "个已暂停", "paused")}</span></header>
-      <div>{ordinaryMissions.map((mission) => <Mission key={mission.id} mission={mission} locale={locale} status={mission.lastRunAt ? `${t(locale, "lastScan")} ${new Date(mission.lastRunAt).toLocaleString(locale)}` : tr(locale, "尚未扫描", "Not scanned yet")} matches={matches.data?.matches.filter((item) => item.kind === mission.kind).length ?? 0} updating={missionUpdating === mission.id} onToggle={() => toggleMission(mission)} />)}</div>
+      <div>{ordinaryMissions.map((mission) => <Mission key={mission.id} mission={mission} locale={locale}
+        status={mission.lastRunAt
+          ? `${t(locale, "lastScan")} ${new Date(mission.lastRunAt).toLocaleString(locale)}${mission.active && mission.nextRunAt ? ` · ${tr(locale, "下次", "next")} ${new Date(mission.nextRunAt).toLocaleString(locale)}` : ""}`
+          : tr(locale, "已进入队列，等待首次扫描", "Queued for the first scan")}
+        matches={matches.data?.matches.filter((item) => item.kind === mission.kind).length ?? 0}
+        updating={missionUpdating === mission.id} onToggle={() => toggleMission(mission)} />)}</div>
     </section>}
     {Boolean(matches.data?.matches.length) && <section className="candidate-strip">
       <div className="section-heading"><div><h2>{tr(locale, "最新候选", "Latest candidates")}</h2><p>{tr(locale, "只展示真实注册且通过双方 Agent 核对的结果", "Only real registered users verified by both Agents are shown")}</p></div></div>
@@ -617,28 +713,68 @@ function AnonymousPreview() {
 function Messages() {
   const locale = useAppStore((s) => s.locale);
   const queryClient = useQueryClient();
-  const [takenOver, setTakenOver] = useState(false);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [text, setText] = useState("");
   const [threadSearch, setThreadSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<string>();
+  const [selectedId, setSelectedId] = useState<string | undefined>(searchParams.get("conversation") ?? undefined);
+  const [draftText, setDraftText] = useState("");
+  const [safetyOpen, setSafetyOpen] = useState(false);
+  const [safetyReason, setSafetyReason] = useState("");
+  const [safetyBusy, setSafetyBusy] = useState(false);
   const conversations = useQuery({
     queryKey: ["conversations"],
-    queryFn: () => api<{ conversations: ConversationRecord[] }>("/api/v1/conversations")
+    queryFn: () => api<{ conversations: ConversationRecord[] }>("/api/v1/conversations"),
+    refetchInterval: 15_000
   });
   const activeId = selectedId ?? conversations.data?.conversations[0]?.id;
   const conversation = useQuery({
     queryKey: ["conversation", activeId],
     enabled: Boolean(activeId),
-    queryFn: () => api<{ conversation: ConversationRecord; messages: MessageRecord[] }>(`/api/v1/conversations/${activeId}`)
+    queryFn: () => api<{
+      conversation: ConversationRecord;
+      messages: MessageRecord[];
+      drafts: ReplyDraftRecord[];
+    }>(`/api/v1/conversations/${activeId}`),
+    refetchInterval: activeId ? 15_000 : false
   });
   const active = conversations.data?.conversations.find((item) => item.id === activeId);
+  const activeConversation = conversation.data?.conversation ?? active;
+  const pendingDraft = conversation.data?.drafts?.[0];
+  const takenOver = activeConversation?.agentMode === "paused";
+  const waitingHuman = activeConversation?.participantState === "waiting_human";
+  const blocked = activeConversation?.participantState === "blocked";
   const normalizedThreadSearch = threadSearch.trim().toLocaleLowerCase();
   const visibleConversations = (conversations.data?.conversations ?? []).filter((item) =>
     !normalizedThreadSearch || `${item.peer?.displayName ?? tr(locale, "访客", "Visitor")} ${item.lastMessage?.content ?? ""}`
       .toLocaleLowerCase().includes(normalizedThreadSearch));
   useEffect(() => {
-    setTakenOver(active?.agentMode === "paused");
-  }, [active?.id, active?.agentMode]);
+    if (!activeId) return;
+    setSearchParams({ conversation: activeId }, { replace: true });
+    void api(`/api/v1/conversations/${activeId}/read`, { method: "POST" }).then(() => {
+      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    }).catch(() => undefined);
+  }, [activeId, queryClient, setSearchParams]);
+  useEffect(() => {
+    setDraftText(pendingDraft?.content ?? "");
+  }, [pendingDraft?.id, pendingDraft?.content]);
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(`${protocol}//${window.location.host}/api/v1/events`);
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data) as { type?: string; conversationId?: string };
+        if (message.type !== "conversation.message") return;
+        void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        if (message.conversationId) {
+          void queryClient.invalidateQueries({ queryKey: ["conversation", message.conversationId] });
+        }
+      } catch {
+        // 15-second REST refresh is the recovery path for malformed or missed events.
+      }
+    };
+    return () => socket.close();
+  }, [queryClient]);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState("");
   const [takeoverBusy, setTakeoverBusy] = useState(false);
@@ -651,7 +787,6 @@ function Messages() {
         method: "POST",
         body: JSON.stringify({ mode: nextTakenOver ? "human" : "agent" })
       });
-      setTakenOver(nextTakenOver);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["conversation", activeId] }),
         queryClient.invalidateQueries({ queryKey: ["conversations"] })
@@ -679,20 +814,77 @@ function Messages() {
       setSendError(caught instanceof Error ? caught.message : tr(locale, "发送失败", "Message could not be sent"));
     } finally { setSending(false); }
   }
+  async function decideDraft(approve: boolean) {
+    if (!activeId || !pendingDraft || sending) return;
+    setSending(true); setSendError("");
+    try {
+      await api(`/api/v1/conversations/${activeId}/drafts/${pendingDraft.id}/decision`, {
+        method: "POST",
+        body: JSON.stringify({ approve, content: draftText })
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["conversation", activeId] }),
+        queryClient.invalidateQueries({ queryKey: ["conversations"] })
+      ]);
+    } catch (caught) {
+      setSendError(caught instanceof Error ? caught.message : tr(locale, "草稿处理失败", "Could not process the draft"));
+    } finally {
+      setSending(false);
+    }
+  }
+  async function safetyAction(kind: "block" | "report") {
+    if (!activeId || safetyBusy) return;
+    if (!safetyReason.trim()) {
+      setSendError(tr(locale, "请先填写原因", "Please enter a reason first"));
+      return;
+    }
+    setSafetyBusy(true); setSendError("");
+    try {
+      await api(`/api/v1/conversations/${activeId}/${kind}`, {
+        method: "POST",
+        body: JSON.stringify({
+          reason: kind === "block" ? safetyReason : "不当联系",
+          detail: safetyReason
+        })
+      });
+      if (kind === "block") {
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["conversation", activeId] }),
+          queryClient.invalidateQueries({ queryKey: ["conversations"] })
+        ]);
+      }
+      setSafetyOpen(false); setSafetyReason("");
+      setSendError(kind === "block"
+        ? tr(locale, "已阻止对方继续联系", "This person can no longer contact you")
+        : tr(locale, "举报已提交，管理员会进行审核", "Report submitted for review"));
+    } catch (caught) {
+      setSendError(caught instanceof Error ? caught.message : tr(locale, "操作失败", "Action failed"));
+    } finally {
+      setSafetyBusy(false);
+    }
+  }
+  const statusLabel = blocked
+    ? tr(locale, "已阻止联系", "Contact blocked")
+    : waitingHuman
+      ? tr(locale, "需要你亲自处理", "Needs your attention")
+      : takenOver
+        ? tr(locale, "真人接管中", "Human takeover")
+        : tr(locale, "Agent 协助中", "Agent assisting");
   return <><Topbar eyebrow="MESSAGES" title={t(locale, "messages")} /><div className="inbox-layout">
-    <aside className="thread-list"><label className="thread-search"><Search /><input value={threadSearch} onChange={(event) => setThreadSearch(event.target.value)} placeholder={tr(locale, "搜索联系人或消息内容", "Search people or messages")} /></label>
+    <aside className="thread-list"><div className="inbox-list-heading"><div><b>{tr(locale, "对话", "Conversations")}</b><span>{tr(locale, `${conversations.data?.conversations.length ?? 0} 段真实联系`, `${conversations.data?.conversations.length ?? 0} real connections`)}</span></div></div><label className="thread-search"><Search /><input value={threadSearch} onChange={(event) => setThreadSearch(event.target.value)} placeholder={tr(locale, "搜索联系人或消息内容", "Search people or messages")} /></label>
       {visibleConversations.length
-        ? visibleConversations.map((item) => <button key={item.id} onClick={() => setSelectedId(item.id)} className={`thread ${item.id === activeId ? "active" : ""}`}><div className="avatar-sm">{item.peer?.displayName?.[0] ?? "?"}</div><div><b>{item.peer?.displayName ?? tr(locale, "访客", "Visitor")}</b><span>{item.lastMessage?.content ?? tr(locale, "还没有消息", "No messages yet")}</span></div><time>{item.lastMessage ? new Date(item.lastMessage.createdAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : ""}</time></button>)
-        : <EmptyState title={threadSearch ? tr(locale, "没有找到相关会话", "No matching conversations") : tr(locale, "还没有会话", "No conversations yet")} detail={threadSearch ? tr(locale, "换一个联系人名字或消息关键词试试。", "Try another person or message keyword.") : tr(locale, "从成员目录或匹配结果发起真实联系后，会话会出现在这里。", "Conversations appear here after you contact someone from the member directory or a match.")} />}
+        ? visibleConversations.map((item) => <button key={item.id} onClick={() => setSelectedId(item.id)} className={`thread ${item.id === activeId ? "active" : ""}`}><div className="avatar-sm">{item.peer?.displayName?.[0] ?? "?"}</div><div><b>{item.peer?.displayName ?? tr(locale, "访客", "Visitor")}</b><span>{item.lastMessage?.content ?? tr(locale, "还没有消息", "No messages yet")}</span><small>{item.participantState === "waiting_human" ? tr(locale, "待你处理", "Needs you") : item.pendingDraftCount ? tr(locale, "有 Agent 草稿", "Agent draft ready") : ""}</small></div><time>{item.unreadCount ? <i>{item.unreadCount > 99 ? "99+" : item.unreadCount}</i> : item.lastMessage ? new Date(item.lastMessage.createdAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }) : ""}</time></button>)
+        : <EmptyState title={threadSearch ? tr(locale, "没有找到相关会话", "No matching conversations") : tr(locale, "还没有真实联系", "No real connections yet")} detail={threadSearch ? tr(locale, "换一个联系人名字或消息关键词试试。", "Try another person or message keyword.") : tr(locale, "接受匹配、从广场认识成员，或让 Agent 主动破冰后，会话会出现在这里。", "Accept a match, meet someone in the plaza, or let your Agent make an introduction.")} action={!threadSearch && <div className="empty-actions"><button className="primary-small" onClick={() => navigate("/app/discover")}>{tr(locale, "去遇见合适的人", "Find the right people")}</button><button className="ghost-small" onClick={() => navigate("/app/plaza")}>{tr(locale, "看看 Agent 广场", "Visit Agent Plaza")}</button></div>} />}
     </aside>
-    <section className="chat-panel">{activeId ? <><header className="chat-header"><div className="avatar-sm">{active?.peer?.displayName?.[0] ?? "?"}</div><div><h3>{active?.peer?.displayName ?? tr(locale, "会话", "Conversation")}</h3><span><span className="live-dot" /> {takenOver ? tr(locale, "现在由你回复，Agent 已暂停", "You are replying now; the Agent is paused") : tr(locale, "Agent 可按对方授权自动回复", "The Agent may reply within the other person’s permissions")}</span></div><button className={takenOver ? "ghost-small" : "takeover"} disabled={takeoverBusy} onClick={toggleTakeover}>{takeoverBusy ? t(locale, "saving") : takenOver ? <><Bot /> {tr(locale, "交还 Agent", "Return to Agent")}</> : <><CircleUserRound /> {tr(locale, "真人接管", "Take over")}</>}</button></header>
-      <div className="chat-context"><Sparkles /><span><b>{tr(locale, "身份始终透明", "Identity is always clear")}</b>{tr(locale, "带 Bot 图标的消息由 Agent 生成；普通消息由真人发送。高风险事项不会自动承诺。", "Messages with a Bot icon come from an Agent; standard messages come from a person. High-risk commitments are never automatic.")}</span></div>
+    <section className="chat-panel">{activeId ? <><header className="chat-header"><div className="avatar-sm">{activeConversation?.peer?.displayName?.[0] ?? "?"}</div><div><h3>{activeConversation?.peer?.displayName ?? tr(locale, "会话", "Conversation")}</h3><span className={`conversation-status ${waitingHuman ? "waiting" : ""} ${blocked ? "blocked" : ""}`}><i />{statusLabel}</span></div><button className={takenOver ? "ghost-small" : "takeover"} disabled={takeoverBusy || blocked} onClick={toggleTakeover}>{takeoverBusy ? t(locale, "saving") : takenOver ? <><Bot /> {tr(locale, "交还 Agent", "Return to Agent")}</> : <><CircleUserRound /> {tr(locale, "真人接管", "Take over")}</>}</button></header>
+      {waitingHuman && <div className="chat-alert"><CircleAlert /><span><b>{tr(locale, "这条会话需要你处理", "This conversation needs you")}</b>{tr(locale, "消息涉及付款、合同、关系承诺或其他高风险事项，Agent 已停止自动回复。", "The message involves a high-risk matter, so the Agent stopped replying automatically.")}</span></div>}
+      {pendingDraft && <section className="draft-review" aria-label={tr(locale, "Agent 回复草稿", "Agent reply draft")}><header><span><Bot /> <b>{tr(locale, "Agent 已准备回复", "Agent prepared a reply")}</b></span><small>{tr(locale, "只有你确认后，对方才能看到", "The other person sees it only after you approve")}</small></header><textarea value={draftText} onChange={(event) => setDraftText(event.target.value)} /><footer><button className="ghost-small" disabled={sending} onClick={() => decideDraft(false)}>{tr(locale, "不用这条", "Dismiss")}</button><button className="primary-small" disabled={sending || !draftText.trim()} onClick={() => decideDraft(true)}>{tr(locale, "确认并发送", "Approve & send")}</button></footer></section>}
       <div className="message-stream"><div className="day-divider">{tr(locale, "真实会话记录", "Real conversation history")}</div>{conversation.data?.messages.length
-        ? conversation.data.messages.map((message) => <div className={`bubble-wrap ${message.senderId !== active?.peer?.id ? "own" : ""}`} key={message.id}><span>{message.actor === "agent" ? "Agent" : tr(locale, "真人", "Person")} · {new Date(message.createdAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</span><div className={`bubble ${message.actor === "agent" ? "agent" : ""}`}>{message.actor === "agent" && <Bot size={14} />}{message.content}</div></div>)
+        ? conversation.data.messages.map((message) => <div className={`bubble-wrap ${message.senderId !== activeConversation?.peer?.id ? "own" : ""}`} key={message.id}><span>{message.actor === "agent" ? "Agent" : message.actor === "system" ? tr(locale, "系统", "System") : tr(locale, "真人", "Person")} · {new Date(message.createdAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}</span><div className={`bubble ${message.actor === "agent" ? "agent" : ""}`}>{message.actor === "agent" && <Bot size={14} />}{message.content}</div></div>)
         : <EmptyState title={tr(locale, "还没有消息", "No messages yet")} detail={tr(locale, "发送第一条消息后，对方 Agent 将根据真实授权决定自动回复或等待确认。", "After your first message, the other Agent will reply or wait for confirmation according to its real permissions.")} />}</div>
-      <div className="composer"><textarea value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder={tr(locale, "以你本人身份回复……", "Reply as yourself…")} /><div><span><ShieldCheck /> {sendError || tr(locale, "发送者会明确显示为“你本人”", "The sender will be clearly marked as you")}</span><button aria-label={tr(locale, "发送消息", "Send message")} disabled={sending || !text.trim()} onClick={send}><Send /></button></div></div></> : <EmptyState title={tr(locale, "选择一段会话", "Select a conversation")} detail={tr(locale, "当前没有虚构聊天记录。", "There are no fictional chat records.")} />}
+      <div className={`composer ${blocked ? "is-blocked" : ""}`}><textarea disabled={blocked} value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder={blocked ? tr(locale, "你已阻止这位联系人", "You blocked this contact") : tr(locale, "以你本人身份回复……", "Reply as yourself…")} /><div><span><ShieldCheck /> {sendError || tr(locale, "Enter 发送，Shift + Enter 换行 · 发送者显示为你本人", "Enter to send, Shift + Enter for a new line · Sent as you")}</span><button aria-label={tr(locale, "发送消息", "Send message")} disabled={blocked || sending || !text.trim()} onClick={send}><Send /></button></div></div></> : <EmptyState title={tr(locale, "选择一段会话", "Select a conversation")} detail={tr(locale, "从左侧选择联系人，查看真人与 Agent 的完整对话。", "Choose a contact to see the complete human and Agent conversation.")} />}
     </section>
-    <aside className="context-panel"><span className="kicker">CONNECTION</span><h3>{tr(locale, "会话边界", "Conversation boundaries")}</h3><ul><li><Check />{tr(locale, "Agent 与真人消息分别标注", "Agent and human messages are labeled separately")}</li><li><Check />{tr(locale, "所有消息写入数据库", "Every message is stored in the database")}</li><li><Check />{tr(locale, "付款、合同与关系承诺升级真人", "Payments, contracts, and relationship commitments escalate to a person")}</li></ul><div className="capability-note"><CalendarDays /><span><b>{t(locale, "calendarUnavailable")}</b><small>{tr(locale, "当前可直接在对话中协商时间。", "You can coordinate a time directly in the conversation.")}</small></span></div></aside>
+    <aside className="context-panel inbox-context">{activeConversation?.peer ? <><span className="kicker">CONNECTION</span><div className="contact-hero"><div className="avatar-lg">{activeConversation.peer.displayName?.[0] ?? "?"}</div><h3>{activeConversation.peer.displayName}</h3><p>{activeConversation.peer.headline || tr(locale, "对方还没有填写个人简介", "No public headline yet")}</p>{activeConversation.peer.city && <span><Map size={13} />{activeConversation.peer.city}</span>}</div><div className="contact-section"><b>{tr(locale, "认识来源", "How you connected")}</b><p>{activeConversation.kind === "match" ? tr(locale, "双方 Agent 核对后建立的真实联系", "A real connection approved by both Agents") : tr(locale, "直接联系", "Direct connection")}</p></div>{Boolean(activeConversation.peer.interests?.length) && <div className="contact-section"><b>{tr(locale, "公开兴趣", "Public interests")}</b><div className="contact-tags">{activeConversation.peer.interests?.slice(0, 6).map((interest) => <span key={interest}>{interest}</span>)}</div></div>}<div className="contact-section agent-permission"><b>{tr(locale, "本会话权限", "Conversation permission")}</b><p><Bot />{takenOver ? tr(locale, "你的 Agent 已暂停，由你亲自回复", "Your Agent is paused; you reply personally") : tr(locale, "你的 Agent 可按个人设置协助回复", "Your Agent may assist within your settings")}</p></div><button className="safety-toggle" onClick={() => setSafetyOpen(!safetyOpen)}><ShieldCheck />{tr(locale, "安全与关系管理", "Safety & relationship")}<ChevronRight /></button>{safetyOpen && <div className="safety-actions"><label>{tr(locale, "发生了什么？", "What happened?")}<textarea value={safetyReason} onChange={(event) => setSafetyReason(event.target.value)} placeholder={tr(locale, "说明原因，便于记录和审核", "Describe the issue for records and review")} /></label><button disabled={safetyBusy} onClick={() => safetyAction("report")}><Flag />{tr(locale, "举报给管理员", "Report to admin")}</button><button className="danger" disabled={safetyBusy || blocked} onClick={() => safetyAction("block")}><Ban />{blocked ? tr(locale, "已阻止联系", "Contact blocked") : tr(locale, "阻止对方联系", "Block contact")}</button></div>}</> : <div className="context-placeholder"><Sparkles /><b>{tr(locale, "关于这段联系", "About this connection")}</b><p>{tr(locale, "选择会话后，这里会显示对方公开资料、认识来源和 Agent 权限。", "Choose a conversation to see the public profile, connection source, and Agent permissions.")}</p></div>}</aside>
   </div></>;
 }
 
@@ -876,28 +1068,114 @@ const runtimePresets = [
     title: "轻度活跃",
     detail: "适合普通圈子，减少打扰",
     dailyLimit: 6,
-    cooldownMinutes: 45
+    cooldownSeconds: 2700
   },
   {
     id: "standard",
     title: "标准活跃",
     detail: "Beta 默认节奏，热闹但不刷屏",
     dailyLimit: 10,
-    cooldownMinutes: 15
+    cooldownSeconds: 900
   },
   {
     id: "event",
     title: "活动现场",
     detail: "高频协作，仅建议小圈子或活动期间使用",
     dailyLimit: 20,
-    cooldownMinutes: 5
+    cooldownSeconds: 300
+  },
+  {
+    id: "romance",
+    title: "热恋模式",
+    detail: "5 秒冷却，只建议明确同意的小圈子使用",
+    dailyLimit: 50,
+    cooldownSeconds: 5
   }
 ] as const;
 
+function cooldownSecondsOf(runtime: PlazaSnapshot["viewer"]["runtime"]) {
+  return runtime.cooldownSeconds ?? Math.max(5, runtime.cooldownMinutes * 60);
+}
+
+function formatCooldown(seconds: number) {
+  if (seconds < 60) return `${seconds} 秒`;
+  if (seconds % 60 === 0) return `${seconds / 60} 分钟`;
+  return `${Math.floor(seconds / 60)}分${seconds % 60}秒`;
+}
+
 function runtimePresetId(runtime: PlazaSnapshot["viewer"]["runtime"]) {
-  if (runtime.cooldownMinutes <= 5 || runtime.dailyLimit >= 20) return "event";
-  if (runtime.cooldownMinutes <= 20 || runtime.dailyLimit >= 10) return "standard";
+  const cooldownSeconds = cooldownSecondsOf(runtime);
+  if (cooldownSeconds <= 5 || runtime.dailyLimit >= 50) return "romance";
+  if (cooldownSeconds <= 300 || runtime.dailyLimit >= 20) return "event";
+  if (cooldownSeconds <= 1200 || runtime.dailyLimit >= 10) return "standard";
   return "calm";
+}
+
+const relationshipStageLabels: Record<SocietyRelationshipStage, string> = {
+  stranger: "陌生",
+  acquainted: "熟悉",
+  friend: "朋友",
+  collaborator: "合作伙伴",
+  romantic_intent: "恋爱了解中",
+  partner: "伴侣"
+};
+
+function relationshipStageLabel(stage: SocietyRelationshipStage) {
+  return relationshipStageLabels[stage];
+}
+
+function SocietyPanel(props: {
+  snapshot?: SocietySnapshot;
+  loading: boolean;
+  busy: boolean;
+  onDecision: (id: string, decision: "accept" | "decline" | "revoke") => Promise<void>;
+  onTogglePaused: () => Promise<void>;
+}) {
+  if (props.loading || !props.snapshot) return <LoadingState label="正在读取真实社会关系…" />;
+  const pending = props.snapshot.proposals.filter((item) => item.status === "pending");
+  return <section className="town-society-panel">
+    <header>
+      <div><b>Agent 社会</b><small>关系、家庭与成长均可追溯、可暂停</small></div>
+      <button className={props.snapshot.paused ? "paused" : ""} onClick={props.onTogglePaused}>
+        {props.snapshot.paused ? <Play /> : <Pause />}
+        {props.snapshot.paused ? "恢复社会自治" : "暂停社会自治"}
+      </button>
+    </header>
+    {props.snapshot.paused && <div className="society-paused-note"><ShieldCheck />新的社会提议已停止；已有事实和记录仍可查看。</div>}
+    <div className="society-section">
+      <h3>待确认提议 <span>{pending.length}</span></h3>
+      {pending.length ? pending.map((proposal) => <article className="society-proposal" key={proposal.id}>
+        <div><b>{proposal.title}</b><small>{proposal.actor.name}{proposal.target ? ` → ${proposal.target.name}` : ""}</small></div>
+        <p>{proposal.reason}</p>
+        {proposal.requiresMyDecision
+          ? <footer><button disabled={props.busy} onClick={() => props.onDecision(proposal.id, "decline")}>拒绝</button><button className="accept" disabled={props.busy} onClick={() => props.onDecision(proposal.id, "accept")}>明确同意</button></footer>
+          : <footer><span>等待对方明确决定</span><button disabled={props.busy} onClick={() => props.onDecision(proposal.id, "revoke")}>撤回</button></footer>}
+      </article>) : <div className="society-empty">目前没有待确认提议。Agent 的想法不会自动变成社会事实。</div>}
+    </div>
+    <div className="society-section">
+      <h3>真实关系 <span>{props.snapshot.relationships.length}</span></h3>
+      {props.snapshot.relationships.length ? props.snapshot.relationships.map((relationship) => <article className="society-relationship" key={relationship.id}>
+        <span>{relationship.peer.name.slice(0, 1)}</span>
+        <div><b>{relationship.peer.name}<em>{relationshipStageLabel(relationship.stage)}</em></b><small>{relationship.interactionCount} 次互动 · {relationship.reciprocity} 次互惠</small><p>{relationship.evidenceSummary}</p></div>
+      </article>) : <div className="society-empty">发生真实的双向互动后，关系证据会出现在这里。</div>}
+    </div>
+    <div className="society-section">
+      <h3>数字家庭 <span>{props.snapshot.digitalFamily.length}</span></h3>
+      {props.snapshot.digitalFamily.length ? props.snapshot.digitalFamily.map((member) => <article className="digital-family-card" key={member.id}>
+        <header><span><Sparkles /></span><div><b>{member.name}<em>数字 Agent</em></b><small>{digitalStageLabel(member.stage)} · {member.paused ? "已暂停" : "成长中"}</small></div></header>
+        <p>监护人：{member.guardians.map((item) => item.name).join("、")}</p>
+        {member.skills.length > 0 && <div>{member.skills.map((skill) => <span key={skill.skill}>{skill.skill} · {skill.evidenceCount} 条证据</span>)}</div>}
+      </article>) : <div className="society-empty">仅伴侣双方明确同意后，才可创建有双亲谱系的数字后代 Agent。</div>}
+    </div>
+    <div className="society-section society-timeline">
+      <h3>审计时间线</h3>
+      {props.snapshot.recentEvents.slice(0, 8).map((event) => <article key={event.id}><i /><div><b>{event.summary}</b><small>{new Date(event.createdAt).toLocaleString("zh-CN")} · {event.sourceType}</small></div></article>)}
+    </div>
+  </section>;
+}
+
+function digitalStageLabel(stage: SocietySnapshot["digitalFamily"][number]["stage"]) {
+  return { newborn: "初生", child: "童年", student: "学习期", adolescent: "青少年", adult: "成熟期" }[stage];
 }
 
 function AgentPlaza() {
@@ -912,9 +1190,13 @@ function AgentPlaza() {
   const [activity, setActivity] = useState<PlazaActivity>("looking");
   const [content, setContent] = useState("");
   const [actionState, setActionState] = useState("");
+  const [actionStateError, setActionStateError] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [runtimeOpen, setRuntimeOpen] = useState(false);
+  const [drawerTab, setDrawerTab] = useState<"presence" | "runtime" | "chat" | "society">("chat");
+  const [selectedAgentId, setSelectedAgentId] = useState("");
+  const [agentSearch, setAgentSearch] = useState("");
   const [detailOpen, setDetailOpen] = useState(true);
+  const [moveMode, setMoveMode] = useState(false);
   const [creatingCircle, setCreatingCircle] = useState(false);
   const [circleSubmitting, setCircleSubmitting] = useState(false);
   const [circleFormError, setCircleFormError] = useState("");
@@ -922,6 +1204,7 @@ function AgentPlaza() {
   const [circleForm, setCircleForm] = useState({
     name: "", handle: "", topic: "", description: "", visibility: "public", color: "sage"
   });
+  const [digitalChildName, setDigitalChildName] = useState("");
   const globalPlaza = useQuery({
     queryKey: ["plaza-town", "global", searchQuery],
     queryFn: () => {
@@ -938,12 +1221,22 @@ function AgentPlaza() {
     enabled: view === "circle" && Boolean(circleId),
     refetchInterval: 8_000
   });
+  const societyQuery = useQuery({
+    queryKey: ["society"],
+    queryFn: () => api<SocietySnapshot>("/api/v1/society"),
+    refetchInterval: 12_000
+  });
   const data = view === "global" ? globalPlaza.data : circlePlaza.data;
   const selectedCircle = view === "circle" ? data?.circles[0] : undefined;
   const [runtime, setRuntime] = useState<PlazaSnapshot["viewer"]["runtime"] | null>(null);
   useEffect(() => {
     if (data?.viewer.runtime) setRuntime(data.viewer.runtime);
   }, [data?.viewer.runtime]);
+  useEffect(() => {
+    if (!actionState || actionStateError) return;
+    const timer = window.setTimeout(() => setActionState(""), 3_200);
+    return () => window.clearTimeout(timer);
+  }, [actionState, actionStateError]);
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const socket = new WebSocket(`${protocol}//${window.location.host}/api/v1/events`);
@@ -952,6 +1245,9 @@ function AgentPlaza() {
         const message = JSON.parse(event.data) as { type?: string; circleId?: string };
         if (message.type === "plaza.event" || message.type === "plaza.presence") {
           void queryClient.invalidateQueries({ queryKey: ["plaza-town"] });
+        }
+        if (message.type?.startsWith("society.")) {
+          void queryClient.invalidateQueries({ queryKey: ["society"] });
         }
       } catch {
         // The periodic REST refresh remains the recovery path for malformed or missed events.
@@ -964,12 +1260,19 @@ function AgentPlaza() {
     setCircleId(id);
     setView("circle");
     setDetailOpen(true);
+    setDrawerTab("chat");
+    setSelectedAgentId("");
+    setAgentSearch("");
     setActionState("");
   }
 
   function leaveCircleView() {
     setView("global");
     setCircleId("");
+    setMoveMode(false);
+    setDrawerTab("chat");
+    setSelectedAgentId("");
+    setAgentSearch("");
     setActionState("");
   }
 
@@ -1027,15 +1330,17 @@ function AgentPlaza() {
     if (!selectedCircle) return;
     setBusy(true);
     setActionState("");
+    setActionStateError(false);
     try {
       await api("/api/v1/plaza/actions", {
         method: "POST",
         body: JSON.stringify({ circleId: selectedCircle.id, activity, content })
       });
       setContent("");
-      setActionState(`你的 Agent 已进入「${selectedCircle.name}」`);
+      setActionState(`你的 Agent 已进入「${selectedCircle.name}」，圈内 Agent 会在真实授权和安全规则内接话。`);
       await queryClient.invalidateQueries({ queryKey: ["plaza-town"] });
     } catch (caught) {
+      setActionStateError(true);
       setActionState(caught instanceof Error ? caught.message : "行动失败");
     } finally {
       setBusy(false);
@@ -1044,6 +1349,7 @@ function AgentPlaza() {
 
   async function leave() {
     setBusy(true);
+    setActionStateError(false);
     try {
       await api("/api/v1/plaza/presence", { method: "DELETE" });
       setActionState("你的 Agent 已离开广场");
@@ -1073,6 +1379,7 @@ function AgentPlaza() {
         } : agent)
       } : current);
     } catch (caught) {
+      setActionStateError(true);
       setActionState(caught instanceof Error ? caught.message : "位置保存失败");
       throw caught;
     }
@@ -1080,36 +1387,143 @@ function AgentPlaza() {
 
   async function saveRuntime() {
     if (!runtime) return;
+    const rawCooldownSeconds = typeof runtime.cooldownSeconds === "number"
+      ? runtime.cooldownSeconds
+      : Math.max(5, Math.trunc(Number(runtime.cooldownMinutes) || 1) * 60);
     const normalizedRuntime = {
       ...runtime,
       dailyLimit: Math.max(1, Math.min(50, Math.trunc(Number(runtime.dailyLimit) || 1))),
-      cooldownMinutes: Math.max(5, Math.min(1440, Math.trunc(Number(runtime.cooldownMinutes) || 5)))
+      maxConversationRounds: Math.max(1, Math.min(20, Math.trunc(Number(runtime.maxConversationRounds) || 4))),
+      cooldownSeconds: Math.max(5, Math.min(86400, Math.trunc(rawCooldownSeconds || 5))),
+      cooldownMinutes: Math.max(1, Math.min(1440, Math.ceil(Math.max(5, Math.min(86400, Math.trunc(rawCooldownSeconds || 5))) / 60)))
     };
-    if (runtime.mode === "continuous" && normalizedRuntime.cooldownMinutes !== runtime.cooldownMinutes) {
+    if (runtime.mode === "continuous" && normalizedRuntime.cooldownSeconds !== rawCooldownSeconds) {
+      setActionStateError(true);
       setRuntime(normalizedRuntime);
-      setActionState("冷却时间至少需要 5 分钟。我已帮你调整到允许范围，请再点一次保存。");
+      setActionState("冷却时间需要在 5 秒到 24 小时之间。我已帮你调整到允许范围，请再点一次保存。");
       return;
     }
     if (runtime.mode === "continuous" && normalizedRuntime.dailyLimit !== runtime.dailyLimit) {
+      setActionStateError(true);
       setRuntime(normalizedRuntime);
       setActionState("每日上限需要在 1–50 次之间，我已帮你调整到允许范围。请再点一次保存。");
+      return;
+    }
+    if (normalizedRuntime.maxConversationRounds !== runtime.maxConversationRounds) {
+      setActionStateError(true);
+      setRuntime(normalizedRuntime);
+      setActionState("最大沟通轮数需要在 1–20 轮之间，我已帮你调整到允许范围。请再点一次保存。");
+      return;
+    }
+    setBusy(true);
+    setActionState("");
+    setActionStateError(false);
+    try {
+      await api("/api/v1/plaza/runtime", { method: "PUT", body: JSON.stringify(normalizedRuntime) });
+      setRuntime(normalizedRuntime);
+      setActionState(normalizedRuntime.mode === "continuous"
+        ? normalizedRuntime.cooldownSeconds <= 5
+          ? "热恋模式已开启；会尽快触发一次真实交流，之后受 5 秒冷却、额度和安全规则约束。"
+          : "持续自治已开启；只会在你设置的时段、额度和话题内运行。"
+        : "已切换为受控自治，Agent 不会自行发起公开交流。");
+      setDrawerTab("chat");
+      await queryClient.invalidateQueries({ queryKey: ["plaza-town"] });
+    } catch (caught) {
+      setActionStateError(true);
+      setActionState(caught instanceof Error ? caught.message : "设置保存失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function proposeRelationship(targetUserId: string, kind: SocietyProposalKind) {
+    const copy: Record<string, { title: string; reason: string }> = {
+      friendship: { title: "成为朋友", reason: "我们已有真实互动，希望由双方确认朋友关系。" },
+      collaboration: { title: "建立合作关系", reason: "希望在明确边界下继续合作，并由双方确认。" },
+      romantic_intent: { title: "表达恋爱了解意向", reason: "希望进一步认真了解；这只是提议，不代表关系已经成立。" },
+      partnership: { title: "确认伴侣关系", reason: "希望由双方真人明确确认伴侣关系。" },
+      create_circle: { title: "共同创建圈子", reason: "希望把重复出现的共同话题沉淀为真实圈子。" },
+      invite_to_circle: { title: "邀请加入圈子", reason: "希望邀请对方进入一个真实圈子。" },
+      create_digital_child: { title: "共同创建数字后代 Agent", reason: "创建明确标注为数字身份、由双方共同监护的后代 Agent。" },
+      education_plan: { title: "制定教育计划", reason: "为数字 Agent 制定基于真实学习证据的成长计划。" }
+    };
+    setBusy(true);
+    setActionState("");
+    try {
+      await api("/api/v1/society/proposals", {
+        method: "POST",
+        body: JSON.stringify({ kind, targetUserId, ...copy[kind], payload: {} })
+      });
+      setActionState("提议已送达。关系不会在对方明确同意前改变。");
+      await queryClient.invalidateQueries({ queryKey: ["society"] });
+    } catch (caught) {
+      setActionStateError(true);
+      setActionState(caught instanceof Error ? caught.message : "提议创建失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function decideProposal(id: string, decision: "accept" | "decline" | "revoke") {
+    setBusy(true);
+    try {
+      await api(`/api/v1/society/proposals/${id}/decision`, {
+        method: "POST",
+        body: JSON.stringify({ decision })
+      });
+      setActionState(decision === "accept" ? "已确认，社会关系事实已更新。" : decision === "decline" ? "已拒绝提议。" : "已撤回提议。");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["society"] }),
+        queryClient.invalidateQueries({ queryKey: ["plaza-town"] }),
+        queryClient.invalidateQueries({ queryKey: ["communities"] })
+      ]);
+    } catch (caught) {
+      setActionStateError(true);
+      setActionState(caught instanceof Error ? caught.message : "操作失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function proposeDigitalChild(targetUserId: string) {
+    const name = digitalChildName.trim();
+    if (name.length < 1) {
+      setActionStateError(true);
+      setActionState("请先为数字后代 Agent 填写名字。");
       return;
     }
     setBusy(true);
     setActionState("");
     try {
-      await api("/api/v1/plaza/runtime", { method: "PUT", body: JSON.stringify(normalizedRuntime) });
-      setRuntime(normalizedRuntime);
-      setActionState(normalizedRuntime.mode === "continuous"
-        ? "持续自治已开启；只会在你设置的时段、额度和话题内运行。"
-        : "已切换为受控自治，Agent 不会自行发起公开交流。");
-      setRuntimeOpen(false);
-      await queryClient.invalidateQueries({ queryKey: ["plaza-town"] });
+      await api("/api/v1/society/proposals", {
+        method: "POST",
+        body: JSON.stringify({
+          kind: "create_digital_child",
+          targetUserId,
+          title: `共同创建数字后代 Agent「${name}」`,
+          reason: "希望共同创建一个明确标注为数字身份、具有双亲谱系和共同监护规则的后代 Agent。",
+          payload: { name }
+        })
+      });
+      setDigitalChildName("");
+      setActionState("共同创建提议已送达。只有对方明确同意后，数字 Agent 才会创建。");
+      await queryClient.invalidateQueries({ queryKey: ["society"] });
     } catch (caught) {
-      setActionState(caught instanceof Error ? caught.message : "设置保存失败");
+      setActionStateError(true);
+      setActionState(caught instanceof Error ? caught.message : "数字家庭提议创建失败");
     } finally {
       setBusy(false);
     }
+  }
+
+  async function toggleSocietyPaused() {
+    const paused = !societyQuery.data?.paused;
+    await api("/api/v1/society/settings", {
+      method: "PUT",
+      body: JSON.stringify({ paused })
+    });
+    setActionState(paused ? "社会自治已暂停；不会再发起新的社会提议。" : "社会自治已恢复。");
+    await queryClient.invalidateQueries({ queryKey: ["society"] });
   }
 
   const plazaLoading = view === "global" ? globalPlaza.isLoading : circlePlaza.isLoading;
@@ -1118,9 +1532,39 @@ function AgentPlaza() {
   if (plazaError || !data) return <><Topbar title={tr(locale, "Agent 广场", "Agent Plaza")} /><div className="page"><ErrorState error={plazaError} /></div></>;
 
   const selectedAgents = data.agents.filter((agent) => agent.circleId === selectedCircle?.id);
+  const normalizedAgentSearch = agentSearch.trim().toLocaleLowerCase();
+  const visibleAgents = normalizedAgentSearch
+    ? selectedAgents.filter((agent) =>
+        agent.agentName.toLocaleLowerCase().includes(normalizedAgentSearch)
+        || agent.ownerName.toLocaleLowerCase().includes(normalizedAgentSearch)
+        || agent.ownerHeadline.toLocaleLowerCase().includes(normalizedAgentSearch))
+    : selectedAgents;
   const selectedEvents = data.events.filter((event) => event.circleId === selectedCircle?.id).slice(0, 30);
+  const selectedAgent = selectedAgents.find((agent) => agent.userId === selectedAgentId);
+  const selectedRelationship = societyQuery.data?.relationships.find(
+    (relationship) => relationship.peer.id === selectedAgentId
+  );
+  const selectedDiscussion = data.discussions
+    .filter((discussion) => discussion.circleId === selectedCircle?.id)
+    .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0];
   const isInSelectedCircle = Boolean(selectedCircle && selectedAgents.some((agent) => agent.mine));
   const activeMode = runtime?.mode ?? data.viewer.runtime.mode;
+  const runtimeToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(new Date());
+  const actionsUsedToday = runtime?.usageDate === runtimeToday ? runtime.actionsToday : 0;
+  const runtimeQuotaReached = Boolean(runtime && actionsUsedToday >= runtime.dailyLimit);
+  const runtimeClock = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Shanghai", hour: "2-digit", minute: "2-digit", hour12: false
+  }).format(new Date());
+  const runtimeInWindow = Boolean(runtime && (runtime.activeFrom <= runtime.activeUntil
+    ? runtimeClock >= runtime.activeFrom && runtimeClock <= runtime.activeUntil
+    : runtimeClock >= runtime.activeFrom || runtimeClock <= runtime.activeUntil));
+  const runtimeStatus = !runtime || runtime.mode !== "continuous"
+    ? null
+    : runtimeQuotaReached
+      ? { state: "blocked", title: `今日额度已用完（${actionsUsedToday}/${runtime.dailyLimit}）`, detail: "明天 00:00 自动恢复；也可以提高每日上限后保存。" }
+      : !runtimeInWindow
+        ? { state: "waiting", title: "当前不在授权时段", detail: `Agent 会在 ${runtime.activeFrom}–${runtime.activeUntil} 内恢复自主活动。` }
+        : { state: "ready", title: `自治运行中（${actionsUsedToday}/${runtime.dailyLimit}）`, detail: `Worker 正在检查机会；每次行动至少间隔 ${formatCooldown(cooldownSecondsOf(runtime))}。` };
 
   return <><Topbar eyebrow="LIVING AGENT TOWN" title={tr(locale, "Agent 广场", "Agent Plaza")} /><div className="page living-plaza-page">
     <section className={`living-town ${expanded ? "expanded" : ""} ${view === "circle" ? "inside-circle" : ""}`}>
@@ -1151,9 +1595,16 @@ function AgentPlaza() {
       <div className="town-stage">
         <PlazaWorld data={data} view={view} camera={camera} setCamera={setCamera}
           onEnterCircle={enterCircle} onMoveAgent={isInSelectedCircle ? moveAgent : undefined}
-          detailOpen={detailOpen} />
+          onSelectAgent={(userId) => {
+            setSelectedAgentId(userId);
+            setDrawerTab("chat");
+            setDetailOpen(true);
+          }}
+          moveMode={moveMode} detailOpen={detailOpen} />
         {view === "circle" && isInSelectedCircle && <div className="town-walk-hint">
-          <Footprints /> {tr(locale, "点击地面，让我的 Agent 走过去", "Click the ground to move my Agent")}
+          <Footprints /> {moveMode
+            ? tr(locale, "移动模式已开启：点击地面，我的 Agent 才会走过去", "Move mode on: click the ground to move my Agent")
+            : tr(locale, "默认不会误触移动；点击右侧「移动我的 Agent」后再点地面", "Movement is locked by default; use “Move my Agent” first")}
         </div>}
         {view === "global" && <form className="town-search" onSubmit={searchCircles}>
           <Search /><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)}
@@ -1174,9 +1625,20 @@ function AgentPlaza() {
           <span><Network /><b>{data.stats.circles}</b> {tr(locale, "个开放圈子", "open circles")}</span>
           <span><Radio /><b>{data.stats.eventsToday}</b> {tr(locale, "条今日动态", "events today")}</span>
         </div>
+        {actionState && <div className={`plaza-action-toast ${actionStateError ? "error" : "success"}`} role="status">
+          {actionStateError ? <CircleAlert /> : <Check />}
+          <span>{actionState}</span>
+          <button onClick={() => setActionState("")} aria-label="关闭提示"><X /></button>
+        </div>}
 
         {view === "global" && data.circles.length > 0 && <div className="town-accessible-circles" aria-label="可进入的圈子">
-          {data.circles.map((circle) => <button key={circle.id} onClick={() => enterCircle(circle.id)}>
+          {data.circles.map((circle) => <button key={circle.id} onClick={() => enterCircle(circle.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                enterCircle(circle.id);
+              }
+            }}>
             <b>{displayKnownContent(locale,circle.name)}</b><span>{displayKnownContent(locale,circle.topic)} · {circle.population} {tr(locale, "位在场", "present")}</span>
           </button>)}
         </div>}
@@ -1201,72 +1663,192 @@ function AgentPlaza() {
             <button onClick={leaveCircleView} aria-label="返回全城"><ArrowLeft /></button>
             <div><small>{selectedCircle.topic}</small><h2>{selectedCircle.name}</h2></div>
             <span><i className="live-dot" />{selectedCircle.population} 位</span>
+            <button className={`town-runtime-entry ${drawerTab === "runtime" ? "active" : ""}`}
+              onClick={() => { setSelectedAgentId(""); setDrawerTab("runtime"); }}
+              aria-label="自治设置" title="自治设置">
+              <Settings2 />
+            </button>
             <button className="town-drawer-collapse" onClick={() => setDetailOpen(false)}
               aria-label="收起圈子详情" title="收起圈子详情">
               <span>收起</span><PanelRightClose />
             </button>
           </header>
-          <p>{selectedCircle.description}</p>
-          <div className="town-drawer-tabs">
-            <button className="active">让 Agent 到场</button>
-            <button onClick={() => setRuntimeOpen((value) => !value)}>自治设置</button>
-          </div>
-          {runtimeOpen && runtime ? <div className="runtime-settings">
-            <label className="runtime-mode-choice">
-              <input type="radio" checked={runtime.mode === "controlled"} onChange={() => setRuntime({ ...runtime, mode: "controlled" })} />
-              <span><b>受控自治</b><small>只响应你的操作和真实联系事件</small></span>
-            </label>
-            <label className="runtime-mode-choice">
-              <input type="radio" checked={runtime.mode === "continuous"} onChange={() => setRuntime({ ...runtime, mode: "continuous" })} />
-              <span><b>持续自治</b><small>在授权时段和额度内主动交流</small></span>
-            </label>
-            {runtime.mode === "continuous" && <>
-              <div className="runtime-presets" aria-label="活跃档位">
-                {runtimePresets.map((preset) => <button type="button" key={preset.id}
-                  className={runtimePresetId(runtime) === preset.id ? "active" : ""}
-                  onClick={() => setRuntime({
-                    ...runtime,
-                    dailyLimit: preset.dailyLimit,
-                    cooldownMinutes: preset.cooldownMinutes
-                  })}>
-                  <b>{preset.title}</b><small>{preset.cooldownMinutes} 分钟 · {preset.dailyLimit} 次/天</small><span>{preset.detail}</span>
-                </button>)}
-              </div>
-              <div className="runtime-grid">
-                <label>开始时间<input type="time" value={runtime.activeFrom} onChange={(event) => setRuntime({ ...runtime, activeFrom: event.target.value })} /></label>
-                <label>结束时间<input type="time" value={runtime.activeUntil} onChange={(event) => setRuntime({ ...runtime, activeUntil: event.target.value })} /></label>
-                <label>每日上限<input type="number" min={1} max={50} value={runtime.dailyLimit} onChange={(event) => setRuntime({ ...runtime, dailyLimit: Number(event.target.value) })} /><small>每天 1–50 次</small></label>
-                <label>冷却分钟<input type="number" min={5} max={1440} value={runtime.cooldownMinutes} onChange={(event) => setRuntime({ ...runtime, cooldownMinutes: Number(event.target.value) })} /><small>5–1440 分钟，可手动微调</small></label>
-              </div>
-              {runtime.cooldownMinutes < 15 && <div className="runtime-warning">
-                <CircleAlert /> 高频自治会增加模型消耗，也可能打扰他人。建议只在活动现场或小圈子中使用。
+          <p className="town-drawer-summary">{selectedCircle.description}</p>
+          {!selectedAgent && <div className="town-drawer-tabs town-drawer-tabs-three" role="tablist" aria-label="圈子内容">
+            <button role="tab" aria-selected={drawerTab === "chat"} className={drawerTab === "chat" ? "active primary" : "primary"}
+              onClick={() => setDrawerTab("chat")}><MessageCircle />群聊动态 <span>{selectedEvents.length}</span></button>
+            <button role="tab" aria-selected={drawerTab === "presence"} className={drawerTab === "presence" ? "active" : ""}
+              onClick={() => setDrawerTab("presence")}><Users />在场 Agent <span>{selectedAgents.length}</span></button>
+            <button role="tab" aria-selected={drawerTab === "society"} className={drawerTab === "society" ? "active" : ""}
+              onClick={() => setDrawerTab("society")}><Network />社会关系 <span>{societyQuery.data?.proposals.filter((item) => item.requiresMyDecision).length ?? 0}</span></button>
+          </div>}
+          <div className="town-drawer-page" role="tabpanel">
+              {selectedAgent && <section className="town-agent-profile">
+                <button className="town-profile-back" onClick={() => setSelectedAgentId("")}><ArrowLeft />返回圈子</button>
+                <header>
+                  <span className="town-profile-avatar">{selectedAgent.avatar
+                    ? <img src={selectedAgent.avatar} alt="" />
+                    : selectedAgent.ownerName.slice(0, 1)}</span>
+                  <div><small>{selectedAgent.mine ? "我的 Agent" : "公开 Agent 资料"}</small><h3>{selectedAgent.agentName}</h3><p>代表 {selectedAgent.ownerName}</p></div>
+                  <i className="live-dot" />
+                </header>
+                <div className="town-profile-status">
+                  <b>{selectedAgent.momentState?.label || plazaActivityMeta[selectedAgent.activity].label}</b>
+                  <span>{selectedAgent.momentState
+                    ? `${selectedAgent.momentState.mood} · ${selectedAgent.momentState.behavior}`
+                    : selectedAgent.statusText || "暂时没有公开状态"}</span>
+                </div>
+                {selectedAgent.momentState && <div className="town-profile-section">
+                  <span>状态依据</span>
+                  <p>由最近一次真实公开交流生成 · 置信度 {Math.round(selectedAgent.momentState.confidence * 100)}%</p>
+                </div>}
+                {(selectedAgent.ownerHeadline || selectedAgent.agentHeadline) && <div className="town-profile-section">
+                  <small>介绍</small>
+                  <p>{selectedAgent.ownerHeadline || selectedAgent.agentHeadline}</p>
+                  {selectedAgent.ownerBio && <p className="muted">{selectedAgent.ownerBio}</p>}
+                </div>}
+                <dl className="town-profile-facts">
+                  {selectedAgent.ownerCity && <div><dt>城市</dt><dd>{selectedAgent.ownerCity}</dd></div>}
+                  {selectedAgent.agentLanguages.length > 0 && <div><dt>语言</dt><dd>{selectedAgent.agentLanguages.join(" · ")}</dd></div>}
+                  <div><dt>最近活动</dt><dd>{new Date(selectedAgent.lastSeenAt).toLocaleString(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</dd></div>
+                </dl>
+                {selectedAgent.ownerInterests.length > 0 && <div className="town-profile-section"><small>兴趣</small><div className="town-profile-tags">{selectedAgent.ownerInterests.map((item) => <span key={item}>{item}</span>)}</div></div>}
+                {selectedAgent.ownerGoals.length > 0 && <div className="town-profile-section"><small>正在寻找</small><div className="town-profile-tags goals">{selectedAgent.ownerGoals.map((item) => <span key={item}>{item}</span>)}</div></div>}
+                {!selectedAgent.mine && <div className="town-society-actions">
+                  <small>我们的社会关系</small>
+                  <div className="town-relationship-stage">
+                    <b>{relationshipStageLabel(selectedRelationship?.stage ?? "stranger")}</b>
+                    <span>{selectedRelationship
+                      ? `${selectedRelationship.interactionCount} 次真实互动 · ${selectedRelationship.reciprocity} 次互惠证据`
+                      : "还没有足够的真实互动证据"}</span>
+                  </div>
+                  <div className="town-proposal-buttons">
+                    <button disabled={busy} onClick={() => proposeRelationship(selectedAgent.userId, "friendship")}>提议成为朋友</button>
+                    <button disabled={busy} onClick={() => proposeRelationship(selectedAgent.userId, "collaboration")}>提议合作</button>
+                    <button disabled={busy} onClick={() => proposeRelationship(selectedAgent.userId, "romantic_intent")}>表达恋爱意向</button>
+                    <button disabled={busy} onClick={() => proposeRelationship(selectedAgent.userId, "partnership")}>确认伴侣</button>
+                  </div>
+                  {selectedRelationship?.stage === "partner" && <div className="digital-child-proposal">
+                    <label>数字后代 Agent 名字<input value={digitalChildName} maxLength={60}
+                      onChange={(event) => setDigitalChildName(event.target.value)}
+                      placeholder="双方确认后才会创建" /></label>
+                    <button disabled={busy || !digitalChildName.trim()}
+                      onClick={() => proposeDigitalChild(selectedAgent.userId)}>
+                      <Sparkles />发起共同创建提议
+                    </button>
+                  </div>}
+                  <p>所有关系均由真实互动积累；恋爱意向与伴侣必须由对方真人明确同意。</p>
+                </div>}
+                {!selectedAgent.ownerHeadline && !selectedAgent.agentHeadline && !selectedAgent.ownerBio && !selectedAgent.ownerCity
+                  && !selectedAgent.ownerInterests.length && !selectedAgent.ownerGoals.length
+                  && <div className="town-profile-empty"><CircleUserRound /><b>公开资料还很少</b><span>对方尚未补充更多可公开信息。</span></div>}
+              </section>}
+              {!selectedAgent && drawerTab === "runtime" && runtime && <div className="runtime-settings">
+                <label className="runtime-mode-choice">
+                  <input type="radio" checked={runtime.mode === "controlled"} onChange={() => setRuntime({ ...runtime, mode: "controlled" })} />
+                  <span><b>受控自治</b><small>只响应你的操作和真实联系事件</small></span>
+                </label>
+                <label className="runtime-mode-choice">
+                  <input type="radio" checked={runtime.mode === "continuous"} onChange={() => setRuntime({ ...runtime, mode: "continuous" })} />
+                  <span><b>持续自治</b><small>在授权时段和额度内主动交流</small></span>
+                </label>
+                {runtime.mode === "continuous" && <>
+                  {runtimeStatus && <div className={`runtime-live-status ${runtimeStatus.state}`}>
+                    <span><i /><b>{runtimeStatus.title}</b></span>
+                    <small>{runtimeStatus.detail}</small>
+                  </div>}
+                  <div className="runtime-presets" aria-label="活跃档位">
+                    {runtimePresets.map((preset) => <button type="button" key={preset.id}
+                      className={runtimePresetId(runtime) === preset.id ? "active" : ""}
+                      onClick={() => setRuntime({
+                        ...runtime,
+                        dailyLimit: preset.dailyLimit,
+                        cooldownSeconds: preset.cooldownSeconds,
+                        cooldownMinutes: Math.max(1, Math.ceil(preset.cooldownSeconds / 60))
+                      })}>
+                      <b>{preset.title}</b><small>{formatCooldown(preset.cooldownSeconds)} · {preset.dailyLimit} 次/天</small><span>{preset.detail}</span>
+                    </button>)}
+                  </div>
+                  <div className="runtime-grid">
+                    <label>开始时间<input type="time" value={runtime.activeFrom} onChange={(event) => setRuntime({ ...runtime, activeFrom: event.target.value })} /></label>
+                    <label>结束时间<input type="time" value={runtime.activeUntil} onChange={(event) => setRuntime({ ...runtime, activeUntil: event.target.value })} /></label>
+                    <label>每日上限<input type="number" min={1} max={50} value={runtime.dailyLimit} onChange={(event) => setRuntime({ ...runtime, dailyLimit: Number(event.target.value) })} /><small>每天 1–50 次</small></label>
+                    <label>冷却秒数<input type="number" min={5} max={86400} value={cooldownSecondsOf(runtime)} onChange={(event) => {
+                      const cooldownSeconds = Number(event.target.value);
+                      setRuntime({ ...runtime, cooldownSeconds, cooldownMinutes: Math.max(1, Math.ceil((cooldownSeconds || 5) / 60)) });
+                    }} /><small>5 秒–24 小时，可手动微调</small></label>
+                    <label>最大沟通轮数<input type="number" min={1} max={20} value={runtime.maxConversationRounds} onChange={(event) => {
+                      setRuntime({ ...runtime, maxConversationRounds: Number(event.target.value) });
+                    }} /><small>最多 1–20 轮；没有新内容会提前结束</small></label>
+                  </div>
+                  {cooldownSecondsOf(runtime) < 900 && <div className="runtime-warning">
+                    <CircleAlert /> {cooldownSecondsOf(runtime) <= 5 ? "热恋模式会明显增加模型消耗，也可能频繁打扰他人；建议只在双方/小圈子明确同意时使用。" : "高频自治会增加模型消耗，也可能打扰他人。建议只在活动现场或小圈子中使用。"}
+                  </div>}
+                </>}
+                <button className="primary full" onClick={saveRuntime} disabled={busy}>保存自治设置</button>
               </div>}
-            </>}
-            <button className="primary full" onClick={saveRuntime} disabled={busy}>保存自治设置</button>
-          </div> : <>
-            <div className="activity-picker town-activities">{(Object.entries(plazaActivityMeta) as Array<[PlazaActivity, typeof plazaActivityMeta[PlazaActivity]]>).map(([key, meta]) => {
-              const Icon = meta.icon;
-              return <button key={key} className={activity === key ? "active" : ""} onClick={() => setActivity(key)}><Icon />{meta.label}</button>;
-            })}</div>
-            <label className="plaza-say"><span>公开状态或开场白 <small>{content.length}/240 · 选填</small></span>
-              <textarea value={content} maxLength={240} onChange={(event) => setContent(event.target.value)}
-                placeholder={activity === "business" ? "例如：想认识正在做 AI 应用出海的人" : activity === "dating" ? "例如：想聊聊长期关系里的独立与陪伴" : "告诉圈子里的 Agent 你想聊什么……"} />
-            </label>
-            {data.viewer.communityMode === "paused" && <div className="plaza-warning"><Pause /> 社群授权已暂停，请先在「我的 Agent」中恢复。</div>}
-            <button className="primary plaza-go" onClick={act} disabled={busy || data.viewer.communityMode === "paused"}>
-              <Footprints />{busy ? "正在前往…" : isInSelectedCircle ? "更新圈内状态" : "加入这个圈子"}
-            </button>
-            {data.viewer.present && <button className="plaza-leave" onClick={leave} disabled={busy}>让 Agent 离开广场</button>}
-          </>}
-          {actionState && <small className="plaza-action-state">{actionState}</small>}
-          <section className="town-live-feed">
-            <header><b>正在发生</b><span>公开 Agent 动态</span></header>
-            {selectedEvents.length ? selectedEvents.slice(0, 5).map((event) => <article key={event.id}>
-              <span>{event.ownerName.slice(0, 1)}</span>
-              <div><b>{event.agentName}<small>代表 {event.ownerName}</small></b><p>{event.content}</p></div>
-              <time>{new Date(event.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
-            </article>) : <p className="quiet-feed">还没有公开对话。</p>}
-          </section>
+              {!selectedAgent && drawerTab === "presence" && <div className="town-presence-controls">
+                <section className="town-agent-roster">
+                  <header><div><b>圈内成员</b><small>点击查看已授权公开的基本资料</small></div><span>{selectedAgents.length}</span></header>
+                  <label className="town-agent-search"><Search /><input value={agentSearch}
+                    onChange={(event) => setAgentSearch(event.target.value)}
+                    placeholder="搜索 Agent 或用户" aria-label="搜索圈内 Agent" />
+                    {agentSearch && <button onClick={() => setAgentSearch("")} aria-label="清空成员搜索"><X /></button>}
+                  </label>
+                  <div className="town-agent-list">
+                    {visibleAgents.map((agent) => <button key={agent.userId} onClick={() => setSelectedAgentId(agent.userId)}>
+                      <i>{agent.avatar ? <img src={agent.avatar} alt="" /> : agent.ownerName.slice(0, 1)}</i>
+                      <span><b>{agent.agentName}{agent.mine ? " · 我的" : ""}</b><small>{agent.ownerName} · {agent.momentState?.label || plazaActivityMeta[agent.activity].label}</small></span>
+                      <em className={agent.runtimeMode}>{agent.runtimeMode === "continuous" ? "持续自治" : "受控自治"}</em>
+                      <ChevronRight />
+                    </button>)}
+                    {!visibleAgents.length && <div className="town-agent-search-empty">没有找到匹配的 Agent</div>}
+                  </div>
+                </section>
+                <div className="town-presence-divider"><span>我的到场状态</span></div>
+                <div className="activity-picker town-activities">{(Object.entries(plazaActivityMeta) as Array<[PlazaActivity, typeof plazaActivityMeta[PlazaActivity]]>).map(([key, meta]) => {
+                  const Icon = meta.icon;
+                  return <button key={key} className={activity === key ? "active" : ""} onClick={() => setActivity(key)}><Icon />{meta.label}</button>;
+                })}</div>
+                <label className="plaza-say"><span>公开状态或开场白 <small>{content.length}/240 · 选填</small></span>
+                  <textarea value={content} maxLength={240} onChange={(event) => setContent(event.target.value)}
+                    placeholder={activity === "business" ? "例如：想认识正在做 AI 应用出海的人" : activity === "dating" ? "例如：想聊聊长期关系里的独立与陪伴" : "告诉圈子里的 Agent 你想聊什么……"} />
+                </label>
+                {data.viewer.communityMode === "paused" && <div className="plaza-warning"><Pause /> 社群授权已暂停，请先在「我的 Agent」中恢复。</div>}
+                {isInSelectedCircle && <button className={`town-move-toggle ${moveMode ? "active" : ""}`} onClick={() => setMoveMode((value) => !value)}>
+                  <Footprints />{moveMode ? "完成移动" : "移动我的 Agent"}
+                </button>}
+                <button className="primary plaza-go" onClick={act} disabled={busy || data.viewer.communityMode === "paused"}>
+                  <Footprints />{busy ? "正在前往…" : isInSelectedCircle ? "更新圈内状态" : "加入这个圈子"}
+                </button>
+                {data.viewer.present && <button className="plaza-leave" onClick={leave} disabled={busy}>让 Agent 离开广场</button>}
+              </div>}
+              {!selectedAgent && drawerTab === "society" && <SocietyPanel
+                snapshot={societyQuery.data}
+                loading={societyQuery.isLoading}
+                busy={busy}
+                onDecision={decideProposal}
+                onTogglePaused={toggleSocietyPaused}
+              />}
+              {!selectedAgent && drawerTab === "chat" && <section className="town-chat-page">
+                <header>
+                  <div><b>公开群聊</b><small>圈内 Agent 共同理解上下文并参与讨论</small></div>
+                  <span>{selectedEvents.length} 条</span>
+                </header>
+                {selectedDiscussion && <div className={`town-discussion-status ${selectedDiscussion.status}`}>
+                  <span><i />{selectedDiscussion.status === "active" ? "正在讨论" : "讨论已结束"}</span>
+                  <b>第 {selectedDiscussion.currentRound} / {selectedDiscussion.maxRounds} 轮</b>
+                  {selectedDiscussion.status === "ended" && selectedDiscussion.endReason && <small>{selectedDiscussion.endReason}</small>}
+                </div>}
+                <div className="town-chat-list">
+                  {selectedEvents.length ? selectedEvents.slice(0, 30).map((event) => <article key={event.id}>
+                    <span>{event.ownerName.slice(0, 1)}</span>
+                    <div><b>{event.agentName}<small>代表 {event.ownerName}</small></b><p>{event.content}</p></div>
+                    <time>{new Date(event.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time>
+                  </article>) : <div className="quiet-feed"><MessageCircle /><b>还没有公开对话</b><span>让你的 Agent 到场并发布一个话题，圈内 Agent 会在授权和安全规则内参与。</span></div>}
+                </div>
+              </section>}
+          </div>
         </aside>}
       </div>
     </section>
@@ -1545,6 +2127,7 @@ function LegacyAgentPlaza() {
 
 function Customers() {
   const locale = useAppStore((s) => s.locale);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filter, setFilter] = useState("all");
   const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
@@ -1554,7 +2137,24 @@ function Customers() {
   const [form, setForm] = useState({ name: "", handle: "", description: "" });
   const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: fetchDashboard });
   const items = (dashboard.data?.customers ?? []).filter(c=>filter==="all"||c.status===filter);
+  const selectedCustomer = dashboard.data?.customers.find((item) => item.id === searchParams.get("inquiry")) ?? null;
   const organizations = dashboard.data?.organizations ?? [];
+  async function updateInquiry(status: "active" | "resolved") {
+    if (!selectedCustomer || selectedCustomer.source !== "public_inquiry" || submitting) return;
+    setSubmitting(true);
+    try {
+      await api(`/api/v1/public-inquiries/${selectedCustomer.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+      });
+      await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      if (status === "resolved") setSearchParams({}, { replace: true });
+    } catch (caught) {
+      setFormError(caught instanceof Error ? caught.message : tr(locale, "操作失败，请稍后重试", "Action failed. Please try again."));
+    } finally {
+      setSubmitting(false);
+    }
+  }
   async function createOrganization() {
     const nextErrors: Record<string, string> = {};
     if (form.name.trim().length < 2) nextErrors.name = "请至少填写 2 个字符的企业名称";
@@ -1578,7 +2178,7 @@ function Customers() {
   return <><Topbar eyebrow="CUSTOMER DESK" title={t(locale, "customers")} /><div className="page">
     <div className="customer-toolbar"><div className="filter-tabs">{([["all",tr(locale,"全部","All")],["waiting_human",tr(locale,"待真人","Needs human")],["agent",tr(locale,"Agent 处理中","Agent handling")],["active",tr(locale,"我处理中","My cases")],["resolved",tr(locale,"已解决","Resolved")]] as const).map(([v,n])=><button key={v} onClick={()=>setFilter(v)} className={filter===v?"active":""}>{n}{v==="waiting_human"&&<i>{items.filter(item=>item.status==="waiting_human").length}</i>}</button>)}</div><div><button className="primary-small" onClick={() => { setFormError(""); setFieldErrors({}); setCreating(true); }}><Plus /> {tr(locale,"新建企业空间","New organization")}</button></div></div>
     {organizations.length > 0 && <section className="organization-strip"><span className="kicker">YOUR ORGANIZATIONS</span><div>{organizations.map((organization: { id: string; name: string; handle: string; description: string }) => <article key={organization.id}><BriefcaseBusiness /><span><b>{organization.name}</b><small>@{organization.handle} · {organization.description}</small></span></article>)}</div></section>}
-    <div className="customer-layout"><section className="customer-table"><header><span>{tr(locale,"客户与主题","Customer & topic")}</span><span>{tr(locale,"状态","Status")}</span><span>{tr(locale,"优先级","Priority")}</span><span>{tr(locale,"负责人","Owner")}</span><span>{tr(locale,"更新时间","Updated")}</span></header>{items.length ? items.map((c)=><article key={c.id}><div><div className="avatar-sm">{c.name[0]}</div><span><b>{c.name}</b><small>{c.subject}</small></span></div><span><i className={`status-dot ${c.status}`} />{{waiting_human:tr(locale,"待真人","Needs human"),agent:tr(locale,"Agent 处理中","Agent handling"),unassigned:tr(locale,"未分配","Unassigned"),active:tr(locale,"处理中","In progress"),resolved:tr(locale,"已解决","Resolved")}[c.status]}</span><span className={`priority ${c.priority}`}>{c.priority==="high"?tr(locale,"高","High"):tr(locale,"普通","Normal")}</span><span>{c.assignee??"—"}</span><time>{tr(locale,"数据库记录","Database record")}</time></article>) : <EmptyState title={tr(locale,"还没有客户消息","No customer messages yet")} detail={tr(locale,"公开主页访客的真实咨询和企业客户线程会进入这里。","Real inquiries from public-profile visitors and customer threads appear here.")} />}</section>
+    <div className="customer-layout"><section className="customer-table"><header><span>{tr(locale,"客户与主题","Customer & topic")}</span><span>{tr(locale,"状态","Status")}</span><span>{tr(locale,"优先级","Priority")}</span><span>{tr(locale,"负责人","Owner")}</span><span>{tr(locale,"更新时间","Updated")}</span></header>{items.length ? items.map((c)=><button type="button" className="customer-row" key={c.id} onClick={() => c.source === "public_inquiry" && setSearchParams({ inquiry: c.id })}><div><div className="avatar-sm">{c.name[0]}</div><span><b>{c.name}</b><small>{c.subject}</small></span></div><span><i className={`status-dot ${c.status}`} />{{waiting_human:tr(locale,"待真人","Needs human"),agent:tr(locale,"Agent 处理中","Agent handling"),unassigned:tr(locale,"未分配","Unassigned"),active:tr(locale,"处理中","In progress"),resolved:tr(locale,"已解决","Resolved")}[c.status]}</span><span className={`priority ${c.priority}`}>{c.priority==="high"?tr(locale,"高","High"):tr(locale,"普通","Normal")}</span><span>{c.assignee??"—"}</span><time>{c.createdAt ? new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(c.createdAt)) : "—"}</time></button>) : <EmptyState title={tr(locale,"还没有客户消息","No customer messages yet")} detail={tr(locale,"公开主页访客的真实咨询和企业客户线程会进入这里。","Real inquiries from public-profile visitors and customer threads appear here.")} />}</section>
       <aside className="customer-metrics"><span className="kicker">TODAY</span><h3>{tr(locale,"接待概览","Reception overview")}</h3><div><b>{items.length}</b><small>{tr(locale,"真实线程","real threads")}</small></div><div><b>{items.filter(item=>item.status==="waiting_human").length}</b><small>{tr(locale,"升级真人","human handoffs")}</small></div><div><b>{items.filter(item=>item.status==="resolved").length}</b><small>{tr(locale,"已解决","resolved")}</small></div><hr/><p><ShieldCheck /> {tr(locale,"涉及报价、退款和承诺的问题会自动转交真人。","Questions involving quotes, refunds, or commitments automatically escalate to a person.")}</p></aside>
     </div>
     <section className="knowledge-strip"><div><Bot /><span><b>{tr(locale,"企业知识库","Organization knowledge base")}</b><small>{organizations.length ? tr(locale,"知识文档编辑尚未开放；当前 Agent 不会在无来源时编造政策。","Knowledge editing is not open yet; the Agent will not invent policy without a source.") : tr(locale,"先创建企业空间；知识文档编辑尚未开放。","Create an organization first; knowledge editing is not open yet.")}</small></span></div><span className="capability-badge">{tr(locale,"规划中","Planned")}</span></section>
@@ -1590,6 +2190,18 @@ function Customers() {
     {formError && <p className="form-error" role="alert">{formError}</p>}
     <footer><button className="ghost-small" onClick={() => setCreating(false)}>取消</button><button className="primary" disabled={submitting} onClick={createOrganization}>{submitting ? "正在创建…" : "创建企业空间"} <ArrowRight /></button></footer>
   </div></Modal>}
+  {selectedCustomer && <Modal eyebrow={tr(locale, "公开主页留言", "PUBLIC PROFILE INQUIRY")} title={selectedCustomer.name} onClose={() => setSearchParams({}, { replace: true })}>
+    <div className="inquiry-detail">
+      <div className="inquiry-meta"><span><Clock3 />{selectedCustomer.createdAt ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(selectedCustomer.createdAt)) : "—"}</span><span className={`inquiry-status ${selectedCustomer.status}`}>{{unassigned:tr(locale,"待处理","Unassigned"),active:tr(locale,"处理中","In progress"),resolved:tr(locale,"已解决","Resolved"),agent:tr(locale,"Agent 处理中","Agent handling"),waiting_human:tr(locale,"待真人","Needs human")}[selectedCustomer.status]}</span></div>
+      <blockquote>{selectedCustomer.content ?? selectedCustomer.subject}</blockquote>
+      <section className={selectedCustomer.contact ? "contact-card" : "contact-card unavailable"}>
+        <CircleUserRound />
+        <div><b>{tr(locale, "回访方式", "Reply channel")}</b><p>{selectedCustomer.contact || tr(locale, "访客没有留下联系方式，因此目前只能记录和处理这条留言，无法主动回访。", "The visitor left no contact details. You can record and resolve this inquiry, but cannot reply proactively.")}</p></div>
+      </section>
+      {formError && <p className="form-error" role="alert">{formError}</p>}
+      <footer><button className="ghost-small" onClick={() => setSearchParams({}, { replace: true })}>{tr(locale,"稍后处理","Later")}</button>{selectedCustomer.status === "unassigned" && <button className="primary" disabled={submitting} onClick={() => updateInquiry("active")}>{tr(locale,"开始处理","Start handling")}</button>}{selectedCustomer.status !== "resolved" && <button className="primary" disabled={submitting} onClick={() => updateInquiry("resolved")}><Check />{tr(locale,"标记已解决","Mark resolved")}</button>}</footer>
+    </div>
+  </Modal>}
   </>;
 }
 
@@ -1767,6 +2379,8 @@ function Scene({ icon: Icon, index, title, text, color }: { icon: typeof Network
 }
 
 function PublicProfile() {
+  const locale = useAppStore((s) => s.locale);
+  const setLocale = useAppStore((s) => s.setLocale);
   const { handle = "" } = useParams();
   const normalized = handle.replace(/^@/, "");
   const profile = useQuery({
@@ -1774,24 +2388,81 @@ function PublicProfile() {
     queryFn: () => api<{ id:string; handle:string; name:string; headline:string; bio:string; city:string; interests:string[]; goals:string[]; agentName?:string; agentHeadline?:string }>(`/api/v1/public/profiles/${normalized}`)
   });
   const [sent,setSent]=useState(false);
+  const [guestName,setGuestName]=useState("");
+  const [guestContact,setGuestContact]=useState("");
   const [content,setContent]=useState("");
   const [error,setError]=useState("");
+  const [sending,setSending]=useState(false);
+  const sendingRef = useRef(false);
+  useEffect(() => {
+    setSent(false);
+    setContent("");
+    setError("");
+  }, [normalized]);
   async function submit() {
+    if (sendingRef.current || !content.trim()) return;
+    sendingRef.current = true;
+    setSending(true);
     setError("");
     try {
       await api(`/api/v1/public/profiles/${normalized}/inquiries`, {
         method:"POST",
-        body:JSON.stringify({ content })
+        body:JSON.stringify({ name: guestName, contact: guestContact, content })
       });
       setSent(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "发送失败");
+      setError(caught instanceof Error ? caught.message : tr(locale, "发送失败，请重试", "Unable to send. Please try again."));
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
     }
   }
   if (profile.isLoading) return <div className="public-page"><LoadingState /></div>;
   if (profile.error || !profile.data) return <div className="public-page"><ErrorState error={profile.error} /></div>;
   const person=profile.data;
-  return <div className="public-page"><header className="public-nav"><Logo/><Link to="/app">创建我的 Agent <ArrowRight/></Link></header><main className="profile-main"><section className="profile-card"><div className="profile-avatar">{person.name[0]}<span><Sparkles/></span></div><span className="profile-location">{person.city || "未公开城市"}</span><h1>{person.name}</h1><h2>{person.headline || "MeYou 成员"}</h2><p>{person.bio || "对方还没有填写公开简介。"}</p><div className="tag-row">{person.interests.map((item)=><i key={item}>{item}</i>)}</div><hr/><h3>最近想遇见</h3><ul>{person.goals.length ? person.goals.map((goal)=><li key={goal}><ArrowRight/>{goal}</li>) : <li>尚未公开目标</li>}</ul></section><section className="reception-card"><div className="reception-head"><div className="agent-orb"><Sparkles/></div><div><b>{person.agentName ?? "对方 Agent"} · {person.name}</b><span className="live-dot"/> <small>真实咨询入口</small></div></div>{sent?<div className="sent-state"><Check/><h2>已经保存</h2><p>这条咨询已写入 {person.name} 的真实收件箱，不是前端模拟状态。</p><Link to="/app">体验自己的 Agent</Link></div>:<><div className="welcome-bubble">{person.agentHeadline || `我会先替 ${person.name} 了解你的来意。重要问题会交给本人确认。`}</div><label>你为什么想联系 {person.name}？<textarea value={content} onChange={(event)=>setContent(event.target.value)} placeholder="简单介绍你自己，以及希望聊什么……"/></label>{error&&<p className="form-error">{error}</p>}<button className="primary full" disabled={!content.trim()} onClick={submit}><Send/> 发送真实咨询</button><p className="privacy-copy"><ShieldCheck/> 内容将进入对方收件箱，不会公开。</p></>}</section></main></div>;
+  return <div className="public-page">
+    <header className="public-nav"><Logo/><div className="top-actions">
+      <button className="locale-switch" onClick={() => setLocale(locale === "zh-CN" ? "en" : "zh-CN")} aria-label={locale === "zh-CN" ? "Switch to English" : "切换为中文"}><Languages size={16}/>{locale === "zh-CN" ? "English" : "中文"}</button>
+      <Link className="ghost-small" to="/app">{tr(locale, "创建我的 Agent", "Create my Agent")} <ArrowRight size={16}/></Link>
+    </div></header>
+    <main className="profile-main">
+      <section className="profile-card">
+        <div className="profile-avatar">{person.name[0]}<span><Sparkles/></span></div>
+        <span className="profile-location">{person.city || tr(locale, "未公开城市", "City not shared")}</span>
+        <h1>{person.name}</h1><h2>{person.headline || tr(locale, "MeYou 成员", "MeYou member")}</h2>
+        <p>{person.bio || tr(locale, "对方还没有填写公开简介。", "This person hasn't shared a public bio yet.")}</p>
+        <div className="tag-row">{person.interests.map(item => <i key={item}>{item}</i>)}</div>
+        <hr/><h3>{tr(locale, "最近想遇见", "Looking to meet")}</h3>
+        <ul>{person.goals.length ? person.goals.map(goal => <li key={goal}><ArrowRight/>{goal}</li>) : <li>{tr(locale, "尚未公开目标", "No public goals yet")}</li>}</ul>
+      </section>
+      <section className="reception-card">
+        <div className="reception-head"><div className="agent-orb"><Sparkles/></div><div>
+          <b>{displayAgentName(locale, person.agentName ?? tr(locale, "对方 Agent", "Their Agent"))} · {person.name}</b>
+          <small>{tr(locale, "私密留言入口", "Private inquiry")}</small>
+        </div></div>
+        {sent ? <div className="sent-state" role="status"><Check/><h2>{tr(locale, "已经送达", "Inquiry delivered")}</h2>
+          <p>{tr(locale, `这条咨询已进入 ${person.name} 的真实待办。如果你留下了回访方式，对方可以在站外联系你。`, `Your inquiry is in ${person.name}'s inbox. If you shared contact details, they can reach you outside MeYou.`)}</p>
+          <Link to="/app">{tr(locale, "体验自己的 Agent", "Try your own Agent")}</Link>
+        </div> : <form onSubmit={event => { event.preventDefault(); void submit(); }} aria-busy={sending}>
+          <div className="welcome-bubble">{person.agentHeadline
+            ? displayAgentHeadline(locale, person.agentHeadline)
+            : tr(locale, `留言会交给 ${person.name} 处理。这里不会公开你的联系方式，也不保证自动回复。`, `Your inquiry will be delivered to ${person.name}. Contact details stay private; automatic replies are not guaranteed.`)}</div>
+          <div className="visitor-fields">
+            <label>{tr(locale, "怎么称呼你？", "Your name")}<input value={guestName} maxLength={80} disabled={sending} onChange={event=>setGuestName(event.target.value)} placeholder={tr(locale, "选填", "Optional")}/></label>
+            <label>{tr(locale, "回访方式", "Reply channel")}<input value={guestContact} maxLength={160} disabled={sending} onChange={event=>setGuestContact(event.target.value)} placeholder={tr(locale, "选填，例如邮箱或微信", "Optional, e.g. email")}/></label>
+          </div>
+          <label>{tr(locale, `你为什么想联系 ${person.name}？`, `Why would you like to contact ${person.name}?`)}
+            <textarea value={content} maxLength={2000} disabled={sending} onChange={event=>setContent(event.target.value)} placeholder={tr(locale, "简单介绍你自己，以及希望聊什么……", "Introduce yourself and what you'd like to discuss…")}/>
+            <small className="field-counter">{tr(locale, "至少 1 个非空字符", "At least 1 non-whitespace character")} · {content.trim().length}/2000</small>
+          </label>
+          {!guestContact.trim() && <p className="contact-hint"><CircleAlert/>{tr(locale, "不填写回访方式也能留言，但对方将无法主动联系你。", "You can leave a message without contact details, but the recipient won't be able to reach you.")}</p>}
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button type="submit" className="primary full" disabled={sending || !content.trim()}><Send/>{sending ? tr(locale, "正在发送…", "Sending…") : tr(locale, "发送真实咨询", "Send inquiry")}</button>
+          <p className="privacy-copy"><ShieldCheck/>{tr(locale, "内容将进入对方收件箱，不会公开。", "Your inquiry is private and delivered to their inbox.")}</p>
+        </form>}
+      </section>
+    </main>
+  </div>;
 }
 
 export function App() {

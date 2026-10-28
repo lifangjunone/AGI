@@ -1,0 +1,23 @@
+replicaCount: 2
+workerReplicaCount: 2
+image: { repository: nexora/nexora-runtime, tag: "1.0.0", pullPolicy: IfNotPresent }
+workerImage: { repository: nexora/nexora-native-runtime, tag: "1.0.0", pullPolicy: IfNotPresent }
+engineImage:
+  repository: nexora/native-agentloop-engine
+  tag: "18.12.6"
+  digest: ""
+  pullPolicy: IfNotPresent
+webImage: { repository: nexora/nexora-runtime-web, tag: "1.0.0", pullPolicy: IfNotPresent }
+service: { apiPort: 8084, workerPort: 8094, webPort: 3004 }
+ingress:
+  enabled: true
+  className: nginx
+  host: runtime.nexora.local
+resources:
+  requests: { cpu: 100m, memory: 128Mi }
+  limits: { cpu: "1", memory: 1Gi }
+autoscaling: { enabled: true, minReplicas: 2, maxReplicas: 10, targetCPUUtilizationPercentage: 70 }
+config:
+  maasURL: http://nexora-maas-api:8080
+  secretName: nexora-platform-secrets
+  databaseURLKey: runtime-database-url

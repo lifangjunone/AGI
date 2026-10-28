@@ -1,6 +1,7 @@
 import { createReadStream } from "node:fs";
 import { access, mkdir, readFile, stat, writeFile } from "node:fs/promises";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomUUID, randomBytes } from "node:crypto";
+import { createContentPreviews, buyerHash } from "./lib/content-previews.mjs";
 import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +24,17 @@ import { createLifeAssistant } from "./lib/life-assistant.mjs";
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIRECTORY = path.join(ROOT, "public");
 const DATA_DIRECTORY = process.env.FRAME60_DATA_DIRECTORY || path.join(ROOT, "data");
+const contentPreviews = createContentPreviews(DATA_DIRECTORY);
+
+function buyerIdentity(request, response, create = false) {
+  let token = parseCookies(request.headers.cookie || "").frame60_buyer;
+  if (!/^[a-f0-9]{48}$/.test(token || "")) {
+    if (!create) return "";
+    token = randomBytes(24).toString("hex");
+    response.setHeader("Set-Cookie", `frame60_buyer=${token}; Path=${publicBasePath || "/"}; HttpOnly; SameSite=Lax; Max-Age=2592000${request.headers["x-forwarded-proto"] === "https" ? "; Secure" : ""}`);
+  }
+  return buyerHash(token);
+}
 
 async function loadEnv(filePath) {
   try {
@@ -210,10 +222,10 @@ function makeContentPack(input) {
     `用了${product}之后，${audience}最明显的变化是什么？`,
     `别只看价格，${product}真正值得买的是这 3 点`,
     `${audience}挑${product}，先看懂这份避坑清单`,
-    `我把${product}连续用了一周，真实感受是……`,
+    `${product}的使用场景，购买前先核对这几点`,
     `如果你正在找${product}，这条视频建议先收藏`,
     `${product}到底适不适合你？30 秒讲清楚`,
-    `同类产品那么多，为什么我留下了${product}`,
+    `同类产品那么多，${product}有哪些已知卖点`,
     `买${product}前一定要问自己的 3 个问题`,
     `预算有限，${product}这样选更不容易踩坑`,
     `${product}的核心卖点，终于有人说人话了`
@@ -230,9 +242,9 @@ function makeContentPack(input) {
       shots: ["0-4s 两种选择并置", "4-14s 卖点逐项对比", "14-25s 使用前后或场景切换", "25-30s 口播行动建议"]
     },
     {
-      title: "体验分享",
-      voiceover: `我把${product}放进日常使用了一段时间，最直观的感受是：${sellingPoints}。它更适合${audience}，如果你期待的是立刻解决所有问题，那它并不适合你。想看更多真实体验，评论区告诉我。`,
-      shots: ["0-3s 开箱或上手", "3-10s 第一天体验", "10-22s 高频使用场景", "22-30s 总结与评论引导"]
+      title: "场景说明",
+      voiceover: `${product}面向${audience}。根据填写的商品信息，它的主要卖点是：${sellingPoints}。请结合自己的实际需求核对这些信息，不把商品说明当作已经验证的使用效果。${offer}。`,
+      shots: ["0-3s 展示目标场景", "3-10s 展示商品外观", "10-22s 展示有证据的功能细节", "22-30s 总结适用场景"]
     }
   ];
   return {
@@ -283,12 +295,23 @@ function verifyWechatCallback(signature, timestamp, nonce, token) {
   return expected === signature;
 }
 
-function renderPaidContent(pack, order) {
+export function renderPaidContent(pack, order) {
+  const recoveryPath = `${publicBasePath}/payment/return?out_trade_no=${encodeURIComponent(order.orderId)}&recovery=${encodeURIComponent(order.recoveryToken || "")}`;
   const titles = pack.titles.map((title, index) => `<li><b>${String(index + 1).padStart(2, "0")}</b>${escapeHtml(title)}</li>`).join("");
   const scripts = pack.scripts.map((script) => `<article><h3>${escapeHtml(script.title)}</h3><p>${escapeHtml(script.voiceover)}</p><small>${script.shots.map(escapeHtml).join(" · ")}</small></article>`).join("");
   const calendar = pack.calendar.map((item) => `<li><b>${escapeHtml(item.day)}</b><span>${escapeHtml(item.angle)} · ${escapeHtml(item.format)}</span></li>`).join("");
-  return `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>内容包已交付</title><style>
-  :root{color-scheme:dark}body{margin:0;background:#101110;color:#f1f0e8;font:15px system-ui,-apple-system,sans-serif}main{max-width:900px;margin:0 auto;padding:42px 20px 70px}header{padding-bottom:24px;border-bottom:1px solid #343833}h1{margin:8px 0;font-size:32px}h2{margin:30px 0 14px;font-size:20px}h3{margin:0 0 10px;color:#f4d35e;font-size:15px}p,small{color:#b0b6ae;line-height:1.8}.badge{color:#73e6ba;font-size:12px}.order{margin-top:10px;color:#8f988f;font-size:12px}.back{display:inline-block;margin-top:18px;padding:10px 13px;border:1px solid #4a5049;border-radius:4px;color:#f1f0e8;text-decoration:none;font-size:12px}.titles{display:grid;gap:8px;padding:0;list-style:none}.titles li,.calendar li,article{padding:14px;border:1px solid #292d29;border-radius:5px;background:#191b19}.titles b,.calendar b{display:inline-block;width:34px;color:#f4d35e}.scripts{display:grid;gap:10px}.calendar{display:grid;gap:8px;padding:0;list-style:none}.calendar li{display:flex;gap:14px}.calendar span{color:#d5dad2}</style><main><header><span class="badge">PAYMENT CONFIRMED / 已支付</span><h1>${escapeHtml(pack.product)} · 内容包</h1><div class="order">订单 ${escapeHtml(order.orderId)} · ¥${escapeHtml(order.amount)}</div><a class="back" href="${publicBasePath}/">返回商品页面</a></header><h2>10 个短视频标题</h2><ol class="titles">${titles}</ol><h2>3 条口播与分镜</h2><section class="scripts">${scripts}</section><h2>7 天发布计划</h2><ul class="calendar">${calendar}</ul></main></html>`;
+  const exportText = [
+    `${pack.product} · 商品内容包`,
+    "模板草稿，发布前核对事实。不包含视频成片。",
+    "\n标题", ...pack.titles,
+    "\n口播与分镜", ...pack.scripts.map(item => `${item.title}\n${item.voiceover}\n${item.shots.join("\n")}`),
+    "\n7 天计划", ...pack.calendar.map(item => `${item.day}: ${item.angle} · ${item.format}`)
+  ].join("\n");
+  const downloadTools = `<section aria-label="保存交付内容"><button id="save-content" type="button">下载完整内容包 TXT</button><button id="print-content" type="button">打印 / 保存 PDF</button><button id="copy-recovery" type="button">复制专属订单恢复链接</button><p id="delivery-feedback" role="status">请保存内容和此订单页面。恢复链接相当于领取凭证，请勿公开分享。</p><p>内容为模板草稿，发布前核对事实，不包含视频成片。</p></section><style>
+  :root{color-scheme:light}body{background:#f5f7f3;color:#172b26;font-size:16px}main{box-sizing:border-box;width:100%;overflow-wrap:anywhere}p,small,.order{color:#52645e}h3,.badge,.titles b,.calendar b{color:#176b50}.titles li,.calendar li,article{background:#fff;border-color:#c4d2ca;border-radius:10px}.back{color:#176b50;border-color:#9eafa5;min-height:44px;box-sizing:border-box}.calendar li{flex-wrap:wrap}.calendar span{color:#344a40}
+  #save-content,#print-content,#copy-recovery{font:inherit;min-height:48px;padding:12px 18px;margin:16px 12px 0 0;border:1px solid #176b50;border-radius:8px;background:#176b50;color:#fff;cursor:pointer}button:focus-visible,a:focus-visible{outline:3px solid #176b50;outline-offset:3px}@media(max-width:600px){main{padding:24px 16px}h1{font-size:26px}#save-content,#print-content,#copy-recovery{width:100%;margin-right:0}}@media print{body{background:white;color:black}button,.back{display:none}}</style><script>const content=${JSON.stringify(exportText).replace(/</g, "\\u003c")};document.querySelector("#save-content").onclick=()=>{const url=URL.createObjectURL(new Blob([content],{type:"text/plain;charset=utf-8"}));const link=document.createElement("a");link.href=url;link.download="FRAME60-content-pack.txt";link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);document.querySelector("#delivery-feedback").textContent="已发起下载，请检查浏览器下载记录。"};document.querySelector("#print-content").onclick=()=>window.print();document.querySelector("#copy-recovery").onclick=async()=>{try{await navigator.clipboard.writeText(location.href);document.querySelector("#delivery-feedback").textContent="已复制恢复链接，请私人保存，不要公开分享。"}catch{document.querySelector("#delivery-feedback").textContent="复制失败，请手动保存浏览器地址。"}};</script>`;
+  return (`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>内容包已交付</title><script>history.replaceState(null,"",${JSON.stringify(recoveryPath).replace(/</g, "\\u003c")});</script><style>
+  :root{color-scheme:dark}body{margin:0;background:#101110;color:#f1f0e8;font:15px system-ui,-apple-system,sans-serif}main{max-width:900px;margin:0 auto;padding:42px 20px 70px}header{padding-bottom:24px;border-bottom:1px solid #343833}h1{margin:8px 0;font-size:32px}h2{margin:30px 0 14px;font-size:20px}h3{margin:0 0 10px;color:#f4d35e;font-size:15px}p,small{color:#b0b6ae;line-height:1.8}.badge{color:#73e6ba;font-size:12px}.order{margin-top:10px;color:#8f988f;font-size:12px}.back{display:inline-block;margin-top:18px;padding:10px 13px;border:1px solid #4a5049;border-radius:4px;color:#f1f0e8;text-decoration:none;font-size:12px}.titles{display:grid;gap:8px;padding:0;list-style:none}.titles li,.calendar li,article{padding:14px;border:1px solid #292d29;border-radius:5px;background:#191b19}.titles b,.calendar b{display:inline-block;width:34px;color:#f4d35e}.scripts{display:grid;gap:10px}.calendar{display:grid;gap:8px;padding:0;list-style:none}.calendar li{display:flex;gap:14px}.calendar span{color:#d5dad2}</style><main><header><span class="badge">PAYMENT CONFIRMED / 已支付</span><h1>${escapeHtml(pack.product)} · 内容包</h1><div class="order">订单 ${escapeHtml(order.orderId)} · ¥${escapeHtml(order.amount)}</div><a class="back" href="${publicBasePath}/">返回商品页面</a></header><h2>10 个短视频标题</h2><ol class="titles">${titles}</ol><h2>3 条口播与分镜</h2><section class="scripts">${scripts}</section><h2>7 天发布计划</h2><ul class="calendar">${calendar}</ul></main></html>`).replace("</main>", `${downloadTools}</main>`);
 }
 
 async function readJson(request) {
@@ -645,10 +668,21 @@ export const server = createServer(async (request, response) => {
     if (request.method === "POST" && url.pathname === "/api/content-pack") {
       const input = await readJson(request);
       const pack = makeContentPack(input);
+      const preview = await contentPreviews.save(pack, buyerIdentity(request, response, true));
       sendJson(response, 201, {
-        pack,
+        pack: {
+          previewId: preview.id,
+          product: pack.product, audience: pack.audience,
+          sellingPoints: pack.sellingPoints, platform: pack.platform,
+          tone: pack.tone, offer: pack.offer, source: pack.source,
+          price: pack.price,
+          titles: pack.titles.slice(0, 1),
+          scripts: pack.scripts.slice(0, 1),
+          deliverables: { titles: 10, scripts: 3, calendar: 7 },
+          notice: "基于填写卖点生成的模板草稿；发布前请核对事实和平台规则。"
+        },
         payment: {
-          status: "not-integrated",
+          status: "checkout-available",
           amount: adminStore.getPrices().product,
           product: "商品短视频内容包"
         }
@@ -691,7 +725,13 @@ export const server = createServer(async (request, response) => {
           tone: input.voice || "自然真诚",
           offer: input.offer || "欢迎了解"
         };
-      const pack = makeContentPack(packInput);
+      const ownerHash = buyerIdentity(request, response, true);
+      const preview = input.previewId ? await contentPreviews.get(input.previewId, ownerHash) : null;
+      if (input.previewId && !preview) {
+        sendJson(response, 409, { error: "预览已过期或不属于当前浏览器，请重新生成预览。" });
+        return;
+      }
+      const pack = preview?.pack || makeContentPack(packInput);
       const payment = await alipayWebPay.buildPaymentForm({
         input: {
           productName: pack.product,
@@ -700,17 +740,21 @@ export const server = createServer(async (request, response) => {
           platform: pack.platform,
           tone: pack.tone,
           offer: pack.offer,
-          type
+          type,
+          buyerHash: ownerHash,
+          previewId: preview?.id || null,
+          contentPack: pack
         },
         origin: requestOrigin(request, url),
         mobile: isMobileRequest(request),
-        price: tool.price,
+        price: preview?.pack.price || tool.price,
         subject: tool.label
       });
       sendJson(response, 201, {
         orderId: payment.order.orderId,
         amount: payment.order.amount,
         environment: payment.environment,
+        recoveryUrl: `${publicBasePath}/payment/return?out_trade_no=${encodeURIComponent(payment.order.orderId)}&recovery=${payment.order.recoveryToken}`,
         paymentHtml: payment.paymentHtml
       });
       return;
@@ -719,28 +763,31 @@ export const server = createServer(async (request, response) => {
     if (request.method === "GET" && url.pathname === "/payment/return") {
       const params = Object.fromEntries(url.searchParams.entries());
       const orderId = params.out_trade_no || "";
-      let order = null;
-      if (orderId) {
-        const verified = await alipayWebPay.verifyNotification(params);
-        if (verified.ok) {
-          order = verified.order;
-        } else {
-          const queried = await alipayWebPay.queryTrade(orderId);
-          if (queried?.status === "TRADE_SUCCESS" || queried?.status === "TRADE_FINISHED") {
-            order = await alipayWebPay.fulfillOrder(orderId);
-          }
-        }
-      }
-      if (order?.fulfilledAt) {
-        response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-        response.end(renderPaidContent(makeContentPack(order.input), order));
+      const authorized = await alipayWebPay.authorizeBuyer(orderId, buyerIdentity(request, response), params.recovery);
+      if (!authorized) {
+        response.writeHead(403, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" });
+        response.end(`<html lang="zh-CN"><meta name="viewport" content="width=device-width,initial-scale=1"><title>需要订单恢复凭证</title><main><h1>请使用购买时的浏览器或保存的恢复链接</h1><p>仅提供订单号不能读取付费内容。请从购买页面“上次订单”进入。</p><a href="${publicBasePath}/">返回商品页面</a></main></html>`);
         return;
       }
-      const status = orderId ? "正在确认支付结果" : "缺少订单号";
+      response.setHeader("Referrer-Policy", "no-referrer");
+      const delivery = await alipayWebPay.resolveBuyerDelivery(
+        orderId, buyerIdentity(request, response), params.recovery
+      );
+      const order = delivery.order;
+      if (delivery.status === "ready" && order?.fulfilledAt) {
+        response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+        response.end(renderPaidContent(order.input.contentPack || makeContentPack(order.input), order));
+        return;
+      }
+      const status = delivery.status === "REFUNDED" ? "订单已退款，交付已关闭"
+        : delivery.status === "TRADE_CLOSED" ? "订单已关闭"
+        : delivery.status === "confirmation-unavailable" ? "暂时无法连接支付服务"
+        : "正在确认支付结果";
       response.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
       const safeOrderId = JSON.stringify(orderId).replace(/</g, "\\u003c");
       const paymentApi = `${publicBasePath}/api/payments/`;
-      response.end(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>支付结果确认</title><style>body{margin:0;background:#101010;color:#f1efe7;font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{width:min(520px,calc(100% - 32px));padding:32px;border:1px solid #393936;background:#181818}h1{font-size:28px;margin:0 0 12px}p{color:#aaa89f;line-height:1.7}a{display:inline-block;margin-top:12px;padding:12px 15px;background:#f4d35e;color:#171812;text-decoration:none;font-weight:700;border-radius:4px}</style><main><h1>${status}</h1><p id="message">支付成功后会自动确认并展示完整内容包，请保持页面打开。</p><a href="${publicBasePath}/">返回商品页面</a></main><script>const orderId=${safeOrderId};const message=document.querySelector("#message");if(orderId){let attempts=0;const timer=setInterval(async()=>{attempts+=1;try{const response=await fetch(${JSON.stringify(paymentApi)}+encodeURIComponent(orderId),{cache:"no-store"});const data=await response.json();if(["TRADE_SUCCESS","TRADE_FINISHED"].includes(data.order?.status)){clearInterval(timer);message.textContent="支付已确认，正在打开完整内容包…";location.reload();}else if(attempts>=15){clearInterval(timer);message.textContent="仍在等待支付宝确认，请稍后刷新此页面。";}}catch(error){if(attempts>=15)clearInterval(timer);}},2000);}</script></html>`);
+      const recoveryQuery = params.recovery ? `?recovery=${encodeURIComponent(params.recovery)}` : "";
+      response.end(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>支付结果确认</title><style>body{margin:0;background:#f5f7f3;color:#172b26;font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{box-sizing:border-box;width:min(520px,calc(100% - 32px));padding:32px;border:1px solid #c4d2ca;background:white;border-radius:16px}h1{font-size:28px;margin:0 0 12px}p{color:#52645e;line-height:1.7}a,button{display:inline-block;margin:12px 8px 0 0;padding:12px 15px;background:#176b50;color:white;text-decoration:none;font:inherit;border:0;border-radius:8px;min-height:44px;cursor:pointer}</style><main><h1>${status}</h1><p id="message" role="status">支付成功后会自动确认并展示完整内容包。若已付款，请勿重复购买。</p><button type="button" onclick="location.reload()">重新确认支付结果</button><a href="${publicBasePath}/">返回商品页面</a></main><script>const orderId=${safeOrderId};const message=document.querySelector("#message");if(orderId){let attempts=0;const timer=setInterval(async()=>{attempts+=1;try{const response=await fetch(${JSON.stringify(paymentApi)}+encodeURIComponent(orderId)+${JSON.stringify(recoveryQuery)},{cache:"no-store"});const data=await response.json();if(["TRADE_SUCCESS","TRADE_FINISHED"].includes(data.order?.status)){clearInterval(timer);message.textContent="支付已确认，正在打开完整内容包…";location.reload();}else if(["TRADE_CLOSED","REFUNDED"].includes(data.order?.status)){clearInterval(timer);message.textContent=data.order.status==="REFUNDED"?"该订单已退款，交付访问已关闭。":"订单已关闭，未开放交付。";}else if(attempts>=15){clearInterval(timer);message.textContent="仍在等待支付宝确认。若已付款，请点击重新确认，不要重复购买。";}}catch(error){if(attempts>=15){clearInterval(timer);message.textContent="网络异常，请重新确认。已付款时不要重复购买。";}}},2000);}</script></html>`);
       return;
     }
 
@@ -754,12 +801,23 @@ export const server = createServer(async (request, response) => {
 
     const paymentMatch = /^\/api\/payments\/([^/]+)(?:\/(query|refund|refund-query|close))?$/.exec(url.pathname);
     if (request.method === "GET" && paymentMatch) {
+      if (!await alipayWebPay.authorizeBuyer(paymentMatch[1], buyerIdentity(request, response), url.searchParams.get("recovery"))) {
+        sendJson(response, 403, { error: "需要订单恢复凭证" });
+        return;
+      }
       const order = await alipayWebPay.queryTrade(paymentMatch[1]);
       if (!order) {
         sendJson(response, 404, { error: "订单不存在" });
         return;
       }
-      sendJson(response, 200, { order });
+      sendJson(response, 200, {
+        order: {
+          orderId: order.orderId,
+          status: order.status,
+          amount: order.amount,
+          fulfilledAt: order.fulfilledAt || null
+        }
+      });
       return;
     }
 

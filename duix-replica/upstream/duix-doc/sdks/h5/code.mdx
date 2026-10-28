@@ -1,0 +1,111 @@
+---
+title: 'Code examples'
+description: 'Demonstration of initializing and starting a Duix Avatar session using the Web SDK.'
+---
+
+# Code Examples
+
+## Description
+
+This example demonstrates how to **initialize**, **authenticate**, and **start** a Duix real-time avatar session using the **Web SDK**.  
+It includes event listeners for ASR (speech recognition), subtitles, and conversation lifecycle events.
+
+> Note: The CDN demo version may not be the latest. For production use, install the SDK via **npm** to ensure compatibility and security.
+
+---
+
+## Example: Basic HTML Integration
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Duix SDK Simple Example</title>
+
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    .container { width: 100vw; height: 100vh; }
+    .subtitle {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #000;
+      padding: 12px;
+      background-color: rgba(255,255,255,0.5);
+      border-radius: 12px;
+      visibility: hidden;
+    }
+    .subtitle:empty { display: none; }
+  </style>
+
+  <!-- SDK import via CDN -->
+  <script src="https://cdn.guiji.ai/duix/sdk/0.3.1/duix.js"></script>
+</head>
+
+<body>
+  <!-- Video container -->
+  <div class="container"></div>
+  <div class="subtitle"></div>
+
+  <!-- Simple modal for user input -->
+  <div id="modal">
+    <input id="sign" placeholder="Enter sign" />
+    <input id="conversationId" placeholder="Enter conversationId" />
+    <button id="start" onclick="init()">Start</button>
+  </div>
+
+  <script>
+    const duix = new window.Duix();
+
+    function init() {
+      const sign = document.querySelector('#sign').value;
+      const conversationId = document.querySelector('#conversationId').value;
+
+      if (!sign || !conversationId) {
+        return alert('Both parameters are required.');
+      }
+
+      // Register event listeners
+      duix.on('error', err => console.error('Error:', err));
+      duix.on('initialSuccess', () => {
+        console.info('SDK initialized successfully.');
+        duix.start({ openAsr: true }).then(res => console.info('Session started:', res));
+      });
+      duix.on('show', () => {
+        document.querySelector('#modal').style.display = 'none';
+        document.querySelector('.subtitle').style.visibility = 'visible';
+      });
+      duix.on('asrStart', () => (document.querySelector('.subtitle').innerText = ''));
+      duix.on('speakSection', data => (document.querySelector('.subtitle').innerText = data.text));
+
+      // Initialize SDK
+      duix
+        .init({
+          sign,
+          containerLable: '.container',
+          conversationId,
+          platform: 'duix.com'
+        })
+        .then(data => console.info('Initialization complete:', data))
+        .catch(err => console.error('Initialization failed:', err));
+    }
+  </script>
+</body>
+</html>
+```
+## Usage Notes
+
+> **Tip:**  
+> Always generate the `sign` securely on your backend. Never expose API credentials or tokens in client-side code.
+
+> **Note:**  
+> Some mobile browsers block autoplay of audio or video without user interaction.  
+> If the avatar does not render immediately, trigger `duix.start()` within a user gesture event such as `onclick` or `onTap`.
+
+> **Warning:**  
+> This demo omits advanced error handling, concurrency control, and resource cleanup.  
+> For production use, wrap SDK calls in `try/catch` blocks, manage sessions through your backend, and call `duix.stop()` when the conversation ends to release resources properly.

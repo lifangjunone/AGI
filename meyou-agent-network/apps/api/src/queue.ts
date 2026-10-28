@@ -17,6 +17,9 @@ export interface PlazaConversationJob {
   circleId: string;
   initiatorId: string;
   sourceEventId: string;
+  threadRootId?: string;
+  round: number;
+  maxRounds: number;
   idempotencyKey: string;
 }
 export const plazaQueue = new Queue<PlazaConversationJob>("plaza-conversation", { connection });
@@ -32,12 +35,13 @@ export async function scheduleMission(job: DiscoveryJob, options: JobsOptions = 
   });
 }
 
-export async function schedulePlazaConversation(job: PlazaConversationJob) {
+export async function schedulePlazaConversation(job: PlazaConversationJob, options: JobsOptions = {}) {
   return plazaQueue.add("respond", job, {
     jobId: job.idempotencyKey,
     removeOnComplete: 200,
     removeOnFail: 500,
     attempts: 2,
-    backoff: { type: "exponential", delay: 2_000 }
+    backoff: { type: "exponential", delay: 2_000 },
+    ...options
   });
 }

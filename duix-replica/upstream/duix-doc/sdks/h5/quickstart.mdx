@@ -1,0 +1,54 @@
+---
+title: 'Quick start'
+description: 'Set up the Duix H5 SDK and start your first real-time digital human session in under one minute.'
+---
+
+## Installation
+
+Install the Duix H5 SDK via **npm**:
+
+```bash
+npm install duix-guiji-light --save
+```
+
+## Import and Initialize
+
+Import the SDK and create a new instance.
+The init() method sets up the rendering container, authentication, and platform connection.
+
+```js
+import Duix from 'duix-guiji-light';
+
+// Create Duix instance
+const duix = new Duix();
+
+// Initialize SDK
+duix.init({
+  sign: 'xxxx',                        // Authentication signature
+  containerLable: '.remote-container', // DOM container selector
+  conversationId: '',                  // Session ID
+  platform: 'duix.com'                 // Platform domain
+});
+```
+
+
+## Start the Session
+
+Once initialization succeeds, listen for the initialSuccess event before calling start().
+This ensures all required assets and network resources are ready.
+
+```js
+duix.on('initialSuccess', () => {
+  // Start session after successful initialization
+  duix.start({
+    openAsr: true                      // Enable real-time ASR immediately
+  }).then(res => {
+    console.info('Session started:', res);
+  }).catch(err => {
+    console.error('Session start failed:', err);
+  });
+});
+
+
+```
+**Note:** Do not store the duix instance inside a reactive data object (e.g., Vue’s data() or React’s state). SDK instances should remain stable references outside reactivity systems.

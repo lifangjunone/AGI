@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <rect width="1080" height="1440" fill="#FCFCF8"/>
+  <rect x="48" y="48" width="984" height="1344" rx="46" fill="#FFF0EE"/>
+  <rect x="78" y="82" width="924" height="1276" rx="34" fill="#FFFFFF"/>
+  <rect x="90" y="112" width="520" height="58" rx="29" fill="#D9473F"/>
+  <text x="350" y="151" text-anchor="middle" class="eyebrow">隐匣｜问题</text>
+  <text x="90" y="330" class="title">敏感记录为什么不该放普通备忘录</text>
+  <text x="90" y="450" class="title">当前能力验证</text>
+  <rect x="90" y="548" width="900" height="10" rx="5" fill="#D9473F"/>
+  <text x="90" y="666" class="label">你最终会得到</text>
+
+    <g transform="translate(90 790)">
+      <circle cx="30" cy="30" r="30" fill="#D9473F"/>
+      <text x="30" y="43" text-anchor="middle" class="index">1</text>
+      <text x="88" y="44" class="point">主密码派生 AES-256-GCM 密钥</text>
+    </g>
+    <g transform="translate(90 902)">
+      <circle cx="30" cy="30" r="30" fill="#D9473F"/>
+      <text x="30" y="43" text-anchor="middle" class="index">2</text>
+      <text x="88" y="44" class="point">本地分类档案和加密备份</text>
+    </g>
+    <g transform="translate(90 1014)">
+      <circle cx="30" cy="30" r="30" fill="#D9473F"/>
+      <text x="30" y="43" text-anchor="middle" class="index">3</text>
+      <text x="88" y="44" class="point">当前免费使用，不虚构收费入口</text>
+    </g>
+  <rect x="90" y="1190" width="900" height="112" rx="24" fill="#FFF0EE"/>
+  <text x="540" y="1259" text-anchor="middle" class="footer">浏览器打开：lifeyoume.icu/vault/</text>
+  <style>
+    text { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .eyebrow { fill: #FFFFFF; font-size: 27px; font-weight: 600; }
+    .title { fill: #14231B; font-size: 72px; font-weight: 700; letter-spacing: -2px; }
+    .label { fill: #607067; font-size: 32px; font-weight: 600; }
+    .index { fill: #FFFFFF; font-size: 30px; font-weight: 700; }
+    .point { fill: #14231B; font-size: 47px; font-weight: 650; }
+    .footer { fill: #263E31; font-size: 30px; font-weight: 600; }
+  </style>
+</svg>

@@ -15,6 +15,7 @@ services:
       - ../nexora-studio/migrations:/migrations/studio:ro
       - ../nexora-control/migrations:/migrations/control:ro
       - ../nexora-maas/migrations:/migrations/maas:ro
+      - ../nexora-runtime/migrations:/migrations/runtime:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nexora"]
       interval: 5s
@@ -55,10 +56,11 @@ services:
       ADDR: :8080
       NEXORA_JWT_SECRET: ${NEXORA_JWT_SECRET:-nexora-development-secret-change-me}
       NEXORA_ADMIN_PASSWORD: ${NEXORA_ADMIN_PASSWORD:-Nexora123!}
-      NEXORA_PRODUCTS: ${NEXORA_PRODUCTS:-studio,control,maas}
+      NEXORA_PRODUCTS: ${NEXORA_PRODUCTS:-studio,control,maas,runtime}
       STUDIO_PUBLIC_URL: ${STUDIO_PUBLIC_URL:-http://localhost:3001}
       CONTROL_PUBLIC_URL: ${CONTROL_PUBLIC_URL:-http://localhost:3002}
       MAAS_PUBLIC_URL: ${MAAS_PUBLIC_URL:-http://localhost:3003}
+      RUNTIME_PUBLIC_URL: ${RUNTIME_PUBLIC_URL:-http://localhost:3004}
       DATABASE_URL: ${CORE_DATABASE_URL:-postgres://nexora:nexora@postgres:5432/nexora_core?sslmode=disable}
       REDIS_URL: redis://redis:6379
       NATS_URL: nats://nats:4222
@@ -81,6 +83,7 @@ services:
       NATS_URL: nats://nats:4222
       REDIS_URL: redis://redis:6379
       MINIO_ENDPOINT: minio:9000
+      RUNTIME_URL: http://runtime-api:8084
     ports: ["8081:8080"]
     depends_on:
       core-api: { condition: service_started }
@@ -119,6 +122,40 @@ services:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
 
+  runtime-api:
+    profiles: ["runtime"]
+    build:
+      context: ../nexora-runtime
+      dockerfile: Dockerfile
+    environment:
+      ADDR: :8084
+      NEXORA_JWT_SECRET: ${NEXORA_JWT_SECRET:-nexora-development-secret-change-me}
+      DATABASE_URL: ${RUNTIME_DATABASE_URL:-postgres://nexora:nexora@postgres:5432/nexora_runtime?sslmode=disable}
+      NEXORA_DATA_FILE: /data/runtime-state.json
+      NATIVE_WORKER_URL: http://native-runtime:8094
+      NEXORA_RUNTIME_PACKAGES: /packages
+    ports: ["8084:8084"]
+    volumes: [runtime-data:/data]
+    depends_on:
+      postgres: { condition: service_healthy }
+      native-runtime: { condition: service_started }
+
+  native-runtime:
+    profiles: ["runtime"]
+    build:
+      context: ../nexora-runtime/worker
+      dockerfile: Dockerfile
+    environment:
+      ADDR: :8094
+      MAAS_URL: http://maas-api:8083
+      OMP_BINARY: /usr/local/bin/omp
+      NATIVE_WORKSPACE_ROOT: /workspaces
+      NATIVE_TOOL_DIALECT: qwen3
+      NATIVE_MODEL_CONTEXT_WINDOW: 4096
+      NATIVE_MODEL_MAX_TOKENS: 2048
+    ports: ["8094:8094"]
+    volumes: [native-runtime-workspaces:/workspaces]
+
   core-web:
     build:
       context: ../nexora-core/web
@@ -152,9 +189,21 @@ services:
     ports: ["3003:3003"]
     depends_on: [maas-api]
 
+  runtime-web:
+    profiles: ["runtime"]
+    build:
+      context: ../nexora-runtime/web
+      args: { NEXT_PUBLIC_RUNTIME_API: "http://localhost:8084" }
+    environment:
+      API_PROXY_TARGET: http://runtime-api:8084
+    ports: ["3004:3004"]
+    depends_on: [runtime-api]
+
 volumes:
   postgres-data:
   redis-data:
   nats-data:
   minio-data:
   maas-data:
+  runtime-data:
+  native-runtime-workspaces:

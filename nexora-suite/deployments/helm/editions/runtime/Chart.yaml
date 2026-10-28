@@ -1,0 +1,15 @@
+apiVersion: v2
+name: nexora-runtime-edition
+description: Nexora Core and Nexora Runtime
+type: application
+version: 1.0.0
+dependencies:
+  - name: nexora-infrastructure
+    version: 1.0.0
+    repository: file://../../infrastructure
+  - name: nexora-core
+    version: 1.0.0
+    repository: file://../../../../nexora-core/deploy/helm
+  - name: nexora-runtime
+    version: 1.0.0
+    repository: file://../../../../nexora-runtime/deploy/helm

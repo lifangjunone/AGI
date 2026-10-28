@@ -4,7 +4,7 @@
 
 **Build agents. Govern every agent. Operate them on one trusted foundation.**
 
-Nexora is an enterprise AI platform composed of four independently built and deployed products: a unified enterprise foundation, a model-as-a-service platform, an agent development platform, and a unified agent management and governance platform.
+Nexora is an enterprise AI platform composed of five independently built and deployed products: a unified enterprise foundation, a model-as-a-service platform, an agent development platform, an agent runtime platform, and a unified agent management and governance platform.
 
 ## Vision
 
@@ -17,13 +17,14 @@ Nexora's vision is to make every enterprise agent:
 - **Visible and governable** throughout registration, release, invocation, and retirement.
 - **Open by design** so internally built and third-party agents can coexist without platform lock-in.
 
-## The four Nexora products
+## The five Nexora products
 
 | Product | Positioning | Primary users | Core responsibility |
 | --- | --- | --- | --- |
 | **Nexora Core · 星核** | Unified enterprise foundation | Platform administrators, security teams, IT teams | Provides identity, tenant, organization, access-control, credential, audit, and localization capabilities to upper-layer products. |
 | **Nexora MaaS · 星模** | Unified model service platform | AI platform teams, model operations teams, developers | Connects model providers and manages the catalog, credentials, stable routes, usage, cost, and OpenAI-compatible invocation. |
 | **Nexora Studio · 星铸** | Agent development platform | Agent developers, AI engineers, product teams | Provides visual and code-first tools to design, debug, evaluate, version, and publish production agents. |
+| **Nexora Runtime · 星驰** | Agent runtime and execution platform | Platform engineers, runtime operators, AI infrastructure teams | Connects Native, third-party, custom, and device runtimes; schedules Agent Loop tasks and records dynamic execution traces. |
 | **Nexora Control · 星域** | Unified agent management and governance platform | Agent administrators, security teams, operations teams | Registers, identifies, governs, routes, observes, and audits both Nexora-built and external agents from one control plane. |
 
 ### Nexora Core · Unified foundation
@@ -74,16 +75,30 @@ Control is the enterprise control plane for all agents, including agents publish
 
 Control governs and observes agents without requiring them to be developed in Studio.
 
+### Nexora Runtime · Agent execution platform
+
+Runtime owns how adaptive agents execute without becoming part of Studio or Control:
+
+- Maintain tenant-isolated Runtime Profiles, endpoints, credentials, health, capacity, and deployment location.
+- Provide adapters for Nexora Native Runtime, Hermes Agent, OpenClaw, QwenPaw, WorkBuddy, TRAE, DeepSeek Agent, Codex, Claude Agent SDK, and custom runtimes.
+- Schedule tasks with timeouts, loop budgets, permission profiles, approvals, cancellation, and task history.
+- Stream dynamic plan, reasoning, action, observation, approval, answer, and completion events.
+- Run the official Native Runtime as an independently scalable worker using the same public protocol as third-party runtimes.
+
+Studio only references a Runtime Profile and submits tasks through the versioned Runtime interface. Control governs Agent identities and policies; it does not schedule or execute Agent Loop tasks.
+
 ## Purchase and deployment editions
 
-Core is the required common foundation. MaaS, Studio, and Control are independently optional products, so customers purchase and deploy only the capabilities they need:
+Core is the required common foundation. MaaS, Studio, Runtime, and Control are independently optional products, so customers purchase and deploy only the capabilities they need:
 
 | Edition | Included products | Intended customer | Product behavior |
 | --- | --- | --- | --- |
 | **Agent Development Edition** | Core + Studio | Customers that build and publish agents but do not need centralized agent governance | Studio works independently. Publishing produces immutable versions and manifests without attempting Control registration. |
 | **Agent Governance Edition** | Core + Control | Customers that already have their own or third-party agents and only need unified registration, policy, gateway, observability, and audit | Control accepts external agents through its APIs and SDKs. Studio is not installed or shown in the Core portal. |
 | **Model Service Edition** | Core + MaaS | Customers that need centralized model access, routing, credentials, usage, and cost without an agent builder or control plane | MaaS provides its model catalog and OpenAI-compatible gateway independently. |
-| **Full AI Platform Edition** | Core + MaaS + Studio + Control | Customers that need model supply, agent development, and unified governance | Studio and enterprise applications consume MaaS routes while released agents enter Control governance. |
+| **Runtime Edition** | Core + Runtime | Customers that need to connect and operate their own runtimes without Studio | Runtime manages profiles, adapters, health, scheduling, task state, and execution traces independently. |
+| **Agent Development & Execution Edition** | Core + MaaS + Studio + Runtime | Customers that build Workflow and Agent Loop applications without centralized governance | Studio defines agents; Runtime executes Agent Loop tasks; MaaS supplies models. |
+| **Full AI Platform Edition** | Core + MaaS + Studio + Runtime + Control | Customers that need model supply, agent development, execution, and unified governance | Studio defines agents, Runtime executes adaptive tasks, and released agents enter Control governance. |
 
 Product entitlements are issued by Core in the signed access token and enforced by product APIs. The Core portal only displays products enabled for that customer. Deploying an unlicensed product does not grant access to it.
 
@@ -105,7 +120,7 @@ Product entitlements are issued by Core in the signed access token and enforced 
                                       External / third-party agents
 ```
 
-The four products are independently buildable, versioned, and deployable. They do not share business databases or import one another's source code. Cross-product communication uses versioned OpenAPI contracts, SDKs, and events under [`contracts/`](contracts/).
+The five products are independently buildable, versioned, and deployable. They do not share business databases or import one another's source code. Cross-product communication uses versioned OpenAPI contracts, SDKs, and events under [`contracts/`](contracts/).
 
 ## Internationalization
 
@@ -129,6 +144,7 @@ nexora-suite/
 ├── nexora-core/       # Unified enterprise foundation
 ├── nexora-maas/       # Unified model service platform
 ├── nexora-studio/     # Agent development platform
+├── nexora-runtime/    # Agent runtime and execution platform
 ├── nexora-control/    # Unified agent management platform
 ├── contracts/         # Versioned APIs, events, and SDKs
 ├── deployments/       # Suite-level local and Kubernetes resources
@@ -152,9 +168,13 @@ docker compose --env-file deployments/editions/control.env \
 docker compose --env-file deployments/editions/maas.env \
   -f deployments/docker-compose.yml --profile maas up --build
 
-# Full AI Platform Edition: Core + MaaS + Studio + Control
+# Runtime Edition: Core + Runtime
+docker compose --env-file deployments/editions/runtime.env \
+  -f deployments/docker-compose.yml --profile runtime up --build
+
+# Full AI Platform Edition
 docker compose --env-file deployments/editions/full.env \
-  -f deployments/docker-compose.yml --profile maas --profile studio --profile control up --build
+  -f deployments/docker-compose.yml --profile maas --profile studio --profile runtime --profile control up --build
 ```
 
 Open:
@@ -163,6 +183,7 @@ Open:
 - Nexora Studio: <http://localhost:3001>
 - Nexora Control: <http://localhost:3002>
 - Nexora MaaS: <http://localhost:3003>
+- Nexora Runtime: <http://localhost:3004>
 
 Demo account:
 

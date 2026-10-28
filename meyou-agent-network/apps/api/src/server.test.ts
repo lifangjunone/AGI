@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { datingProfileSchema, missionSchema, plazaActionSchema, plazaMoveSchema, plazaRuntimeSettingsSchema } from "@meyou/shared";
+import {
+  datingProfileSchema, digitalLearningSchema, missionSchema, plazaActionSchema, plazaMoveSchema,
+  plazaRuntimeSettingsSchema, societyDecisionSchema, societyProposalSchema
+} from "@meyou/shared";
 import { guardAgentReply, parseModelJson } from "./model.js";
-import { publicErrorResponse } from "./server.js";
+import { buildServer, publicErrorResponse } from "./server.js";
 import { hashPassword, resolveTrustedHeaderUser, verifyPassword } from "./auth.js";
 import {
   clearAdminCookie, decryptModelSecret, encryptModelSecret, hashAdminPassword, maskSecret, resolveAdmin, verifyAdminCredentials
@@ -9,6 +12,48 @@ import {
 import type { AgentMode } from "@meyou/shared";
 
 describe("MeYou API contracts", () => {
+  it("hides the service-to-service model configuration endpoint without its sync token", async () => {
+    const previousToken = process.env.MODEL_CONFIG_SYNC_TOKEN;
+    process.env.MODEL_CONFIG_SYNC_TOKEN = "test-model-sync-token-at-least-32-characters";
+    const app = buildServer();
+    try {
+      const missing = await app.inject({ method: "GET", url: "/internal/model-config" });
+      expect(missing.statusCode).toBe(404);
+      expect(missing.json()).toEqual({ error: "not_found" });
+      const incorrect = await app.inject({
+        method: "GET",
+        url: "/internal/model-config",
+        headers: { "x-lifeyoume-model-sync-token": "incorrect-token-at-least-32-characters" }
+      });
+      expect(incorrect.statusCode).toBe(404);
+      expect(incorrect.json()).not.toHaveProperty("apiKey");
+    } finally {
+      await app.close();
+      if (previousToken === undefined) delete process.env.MODEL_CONFIG_SYNC_TOKEN;
+      else process.env.MODEL_CONFIG_SYNC_TOKEN = previousToken;
+    }
+  });
+
+  it("rejects unauthenticated key reveal and cross-origin administrator requests", async () => {
+    const app = buildServer();
+    try {
+      const anonymous = await app.inject({
+        method: "POST", url: "/api/v1/admin/model-config/reveal-key",
+        payload: { confirmation: "reveal-saved-model-key" }
+      });
+      expect(anonymous.statusCode).toBe(401);
+      expect(anonymous.headers["cache-control"]).toContain("no-store");
+      expect(anonymous.json()).not.toHaveProperty("apiKey");
+      const crossOrigin = await app.inject({
+        method: "POST", url: "/api/v1/admin/model-config/reveal-key",
+        headers: { "x-lifeyoume-admin-user": "test@example.invalid", origin: "https://untrusted.example.invalid" },
+        payload: { confirmation: "reveal-saved-model-key" }
+      });
+      expect(crossOrigin.statusCode).toBe(403);
+      expect(crossOrigin.json()).not.toHaveProperty("apiKey");
+    } finally { await app.close(); }
+  });
+
   it("keeps local administrator credentials disabled unless emergency fallback is explicit", () => {
     const previousFallback = process.env.MEYOU_LOCAL_ADMIN_FALLBACK;
     const previousEmail = process.env.ADMIN_EMAIL;
@@ -101,6 +146,11 @@ describe("MeYou API contracts", () => {
     }).success).toBe(false);
   });
 
+  it("preserves client error status instead of reporting service unavailable", () => {
+    expect(publicErrorResponse({ statusCode: 400 }, "/api/v1/matches/example/consent"))
+      .toEqual({ statusCode: 400, error: "invalid_request" });
+  });
+
   it("escalates high-risk promises before model invocation", () => {
     expect(guardAgentReply("请承诺退款并给我报价")).toEqual({
       escalate: true,
@@ -147,7 +197,8 @@ describe("MeYou API contracts", () => {
       activeFrom: "09:00",
       activeUntil: "22:00",
       dailyLimit: 8,
-      cooldownMinutes: 5,
+      cooldownSeconds: 5,
+      maxConversationRounds: 4,
       allowedActivities: ["looking", "chatting", "business"]
     }).success).toBe(true);
     expect(plazaRuntimeSettingsSchema.safeParse({
@@ -155,8 +206,18 @@ describe("MeYou API contracts", () => {
       activeFrom: "09:00",
       activeUntil: "22:00",
       dailyLimit: 500,
-      cooldownMinutes: 1,
+      cooldownSeconds: 1,
+      maxConversationRounds: 0,
       allowedActivities: []
+    }).success).toBe(false);
+    expect(plazaRuntimeSettingsSchema.safeParse({
+      mode: "continuous",
+      activeFrom: "09:00",
+      activeUntil: "22:00",
+      dailyLimit: 8,
+      cooldownSeconds: 60,
+      maxConversationRounds: 21,
+      allowedActivities: ["chatting"]
     }).success).toBe(false);
   });
 
@@ -195,5 +256,38 @@ describe("MeYou API contracts", () => {
     const supported: AgentMode[] = ["auto", "confirm", "paused"];
     expect(supported).toContain("paused");
     expect(supported).not.toContain("human" as AgentMode);
+  });
+
+  it("requires explicit bounded society proposals and decisions", () => {
+    expect(societyProposalSchema.safeParse({
+      kind: "romantic_intent",
+      targetUserId: "26e8c164-83b6-4df8-bf3d-3a497e875fb7",
+      title: "认真了解彼此",
+      reason: "已经有多次双向交流，希望由双方真人确认。",
+      payload: {}
+    }).success).toBe(true);
+    expect(societyProposalSchema.safeParse({
+      kind: "partner",
+      title: "",
+      reason: "",
+      payload: {}
+    }).success).toBe(false);
+    expect(societyDecisionSchema.safeParse({ decision: "accept" }).success).toBe(true);
+    expect(societyDecisionSchema.safeParse({ decision: "model_decides" }).success).toBe(false);
+  });
+
+  it("requires real learning evidence for digital Agent growth", () => {
+    expect(digitalLearningSchema.safeParse({
+      skill: "统计推理",
+      evidence: "完成样本量练习并解释了置信区间。",
+      source: "course:statistics-01",
+      score: 82
+    }).success).toBe(true);
+    expect(digitalLearningSchema.safeParse({
+      skill: "统计推理",
+      evidence: "",
+      source: "",
+      score: 101
+    }).success).toBe(false);
   });
 });

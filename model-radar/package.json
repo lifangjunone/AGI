@@ -1,0 +1,16 @@
+{
+  "name": "lifeyoume-model-radar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LifeYouMe 模型雷达：按小时追踪最新、最热的 AI 模型。",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch server.js",
+    "start": "node server.js",
+    "test": "node --test",
+    "check": "node --check server.js && node --check lib/model-service.js && node --check public/app.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

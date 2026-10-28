@@ -1,0 +1,98 @@
+---
+title: "Get token"
+description: "The access token authenticates API requests to Duix interactive services. Include the token in the HTTP header for all API calls."
+---
+
+
+
+## Overview
+
+The **access token** serves as the authentication credential for all Duix interactive service APIs.  
+Each HTTP request must include the token in the **Authorization Header**.
+
+---
+
+## How to Generate an Access Token
+
+### Prerequisites
+
+Before generating a token, ensure you have the following:
+
+- **appId** — The unique identifier of your application.  
+- **appKey** — The secret key associated with your application.
+
+---
+
+### Steps to Generate a Token
+
+1. Generate a **JWT signature** using your `appId` and `appKey`.  
+2. Pass the generated signature to the H5 SDK `init` method.
+
+---
+
+## Signature Generation
+
+The signature is implemented using **JWT (JSON Web Token)**.  
+Use the following parameters and example code to generate a valid signature.
+
+### Parameters
+
+| Name   | Type    | Description                                          | Example |
+|--------|---------|------------------------------------------------------|----------|
+| appId  | string  | Application identifier obtained after registration   | `xxxxxxx` |
+| appKey | string  | Application secret key obtained after registration   | `xxxxxxx` |
+| sigExp | integer | Signature validity period (in seconds)               | `1800`   |
+
+---
+
+## Example: Java Implementation
+
+### Add Maven Dependency
+
+```xml
+<dependency>
+    <groupId>com.auth0</groupId>
+    <artifactId>java-jwt</artifactId>
+    <version>3.8.3</version>
+</dependency>
+
+```
+
+```java
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import java.util.Calendar;
+import java.util.Date;
+
+public class SigUtils {
+    /**
+     * Create JWT Signature
+     *
+     * @param appId  Application ID
+     * @param appKey Application Secret Key
+     * @param sigExp Signature validity duration (seconds)
+     * @return JWT signature string
+     */
+    public static String createSig(String appId, String appKey, int sigExp) {
+        Calendar nowTime = Calendar.getInstance();
+        nowTime.add(Calendar.SECOND, sigExp);
+        Date expiresDate = nowTime.getTime();
+
+        return JWT.create()
+                // Issued time
+                .withIssuedAt(new Date())
+                // Expiration time
+                .withExpiresAt(expiresDate)
+                // Payload data
+                .withClaim("appId", appId)
+                // Sign using HMAC256 with appKey
+                .sign(Algorithm.HMAC256(appKey));
+    }
+}
+```
+
+Note: This token is the H5 SDK signature value (`sign`).
+
+### Integration
+
+Once you have your appId, appKey, and generated token, follow the SDK and API guides to connect Duix to your application.

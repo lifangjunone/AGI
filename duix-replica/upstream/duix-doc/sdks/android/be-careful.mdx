@@ -1,0 +1,22 @@
+---
+title: 'Precautions'
+description: 'Important considerations for using the Duix Android SDK, including microphone permissions and audio format requirements.'
+---
+
+## Overview
+
+Before running the **Duix Android SDK**, please review the following important notes.  
+Failure to meet these requirements may cause initialization or audio transmission failures.
+
+---
+
+1. Microphone Permission
+
+   The **RTC (Real-Time Communication)** module requires access to the device’s microphone.  
+   You must request and obtain this permission **dynamically at runtime** before initializing or using any real-time interaction feature.
+
+2. Audio Format
+   When providing audio input, use **WAV files** with the following specifications:  
+   - **Sample rate:** 16,000 Hz  
+   - **Channel:** Mono  
+   - **Bit depth:** 16-bit

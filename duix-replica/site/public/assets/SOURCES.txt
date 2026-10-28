@@ -1,0 +1,14 @@
+Public assets downloaded from the rendered Duix marketing homepage on 2026-10-28.
+Used only for this local fidelity replica. Duix retains all applicable rights.
+
+logo.svg	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/Logo.648712d0.svg	4562 bytes
+headshots.png	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/Headshots.e027c402.png	53662 bytes
+doctor.webp	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/Doctor.717b491a.webp	343506 bytes
+customer-service.webp	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/Smileman.537a0906.webp	66626 bytes
+interview.webp	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/Interviewor.5f21dd46.webp	263934 bytes
+girlfriend.webp	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/Sophie.85328de5.webp	415518 bytes
+boyfriend.webp	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/Boyfriend.7d6ed7bf.webp	185062 bytes
+school.webp	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/1024x1024_mRK2OlKdEx.high.8ae527e2.webp	324642 bytes
+business.webp	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/1400x1152_zf4xOjwEX2.high.f680f9ea.webp	114098 bytes
+satoshi.woff2	https://duix-southeast.oss-accelerate.aliyuncs.com/marketing/1.2.0/2026-10-16/t0/_next/static/media/Satoshi_Variable.p.fc536e90.woff2	42588 bytes
+hero.mp4	https://duix-southeast.oss-accelerate.aliyuncs.com/videos/%E9%A6%96%E5%B1%8F%E7%B4%A0%E6%9D%90new11.mp4	2139842 bytes

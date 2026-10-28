@@ -1,0 +1,30 @@
+{
+  "id": "native-agentloop",
+  "display_name": "Native AgentLoop",
+  "description": "Nexora-managed autonomous Agent Loop for planning, tools, skills, MCP, approvals, and long-running work.",
+  "category": "agent_loop",
+  "protocol": "nexora-runtime-v1",
+  "integration": "managed_engine",
+  "deployment_drivers": ["local_process", "kubernetes"],
+  "capabilities": ["stream", "reasoning", "tools", "skills", "mcp", "approvals", "sub_agents"],
+  "pinned_versions": [
+    {"version": "18.12.6", "channel": "stable", "published_at": "2026-10-21T21:04:55Z"},
+    {"version": "18.12.5", "channel": "stable", "published_at": "2026-10-21T02:31:29Z"},
+    {"version": "18.12.4", "channel": "stable", "published_at": "2026-10-20T19:42:57Z"}
+  ],
+  "release_source": {
+    "type": "github_stencil",
+    "repository": "can1357/oh-my-pi",
+    "product": "omp"
+  },
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "tool_dialect": {
+        "type": "string",
+        "enum": ["qwen3", "native", "hermes"],
+        "default": "qwen3"
+      }
+    }
+  }
+}

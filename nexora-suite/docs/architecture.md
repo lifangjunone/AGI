@@ -2,12 +2,15 @@
 
 ## Product boundaries
 
-Core, MaaS, Studio, and Control are independent deployment and data boundaries. They communicate only through versioned HTTP APIs and NATS events. Each service applies `tenant_id` to every business record and never performs cross-database queries.
+Core, MaaS, Studio, Runtime, and Control are independent deployment and data boundaries. They communicate only through versioned HTTP APIs and NATS events. Each product applies `tenant_id` to every business record and never performs cross-database queries.
 
 ## Main flow
 
 1. A user signs in through Core and receives a signed access token.
 2. MaaS uses Core's tenant and product entitlement claims while keeping its own model data and credentials.
+3. Studio defines Workflow and Agent Loop applications but only stores a Runtime Profile reference.
+4. Runtime owns adapters, endpoints, credentials, health, scheduling, task state, and dynamic execution traces.
+5. Native Runtime is an independently scalable worker behind the same `nexora-runtime-v1` seam used by external runtimes.
 3. Platform teams connect model providers, register models, and publish stable OpenAI-compatible route aliases.
 4. Studio or another authorized AI application invokes those aliases without learning provider credentials.
 5. A Studio agent is drafted, tested, evaluated, and published as an immutable version.

@@ -6,6 +6,151 @@
     { "id": "noon", "time": "12:00", "content": "真实工具操作与交付演示" },
     { "id": "evening", "time": "20:00", "content": "具体场景与整理前后对照" }
   ],
+  "dailyProductCampaign": {
+    "startDay": "2026-10-23",
+    "sequence": [
+      "frame60", "audit", "frame60", "resume-forge", "frame60", "audit", "privacy-vault",
+      "frame60", "travel-frame", "audit", "frame60", "resume-forge", "frame60", "story-studio",
+      "audit", "frame60", "privacy-vault", "audit", "frame60", "resume-forge", "frame60",
+      "audit", "travel-frame", "frame60", "flowframe-studio", "audit", "frame60", "meyou-agent-network",
+      "skill-radar", "resume-forge"
+    ],
+    "products": {
+      "frame60": {
+        "name": "FRAME/60 商品内容包",
+        "audience": "每天需要为商品写内容的创作者和商家",
+        "result": "9 个标题、3 条口播、3 套分镜和 7 天发布计划",
+        "price": "¥9.90",
+        "payment": "支付宝支付后交付",
+        "landingUrl": "https://lifeyoume.icu/video/",
+        "topicQueries": ["商品文案", "短视频口播", "内容运营"],
+        "angles": {
+          "morning": { "title": "每天都要发商品内容怎么不再硬憋", "hook": "从商品卖点开始，不从空白文档开始。", "cover": "frame60-02-time-cost.png" },
+          "noon": {
+            "title": "9块9的商品内容包到底给什么",
+            "hook": "先免费生成预览，再看完整交付里有什么。",
+            "cover": "frame60-01-paid-result.png",
+            "coverTitle": ["¥9.90 买到的", "是一套商品内容包"],
+            "coverPoints": ["9 个标题", "3 条口播 · 3 套分镜", "7 天发布计划"],
+            "coverEyebrow": "商品内容包｜先免费预览"
+          },
+          "evening": { "title": "标题口播分镜一次整理成发布包", "hook": "把零散灵感变成可以连续执行的 7 天内容。", "cover": "frame60-03-delivery.png" }
+        }
+      },
+      "audit": {
+        "name": "开源项目采用审计",
+        "audience": "准备把开源项目用于生产的技术负责人和交付团队",
+        "result": "场景化采用门槛、阻塞项、整改动作、Markdown 报告和 JSON 证据",
+        "price": "¥9.90",
+        "payment": "支付后自动交付专业报告",
+        "landingUrl": "https://audit.lifeyoume.icu/",
+        "topicQueries": ["开源项目", "技术选型", "软件供应链"],
+        "angles": {
+          "morning": { "title": "GitHub项目能跑不等于能进生产", "hook": "Stars 和 README 不能回答你的数据与交付风险。", "cover": "audit-morning.png" },
+          "noon": { "title": "开源项目采用前应该检查哪些证据", "hook": "把 GitHub、OpenSSF 和业务场景放进同一份判断。", "cover": "audit-noon.png" },
+          "evening": { "title": "9块9专业审计报告会交付什么", "hook": "买的是阻塞项、整改顺序和可追踪证据。", "cover": "audit-evening.png" }
+        }
+      },
+      "resume-forge": {
+        "name": "ResumeForge 简历锻造厂",
+        "audience": "求职、转岗和晋升中的中文职场人",
+        "result": "岗位关键词、事实证据、逐条诊断和 ATS 可读的一页简历",
+        "price": "",
+        "payment": "当前免费验证需求，不虚构收费入口",
+        "landingUrl": "https://lifeyoume.icu/resume/",
+        "topicQueries": ["简历优化", "求职简历", "岗位匹配"],
+        "angles": {
+          "morning": { "title": "简历像流水账通常少了这一步", "hook": "先让每一条经历回应目标岗位。", "cover": "resume-forge-morning.png" },
+          "noon": { "title": "一页简历怎么同时兼顾事实和JD", "hook": "用证据化改写，不编造经历。", "cover": "resume-forge-noon.png" },
+          "evening": { "title": "投递前先做一次ATS可读性检查", "hook": "先看岗位匹配与逐条诊断结果。", "cover": "resume-forge-evening.png" }
+        }
+      },
+      "privacy-vault": {
+        "name": "隐匣",
+        "audience": "希望在浏览器本地保管敏感记录的个人用户",
+        "result": "主密码派生 AES-256-GCM 密钥、本地分类档案和加密备份",
+        "price": "",
+        "payment": "当前免费使用，不虚构收费入口",
+        "landingUrl": "https://lifeyoume.icu/vault/",
+        "topicQueries": ["隐私保护", "本地加密", "个人档案"],
+        "angles": {
+          "morning": { "title": "敏感记录为什么不该放普通备忘录", "hook": "真正关键的是密钥和数据是否离开设备。", "cover": "privacy-vault-morning.png" },
+          "noon": { "title": "没有服务端的加密档案怎么工作", "hook": "记录只保存在当前浏览器。", "cover": "privacy-vault-noon.png" },
+          "evening": { "title": "本地加密档案也要考虑备份恢复", "hook": "分类、加密和备份缺一不可。", "cover": "privacy-vault-evening.png" }
+        }
+      },
+      "travel-frame": {
+        "name": "旅拍管家",
+        "audience": "旅行拍照很多但一直没整理相册的人",
+        "result": "按时间地点和人物整理、相似照片优选与旅行地图回顾",
+        "price": "",
+        "payment": "当前免费验证需求，不虚构收费入口",
+        "landingUrl": "https://lifeyoume.icu/travel-frame/",
+        "topicQueries": ["旅行照片", "相册整理", "照片管理"],
+        "angles": {
+          "morning": { "title": "旅行结束后几百张照片怎么整理", "hook": "先解决相似照片和分类，而不是继续堆相册。", "cover": "travel-frame-morning.png" },
+          "noon": { "title": "时间地点人物能把旅拍分成什么", "hook": "把一次旅行重新整理成可回看的路线。", "cover": "travel-frame-noon.png" },
+          "evening": { "title": "相似照片不是全删而是选出最好一张", "hook": "保留选择权，再生成精选相册。", "cover": "travel-frame-evening.png" }
+        }
+      },
+      "story-studio": {
+        "name": "故事片场",
+        "audience": "小说作者、短剧团队和系列视频创作者",
+        "result": "故事分析、动态分集、人物场景资产和多集视频生产",
+        "price": "",
+        "payment": "当前内测，不虚构购买入口",
+        "landingUrl": "https://lifeyoume.icu/story-studio/",
+        "topicQueries": ["小说改编", "短剧制作", "AI视频"],
+        "angles": {
+          "morning": { "title": "小说改短剧最难的是跨集不一致", "hook": "人物、场景和音色需要成为可复用资产。", "cover": "story-studio-morning.png" },
+          "noon": { "title": "长故事怎么动态拆成连续多集", "hook": "不是固定字数切割，而是按剧情节奏分集。", "cover": "story-studio-noon.png" },
+          "evening": { "title": "AI短剧工作流为什么需要导演Agent", "hook": "从故事分析一直管到全集交付。", "cover": "story-studio-evening.png" }
+        }
+      },
+      "flowframe-studio": {
+        "name": "FlowFrame AI 视频创作工作台",
+        "audience": "AI 视频创作者和内容团队",
+        "result": "文生视频、图生视频、素材项目管理和双轨时间线剪辑",
+        "price": "",
+        "payment": "当前在线体验，不虚构收费入口",
+        "landingUrl": "https://lifeyoume.icu/flowframe/",
+        "topicQueries": ["AI视频", "视频剪辑", "内容创作"],
+        "angles": {
+          "morning": { "title": "AI视频素材散落在各平台怎么管", "hook": "生成只是第一步，项目和素材也要可追踪。", "cover": "flowframe-studio-morning.png" },
+          "noon": { "title": "文生图生多图参考能否放一个工作台", "hook": "把不同生成方式放进同一项目。", "cover": "flowframe-studio-noon.png" },
+          "evening": { "title": "AI视频生成后还需要真正的时间线", "hook": "双轨剪辑让素材能继续成为作品。", "cover": "flowframe-studio-evening.png" }
+        }
+      },
+      "meyou-agent-network": {
+        "name": "遇见 MeYou",
+        "audience": "希望降低找人、破冰和接待成本的个人与团队",
+        "result": "持续找人、双向同意的匿名心动和 Agent 接待网络",
+        "price": "",
+        "payment": "当前内测，不虚构收费入口",
+        "landingUrl": "https://meyou.lifeyoume.icu/",
+        "topicQueries": ["AI社交", "智能体", "关系匹配"],
+        "angles": {
+          "morning": { "title": "不是没人可认识而是破冰成本太高", "hook": "让 Agent 先持续找人与判断共同点。", "cover": "meyou-agent-network-morning.png" },
+          "noon": { "title": "双方都同意后再揭示身份会怎样", "hook": "先保护意愿，再建立真实联系。", "cover": "meyou-agent-network-noon.png" },
+          "evening": { "title": "个人也可以有一个持续在线的接待Agent", "hook": "把重复介绍和初步筛选交给代理。", "cover": "meyou-agent-network-evening.png" }
+        }
+      },
+      "skill-radar": {
+        "name": "Skill Radar 技能雷达",
+        "audience": "希望快速发现和评估 AI Agent Skill 的开发者与团队",
+        "result": "每日公开安装量、近期增长、官方来源和领域分类榜单",
+        "price": "",
+        "payment": "当前免费查看，不虚构收费入口",
+        "landingUrl": "https://lifeyoume.icu/skills/",
+        "topicQueries": ["Agent技能", "AI工具", "开发者工具"],
+        "angles": {
+          "morning": { "title": "Agent技能越来越多怎么找到真正在增长的", "hook": "不要只看推荐词，要看安装量与近期增长。", "cover": "skill-radar-morning.png" },
+          "noon": { "title": "一个Skill榜单应该保留哪些证据", "hook": "官方来源、领域和安装数据都要能核对。", "cover": "skill-radar-noon.png" },
+          "evening": { "title": "每天看一次AI技能增长榜有什么用", "hook": "用公开数据缩短工具筛选时间。", "cover": "skill-radar-evening.png" }
+        }
+      }
+    }
+  },
   "contentPackages": {
     "morning": [
       {
@@ -14,10 +159,23 @@
         "title": "投诉前先把这5类材料整理好",
         "body": "退款、售后、快递破损这些事，真正费时间的不是截图，而是让别人看懂：谁买了什么、什么时候出问题、沟通过什么、现在要怎么处理。我的做法是先按交易对象、订单付款、问题照片、沟通记录、具体诉求五类整理，再把每张材料编号。这个工具可以先免费导入自己的图片或PDF，补日期和证明内容，预览完整目录、时间线和报告，满意后再付费下载分类ZIP。文件只在本机浏览器处理，不上传。配图为虚构演示，不是真实客户案例；工具不代写事实、不提供法律意见、不保证退款结果。",
         "assets": [
-          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png",
+          "docs/promotion/consumer-evidence-covers/01-missing-materials.png",
           "docs/promotion/consumer-evidence-first-post/02-zip-structure.png"
         ],
         "topicQueries": ["证据整理", "消费维权", "售后沟通"],
+        "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
+        "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
+      },
+      {
+        "id": "consumer-evidence-chaos-02",
+        "productId": "consumer-evidence-pack",
+        "title": "截图多不等于材料完整",
+        "body": "退款售后时，手机里有几十张截图并不等于材料已经能用。缺少编号、日期和每张图要证明什么，接收方仍然要从头猜。我做这个工具，是让你先把订单付款、问题照片和沟通记录按时间排好，再生成目录和报告。可以免费导入自己的图片或PDF，看完整预览；满意后再决定是否下载分类ZIP。原文件只在本机浏览器处理，不上传。配图是虚构演示，不是真实客户案例；工具不代写事实、不提供法律意见，也不保证退款结果。",
+        "assets": [
+          "docs/promotion/consumer-evidence-covers/02-screenshot-chaos.png",
+          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png"
+        ],
+        "topicQueries": ["截图整理", "售后沟通", "证据材料"],
         "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
         "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
       }
@@ -29,10 +187,23 @@
         "title": "几十张截图最后应该交付成什么",
         "body": "很多人以为维权材料就是把截图全发过去，但接收方最怕的是看不出顺序和对应关系。我现在把交付物固定成三类：编号原文件、证据目录和事件时间线，再额外生成一份可打印报告。你可以先免费试自己的材料，看到完整预览后再决定是否下载ZIP。这个小工具卖的是节省整理时间和降低遗漏，不是承诺谁一定退款或投诉成功。所有图片和PDF都在浏览器本地处理，不上传；配图是虚构保温杯破损演示，不是真实客户案例。",
         "assets": [
-          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png",
+          "docs/promotion/consumer-evidence-covers/03-zip-delivery.png",
           "docs/promotion/consumer-evidence-first-post/02-zip-structure.png"
         ],
         "topicQueries": ["证据目录", "截图整理", "消费维权"],
+        "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
+        "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
+      },
+      {
+        "id": "consumer-evidence-final-files-02",
+        "productId": "consumer-evidence-pack",
+        "title": "整理完不是一张长图而是这4份文件",
+        "body": "真正省时间的不是把截图拼成长图，而是一次得到四类能继续使用的文件：编号后的原文件、证据目录、事件时间线和可打印报告。每份材料都保留日期与证明内容，最后按目录打包成ZIP。你可以先导入自己的图片或PDF，免费查看完整预览，确认结构适合自己后再决定是否下载。原文件只在本机浏览器处理，不上传。配图是虚构演示，不是真实客户案例；工具不代写事实、不代办投诉，也不承诺处理结果。",
+        "assets": [
+          "docs/promotion/consumer-evidence-covers/04-final-files.png",
+          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png"
+        ],
+        "topicQueries": ["材料整理", "证据目录", "文件归档"],
         "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
         "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
       }
@@ -44,10 +215,23 @@
         "title": "投诉截图太乱？先变成这3份材料",
         "body": "遇到退款、售后扯皮时，最费时间的往往不是截图，而是把几十张截图说清楚。我做了一个浏览器里的证据整理工具：一是原文件按时间排序并保留编号，二是自动生成证据目录和事件时间线，三是分类打包原文件并附一份可打印报告。你可以先导入自己的图片或PDF，补充日期和证明内容，完整预览满意后，再决定是否花19.90元下载分类ZIP。原文件只在本机浏览器处理，不上传。它不自动识别聊天、不代写事实、不代办投诉，也不承诺退款结果。配图是虚构保温杯破损演示，不是真实客户案例。",
         "assets": [
-          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png",
+          "docs/promotion/consumer-evidence-covers/06-before-after.png",
           "docs/promotion/consumer-evidence-first-post/02-zip-structure.png"
         ],
         "topicQueries": ["证据整理", "售后沟通", "截图整理"],
+        "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
+        "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
+      },
+      {
+        "id": "consumer-evidence-privacy-02",
+        "productId": "consumer-evidence-pack",
+        "title": "隐私截图不上传也能整理",
+        "body": "订单、聊天和售后截图通常包含姓名、地址或交易信息，所以我没有把它做成上传后再处理的服务。图片和PDF只在你当前的浏览器本地读取，程序不会读取微信聊天，也不会替你编写事实。你可以自己补充日期和每份材料要证明什么，免费预览编号文件、目录、时间线和报告，满意后再下载分类ZIP。配图是虚构演示，不是真实客户案例；这只是材料整理工具，不提供法律意见，也不保证退款或投诉结果。",
+        "assets": [
+          "docs/promotion/consumer-evidence-covers/05-local-processing.png",
+          "docs/promotion/consumer-evidence-first-post/01-demo-delivery.png"
+        ],
+        "topicQueries": ["隐私保护", "本地处理", "截图整理"],
         "landingUrl": "https://lifeyoume.icu/image/products/consumer-evidence-pack/",
         "disclosures": ["marketing", "demo-not-customer-case", "local-browser-processing"]
       }
@@ -59,6 +243,9 @@
   "rules": {
     "deduplicationKey": "channel:beijing-date:slot",
     "doNotRepeatSamePost": true,
+    "rejectRepeatedTitleWithinDays": 7,
+    "rejectRepeatedCoverWithinDays": 7,
+    "requireDistinctDailyAngles": true,
     "selectNativeTopics": true,
     "verifyTopicIdsBeforeSubmit": true,
     "discloseMarketingAndDemo": true,

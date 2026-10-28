@@ -21,7 +21,7 @@ button { min-height: 48px; padding: 0 17px; border: 0; border-radius: 12px; colo
 form button { width: 100%; margin-top: 12px; }
 button:disabled { opacity: .55; cursor: wait; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 18px 0; padding: 5px; border-radius: 14px; background: #edf3ea; }
+.tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 18px 0; padding: 5px; border-radius: 14px; background: #edf3ea; }
 .tab { min-height: 42px; color: var(--muted); background: transparent; }
 .tab.active { color: #173d27; background: #fff; box-shadow: 0 4px 14px rgba(28,61,40,.08); }
 .text-button { min-height: 40px; color: var(--green); background: #edf5ea; }
@@ -41,6 +41,15 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .order-meta { margin: 8px 0 14px; color: var(--muted); font-size: 13px; }
 .confirm { width: 100%; }
 .empty { padding: 34px 18px; border: 1px dashed #cbd7c9; border-radius: 16px; color: var(--muted); text-align: center; }
+.action-task-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin: 18px 0 12px; }
+.action-task-summary article { padding: 13px 10px; border-radius: 13px; background: var(--paper); text-align: center; }
+.action-task-summary span { display: block; color: var(--muted); font-size: 12px; }
+.action-task-summary strong { display: block; margin-top: 5px; font-size: 21px; }
+.action-task-list { display: grid; gap: 11px; }
+.action-task { padding: 17px; border: 1px solid #dae4d8; border-radius: 16px; background: #fff; }
+.action-task p { margin: 10px 0; font-size: 14px; }
+.login-qr { display: block; width: min(300px, 100%); aspect-ratio: 1; margin: 14px auto; padding: 8px; border: 1px solid #d9e2d7; border-radius: 16px; background: #fff; object-fit: contain; }
+.confirm-login { width: 100%; }
 .install-tip { margin-top: 18px; padding: 14px; border-radius: 14px; background: #eff5eb; }
 .install-tip p { margin: 5px 0 0; font-size: 13px; }
 .promotion-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
@@ -85,10 +94,19 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .matrix-admin-metrics strong { display: block; color: var(--ink); font-size: 17px; }
 .matrix-link { overflow-wrap: anywhere; color: var(--green) !important; }
 .matrix-admin-product button { width: 100%; min-height: 42px; margin-top: 8px; }
+.business-block { margin: 12px 0; padding: 15px; border: 1px solid #dae4d8; border-radius: 15px; background: #fff; }
+.business-block h3 { margin: 0 0 9px; }
+.business-block p { margin: 5px 0; font-size: 13px; }
+.business-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid #edf1eb; }
+.business-row:first-of-type { border-top: 0; }
+.business-row div { display: grid; gap: 4px; }
+.business-row span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.business-row b { flex: 0 0 auto; color: var(--green); font-size: 12px; }
 @media (max-width: 420px) {
   main { padding-left: 11px; padding-right: 11px; }
   .login-card, .app-shell { padding: 17px; border-radius: 18px; }
   .actions { grid-template-columns: 1fr; }
+  .tabs { grid-template-columns: repeat(2, 1fr); }
   .promotion-head { display: block; }
   .promotion-head button { width: 100%; margin-top: 10px; }
 }

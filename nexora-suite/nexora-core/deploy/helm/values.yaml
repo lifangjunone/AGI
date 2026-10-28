@@ -24,13 +24,11 @@ autoscaling:
   maxReplicas: 8
   targetCPUUtilizationPercentage: 70
 config:
-  products: studio,control,maas
+  products: studio,control,maas,runtime
   studioPublicURL: https://studio.nexora.local
   controlPublicURL: https://control.nexora.local
   maasPublicURL: https://maas.nexora.local
+  runtimePublicURL: https://runtime.nexora.local
   secretName: nexora-platform-secrets
   jwtSecretKey: jwt-secret
   databaseURLKey: core-database-url
-  products: studio,control
-  studioPublicURL: https://studio.nexora.example
-  controlPublicURL: https://control.nexora.example

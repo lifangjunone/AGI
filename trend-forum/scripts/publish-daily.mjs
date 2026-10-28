@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const projectRoot = path.resolve(import.meta.dirname, "..");
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(scriptDir, "..");
 const trendsPath = path.join(projectRoot, "public", "data", "trends.json");
 const postsPath = path.join(projectRoot, "public", "data", "posts.json");
 

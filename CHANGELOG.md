@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-28
+
+### feat
+
+- Added `agent-workforce-lab`, a local digital-employee campus for teaching, exams, trial work, multi-member tasks, versioned deliverables, human acceptance, and work-shadow capture.
+- Added `model-radar`, a LifeYouMe model-ranking product that refreshes public AI model signals hourly from Hugging Face Trending and OpenRouter Models, with cache fallback and `/models/` deployment support.
+- Added `lifeyoume-staffdeck`, a localized StaffDeck workspace snapshot for evaluating enterprise digital employees, SOP skills, document-structure-aware retrieval, desktop packaging, and execution loops.
+- Added `duix-replica`, a Duix product replica workspace with a high-fidelity marketing site, official avatar client source, documentation source, skills source, and explicit licensing/product-boundary notes.
+- Expanded LifeYouMe Platform, MeYou Agent Network, Nexora Suite, Autonomous Income Engine, Short Video Studio, Technology Intelligence, and Trend Forum with product registration, admin, automation, runtime, and deployment updates.
+
+### docs
+
+- Updated the root README project catalog, quick-start commands, feature notes, and top-level README count for the new product directories.
+
 ## 2026-10-22
 
 ### feat

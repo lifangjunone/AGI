@@ -1,0 +1,13 @@
+[Unit]
+Description=Collect and publish Trend Forum data
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/data/app/trend-forum/automation
+ExecStart=/data/app/trend-forum/automation/server-refresh.sh
+TimeoutStartSec=35min
+StandardOutput=append:/var/log/trend-forum-refresh.log
+StandardError=append:/var/log/trend-forum-refresh.error.log

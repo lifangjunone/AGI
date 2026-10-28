@@ -19,6 +19,7 @@ spec:
             - { name: ADDR, value: ":8080" }
             - { name: CORE_URL, value: "{{ .Values.config.coreURL }}" }
             - { name: CONTROL_URL, value: "{{ .Values.config.controlURL }}" }
+            - { name: RUNTIME_URL, value: "{{ .Values.config.runtimeURL }}" }
             - name: NEXORA_JWT_SECRET
               valueFrom: { secretKeyRef: { name: "{{ .Values.config.secretName }}", key: jwt-secret } }
             - name: DATABASE_URL

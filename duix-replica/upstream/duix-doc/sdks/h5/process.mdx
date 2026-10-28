@@ -1,0 +1,57 @@
+---
+title: 'Call process'
+description: 'Step-by-step lifecycle of the Duix H5 SDK, from initialization to session termination.'
+---
+
+## Overview
+
+The following diagram illustrates the **Duix H5 SDK call flow**,  
+showing how each method and event connects within a real-time digital human session.  
+This helps developers understand when to initialize, start, interact, and properly close the session.
+
+---
+
+## SDK Call Flow
+
+---
+
+## Lifecycle Summary
+
+Below is a simplified description of the SDK’s execution lifecycle:
+
+1. **Initialize**  
+   Call `duix.init()` with the required configuration (`sign`, `containerLable`, `conversationId`, `platform`).
+
+2. **Wait for Initialization Event**  
+   Listen for the `initialSuccess` event to confirm all resources have loaded.
+
+3. **Start the Session**  
+   Invoke `duix.start()` to begin rendering the digital human and enable audio/video streaming.
+
+4. **Interact in Real Time**  
+   - Use `duix.speak()` or `duix.answer()` for text/audio-based responses.  
+   - Enable or disable speech recognition via `duix.openAsr()` / `duix.closeAsr()`.  
+   - Monitor lifecycle events such as `speakStart`, `speakEnd`, `asrData`, and `report`.
+
+5. **Handle User Actions & Network Events**  
+   - Respond to `error` or `report` events for network diagnostics.  
+   - Use `duix.break()` to interrupt speech or `duix.setVideoMuted()` to toggle playback.
+
+6. **Terminate the Session**  
+   - When done, call `duix.stop()` to gracefully release all WebRTC resources.  
+   - Optionally bind `duix.stop()` to `window.beforeunload` for page refresh or close.
+
+---
+
+## Best Practices
+
+- Always **register event listeners before** calling `duix.start()`.  
+- For browsers with autoplay restrictions, start muted (`muted: true`) and later unmute via `setVideoMuted(false)`.  
+- If using green-screen background removal (`wipeGreen: true`), ensure the input video uses a **pure green background** during session creation.  
+- To maintain performance, stop the session (`duix.stop()`) when inactive for long periods.
+
+---
+
+> **Tip:**  
+> Pair this diagram with the [Methods](/sdks/h5/methods) and [Events](/sdks/h5/events) sections  
+> to see both the functional flow and event sequence.

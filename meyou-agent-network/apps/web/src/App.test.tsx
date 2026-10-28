@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { useAppStore } from "./store";
 
@@ -196,5 +196,51 @@ describe("MeYou web experience", () => {
     fireEvent.click(view.getByRole("button", { name: "暂停任务" }));
     expect(await view.findByRole("button", { name: "恢复任务" })).toBeTruthy();
     expect(paused).toBe(true);
+  });
+  it("uses real dashboard counts and makes every pending item actionable", async () => {
+    useAppStore.getState().setLocale("zh-CN");
+    const dashboard = {
+      viewer: { id: "user-1", name: "林澄", plan: "free" },
+      agent: { id: "agent-1", name: "小遇", status: "confirm", completion: 60 },
+      attention: [
+        { id: "a", type: "handoff", title: "访客留言", detail: "请查看", time: "2026-10-26T09:00:00Z", href: "/app/customers?inquiry=a" },
+        { id: "b", type: "approval", title: "回复草稿", detail: "待确认", time: "2026-10-26T09:01:00Z", href: "/app/messages?conversation=b" }
+      ],
+      matches: [], missions: [{ id: "paused", prompt: "已暂停的寻找", active: false }],
+      usage: { agentReplies: 100, agentRepliesLimit: 80 }, customers: [], organizations: []
+    };
+    global.fetch = async input => new Response(JSON.stringify(String(input).includes("/dashboard") ? dashboard : {
+      user: { displayName: "林澄" }, agent: { modes: { personal: "confirm" } }
+    }), { status: 200 });
+    const view = render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={["/app"]}><App /></MemoryRouter>
+    </QueryClientProvider>);
+    expect(await view.findByText("2 件事，等你来决定。")).toBeTruthy();
+    expect(view.getByRole("link", { name: /访客留言/ })).toHaveAttribute("href", "/app/customers?inquiry=a");
+    expect(view.getByRole("link", { name: /回复草稿/ })).toHaveAttribute("href", "/app/messages?conversation=b");
+    expect(view.queryByText(/12 次沟通/)).toBeNull();
+    expect(view.queryByText("已暂停的寻找")).toBeNull();
+    expect(view.container.querySelector(".progress i")).toHaveStyle({ width: "100%" });
+  });
+
+  it("lets users retry failed data requests without reloading the page", async () => {
+    useAppStore.getState().setLocale("zh-CN");
+    let recovered = false;
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("/communities")) {
+        return new Response(JSON.stringify(recovered ? { communities: [] } : { error: "service_unavailable" }), { status: recovered ? 200 : 503 });
+      }
+      return new Response(JSON.stringify({}), { status: 200 });
+    });
+    global.fetch = fetchSpy;
+    const view = render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={["/app/communities"]}><App /></MemoryRouter>
+    </QueryClientProvider>);
+    const retry = await view.findByRole("button", { name: "重新加载" });
+    const before = fetchSpy.mock.calls.length;
+    recovered = true;
+    fireEvent.click(retry);
+    expect(await view.findByText("还没有加入社群")).toBeTruthy();
+    expect(fetchSpy.mock.calls.length).toBeGreaterThan(before);
   });
 });

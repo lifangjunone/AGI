@@ -1,0 +1,22 @@
+[
+  {
+    "file": "idle.png",
+    "state": "idle",
+    "size": "390x844",
+    "zoom": 1,
+    "animationWaitMs": 58,
+    "issues": [],
+    "lint": [
+      {
+        "rule": "eyebrow",
+        "label": "标题上方的眉标",
+        "count": 4,
+        "examples": [
+          "p.eyebrow「AVAILABLE 24/7」",
+          "p.eyebrow「BUILT FOR REAL TEAMS」",
+          "p.eyebrow「DEVELOPER」"
+        ]
+      }
+    ]
+  }
+]

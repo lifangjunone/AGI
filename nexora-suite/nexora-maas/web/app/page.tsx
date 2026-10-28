@@ -17,9 +17,43 @@ type Invocation = { id: string; route_id: string; model_id: string; status: stri
 type Summary = { active_providers: number; active_models: number; active_routes: number; calls: number; tokens: number; cost_usd: number; errors: number };
 type Dialog = "provider" | "model" | "route" | null;
 type DiscoveredModel = {id:string;name:string;owned_by?:string};
-type ChatMessage = { id: string; role: "user" | "assistant"; content: string; error?: boolean };
+type ChatMessage = { id: string; role: "user" | "assistant"; content: string; reasoning?: string; streaming?: boolean; error?: boolean };
 
 const apiBase = process.env.NEXT_PUBLIC_MAAS_API ?? "";
+
+function splitThinkBlock(value: string) {
+  const open = value.indexOf("<think>");
+  if (open < 0) return { answer: value, reasoning: "" };
+  const close = value.indexOf("</think>", open);
+  if (close < 0) return { answer: value.slice(0, open).trim(), reasoning: value.slice(open + 7).trim() };
+  return {
+    answer: `${value.slice(0, open)}${value.slice(close + 8)}`.trim(),
+    reasoning: value.slice(open + 7, close).trim()
+  };
+}
+
+function MarkdownView({ text }: { text: string }) {
+  const blocks = text.replace(/\r\n/g, "\n").split(/\n{2,}/);
+  return <div className="markdown-body">{blocks.map((block, index) => {
+    const value = block.trim();
+    if (!value) return null;
+    if (value.startsWith("```")) {
+      return <pre key={index}><code>{value.replace(/^```[a-zA-Z0-9_-]*\n?/, "").replace(/\n?```$/, "")}</code></pre>;
+    }
+    if (/^#{1,4}\s/.test(value)) {
+      const level = value.match(/^#+/)?.[0].length ?? 2;
+      const content = value.replace(/^#{1,4}\s*/, "");
+      return level <= 2 ? <h3 key={index}>{content}</h3> : <h4 key={index}>{content}</h4>;
+    }
+    if (value.split("\n").every(line => /^[-*]\s+/.test(line.trim()))) {
+      return <ul key={index}>{value.split("\n").map((line, itemIndex) => <li key={itemIndex}>{line.trim().replace(/^[-*]\s+/, "")}</li>)}</ul>;
+    }
+    if (value.split("\n").every(line => /^\d+[.)]\s+/.test(line.trim()))) {
+      return <ol key={index}>{value.split("\n").map((line, itemIndex) => <li key={itemIndex}>{line.trim().replace(/^\d+[.)]\s+/, "")}</li>)}</ol>;
+    }
+    return <p key={index}>{value}</p>;
+  })}</div>;
+}
 
 export default function Maas() {
   const [locale, setLocale] = useState<Locale>("zh-CN");
@@ -86,9 +120,8 @@ export default function Maas() {
       ]);
       setProviders(p.items ?? []); setModels(m.items ?? []); setRoutes(r.items ?? []);
       setInvocations(i.items ?? []); setSummary(s);
-      if (!selectedRoute && r.items?.[0]) setSelectedRoute(r.items[0].alias);
+      if (r.items?.[0]) setSelectedRoute(current => current || r.items[0].alias);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Load failed"); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -202,10 +235,28 @@ export default function Maas() {
       setNotice(msg(`连接正常，延迟 ${result.latency_ms} ms。`, `Connection healthy, ${result.latency_ms} ms.`));
     } catch (error) { setNotice(error instanceof Error ? error.message : "Connection failed"); }
   }
-  function openProviderPlayground(item: Provider) {
+  function routeAliasForModel(item: Model) {
+    const base = `test-${item.upstream_model || item.name}`.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 42) || "test-model";
+    if (!routes.some(route => route.alias === base)) return base;
+    for (let index = 2; index < 100; index++) {
+      const alias = `${base}-${index}`;
+      if (!routes.some(route => route.alias === alias)) return alias;
+    }
+    return `${base}-${Date.now().toString(36)}`;
+  }
+  async function openProviderPlayground(item: Provider) {
     const providerModels = models.filter(model => model.provider_id === item.id && model.status === "active");
-    const route = routes.find(candidate => candidate.enabled && providerModels.some(model => model.id === candidate.model_id));
+    const route = routes.find(candidate => providerModels.some(model => model.id === candidate.model_id));
     if (route) {
+      if (!route.enabled) {
+        try {
+          await request(`/api/v1/routes/${route.id}`, { method: "PATCH", body: JSON.stringify({ enabled: true }) });
+        } catch (error) {
+          setNotice(error instanceof Error ? error.message : "Route enable failed");
+          return;
+        }
+      }
+      await load();
       setSelectedRoute(route.alias);
       setPrompt(msg("请用三句话介绍你自己的能力，并说明你当前是通过 Nexora MaaS 哪条模型路由被调用的。", "In three sentences, introduce your capabilities and explain that you are being invoked through a Nexora MaaS model route."));
       setMessages([]);
@@ -214,8 +265,28 @@ export default function Maas() {
       return;
     }
     if (providerModels.length) {
-      setNotice(msg("这个供应商已有模型，但还没有可用路由。请先为模型创建稳定调用别名，再进行问答测试。", "This provider has models but no enabled route. Create a stable model alias before live testing."));
-      setView("routes");
+      const model = providerModels[0];
+      const alias = routeAliasForModel(model);
+      setBusy(true);
+      try {
+        const created = await request("/api/v1/routes", { method: "POST", body: JSON.stringify({
+          name: msg(`测试调用 · ${model.name}`, `Test invocation · ${model.name}`),
+          alias,
+          model_id: model.id,
+          strategy: "primary"
+        }) });
+        const selectedAlias = created.alias ?? alias;
+        await load();
+        setSelectedRoute(selectedAlias);
+        setPrompt(msg("请用三句话介绍你自己的能力，并说明你当前是通过 Nexora MaaS 哪条模型路由被调用的。", "In three sentences, introduce your capabilities and explain that you are being invoked through a Nexora MaaS model route."));
+        setMessages([]);
+        setNotice(msg(`已自动创建测试路由 ${selectedAlias}，并进入调用测试。`, `Created test route ${selectedAlias} and opened Playground.`));
+        setView("playground");
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : "Create route failed");
+      } finally {
+        setBusy(false);
+      }
       return;
     }
     setNotice(msg("这个供应商还没有导入模型。请先发现并导入模型，再创建路由进行调用测试。", "This provider has no imported models. Discover and import models, then create a route for live testing."));
@@ -252,17 +323,81 @@ export default function Maas() {
     const question = prompt.trim();
     if (!selectedRoute || !question) return;
     setBusy(true); setNotice("");
-    setMessages(value => [...value, { id: `usr-${Date.now()}`, role: "user", content: question }]);
+    const assistantID = `asst-${Date.now()}`;
+    setMessages(value => [...value, { id: `usr-${Date.now()}`, role: "user", content: question }, { id: assistantID, role: "assistant", content: "", reasoning: "", streaming: true }]);
     setPrompt("");
     try {
-      const result = await request("/v1/chat/completions", { method: "POST", body: JSON.stringify({
-        model: selectedRoute, messages: [{ role: "user", content: question }], temperature: 0.3
+      const response = await fetch(`${apiBase}/v1/chat/completions`, { method: "POST", headers: headers(), body: JSON.stringify({
+        model: selectedRoute, messages: [{ role: "user", content: question }], temperature: 0.3, stream: true
       }) });
-      setMessages(value => [...value, { id: `asst-${Date.now()}`, role: "assistant", content: result.choices?.[0]?.message?.content ?? JSON.stringify(result, null, 2) }]);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error?.message ?? `Request failed (${response.status})`);
+      }
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "", answer = "", reasoning = "";
+      const updateAssistant = (streaming: boolean) => {
+        const parsed = splitThinkBlock(answer);
+        const displayReasoning = [reasoning, parsed.reasoning].filter(Boolean).join(reasoning && parsed.reasoning ? "\n" : "");
+        setMessages(value => value.map(item => item.id === assistantID ? { ...item, content: parsed.answer || answer, reasoning: displayReasoning, streaming } : item));
+      };
+      const appendFromJSON = (json: any) => {
+        const choice = json.choices?.[0] ?? {};
+        const delta = choice.delta ?? {};
+        const message = choice.message ?? {};
+        const reasonChunk = delta.reasoning_content ?? delta.reasoning ?? delta.reasoning_text ?? message.reasoning_content ?? message.reasoning ?? message.reasoning_text ?? "";
+        const contentChunk = delta.content ?? message.content ?? "";
+        if (reasonChunk) reasoning += Array.isArray(reasonChunk) ? reasonChunk.join("") : String(reasonChunk);
+        if (contentChunk) answer += Array.isArray(contentChunk) ? contentChunk.join("") : String(contentChunk);
+      };
+      if (!reader) throw new Error("Streaming response is unavailable");
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        if (!buffer.includes("\n") && buffer.trim().startsWith("{") && buffer.trim().endsWith("}")) {
+          try {
+            appendFromJSON(JSON.parse(buffer.trim()));
+            updateAssistant(true);
+            buffer = "";
+            continue;
+          } catch {
+            // Wait for more bytes.
+          }
+        }
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          const data = trimmed.startsWith("data:") ? trimmed.slice(5).trim() : trimmed;
+          if (!data || data === "[DONE]") continue;
+          try {
+            appendFromJSON(JSON.parse(data));
+            updateAssistant(true);
+          } catch {
+            // Ignore malformed streaming fragments from non-standard providers.
+          }
+        }
+      }
+      if (buffer.trim()) {
+        const data = buffer.trim().startsWith("data:") ? buffer.trim().slice(5).trim() : buffer.trim();
+        if (data && data !== "[DONE]") {
+          try {
+            appendFromJSON(JSON.parse(data));
+          } catch {
+            // Ignore trailing non-JSON bytes.
+          }
+        }
+      }
+      const parsed = splitThinkBlock(answer);
+      const displayReasoning = [reasoning, parsed.reasoning].filter(Boolean).join(reasoning && parsed.reasoning ? "\n" : "");
+      setMessages(value => value.map(item => item.id === assistantID ? { ...item, content: parsed.answer || answer || msg("模型没有返回可展示内容。", "The model returned no displayable content."), reasoning: displayReasoning, streaming: false } : item));
       await load();
     } catch (error) {
       const text = error instanceof Error ? error.message : "Invocation failed";
-      setMessages(value => [...value, { id: `err-${Date.now()}`, role: "assistant", content: text, error: true }]);
+      setMessages(value => value.map(item => item.id === assistantID ? { ...item, content: text, streaming: false, error: true } : item));
       setNotice(text);
     } finally { setBusy(false); }
   }
@@ -317,7 +452,7 @@ export default function Maas() {
       {view === "overview" && <Overview summary={summary} invocations={invocations} providers={providers} models={models} routes={routes} locale={locale} setView={setView} open={setDialog} />}
       {view === "providers" && <section className="workspace"><Toolbar search={search} setSearch={setSearch} placeholder={msg("搜索名称、类型或地址", "Search name, kind, or endpoint")} action={msg("接入供应商", "Connect provider")} onAction={() => openProviderDialog()} hideAction={!providers.length} />
         <div className="table"><div className="thead"><span>{msg("供应商", "Provider")}</span><span>{msg("接口地址", "Endpoint")}</span><span>{msg("凭据", "Credential")}</span><span>{msg("状态", "Status")}</span><span>{msg("操作", "Action")}</span></div>
-          {filteredProviders.length ? filteredProviders.map(item => <div className="trow" key={item.id}><span className="name-cell"><i>{item.name.slice(0, 1).toUpperCase()}</i><b>{item.name}<small>{item.kind} · {item.auth_type || "bearer"}</small></b></span><code>{item.base_url}</code><span>{item.key_hint || msg("无鉴权", "No auth")}</span><Status active={item.status === "active"} text={item.status} /><div className="row-actions"><button className="link" onClick={() => openProviderDialog(item)}><EditOutlined /> {msg("编辑", "Edit")}</button><button className="link" onClick={() => openModelDialog(item.id)}><SyncOutlined /> {msg("发现模型", "Discover")}</button><button className="link" onClick={() => void testProvider(item.id)}><ThunderboltOutlined /> {msg("连通性", "Connectivity")}</button><button className="link strong" onClick={() => openProviderPlayground(item)}><CodeOutlined /> {msg("调用测试", "Playground")}</button><button className="link" onClick={() => void toggleProvider(item)}>{item.status === "active" ? msg("停用", "Disable") : msg("启用", "Enable")}</button><button className="link danger" onClick={() => void deleteProvider(item)}><DeleteOutlined /> {msg("删除", "Delete")}</button></div></div>) : <Empty title={msg("还没有模型供应商", "No providers connected")} text={msg("接入 OpenAI、Claude、Gemini、DeepSeek 或任意 OpenAI-compatible 服务。", "Connect OpenAI, Claude, Gemini, DeepSeek, or any OpenAI-compatible endpoint.")} action={msg("接入第一个供应商", "Connect first provider")} onAction={() => openProviderDialog()} />}</div>
+          {filteredProviders.length ? filteredProviders.map(item => <div className="trow" key={item.id}><span className="name-cell"><i>{item.name.slice(0, 1).toUpperCase()}</i><b>{item.name}<small>{item.kind} · {item.auth_type || "bearer"}</small></b></span><code>{item.base_url}</code><span>{item.key_hint || msg("无鉴权", "No auth")}</span><Status active={item.status === "active"} text={item.status} /><div className="row-actions"><button className="link" onClick={() => openProviderDialog(item)}><EditOutlined /> {msg("编辑", "Edit")}</button><button className="link" onClick={() => openModelDialog(item.id)}><SyncOutlined /> {msg("发现模型", "Discover")}</button><button className="link" onClick={() => void testProvider(item.id)}><ThunderboltOutlined /> {msg("连通性", "Connectivity")}</button><button className="link strong" disabled={busy} onClick={() => void openProviderPlayground(item)}><CodeOutlined /> {msg("调用测试", "Playground")}</button><button className="link" onClick={() => void toggleProvider(item)}>{item.status === "active" ? msg("停用", "Disable") : msg("启用", "Enable")}</button><button className="link danger" onClick={() => void deleteProvider(item)}><DeleteOutlined /> {msg("删除", "Delete")}</button></div></div>) : <Empty title={msg("还没有模型供应商", "No providers connected")} text={msg("接入 OpenAI、Claude、Gemini、DeepSeek 或任意 OpenAI-compatible 服务。", "Connect OpenAI, Claude, Gemini, DeepSeek, or any OpenAI-compatible endpoint.")} action={msg("接入第一个供应商", "Connect first provider")} onAction={() => openProviderDialog()} />}</div>
       </section>}
       {view === "models" && <section className="workspace"><Toolbar search={search} setSearch={setSearch} placeholder={msg("搜索模型名称或上游 ID", "Search model or upstream ID")} action={msg("发现/添加模型", "Discover/Add model")} onAction={() => openModelDialog()} disabled={!providers.length} hideAction={!models.length} />
         <div className="model-grid">{filteredModels.length ? filteredModels.map(item => <article className="model-card" key={item.id}><header><span className="model-symbol">AI</span><Status active={item.status === "active"} text={item.status} /></header><h3>{item.name}</h3><p>{item.upstream_model}</p><dl><div><dt>{msg("供应商", "Provider")}</dt><dd>{providerName(item.provider_id)}</dd></div><div><dt>{msg("上下文", "Context")}</dt><dd>{item.context_window ? `${Math.round(item.context_window / 1000)}K` : "—"}</dd></div><div><dt>{msg("输入价格", "Input price")}</dt><dd>${item.input_price_per_mtok}/M</dd></div><div><dt>{msg("输出价格", "Output price")}</dt><dd>${item.output_price_per_mtok}/M</dd></div></dl><button className="button full" onClick={() => void toggleModel(item)}>{item.status === "active" ? msg("停用模型", "Disable model") : msg("启用模型", "Enable model")}</button></article>) : <Empty title={msg("模型目录为空", "Model catalog is empty")} text={providers.length ? msg("添加供应商提供的模型，配置上下文窗口与计价。", "Add a provider model with context and pricing.") : msg("需要先接入模型供应商。", "Connect a provider first.")} action={providers.length ? msg("发现/添加模型", "Discover/Add model") : msg("接入供应商", "Connect provider")} onAction={() => providers.length ? openModelDialog() : openProviderDialog()} />}</div>
@@ -325,7 +460,7 @@ export default function Maas() {
       {view === "routes" && <section className="workspace"><div className="section-head"><div><h2>{msg("稳定别名与上游模型解耦", "Decouple stable aliases from upstream models")}</h2><p>{msg("Agent 只调用稳定别名；切换供应商或模型时无需修改 Agent。", "Agents call stable aliases, so upstream changes require no agent changes.")}</p></div>{routes.length > 0 && <button className="button primary" disabled={!models.length} onClick={() => setDialog("route")}><PlusOutlined /> {msg("创建路由", "Create route")}</button>}</div>
         <div className="route-list">{routes.length ? routes.map(item => <article key={item.id}><span className="route-icon"><ApiOutlined /></span><div><strong>{item.name}</strong><code>{item.alias}</code></div><span className="arrow">→</span><div><small>{msg("当前模型", "Current model")}</small><b>{modelName(item.model_id)}</b></div><Status active={item.enabled} text={item.enabled ? "active" : "disabled"} /><button className="switch" aria-pressed={item.enabled} onClick={() => void toggleRoute(item)}><i /></button></article>) : <Empty title={msg("还没有模型路由", "No model routes")} text={models.length ? msg("创建一个稳定调用别名并绑定模型。", "Create a stable alias and bind it to a model.") : msg("添加模型后才能创建路由。", "Add a model before creating a route.")} action={models.length ? msg("创建路由", "Create route") : msg("添加模型", "Add model")} onAction={() => models.length ? setDialog("route") : providers.length ? openModelDialog() : openProviderDialog()} />}</div>
       </section>}
-      {view === "playground" && <section className="playground"><div className="playground-config"><h2>{msg("调用配置", "Invocation")}</h2><label>{msg("模型路由", "Model route")}<select value={selectedRoute} onChange={e => setSelectedRoute(e.target.value)}><option value="">{msg("选择可用路由", "Choose a route")}</option>{routes.filter(x => x.enabled).map(x => <option key={x.id} value={x.alias}>{x.alias} · {modelName(x.model_id)}</option>)}</select></label><label>Temperature<input type="range" min="0" max="1" step=".1" defaultValue=".3" /></label><div className="endpoint"><small>OpenAI-compatible API</small><code>POST /v1/chat/completions</code></div></div><div className="playground-chat"><header><div><span className="live-dot" /><strong>{msg("真实模型调用测试", "Live model invocation")}</strong></div><button className="button" onClick={() => setMessages([])}>{msg("清空", "Clear")}</button></header><div className="conversation" ref={conversationRef}>{messages.length ? <div className="message-stack">{messages.map(item => <div className={`chat-message ${item.role}${item.error ? " error" : ""}`} key={item.id}><span>{item.role === "user" ? "你" : "M"}</span><p>{item.content}</p></div>)}{busy && <div className="chat-message assistant pending"><span>M</span><p>{msg("模型正在返回…", "Model is responding…")}</p></div>}</div> : <div className="playground-empty"><ApiOutlined /><strong>{msg("验证路由、凭据与模型响应", "Verify routing, credentials, and model response")}</strong><p>{msg("请求会真实发送到当前路由绑定的供应商，不使用模拟回答。", "Requests are sent to the selected provider; no response is simulated.")}</p></div>}</div><div className="composer"><textarea value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void invoke(); }} aria-label={msg("测试提示词", "Test prompt")} placeholder={msg("输入问题，Ctrl/⌘ + Enter 发送", "Ask a question, Ctrl/⌘ + Enter to send")} /><button disabled={busy || !selectedRoute || !prompt.trim()} onClick={() => void invoke()}>{busy ? "…" : "↑"}</button></div></div></section>}
+      {view === "playground" && <section className="playground"><div className="playground-config"><h2>{msg("调用配置", "Invocation")}</h2><label>{msg("模型路由", "Model route")}<select value={selectedRoute} onChange={e => setSelectedRoute(e.target.value)}><option value="">{msg("选择可用路由", "Choose a route")}</option>{routes.filter(x => x.enabled).map(x => <option key={x.id} value={x.alias}>{x.alias} · {modelName(x.model_id)}</option>)}</select></label><label>Temperature<input type="range" min="0" max="1" step=".1" defaultValue=".3" /></label><div className="endpoint"><small>OpenAI-compatible API</small><code>POST /v1/chat/completions</code></div></div><div className="playground-chat"><header><div><span className="live-dot" /><strong>{msg("流式模型调试", "Streaming model debug")}</strong><small>{msg("Reason 和 Content 按实际返回动态出现", "Reason and Content appear only when returned")}</small></div><button className="button" onClick={() => setMessages([])}>{msg("清空", "Clear")}</button></header><div className="conversation" ref={conversationRef}>{messages.length ? <div className="message-stack">{messages.map(item => item.role === "user" ? <div className="debug-question" key={item.id}><small>{msg("用户输入", "User input")}</small><MarkdownView text={item.content} /></div> : <div className={`debug-output${item.error ? " error" : ""}${!item.reasoning && !item.content ? " waiting" : ""}`} key={item.id}><div className="debug-output-head"><span>M</span><div><strong>{item.streaming ? msg("正在流式生成", "Streaming") : item.error ? msg("调用失败", "Invocation failed") : msg("模型输出", "Model output")}</strong><small>{selectedRoute || "—"}</small></div></div>{!item.reasoning && !item.content && item.streaming && <div className="stream-waiting"><i /><span>{msg("正在等待模型返回首个片段…", "Waiting for the first model token…")}</span></div>}{item.reasoning && <section className="reasoning-panel"><header><b>Reason</b><small>{msg("模型返回的推理/思考内容", "Reasoning returned by the model")}</small></header><MarkdownView text={item.reasoning} /></section>}{item.content && <section className="final-panel"><header><b>Content</b>{item.streaming && <i>{msg("流式输出中", "Streaming")}</i>}</header><MarkdownView text={item.content} /></section>}{!item.streaming && !item.error && !item.reasoning && !item.content && <div className="empty-response">{msg("模型没有返回可展示内容。", "The model returned no displayable content.")}</div>}</div>)}</div> : <div className="playground-empty"><ApiOutlined /><strong>{msg("验证路由、凭据与模型响应", "Verify routing, credentials, and model response")}</strong><p>{msg("请求会真实发送到当前路由绑定的供应商。Reason 与 Content 只在收到实际内容后出现。", "Requests are sent to the selected provider. Reason and Content appear only after actual content arrives.")}</p></div>}</div><div className="composer"><textarea value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void invoke(); }} aria-label={msg("测试提示词", "Test prompt")} placeholder={msg("输入问题，Ctrl/⌘ + Enter 发送", "Ask a question, Ctrl/⌘ + Enter to send")} /><button disabled={busy || !selectedRoute || !prompt.trim()} onClick={() => void invoke()}>{busy ? "…" : "↑"}</button></div></div></section>}
       {view === "usage" && <section className="workspace"><div className="metric-strip"><Metric label={msg("累计调用", "Calls")} value={summary.calls.toLocaleString()} /><Metric label="Tokens" value={summary.tokens.toLocaleString()} /><Metric label={msg("估算成本", "Estimated cost")} value={`$${summary.cost_usd.toFixed(4)}`} /><Metric label={msg("失败调用", "Failed")} value={summary.errors.toLocaleString()} /></div><div className="table usage-table"><div className="thead"><span>{msg("时间", "Time")}</span><span>{msg("请求 ID", "Request ID")}</span><span>{msg("模型", "Model")}</span><span>{msg("延迟", "Latency")}</span><span>Tokens</span><span>{msg("成本", "Cost")}</span><span>{msg("状态", "Status")}</span></div>{invocations.length ? invocations.map(item => <div className="trow" key={item.id}><time>{new Date(item.created_at).toLocaleString(locale)}</time><code>{item.request_id}</code><span>{modelName(item.model_id)}</span><span>{item.latency_ms} ms</span><span>{item.input_tokens + item.output_tokens}</span><span>${item.cost_usd.toFixed(5)}</span><Status active={item.status === "success"} text={item.status} /></div>) : <Empty title={msg("暂无调用记录", "No invocations yet")} text={msg("在调用测试中发起真实请求后，这里会展示用量、延迟与成本。", "Live requests will appear here with usage, latency, and cost.")} action={msg("前往调用测试", "Open playground")} onAction={() => setView("playground")} />}</div></section>}
     </main>
     {dialog && <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && closeDialog()}><form className="modal" onSubmit={submit}><header><div><small>NEXORA MAAS</small><h2>{dialog === "provider" ? editingProvider ? msg("编辑模型供应商", "Edit provider") : msg("接入模型供应商", "Connect provider") : dialog === "model" ? msg("发现并导入模型", "Discover and import models") : msg("创建模型路由", "Create route")}</h2></div><button type="button" aria-label={msg("关闭", "Close")} onClick={closeDialog}>×</button></header>

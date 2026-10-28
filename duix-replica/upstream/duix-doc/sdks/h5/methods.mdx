@@ -1,0 +1,225 @@
+---
+title: 'Methods'
+description: 'Full list of available methods in the Duix H5 SDK, including initialization, playback control, speech interaction, ASR, and session management.'
+---
+
+## Overview
+
+The Duix SDK exposes a set of core methods for initializing, controlling, and interacting with the real-time digital human.
+All asynchronous methods return a **Promise** resolving to `{ err, data }`.
+
+---
+
+### `init(options: object): Promise`
+
+Initializes the SDK with configuration parameters and prepares the rendering environment.
+
+```js
+duix.init({
+  sign: '',
+  containerLable: '.remote-container',
+  conversationId: '',
+  platform: 'duix.com'
+});
+```
+
+***Parameters***
+
+| Name| Type |Required | Description |
+| :-----------------| :-------------- | :------ | :----------------------------------------------------------- |
+| containerLable   | string   |  Yes |  Container selector. The digital human will be rendered in this DOM. |
+| sign | string   |   Yes    |  Authentication signature. [How to get sign?](/api-reference) |
+| conversationId| string | Yes | Platform conversation ID |
+| platform| string | Yes | Platform domain, use duix.com |
+
+#### start(options: object): Promise
+
+Begins rendering the digital human and starts the real-time interaction.
+> **Note:** Always call `start()` after the `initialSuccess` event to ensure all resources are ready:
+>
+> ```js
+> duix.on('initialSuccess', () => {
+>   duix.start({
+>     muted: true,
+>     wipeGreen: false,
+>   }).then(res => {
+>     console.log('Session started:', res);
+>   });
+> });
+> ```
+
+***Parameters***
+
+| key         | Type    | Required | Default | Description |
+| ----------- | ------- | ---- | ------ | ----------- |
+| muted       | boolean | No   | false  | Start video muted. Due to [autoplay policy](https://developer.mozilla.org/en-US/docs/Web/Media/Autoplay_guide) restrictions, if the user hasn’t clicked anywhere yet, set this to `true` or playback may fail. You can unmute later via `duix.setVideoMuted(false)` |
+| openAsr     | boolean | No   | false  | Enable real-time recognition immediately (equivalent to calling `openAsr` after `start`) |
+| wipeGreen   | boolean | No   | false  | Enable green screen removal. Requires a pure green background when creating the session |
+| userId   | number | No   |  | Unique user identifier |
+| vadSilenceTime   | number | No   | 800 | ASR silence timeout (ms) |
+| enableLLM   | number | No   | 1 | Enable LLM auto-replies (0 = off, 1 = on) |
+
+
+#### setVideoMuted(flag: boolean)
+
+Toggles video playback mute state.
+`true` = muted, `false` = unmuted.
+
+#### break()
+
+Immediately interrupts the current speech or response playback.
+
+#### speak(options: object): Promise
+
+Drives the digital human to speak using text or an audio URL.
+
+```javascript
+duix.speak({content: '', audio: 'https://your.website.com/xxx/x.wav'})
+```
+
+***Parameters***
+
+| Name| Type |Required | Description |
+| :-----------------| :-------------- | :------ | :----------------------------------------------------------- |
+| content   | string   |  Yes |  Text to speak |
+| audio | string   |   No    |  Audio URL to play. Can also use getAnswer() to obtain platform-configured responses. |
+| interrupt | boolean   |   No    |  If true, interrupts any ongoing speech before playback.|
+
+#### answer(options: object): Promise
+
+Asks a question and drives the digital human to respond with speech.
+
+```javascript
+duix.answer({question: 'xxx'})
+```
+
+***Parameters***
+
+| Name| Type |Required | Description |
+| :-----------------| :-------------- | :------ | :----------------------------------------------------------- |
+| question   | string   |  Yes |  Question text |
+| interrupt | boolean   |   No    |  If true, interrupts previous speech before answering. |
+
+#### getAnswer(options: object): Promise
+
+Fetches a platform-generated response to a question without directly playing it.
+
+```javascript
+duix.getAnswer({ question: 'what is your name?' })
+```
+
+***Parameters***
+
+| Name| Type |Required | Description |
+| :-----------------| :-------------- | :------ | :----------------------------------------------------------- |
+| question   | string   |  Yes |  Question text |
+| userId   | number   |  No |  Unique business user ID. If provided, the answer will enable memory |
+
+
+***Return data***
+
+| Name| Type | Description |
+| :-----------------| :-------------- | :----------------------------------------------------------- |
+| answer   | string   | Answer text |
+| audio | string   | Answer audio URL |
+
+#### startRecord(): Promise
+
+Start recording.
+```js
+await duix.startRecord();
+```
+
+#### stopRecord(): Promise
+
+Stops recording and returns a Promise resolving with the speech recognition result.
+```js
+const result = await duix.stopRecord();
+console.log('Recognized text:', result);
+```
+#### openAsr(): Promise
+
+Enables real-time automatic speech recognition (ASR).
+Should be called after the show event.
+```js
+duix.openAsr();
+```
+
+#### closeAsr(): Promise
+
+Disables real-time speech recognition.
+```js
+duix.closeAsr();
+```
+
+#### createCamera():Promise
+
+Turn on the camera.
+```js
+duix.createCamera();
+```
+
+#### destroyCamera():Promise
+
+Turn off the camera and release occupied resources.
+```js
+duix.destroyCamera();
+```
+
+#### stop()
+
+Terminates the current session and releases all resources.
+Call this during page unload or refresh to avoid lingering RTC connections.
+
+```js
+window.addEventListener('beforeunload', () => {
+  if (duix) duix.stop();
+});
+
+```
+
+#### getLocalStream()
+
+Returns the local audio stream (useful for visualizations or waveform analysis).
+```js
+const stream = duix.getLocalStream();
+```
+#### getRemoteStream()
+
+Returns the remote audio and video stream (for custom rendering or media processing).
+```js
+const remote = duix.getRemoteStream();
+```
+#### resume()
+
+Resumes playback.
+Useful for mobile browsers that may block autoplay even after user interaction.
+Call this in response to error code 4009.
+```js
+duix.resume();
+```
+#### on(eventName, callback)
+
+Registers an event listener for SDK events.
+```js
+duix.on('speakStart', (data) => {
+  console.log('Speech started:', data.content);
+});
+```
+##### Parameters
+| Name| Type | Description |
+| :-----------------| :-------------- | :----------------------------------------------------------- |
+| eventName   | string   | Name of the event to listen for. See the table below.|
+| callback | function   | Callback function invoked with event data. |
+
+
+## Return format
+All Promise-based methods resolve to a unified object format:
+```json
+{
+  "err": null,
+  "data": {}
+}
+```
+If err is non-null, the call failed.
+Use console.error(err) for diagnostic details.

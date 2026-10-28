@@ -166,6 +166,7 @@ function snapshotData() {
     "last-run.json",
     "last-worker.json",
     "orders.json",
+    "owner-action-tasks.json",
     "outbox.json",
     "recovery-outbox.json",
     "publish.json",
@@ -7274,6 +7275,142 @@ test("mobile admin confirms a unique-amount WeChat checkout and buyer unlocks au
     else process.env.ADMIN_MOBILE_PASSWORD = previousMobilePassword;
     if (previousPaymentSource === undefined) delete process.env.REQUIRE_AUTHORITATIVE_PAYMENT_SOURCE;
     else process.env.REQUIRE_AUTHORITATIVE_PAYMENT_SOURCE = previousPaymentSource;
+    restore();
+  }
+});
+
+test("mobile admin receives a protected Xiaohongshu login QR and confirms owner action", async () => {
+  const restore = snapshotData();
+  const previousSecret = process.env.ADMIN_API_SECRET;
+  const previousMobilePassword = process.env.ADMIN_MOBILE_PASSWORD;
+  process.env.ADMIN_API_SECRET = "xiaohongshu-publisher-admin-secret";
+  process.env.ADMIN_MOBILE_PASSWORD = "phone-only-password";
+  const server = http.createServer(handler);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const anonymous = await request(server, "/api/admin-mobile/action-tasks");
+    assert.equal(anonymous.status, 401);
+
+    const qr = `data:image/png;base64,${Buffer.from("fake-png-for-route-test").toString("base64")}`;
+    const created = await request(server, "/api/admin/action-tasks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Secret": "xiaohongshu-publisher-admin-secret",
+      },
+      body: JSON.stringify({
+        type: "xiaohongshu-login",
+        idempotencyKey: "xiaohongshu-login:session-1",
+        qrImage: qr,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      }),
+    });
+    assert.equal(created.status, 201);
+    const createdBody = JSON.parse(created.body.toString("utf8"));
+    assert.equal(createdBody.task.status, "pending");
+    assert.match(createdBody.task.qrImageUrl, /\/action-tasks\/.+\/qr$/);
+
+    const duplicate = await request(server, "/api/admin/action-tasks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Secret": "xiaohongshu-publisher-admin-secret",
+      },
+      body: JSON.stringify({
+        type: "xiaohongshu-login",
+        idempotencyKey: "xiaohongshu-login:session-1",
+        qrImage: qr,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      }),
+    });
+    assert.equal(duplicate.status, 200);
+    assert.equal(JSON.parse(duplicate.body.toString("utf8")).duplicate, true);
+
+    const login = await request(server, "/api/admin-mobile/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-Proto": "https" },
+      body: JSON.stringify({ password: "phone-only-password" }),
+    });
+    const cookie = login.headers["set-cookie"][0].split(";")[0];
+    const tasks = await request(server, "/api/admin-mobile/action-tasks", { headers: { Cookie: cookie } });
+    assert.equal(tasks.status, 200);
+    const tasksBody = JSON.parse(tasks.body.toString("utf8"));
+    assert.equal(tasksBody.summary.pending, 1);
+
+    const qrAnonymous = await request(server, createdBody.task.qrImageUrl.replace("..", ""));
+    assert.equal(qrAnonymous.status, 401);
+    const qrProtected = await request(server, createdBody.task.qrImageUrl.replace("..", ""), {
+      headers: { Cookie: cookie },
+    });
+    assert.equal(qrProtected.status, 200);
+    assert.equal(qrProtected.headers["content-type"], "image/png");
+
+    const confirmed = await request(server, `/api/admin-mobile/action-tasks/${createdBody.task.id}/confirm`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: "{}",
+    });
+    assert.equal(confirmed.status, 200);
+    assert.equal(JSON.parse(confirmed.body.toString("utf8")).task.status, "owner-confirmed");
+
+    const publisherLookup = await request(server, `/api/admin/action-tasks/${createdBody.task.id}`, {
+      headers: { "X-Admin-Secret": "xiaohongshu-publisher-admin-secret" },
+    });
+    assert.equal(publisherLookup.status, 200);
+    assert.equal(JSON.parse(publisherLookup.body.toString("utf8")).task.status, "owner-confirmed");
+
+    const completed = await request(server, `/api/admin/action-tasks/${createdBody.task.id}/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Secret": "xiaohongshu-publisher-admin-secret",
+      },
+      body: "{}",
+    });
+    assert.equal(completed.status, 200);
+    assert.equal(JSON.parse(completed.body.toString("utf8")).task.status, "completed");
+
+    const completedAgain = await request(server, `/api/admin/action-tasks/${createdBody.task.id}/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Secret": "xiaohongshu-publisher-admin-secret",
+      },
+      body: "{}",
+    });
+    assert.equal(completedAgain.status, 200);
+    assert.equal(JSON.parse(completedAgain.body.toString("utf8")).duplicate, true);
+
+    const secondCreated = await request(server, "/api/admin/action-tasks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Secret": "xiaohongshu-publisher-admin-secret",
+      },
+      body: JSON.stringify({
+        type: "xiaohongshu-login",
+        idempotencyKey: "xiaohongshu-login:session-2",
+        qrImage: qr,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      }),
+    });
+    const secondBody = JSON.parse(secondCreated.body.toString("utf8"));
+    const platformVerified = await request(server, `/api/admin/action-tasks/${secondBody.task.id}/complete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Admin-Secret": "xiaohongshu-publisher-admin-secret",
+      },
+      body: "{}",
+    });
+    assert.equal(platformVerified.status, 200);
+    assert.equal(JSON.parse(platformVerified.body.toString("utf8")).task.status, "completed");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    if (previousSecret === undefined) delete process.env.ADMIN_API_SECRET;
+    else process.env.ADMIN_API_SECRET = previousSecret;
+    if (previousMobilePassword === undefined) delete process.env.ADMIN_MOBILE_PASSWORD;
+    else process.env.ADMIN_MOBILE_PASSWORD = previousMobilePassword;
     restore();
   }
 });

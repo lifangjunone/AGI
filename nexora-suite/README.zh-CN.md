@@ -4,7 +4,7 @@
 
 **开发智能体，统一纳管每一个智能体，并让它们运行在同一个可信底座之上。**
 
-Nexora 星原是一套企业级 AI 产品体系，由四个定位清晰、可独立构建和部署的产品组成：统一企业底座、MaaS 模型服务平台、智能体开发平台和智能体统一纳管平台。
+Nexora 星原是一套企业级 AI 产品体系，由五个定位清晰、可独立构建和部署的产品组成：统一企业底座、MaaS 模型服务平台、智能体开发平台、Agent Runtime 执行平台和智能体统一纳管平台。
 
 ## 产品愿景
 
@@ -17,13 +17,14 @@ Nexora 的愿景是让企业中的每一个 Agent 都能：
 - **全程可见、可治理**：覆盖注册、发布、调用、观测和退役全生命周期。
 - **开放兼容**：自研 Agent 与第三方平台 Agent 可以统一共存，避免平台锁定。
 
-## Nexora 四大产品
+## Nexora 五大产品
 
 | 产品 | 产品定位 | 主要用户 | 核心职责 |
 | --- | --- | --- | --- |
 | **Nexora Core · 星核** | 统一企业底座 | 平台管理员、安全团队、IT 团队 | 为上层产品提供统一身份、租户组织、权限、凭据、审计和国际化等公共能力。 |
 | **Nexora MaaS · 星模** | 统一模型服务平台 | AI 平台团队、模型运营团队、开发者 | 统一接入模型供应商，管理模型目录、凭据、稳定路由、用量成本和 OpenAI-compatible 调用。 |
 | **Nexora Studio · 星铸** | Agent 智能体开发平台 | Agent 开发者、AI 工程师、产品团队 | 提供可视化和代码双模式的 Agent 设计、调试、评测、版本管理与发布能力。 |
+| **Nexora Runtime · 星驰** | Agent Runtime 与执行平台 | 平台工程师、Runtime 运维团队、AI 基础设施团队 | 统一接入 Native、第三方、自定义及设备 Runtime，调度 Agent Loop 任务并记录动态执行轨迹。 |
 | **Nexora Control · 星域** | Agent 统一纳管平台 | Agent 管理员、安全团队、运维团队 | 在统一控制平面中注册、识别、治理、路由、观测和审计自研及外部 Agent。 |
 
 ### Nexora Core · 统一企业底座
@@ -74,16 +75,30 @@ Control 是企业所有 Agent 的统一控制平面。它既纳管 Studio 发布
 
 外部 Agent 无需迁移到 Studio 开发，也可以接入 Control 进行统一治理和观测。
 
+### Nexora Runtime · Agent 执行平台
+
+Runtime 独立负责敏态 Agent 如何执行，不属于 Studio 或 Control 的内部模块：
+
+- 管理租户隔离的 Runtime Profile、端点、凭据、健康、容量与部署位置。
+- 适配 Nexora Native Runtime、Hermes Agent、OpenClaw、QwenPaw、WorkBuddy、TRAE、DeepSeek Agent、Codex、Claude Agent SDK 和客户自研 Runtime。
+- 提供任务调度、超时、循环预算、权限档位、人工审批和任务历史。
+- 流式返回动态计划、推理、行动、观察、审批、回答与完成事件。
+- Native Runtime 作为可独立扩缩容的 Worker，使用与第三方 Runtime 相同的公开协议。
+
+Studio 只引用 Runtime Profile 并通过版本化接口提交任务；Control 负责 Agent 身份与治理策略，不负责调度或执行 Agent Loop。
+
 ## 购买与部署版本
 
-Core 是所有方案必选的公共底座，MaaS、Studio 与 Control 是互相独立的可选产品。客户可以只购买和部署自己需要的能力：
+Core 是所有方案必选的公共底座，MaaS、Studio、Runtime 与 Control 是互相独立的可选产品。客户可以只购买和部署自己需要的能力：
 
 | 商业版本 | 包含产品 | 适用客户 | 产品行为 |
 | --- | --- | --- | --- |
 | **Agent 开发版** | Core + Studio | 只需要开发和发布 Agent，不需要统一纳管的客户 | Studio 可完全独立运行；发布时生成不可变版本和 Manifest，不会尝试注册到 Control。 |
 | **Agent 治理版** | Core + Control | 已经拥有自研或第三方 Agent，只需要统一纳管的客户 | Control 通过 API 和 SDK 纳管外部 Agent；Studio 不会部署，也不会显示在 Core 门户中。 |
 | **模型服务版** | Core + MaaS | 只需要统一模型接入、路由、凭据、用量和成本，不需要 Agent 开发或纳管的客户 | MaaS 独立提供模型目录和 OpenAI-compatible 网关。 |
-| **完整 AI 平台版** | Core + MaaS + Studio + Control | 同时需要模型供给、Agent 开发和统一纳管的客户 | Studio 和企业 AI 应用使用 MaaS 路由，发布的 Agent 进入 Control 治理。 |
+| **Runtime 执行版** | Core + Runtime | 只需要接入和运行客户已有 Runtime、不需要 Studio 的客户 | Runtime 独立管理 Profile、适配器、健康、任务调度和执行轨迹。 |
+| **Agent 开发执行版** | Core + MaaS + Studio + Runtime | 需要开发 Workflow 与 Agent Loop，但不需要统一纳管的客户 | Studio 定义 Agent，Runtime 执行 Agent Loop，MaaS 提供模型。 |
+| **完整 AI 平台版** | Core + MaaS + Studio + Runtime + Control | 同时需要模型供给、Agent 开发、执行和统一纳管的客户 | Studio 定义 Agent，Runtime 执行敏态任务，发布物进入 Control 治理。 |
 
 产品权益由 Core 写入签名访问令牌，并由各产品 API 强制校验。Core 门户只展示客户已购买的产品；即使误部署了未授权产品，也无法获得其 API 使用权限。
 
@@ -105,7 +120,7 @@ Core 是所有方案必选的公共底座，MaaS、Studio 与 Control 是互相�
                                           外部/第三方 Agent
 ```
 
-四个产品均可独立构建、版本发布和部署，彼此不共享业务数据库，也不直接引用其他产品的源代码。跨产品协作只使用 [`contracts/`](contracts/) 下的版本化 OpenAPI、SDK 和事件协议。
+五个产品均可独立构建、版本发布和部署，彼此不共享业务数据库，也不直接引用其他产品的源代码。跨产品协作只使用 [`contracts/`](contracts/) 下的版本化 OpenAPI、SDK 和事件协议。
 
 ## 多语言国际化
 
@@ -129,6 +144,7 @@ nexora-suite/
 ├── nexora-core/       # 统一企业底座
 ├── nexora-maas/       # 统一模型服务平台
 ├── nexora-studio/     # Agent 智能体开发平台
+├── nexora-runtime/    # Agent Runtime 与执行平台
 ├── nexora-control/    # Agent 统一纳管平台
 ├── contracts/         # 版本化 API、事件和 SDK
 ├── deployments/       # 套件级本地与 Kubernetes 部署资源
@@ -152,9 +168,13 @@ docker compose --env-file deployments/editions/control.env \
 docker compose --env-file deployments/editions/maas.env \
   -f deployments/docker-compose.yml --profile maas up --build
 
-# 完整 AI 平台版：Core + MaaS + Studio + Control
+# Runtime 执行版：Core + Runtime
+docker compose --env-file deployments/editions/runtime.env \
+  -f deployments/docker-compose.yml --profile runtime up --build
+
+# 完整 AI 平台版
 docker compose --env-file deployments/editions/full.env \
-  -f deployments/docker-compose.yml --profile maas --profile studio --profile control up --build
+  -f deployments/docker-compose.yml --profile maas --profile studio --profile runtime --profile control up --build
 ```
 
 访问地址：
@@ -163,6 +183,7 @@ docker compose --env-file deployments/editions/full.env \
 - Nexora Studio：<http://localhost:3001>
 - Nexora Control：<http://localhost:3002>
 - Nexora MaaS：<http://localhost:3003>
+- Nexora Runtime：<http://localhost:3004>
 
 演示账号：
 

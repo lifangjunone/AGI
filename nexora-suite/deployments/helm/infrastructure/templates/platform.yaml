@@ -11,6 +11,7 @@ stringData:
   studio-database-url: {{ printf "postgres://nexora:%s@nexora-postgres:5432/nexora_studio?sslmode=disable" .Values.secrets.postgresPassword | quote }}
   control-database-url: {{ printf "postgres://nexora:%s@nexora-postgres:5432/nexora_control?sslmode=disable" .Values.secrets.postgresPassword | quote }}
   maas-database-url: {{ printf "postgres://nexora:%s@nexora-postgres:5432/nexora_maas?sslmode=disable" .Values.secrets.postgresPassword | quote }}
+  runtime-database-url: {{ printf "postgres://nexora:%s@nexora-postgres:5432/nexora_runtime?sslmode=disable" .Values.secrets.postgresPassword | quote }}
   minio-access-key: {{ .Values.minio.accessKey | quote }}
   minio-secret-key: {{ .Values.minio.secretKey | quote }}
 ---
@@ -24,6 +25,7 @@ data:
     CREATE DATABASE nexora_studio;
     CREATE DATABASE nexora_control;
     CREATE DATABASE nexora_maas;
+    CREATE DATABASE nexora_runtime;
   10-migrate.sql: |
     \connect nexora_core
     CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -98,6 +100,21 @@ data:
       name text NOT NULL, alias text NOT NULL, model_id uuid NOT NULL REFERENCES model_catalog(id),
       enabled boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(),
       updated_at timestamptz NOT NULL DEFAULT now(), UNIQUE (tenant_id, alias)
+    );
+    \connect nexora_runtime
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    CREATE TABLE IF NOT EXISTS runtime_profiles (
+      id text PRIMARY KEY, tenant_id text NOT NULL, name text NOT NULL,
+      adapter_id text NOT NULL, endpoint text NOT NULL, deployment_mode text NOT NULL,
+      permission_profile text NOT NULL, status text NOT NULL,
+      last_heartbeat_at timestamptz, created_at timestamptz NOT NULL DEFAULT now(),
+      updated_at timestamptz NOT NULL DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS runtime_tasks (
+      id text PRIMARY KEY, tenant_id text NOT NULL, agent_id text NOT NULL,
+      profile_id text NOT NULL, status text NOT NULL, input text NOT NULL,
+      model_route text, trace_id text NOT NULL, started_at timestamptz NOT NULL DEFAULT now(),
+      finished_at timestamptz, latency_ms bigint, error text
     );
 ---
 apiVersion: apps/v1

@@ -1,0 +1,142 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Duix APIs and SDKs",
+  "colors": {
+    "primary": "#934EEF",
+    "light": "#FFFFFF",
+    "dark": "#934EEF"
+  },
+  "favicon": "/favicon.png",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get started",
+            "pages": [
+              "documentation/introduction"
+            ]
+          },
+          {
+            "group": "Developer guide",
+            "pages": [
+              "documentation/get-conversation-id",
+              "documentation/get-your-api-keys",
+              "documentation/get-token"
+            ]
+          },
+          {
+            "group": "Next step",
+            "pages": [
+              "documentation/api-reference",
+              "documentation/sdk",
+              "documentation/sdk-demo"
+            ]
+          },
+          {
+            "group": "Duix Skills",
+            "pages": [
+              "documentation/duix-avatar-video-generation",
+              "documentation/duix-avatar-conversation"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "API reference",
+            "pages": [
+              "api-reference/real-time-concurrency",
+              "api-reference/real-time-sessions",
+              "api-reference/close-all-sessions",
+              "api-reference/close-session",
+              "api-reference/get-conversation-details",
+              "api-reference/create-avatar",
+              "api-reference/query-creation",
+              "api-reference/query-account"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "SDKs",
+        "groups": [
+          {
+            "group": "JavaScript SDK",
+            "pages": [
+              "sdks/h5/quickstart",
+              "sdks/h5/process",
+              "sdks/h5/methods",
+              "sdks/h5/events",
+              "sdks/h5/code",
+              "sdks/h5/questions"
+            ]
+          },
+          {
+            "group": "Android SDK",
+            "pages": [
+              "sdks/android/download",
+              "sdks/android/dependent",
+              "sdks/android/proguard",
+              "sdks/android/quickstart",
+              "sdks/android/interface",
+              "sdks/android/be-careful"
+            ]
+          },
+          {
+            "group": "iOS SDK",
+            "pages": [
+              "sdks/ios/download",
+              "sdks/ios/sdk-reference",
+              "sdks/ios/quickstart",
+              "sdks/ios/interface",
+              "sdks/ios/example",
+              "sdks/ios/error"
+            ]
+          },
+          {
+            "group": "Changelog",
+            "pages": [
+              "sdks/versions"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Skills",
+        "href": "https://github.com/duixcom/duix-skills"
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light-logo.svg",
+    "dark": "/logo/dark-logo.svg",
+    "href": "https://docs.duix.com"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:support@duix.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Back to Duix",
+      "href": "https://www.duix.com"
+    }
+  },
+  "footer": {
+    "socials": {
+      "discord": "https://discord.gg/G3ydNmC4TR",
+      "youtube": "https://www.youtube.com/@Duix_official",
+      "linkedin": "https://www.linkedin.com/company/duixavatar",
+      "x": "https://x.com/Duix_official",
+      "github": "https://github.com/duixcom"
+    }
+  }
+}

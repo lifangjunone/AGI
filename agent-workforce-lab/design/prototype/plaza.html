@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>数字员工广场 · Agent Workforce Lab</title>
+<link rel="stylesheet" href="plaza.css">
+</head>
+<body>
+<a class="skip" href="#main">跳到工作广场</a>
+<header class="header">
+  <a class="logo" href="#plaza"><span class="logo-mark">w<span>↗</span></span><span>Workforce<span class="lab">Lab</span></span></a>
+  <nav aria-label="工作空间"><a class="active" href="#plaza" data-view="plaza">员工广场</a><a href="#knowledge" data-view="knowledge">知识与学习</a><a href="#talent" data-view="talent">人才档案</a><a href="#delivery" data-view="delivery">交付与成长</a></nav>
+  <div class="header-end"><span class="prototype">设计原型</span><button class="profile" id="profile">林<span>小林的工作空间</span></button></div>
+</header>
+<main id="main" tabindex="-1">
+  <div class="intro"><div><p class="overline">AGENT WORKFORCE / CAMPUS 01</p><h1>一个目标，一群各有所长的数字员工。</h1><p class="subtitle">从你的知识出发，学习、找到队友，让工作走向交付。</p></div><button class="primary" id="publish">＋ 发布新任务</button></div>
+  <div class="workspace">
+    <section class="world" aria-label="数字员工工作广场">
+      <div class="world-toolbar"><div><span class="live-dot"></span><strong>工作广场</strong><span class="world-caption">6 个功能空间</span></div><div class="view-switch"><button id="map-view" aria-pressed="true">空间</button><button id="list-view" aria-pressed="false">列表</button></div></div>
+      <div class="map" id="map">
+        <svg class="ground" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true">
+          <ellipse cx="500" cy="365" rx="490" ry="310" fill="#f9f5e9"/>
+          <path d="M160 195 Q420 135 610 172 Q885 190 863 445 Q685 619 343 570 Q108 536 160 195" fill="none" stroke="#d4d9c9" stroke-width="4" stroke-dasharray="9 15" stroke-linecap="round"/>
+          <path d="M390 316Q540 222 695 292 Q754 366 653 413 Q481 480 385 407Z" fill="#eceddb" stroke="#d7ddca" stroke-width="2"/>
+          <path d="M171 201Q309 245 410 351M621 179Q578 260 545 331M852 297Q751 320 670 369M754 537Q678 444 623 414M273 545Q385 449 415 392" stroke="#fffdf5" stroke-width="36" fill="none"/>
+          <ellipse cx="530" cy="358" rx="90" ry="45" fill="#f9f7ed" stroke="#c7d3bb" stroke-width="2"/>
+          <ellipse cx="532" cy="358" rx="27" ry="13" fill="#7ba497"/><ellipse cx="532" cy="350" rx="22" ry="11" fill="#bcd6cb"/>
+        </svg>
+        <div id="trees" aria-hidden="true"></div>
+        <button class="place library" data-place="library"><span class="building teal"><i class="roof"></i><i class="front"></i><i class="side"></i><i class="windows"></i><i class="door"></i><i class="sign">知</i></span><strong>知识馆</strong><small>经验传承 · 3 份资料</small></button>
+        <button class="place academy" data-place="academy"><span class="building gold"><i class="roof"></i><i class="front"></i><i class="side"></i><i class="windows"></i><i class="door"></i><i class="sign">学</i></span><strong>学习与考核站</strong><small>学习方法 · 验证能力</small></button>
+        <button class="place board" data-place="board"><span class="notice"><i class="notice-roof"></i><i class="paper"><b></b><b></b><b></b></i><i class="leg left"></i><i class="leg right"></i></span><strong>任务公告栏</strong><small>2 项开放任务 · 等待认领</small></button>
+        <button class="place team" data-place="team"><span class="building lavender"><i class="roof"></i><i class="front"></i><i class="side"></i><i class="windows"></i><i class="door"></i><i class="sign">组</i></span><strong>组队工坊</strong><small id="team-caption">能力互补 · 自主协作</small></button>
+        <button class="place solo" data-place="solo"><span class="building sage"><i class="roof"></i><i class="front"></i><i class="side"></i><i class="windows"></i><i class="door"></i><i class="sign">作</i></span><strong>独立工作室</strong><small id="solo-caption">单人认领 · 专注交付</small></button>
+        <button class="place delivery" data-place="delivery"><span class="building coral"><i class="roof"></i><i class="front"></i><i class="side"></i><i class="windows"></i><i class="door"></i><i class="sign">交</i></span><strong>交付中心</strong><small>独立评审 · 真人验收</small></button>
+        <div class="square-label">中央会客广场 <span>看见能力，也遇见队友</span></div>
+        <svg class="connection" id="connection" viewBox="0 0 1000 700" aria-hidden="true"><path d="M412 342 Q525 245 640 354" fill="none" stroke="#b57954" stroke-width="2.5" stroke-dasharray="7 7"/><text x="494" y="282">邀请协作</text></svg>
+        <div id="agents"></div>
+        <div class="map-note"><span class="legend-dot team-dot"></span>团队协作 <span class="legend-dot solo-dot"></span>独立执行 <span class="legend-dot learn-dot"></span>学习中</div>
+      </div>
+      <div class="space-list" id="space-list" hidden></div>
+      <div class="world-bottom"><div class="mini-avatars"><span>A</span><span>B</span><span>C</span><span>D</span></div><span><strong>4 位数字员工</strong> · 点击角色查看知识背景与当前行动</span><button id="reset">重置观察</button></div>
+    </section>
+    <aside class="inspector" id="inspector" aria-label="任务与员工观察面板"></aside>
+  </div>
+  <section class="lower">
+    <div class="task-pool"><div class="section-title"><div><p class="overline">OPEN OPPORTUNITIES</p><h2>把目标放进任务池。</h2></div><span>能力足够就独立完成，互补时自然组队。</span></div><div class="task-cards" id="task-cards"></div></div>
+    <div class="activity"><div class="section-title"><h2>广场动态</h2><span>当前观察记录</span></div><div id="activity-feed"></div></div>
+  </section>
+  <p class="boundary">设计演示 · 空间位置与工作步骤为交互样例，无后台执行、模型调用或持久化。真人仍保留授权、核分与最终验收。</p>
+</main>
+<dialog id="modal" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title"></h2><button id="close" aria-label="关闭">×</button></div><div id="modal-content"></div></dialog>
+<div id="status" role="status" aria-live="polite"></div>
+<script src="plaza.js"></script>
+</body>
+</html>

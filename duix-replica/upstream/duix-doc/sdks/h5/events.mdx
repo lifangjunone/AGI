@@ -1,0 +1,199 @@
+---
+title: 'Events'
+description: 'List of all Duix SDK events and their corresponding payload structures.'
+---
+
+## Overview
+
+The Duix SDK emits various **events** throughout the session lifecycle.
+Developers can listen to these events using the `duix.on(eventName, callback)` method
+to handle errors, progress updates, speech synchronization, and RTC quality monitoring.
+
+---
+
+## Event Summary
+
+| Event Name | Description |
+|-------------|--------------|
+| **error** | Uncaught error occurred |
+| **bye** | Session ended |
+| **initialSuccess** | Initialization successful — safe to call `start()` |
+| **show** | Digital human is displayed |
+| **progress** | Loading progress (0–100) |
+| **speakSection** | Current incremental audio/text segment while speaking |
+| **speakStart** | Speech playback started |
+| **speakEnd** | Speech playback ended |
+| **asrStart** | Single-sentence ASR started |
+| **asrData** | Single-sentence ASR interim result |
+| **asrStop** | Single-sentence ASR ended |
+| **report** | Periodic RTC/network/video quality report |
+| **cameraChange** | Camera current status |
+
+---
+
+## Event Details
+
+### 1. `error`
+
+Triggered when an unexpected error occurs.
+
+**Payload**
+```javascript
+{
+  code: "",      // Error code
+  message: "",   // Error message
+  data: {}       // Additional error data
+}
+
+```
+
+***Error codes***
+
+
+| Name           | Description   | data |
+| :------------- | :----------| :---------- |
+| 3001 | RTC connection failed| |
+| 4001 | Failed to start session | |
+| 4005 | Authentication failed | |
+| 4007 | Server session abnormally ended | code: 100305 Model file not found|
+| 4008 | Failed to get microphone stream | |
+| 4009 | Browser blocked autoplay | Start muted or require user action; then unmute/resume |
+
+### progress
+
+Indicates the current loading progress of the digital human and its resources.
+Returns a numeric value between 0 and 100.
+
+Payload: number
+
+Example
+```js
+duix.on('progress', (value) => {
+  console.log(`Loading progress: ${value}%`);
+});
+```
+
+### speakSection
+Emitted for each incremental speech segment — typically used for real-time subtitles or streaming speech visualization.
+When answer() is used, this event streams continuously; for speak(), it aligns with speakStart.
+
+Payload
+```js
+{
+  "audio": "string",   // Audio stream URL
+  "content": "string"  // Partial text content currently being spoken
+}
+```
+
+Example
+```js
+duix.on('speakSection', (data) => {
+  console.log('Current segment:', data.content);
+});
+```
+
+### speakStart
+Triggered when the avatar begins speech playback.
+
+Payload
+```js
+{
+  "audio": "string",   // Audio stream URL
+  "content": "string"  // Text content being spoken
+}
+```
+
+Example
+```js
+duix.on('speakStart', (data) => {
+  console.log('Speech started:', data.content);
+});
+```
+
+### speakEnd
+Triggered when the avatar completes speech playback.
+Useful for synchronizing UI transitions or logic after speech completion.
+
+Payload
+```js
+{
+  "audio": "string",
+  "content": "string"
+}
+```
+
+Example
+```js
+duix.on('speakEnd', () => {
+  console.log('Speech ended.');
+});
+```
+
+### asrData
+Triggered during active speech recognition (ASR).
+Each ASR cycle starts with asrStart and ends with asrStop.
+Use this event to display incremental transcription results.
+
+Payload
+```js
+{
+  "content": "string" // Recognized text fragment
+}
+```
+
+Example
+```js
+duix.on('asrData', (data) => {
+  console.log('Recognized:', data.content);
+});
+```
+
+### report
+Delivers a detailed periodic (once per second) network and video quality report.
+This event helps developers monitor RTC connection quality and performance metrics in real time.
+
+Payload
+```js
+{
+  "video": {
+    "download": {
+      "frameWidth": 1920,          // Video width
+      "frameHeight": 1080,         // Video height
+      "framesPerSecond": 24,       // Frame rate
+      "packetsLost": 0,            // Total lost packets
+      "packetsLostPerSecond": 0    // Packet loss rate per second
+    }
+  },
+  "connection": {
+    "bytesSent": 206482,           // Total bytes sent
+    "bytesReceived": 79179770,     // Total bytes received
+    "currentRoundTripTime": 3,     // Round-trip latency (ms)
+    "timestamp": 1688043940523,    // UNIX timestamp
+    "receivedBitsPerSecond": 2978472, // Download bitrate (bits/s)
+    "sentBitsPerSecond": 7920         // Upload bitrate (bits/s)
+  }
+}
+```
+Example
+```js
+duix.on('report', (stats) => {
+  console.log('Network report:', stats.connection);
+});
+```
+
+### cameraChange
+Payload
+```javascript
+{
+  status: 'show', // camera status, show/hidden
+}
+```
+
+Example
+```js
+duix.on('cameraChange', (data) => {
+  console.log('cameraChange:', data.status);
+});
+```
+
+**Note:** Event payloads not explicitly documented above will return empty objects. Register all event listeners before invoking `duix.start()`.

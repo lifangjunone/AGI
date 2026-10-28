@@ -15,7 +15,8 @@ Typical contract flows:
 
 1. Studio publishes an immutable Agent Manifest understood by Control.
 2. A customer-owned agent registers itself with Control using the same public shape.
-3. Core places tenant, role, and product-entitlement claims in signed tokens consumed by MaaS, Studio, and Control.
+3. Core places tenant, role, and product-entitlement claims in signed tokens consumed by MaaS, Studio, Runtime, and Control.
+4. Studio discovers Runtime Profiles and submits Agent Loop tasks through Runtime; it never imports Runtime source or directly connects to vendor workers.
 4. Control exposes a stable governed invocation interface regardless of where an agent was developed.
 
 ## Compatibility policy

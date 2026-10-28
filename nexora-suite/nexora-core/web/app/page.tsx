@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ApartmentOutlined, AppstoreOutlined, ArrowRightOutlined, CheckCircleFilled, CloudServerOutlined, CodeOutlined, DeleteOutlined, DeploymentUnitOutlined, EditOutlined, LogoutOutlined, PlusOutlined, RadarChartOutlined, SafetyCertificateOutlined, TeamOutlined } from "@ant-design/icons";
+import { ApartmentOutlined, AppstoreOutlined, ArrowRightOutlined, CheckCircleFilled, CloudServerOutlined, CodeOutlined, DeleteOutlined, DeploymentUnitOutlined, EditOutlined, LogoutOutlined, PlusOutlined, RadarChartOutlined, SafetyCertificateOutlined, TeamOutlined, ThunderboltOutlined } from "@ant-design/icons";
 
 const copy = {
   "zh-CN": {
@@ -12,6 +12,7 @@ const copy = {
     products: "你的工作空间", studio: "Nexora Studio · 星铸", studioDesc: "设计、调试、评测并发布生产级 Agent",
     control: "Nexora Control · 星域", controlDesc: "统一注册、治理、观测所有 Agent",
     maas: "Nexora MaaS · 星模", maasDesc: "统一接入、路由、计量并观测企业模型",
+    runtime: "Nexora Runtime · 星驰", runtimeDesc: "统一接入、调度并观测 Agent Runtime",
     signed: "已登录。访问令牌已安全保存在当前浏览器。"
   },
   "en-US": {
@@ -22,6 +23,7 @@ const copy = {
     products: "Your workspace", studio: "Nexora Studio", studioDesc: "Design, debug, evaluate, and publish production agents",
     control: "Nexora Control", controlDesc: "Register, govern, and observe every agent",
     maas: "Nexora MaaS", maasDesc: "Connect, route, meter, and observe enterprise models",
+    runtime: "Nexora Runtime", runtimeDesc: "Connect, schedule, and observe agent runtimes",
     signed: "Signed in. Your access token is stored in this browser."
   }
 } as const;
@@ -173,7 +175,7 @@ function SuiteRelationshipDiagram({ locale, portal = false }: { locale: keyof ty
     <div className="relationship-heading">
       <div>
         <small>{zh ? "产品协作关系" : "PRODUCT COLLABORATION"}</small>
-        <strong>{zh ? "开发、治理与运行反馈形成闭环" : "A closed loop from building to governance"}</strong>
+        <strong>{zh ? "模型供给、智能体开发、独立执行与治理形成闭环" : "A closed loop across models, development, execution, and governance"}</strong>
       </div>
       <span className="independent-badge">{zh ? "独立部署 · 按需组合" : "Independent · Composable"}</span>
     </div>
@@ -223,6 +225,13 @@ function SuiteRelationshipDiagram({ locale, portal = false }: { locale: keyof ty
       <div><b>{zh ? "模型目录" : "Catalog"}</b><b>{zh ? "统一路由" : "Routing"}</b><b>{zh ? "用量成本" : "Usage & cost"}</b></div>
     </div>
 
+    <div className="relationship-runtime">
+      <span><ThunderboltOutlined /></span>
+      <div><small>AGENT EXECUTION</small><strong>Nexora Runtime <i>星驰</i></strong></div>
+      <p>{zh ? "承接 Studio 发布的 Agent Loop 任务，统一调度 Native、第三方与设备 Runtime" : "Run Agent Loop tasks from Studio across native, third-party, and device runtimes"}</p>
+      <div><b>Profiles</b><b>Adapters</b><b>{zh ? "动态执行" : "Dynamic runs"}</b></div>
+    </div>
+
     <div className="core-foundation">
       <div className="core-identity"><span className="core-mark">N</span><div><small>{zh ? "统一可信底座" : "TRUSTED FOUNDATION"}</small><strong>Nexora Core <i>星核</i></strong></div></div>
       <div className="core-services">
@@ -235,6 +244,7 @@ function SuiteRelationshipDiagram({ locale, portal = false }: { locale: keyof ty
       <span><CheckCircleFilled /> Core + Studio</span>
       <span><CheckCircleFilled /> Core + Control</span>
       <span><CheckCircleFilled /> Core + MaaS</span>
+      <span><CheckCircleFilled /> Core + Runtime</span>
       <span><CheckCircleFilled /> {zh ? "完整套件" : "Full Suite"}</span>
     </div>
   </section>;
@@ -368,14 +378,15 @@ export default function Home() {
         <div><span className="mobile-brand">Nexora</span></div>
         <div className="top-actions"><button className="locale" onClick={()=>setLocale(locale==="zh-CN"?"en-US":"zh-CN")}>{locale==="zh-CN"?"EN":"中文"}</button><div className="account"><span>NA</span><div><strong>Nexora Admin</strong><small>admin@nexora.local</small></div></div><button className="icon-logout" aria-label={locale==="zh-CN"?"退出登录":"Sign out"} onClick={logout}><LogoutOutlined/></button></div>
       </header>
-      {loggingOut&&<div className="logout-frames" aria-hidden="true"><iframe src={suiteURL(3001,"/?logout=1&embedded=1")} title="Studio logout"/><iframe src={suiteURL(3002,"/?logout=1&embedded=1")} title="Control logout"/><iframe src={suiteURL(3003,"/?logout=1&embedded=1")} title="MaaS logout"/></div>}
+      {loggingOut&&<div className="logout-frames" aria-hidden="true"><iframe src={suiteURL(3001,"/?logout=1&embedded=1")} title="Studio logout"/><iframe src={suiteURL(3002,"/?logout=1&embedded=1")} title="Control logout"/><iframe src={suiteURL(3003,"/?logout=1&embedded=1")} title="MaaS logout"/><iframe src={suiteURL(3004,"/?logout=1")} title="Runtime logout"/></div>}
       <div className="portal-content">
-        {section==="workspace"&&<><div className="portal-heading"><div><small>NEXORA SUITE</small><h1>{locale==="zh-CN"?"企业 AI 产品工作台":"Enterprise AI workspace"}</h1><p>{locale==="zh-CN"?"统一模型供给、智能体开发与治理，共享身份和组织边界。":"Unify model supply, agent development, and governance under one identity boundary."}</p></div><div className="health"><i/><span><strong>{locale==="zh-CN"?"套件运行正常":"Suite operational"}</strong><small>Core · MaaS · Studio · Control</small></span></div></div>
+        {section==="workspace"&&<><div className="portal-heading"><div><small>NEXORA SUITE</small><h1>{locale==="zh-CN"?"企业 AI 产品工作台":"Enterprise AI workspace"}</h1><p>{locale==="zh-CN"?"统一模型供给、智能体开发、独立执行与治理，共享身份和组织边界。":"Unify model supply, agent development, independent execution, and governance under one identity boundary."}</p></div><div className="health"><i/><span><strong>{locale==="zh-CN"?"套件运行正常":"Suite operational"}</strong><small>Core · MaaS · Studio · Runtime · Control</small></span></div></div>
           <SuiteRelationshipDiagram locale={locale} portal />
           <section className="suite-grid">
             {products.includes("studio")&&<a className="suite-product studio-product" href={productURL("studio","http://localhost:3001")}><div className="product-icon"><CodeOutlined/></div><div className="product-copy"><div className="product-kicker">BUILD</div><h2>Nexora Studio <span>星铸</span></h2><p>{locale==="zh-CN"?"面向开发团队的智能体开发平台。编排工作流、连接模型与知识、调试评测并发布生产版本。":"The agent development platform for building, testing, evaluating, and publishing production agents."}</p><div className="capabilities"><span>{locale==="zh-CN"?"可视化编排":"Visual builder"}</span><span>RAG</span><span>Tools & MCP</span><span>{locale==="zh-CN"?"评测发布":"Evaluation"}</span></div></div><div className="enter">{locale==="zh-CN"?"进入 Studio":"Open Studio"} <ArrowRightOutlined/></div></a>}
             {products.includes("control")&&<a className="suite-product control-product" href={productURL("control","http://localhost:3002")}><div className="product-icon"><RadarChartOutlined/></div><div className="product-copy"><div className="product-kicker">GOVERN</div><h2>Nexora Control <span>星域</span></h2><p>{locale==="zh-CN"?"面向平台与安全团队的 Agent 统一纳管平台。登记身份、执行策略、统一调用并持续观测风险。":"The governance plane for registering identities, enforcing policy, routing calls, and observing risk."}</p><div className="capabilities"><span>Registry</span><span>{locale==="zh-CN"?"策略中心":"Policies"}</span><span>Gateway</span><span>Observability</span></div></div><div className="enter">{locale==="zh-CN"?"进入 Control":"Open Control"} <ArrowRightOutlined/></div></a>}
             {products.includes("maas")&&<a className="suite-product maas-product" href={productURL("maas","http://localhost:3003")}><div className="product-icon"><DeploymentUnitOutlined/></div><div className="product-copy"><div className="product-kicker">MODEL SERVICE</div><h2>Nexora MaaS <span>星模</span></h2><p>{locale==="zh-CN"?"面向 AI 平台团队的统一模型服务平台。接入供应商、维护模型目录、稳定路由并观测用量成本。":"The model service plane for provider access, model catalog, stable routing, usage, and cost."}</p><div className="capabilities"><span>Providers</span><span>{locale==="zh-CN"?"模型目录":"Catalog"}</span><span>{locale==="zh-CN"?"路由":"Routing"}</span><span>{locale==="zh-CN"?"成本":"Cost"}</span></div></div><div className="enter">{locale==="zh-CN"?"进入 MaaS":"Open MaaS"} <ArrowRightOutlined/></div></a>}
+            {products.includes("runtime")&&<a className="suite-product runtime-product" href={productURL("runtime","http://localhost:3004")}><div className="product-icon"><ThunderboltOutlined/></div><div className="product-copy"><div className="product-kicker">AGENT EXECUTION</div><h2>Nexora Runtime <span>星驰</span></h2><p>{locale==="zh-CN"?"面向平台工程团队的 Agent 执行平台。统一接入 Native、第三方和设备 Runtime，调度任务并记录动态执行轨迹。":"The execution plane for native, third-party, and device runtimes, with task scheduling and dynamic traces."}</p><div className="capabilities"><span>Runtime Profiles</span><span>Adapters</span><span>{locale==="zh-CN"?"任务调度":"Tasks"}</span><span>Trace</span></div></div><div className="enter">{locale==="zh-CN"?"进入 Runtime":"Open Runtime"} <ArrowRightOutlined/></div></a>}
           </section>
           <section className="foundation-card"><div className="foundation-icon"><CloudServerOutlined/></div><div><small>NEXORA CORE · 星核</small><h3>{locale==="zh-CN"?"统一底座正在为已购买产品提供服务":"The shared foundation powering your products"}</h3><p>{locale==="zh-CN"?"统一身份、多租户、组织权限、密钥与审计能力已启用。各产品独立部署，不共享业务数据库。":"Identity, tenancy, authorization, secrets, and audit are active. Products deploy independently without sharing business data."}</p></div><div className="foundation-stats"><span><b>1</b>{locale==="zh-CN"?"租户":"Tenant"}</span><span><b>{products.length}</b>{locale==="zh-CN"?"已启用产品":"Products"}</span><span><b>2</b>{locale==="zh-CN"?"语言":"Locales"}</span></div></section></>}
         {section==="organization"&&<OrganizationManagement locale={locale} api={api}/>}
@@ -389,7 +400,7 @@ export default function Home() {
       <div className="brand"><span className="mark">N</span> NEXORA <span style={{color:"#756ad2"}}>· 星原</span></div>
       <div className="top-actions"><button className="locale" onClick={() => setLocale(locale === "zh-CN" ? "en-US" : "zh-CN")}>{locale === "zh-CN" ? "EN" : "中文"}</button></div>
     </header>
-    {loggingOut&&<div className="logout-frames" aria-hidden="true"><iframe src={suiteURL(3001,"/?logout=1&embedded=1")} title="Studio logout"/><iframe src={suiteURL(3002,"/?logout=1&embedded=1")} title="Control logout"/><iframe src={suiteURL(3003,"/?logout=1&embedded=1")} title="MaaS logout"/></div>}
+    {loggingOut&&<div className="logout-frames" aria-hidden="true"><iframe src={suiteURL(3001,"/?logout=1&embedded=1")} title="Studio logout"/><iframe src={suiteURL(3002,"/?logout=1&embedded=1")} title="Control logout"/><iframe src={suiteURL(3003,"/?logout=1&embedded=1")} title="MaaS logout"/><iframe src={suiteURL(3004,"/?logout=1")} title="Runtime logout"/></div>}
     <section className="main auth-main">
       <div className="auth-layout">
         <section className="auth-intro">

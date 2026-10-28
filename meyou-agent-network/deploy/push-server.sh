@@ -5,12 +5,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REMOTE="${REMOTE:-aliyun}"
 RELEASE="/tmp/meyou-agent-network-release"
 
+cd "$ROOT"
+npm run build
+
 ssh "$REMOTE" "rm -rf '$RELEASE' && install -d -m 0700 '$RELEASE'"
 tar \
   --no-xattrs \
   --exclude=node_modules \
-  --exclude='apps/*/dist' \
-  --exclude='apps/web/dist' \
   --exclude='.env' \
   --exclude='private' \
   --exclude='.git' \

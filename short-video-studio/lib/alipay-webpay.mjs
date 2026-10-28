@@ -31,7 +31,7 @@ async function readJsonFile(filePath, fallback) {
   }
 }
 
-export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90", getPrice = () => price }) {
+export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90", getPrice = () => price, sdkFactory }) {
   const ordersPath = path.join(dataDirectory, "payments", "orders.json");
   const sandboxPath = path.join(rootDirectory, ".alipay-sandbox.json");
   let writeQueue = Promise.resolve();
@@ -66,6 +66,7 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
 
   async function sdkOrNull() {
     const config = await loadConfig();
+    if (sdkFactory) return { config, sdk: sdkFactory(config) };
     if (!config.appId || !config.privateKey || !config.alipayPublicKey) return { config, sdk: null };
     return {
       config,
@@ -102,7 +103,8 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
   }
 
   async function createPending(input, origin, priceOverride, subjectOverride) {
-    const orderId = `FRAME60_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const orderId = `FRAME60_${Date.now()}_${randomBytes(16).toString("hex")}`;
+    const recoveryToken = randomBytes(24).toString("hex");
     const order = {
       orderId,
       status: "WAIT_BUYER_PAY",
@@ -110,13 +112,19 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
       subject: subjectOverride || "商品短视频内容包",
       input,
       createdAt: new Date().toISOString(),
-      returnUrl: `${origin}/payment/return`,
+      recoveryToken,
+      returnUrl: `${origin}/payment/return?recovery=${recoveryToken}`,
       tradeNo: null
     };
     await updateOrders((orders) => {
+      const existing = Object.values(orders).find(item =>
+        input.previewId && item.input.previewId === input.previewId &&
+        item.input.buyerHash === input.buyerHash &&
+        ["WAIT_BUYER_PAY", "TRADE_SUCCESS", "TRADE_FINISHED"].includes(item.status));
+      if (existing) return existing;
       orders[orderId] = order;
       return order;
-    });
+    }).then(existing => { Object.assign(order, existing); });
     return order;
   }
 
@@ -175,15 +183,21 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
   async function queryTrade(orderId) {
     const order = await getOrder(orderId);
     if (!order) return null;
+    if (order.status === "REFUNDED") return order;
     const { sdk } = await sdkOrNull();
     if (!sdk) return order;
     const result = unwrapResponse(await sdk.exec("alipay.trade.query", {
       bizContent: { out_trade_no: order.orderId }
     }));
+    if (result.code !== "10000") return order;
+    if (normalizeAmount(result.total_amount) !== order.amount ||
+        result.out_trade_no !== orderId) {
+      throw new Error("支付宝查询订单或金额不匹配");
+    }
     const status = result.trade_status || order.status;
     if (status !== order.status || result.trade_no) {
       await updateOrders((orders) => {
-        if (orders[orderId]) {
+        if (orders[orderId] && orders[orderId].status !== "REFUNDED") {
           orders[orderId].status = status;
           orders[orderId].tradeNo = result.trade_no || orders[orderId].tradeNo;
           orders[orderId].lastQueryAt = new Date().toISOString();
@@ -199,20 +213,34 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     if (order.fulfilledAt && order.accessToken) return order;
     await updateOrders((orders) => {
       const current = orders[orderId];
-      if (!current) return;
+      if (!current || !["TRADE_SUCCESS", "TRADE_FINISHED"].includes(current.status)) return;
       current.fulfilledAt = current.fulfilledAt || new Date().toISOString();
       current.accessToken = current.accessToken || randomBytes(24).toString("hex");
     });
-    return getOrder(orderId);
+    const current = await getOrder(orderId);
+    return current && ["TRADE_SUCCESS", "TRADE_FINISHED"].includes(current.status) ? current : null;
   }
 
   async function getFulfilledOrder(orderId, accessToken) {
     const order = await getOrder(orderId);
-    if (!order || !order.fulfilledAt || !order.accessToken || !accessToken) return null;
+    if (!order || !["TRADE_SUCCESS", "TRADE_FINISHED"].includes(order.status) ||
+        !order.fulfilledAt || !order.accessToken || !accessToken) return null;
     const expected = Buffer.from(order.accessToken);
     const actual = Buffer.from(String(accessToken));
     if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
     return order;
+  }
+
+  async function authorizeBuyer(orderId, ownerHash, recoveryToken) {
+    const order = await getOrder(orderId);
+    if (!order) return null;
+    if (ownerHash && order.input.buyerHash === ownerHash) return order;
+    if (recoveryToken && order.recoveryToken) {
+      const expected = Buffer.from(order.recoveryToken);
+      const actual = Buffer.from(String(recoveryToken));
+      if (expected.length === actual.length && timingSafeEqual(expected, actual)) return order;
+    }
+    return null;
   }
 
   async function verifyNotification(params) {
@@ -225,15 +253,38 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     if (!order || params.app_id !== config.appId || amount !== order.amount || !sellerMatches || !paid) {
       return { ok: false, reason: "订单、金额、商户或状态校验失败" };
     }
+    if (order.status === "REFUNDED") return { ok: true, order };
     await updateOrders((orders) => {
       const current = orders[order.orderId];
-      if (current) {
+      if (current && current.status !== "REFUNDED") {
         current.status = params.trade_status;
         current.tradeNo = params.trade_no || current.tradeNo;
-        current.paidAt = new Date().toISOString();
+        current.paidAt ||= new Date().toISOString();
       }
     });
     return { ok: true, order: await fulfillOrder(order.orderId) };
+  }
+
+  async function resolveBuyerDelivery(orderId, ownerHash, recoveryToken) {
+    const authorized = await authorizeBuyer(orderId, ownerHash, recoveryToken);
+    if (!authorized) return { status: "unauthorized", order: null };
+    // Re-read local state: never use an old authorized snapshot for delivery.
+    let order = await getOrder(orderId);
+    if (["REFUNDED", "TRADE_CLOSED"].includes(order.status)) {
+      return { status: order.status, order: null };
+    }
+    if (!["TRADE_SUCCESS", "TRADE_FINISHED"].includes(order.status)) {
+      try {
+        order = await queryTrade(orderId);
+      } catch {
+        return { status: "confirmation-unavailable", order: null };
+      }
+    }
+    if (!order || !["TRADE_SUCCESS", "TRADE_FINISHED"].includes(order.status)) {
+      return { status: order?.status || "WAIT_BUYER_PAY", order: null };
+    }
+    const fulfilled = await fulfillOrder(orderId);
+    return fulfilled ? { status: "ready", order: fulfilled } : { status: "unavailable", order: null };
   }
 
   async function executeTradeOperation(orderId, operation, bizContent) {
@@ -242,6 +293,17 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     const { sdk } = await sdkOrNull();
     if (!sdk) return { ok: false, code: "ALIPAY_CONFIG_MISSING" };
     const result = unwrapResponse(await sdk.exec(operation, { bizContent }));
+    if (result.code === "10000" && operation === "alipay.trade.close") {
+      await updateOrders(orders => { orders[orderId].status = "TRADE_CLOSED"; });
+    }
+    if (result.code === "10000" && operation === "alipay.trade.refund" && result.fund_change === "Y") {
+      await updateOrders(orders => {
+        orders[orderId].refundAmount = bizContent.refund_amount;
+        orders[orderId].refundedAt = new Date().toISOString();
+        // Revoke delivery conservatively even for a partial refund.
+        orders[orderId].status = "REFUNDED";
+      });
+    }
     return { ok: result.code === "10000", result, order };
   }
 
@@ -251,6 +313,8 @@ export function createAlipayWebPay({ rootDirectory, dataDirectory, price = "9.90
     listOrders,
     fulfillOrder,
     getFulfilledOrder,
+    authorizeBuyer,
+    resolveBuyerDelivery,
     queryTrade,
     verifyNotification,
     query: (orderId) => executeTradeOperation(orderId, "alipay.trade.query", { out_trade_no: orderId }),

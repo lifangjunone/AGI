@@ -5,10 +5,11 @@ import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 import {
   agentProfileSchema, communitySchema, datingProfileSchema, missionSchema,
-  organizationSchema, plazaActionSchema, plazaMoveSchema, plazaRuntimeSettingsSchema
+  organizationSchema, plazaActionSchema, plazaMoveSchema, plazaRuntimeSettingsSchema,
+  digitalLearningSchema, societyDecisionSchema, societyProposalSchema, societySettingsSchema
 } from "@meyou/shared";
-import { desc, eq, sql } from "drizzle-orm";
-import { createHash } from "node:crypto";
+import { and, desc, eq, lte, or, sql } from "drizzle-orm";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { existsSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import { z } from "zod";
@@ -20,10 +21,13 @@ import {
 import {
   createSession, deleteSession, loginLocalAccount, registerLocalAccount, resolveUser
 } from "./auth.js";
-import { generateAgentReply, generatePlazaReply, runMission } from "./agent-service.js";
+import {
+  generateAgentReply, generatePlazaReply, runMission, sendApprovedMatchIntroduction
+} from "./agent-service.js";
 import { db } from "./db/client.js";
 import {
-  auditEvents, communities, memberships, modelConfigurations, organizations, publicInquiries, usageLedger, users
+  auditEvents, blocks, communities, memberships, modelConfigurations, organizations, plazaDiscussions,
+  notifications, publicInquiries, searchMissions, usageLedger, users
 } from "./db/schema.js";
 import {
   completeWithConfiguration, guardAgentReply, resolveModelConfiguration
@@ -31,12 +35,21 @@ import {
 import { scheduleMission, schedulePlazaConversation } from "./queue.js";
 import {
   addMessage, createMission, createOrGetConversation, ensureUser, getConversation,
+  blockConversationPeer, decideReplyDraft, escalateConversation,
   ensureDatingMission, enterPlaza, getDashboard, getMe, getPlazaSnapshot, leavePlaza, createCommunityWithCircle,
   getPlazaRuntimeSettings,
-  listConversations, listDirectory, listMatches, listMissions, publicProfile, setConsent, updateAgent,
+  listConversations, listDirectory, listMatches, listMissions, markConversationRead, publicProfile,
+  reportConversationPeer, setConsent, updateAgent,
   setAllAgentModes, setConversationAgentMode, setMissionActive, updatePlazaRuntimeSettings,
-  updateProfile, upsertDatingProfile, runContinuousPlazaTick, movePlazaAgent
+  updateProfile, updatePublicInquiryStatus, upsertDatingProfile, runContinuousPlazaTick, movePlazaAgent
 } from "./repository.js";
+import {
+  decide as decideSocietyProposal,
+  getSocietySnapshot,
+  propose as createSocietyProposal,
+  recordLearning,
+  setSocietyPaused
+} from "./agent-society.js";
 
 async function requireUser(request: Parameters<typeof resolveUser>[0]) {
   const identity = await resolveUser(request);
@@ -55,12 +68,24 @@ const adminModelSchema = z.object({
   enabled: z.boolean().default(true)
 });
 
+const adminModelStatusSchema = z.object({
+  enabled: z.boolean()
+});
+
 function safeProviderError(error: unknown) {
   const message = error instanceof Error ? error.message : "model_test_failed";
   if (message.startsWith("model_provider_error:")) return message;
   if (message === "model_not_configured") return message;
   if (message.includes("timeout") || message.includes("aborted")) return "model_timeout";
   return "model_connection_failed";
+}
+
+function validModelSyncToken(configured: string, supplied: unknown) {
+  if (configured.length < 32 || typeof supplied !== "string") return false;
+  const configuredBytes = Buffer.from(configured);
+  const suppliedBytes = Buffer.from(supplied);
+  return configuredBytes.length === suppliedBytes.length
+    && timingSafeEqual(configuredBytes, suppliedBytes);
 }
 
 export function publicErrorResponse(error: unknown, requestUrl: string) {
@@ -73,6 +98,7 @@ export function publicErrorResponse(error: unknown, requestUrl: string) {
     ? error.statusCode
     : 500;
   if (statusCode === 429) return { statusCode, error: "rate_limit_exceeded" };
+  if (statusCode >= 400 && statusCode < 500) return { statusCode, error: "invalid_request" };
   if (requestUrl.startsWith("/api/")) return { statusCode: 503, error: "service_unavailable" };
   return { statusCode, error: "request_failed" };
 }
@@ -81,7 +107,11 @@ export function buildServer() {
   const app = Fastify({
     logger: {
       level: process.env.LOG_LEVEL ?? "info",
-      redact: ["req.headers.authorization", "req.headers.cookie"]
+      redact: [
+        "req.headers.authorization",
+        "req.headers.cookie",
+        "req.headers.x-lifeyoume-model-sync-token"
+      ]
     }
   });
   const eventSockets = new Set<{ readyState: number; send: (value: string) => void }>();
@@ -371,7 +401,7 @@ export function buildServer() {
       thinkingEnabled: parsed.data.thinkingEnabled,
       timeoutMs: parsed.data.timeoutMs,
       temperatureMilli: Math.round(parsed.data.temperature * 1000),
-      enabled: parsed.data.enabled,
+      enabled: existing?.enabled ?? parsed.data.enabled,
       updatedBy: admin.email,
       updatedAt: new Date()
     };
@@ -401,6 +431,71 @@ export function buildServer() {
         updatedBy: configuration?.updatedBy,
         updatedAt: configuration?.updatedAt.toISOString()
       }
+    };
+  });
+
+  app.post("/api/v1/admin/model-config/reveal-key", {
+    config: { rateLimit: { max: 5, timeWindow: "1 minute" } }
+  }, async (request, reply) => {
+    reply.header("Cache-Control", "no-store, private");
+    reply.header("Pragma", "no-cache");
+    const admin = await resolveAdmin(request);
+    if (!admin) return reply.code(401).send({ error: "admin_authentication_required" });
+    const origin = request.headers.origin;
+    const allowedOrigins = [
+      process.env.WEB_ORIGIN,
+      process.env.PUBLIC_APP_URL,
+      `https://${request.headers.host}`,
+      ...(process.env.NODE_ENV !== "production" ? [`http://${request.headers.host}`] : [])
+    ].filter(Boolean);
+    if (!origin || !allowedOrigins.includes(origin)) {
+      return reply.code(403).send({ error: "secret_reveal_origin_denied" });
+    }
+    const parsed = z.object({ confirmation: z.literal("reveal-saved-model-key") }).safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "secret_reveal_confirmation_required" });
+    const [configured] = await db.select().from(modelConfigurations)
+      .orderBy(desc(modelConfigurations.updatedAt)).limit(1);
+    const apiKey = configured
+      ? decryptModelSecret(configured.apiKeyEncrypted)
+      : (await resolveModelConfiguration()).apiKey;
+    if (!apiKey) return reply.code(404).send({ error: "api_key_not_configured" });
+    // Audit must succeed before any plaintext is returned. Never persist the key in audit.
+    await db.insert(auditEvents).values({
+      action: "admin.model_key_revealed",
+      summary: "管理员查看当前模型密钥",
+      policyRefs: ["admin-only", "explicit-confirmation", `actor:${admin.email}`, `configuration:${configured?.id ?? "environment"}`],
+      toolCalls: []
+    });
+    return { apiKey, expiresInSeconds: 30 };
+  });
+
+  app.patch("/api/v1/admin/model-config/status", async (request, reply) => {
+    const admin = await resolveAdmin(request);
+    if (!admin) return reply.code(401).send({ error: "admin_authentication_required" });
+    const parsed = adminModelStatusSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_model_status" });
+    const [existing] = await db.select().from(modelConfigurations)
+      .orderBy(desc(modelConfigurations.updatedAt)).limit(1);
+    if (!existing) return reply.code(409).send({ error: "model_configuration_required" });
+    const changedAt = new Date();
+    const [configuration] = await db.update(modelConfigurations).set({
+      enabled: parsed.data.enabled,
+      updatedBy: admin.email,
+      updatedAt: changedAt
+    }).where(eq(modelConfigurations.id, existing.id)).returning();
+    await db.insert(auditEvents).values({
+      action: parsed.data.enabled ? "admin.model_service_enabled" : "admin.model_service_disabled",
+      summary: parsed.data.enabled
+        ? `管理员开启模型服务：${existing.provider}/${existing.modelId}`
+        : `管理员关闭模型服务：${existing.provider}/${existing.modelId}`,
+      policyRefs: ["admin-only", "model-global-switch"],
+      toolCalls: [],
+      escalationReason: admin.email
+    });
+    return {
+      enabled: configuration?.enabled ?? parsed.data.enabled,
+      updatedBy: configuration?.updatedBy ?? admin.email,
+      updatedAt: (configuration?.updatedAt ?? changedAt).toISOString()
     };
   });
 
@@ -445,6 +540,29 @@ export function buildServer() {
     }
   });
 
+  app.get("/internal/model-config", async (request, reply) => {
+    reply.header("Cache-Control", "no-store, private");
+    reply.header("Pragma", "no-cache");
+    const configuredToken = process.env.MODEL_CONFIG_SYNC_TOKEN?.trim() ?? "";
+    const suppliedToken = request.headers["x-lifeyoume-model-sync-token"];
+    if (!validModelSyncToken(configuredToken, suppliedToken)) {
+      return reply.code(404).send({ error: "not_found" });
+    }
+    const configuration = await resolveModelConfiguration();
+    if (!configuration.apiKey || !configuration.modelId) {
+      return reply.code(409).send({ error: "model_not_configured" });
+    }
+    return {
+      provider: configuration.provider,
+      baseUrl: configuration.baseUrl,
+      modelId: configuration.modelId,
+      apiKey: configuration.apiKey,
+      thinkingEnabled: configuration.thinkingEnabled,
+      timeoutMs: configuration.timeoutMs,
+      temperature: configuration.temperature
+    };
+  });
+
   app.post("/internal/jobs/discovery", async (request, reply) => {
     const configuredToken = process.env.WORKER_INTERNAL_TOKEN;
     const suppliedToken = request.headers["x-meyou-worker-token"];
@@ -463,6 +581,35 @@ export function buildServer() {
     }
   });
 
+  app.post("/internal/jobs/discovery-due", async (request, reply) => {
+    const configuredToken = process.env.WORKER_INTERNAL_TOKEN;
+    const suppliedToken = request.headers["x-meyou-worker-token"];
+    if (!configuredToken || typeof suppliedToken !== "string" || suppliedToken !== configuredToken) {
+      return reply.code(404).send({ error: "not_found" });
+    }
+    const requestedLimit = Number((request.body as { limit?: unknown } | undefined)?.limit ?? 10);
+    const due = await db.select({
+      id: searchMissions.id,
+      ownerId: searchMissions.ownerId
+    }).from(searchMissions).where(and(
+      eq(searchMissions.active, true),
+      lte(searchMissions.nextRunAt, new Date())
+    )).orderBy(searchMissions.nextRunAt).limit(Math.max(1, Math.min(50, requestedLimit)));
+    const bucket = Math.floor(Date.now() / 60_000);
+    const jobs = await Promise.all(due.map(async (mission) => {
+      await db.update(searchMissions).set({
+        nextRunAt: new Date(Date.now() + 5 * 60_000),
+        updatedAt: new Date()
+      }).where(eq(searchMissions.id, mission.id));
+      return scheduleMission({
+        missionId: mission.id,
+        ownerId: mission.ownerId,
+        idempotencyKey: `mission-${mission.id}-scheduled-${bucket}`
+      });
+    }));
+    return { queued: jobs.length };
+  });
+
   app.post("/internal/jobs/plaza", async (request, reply) => {
     const configuredToken = process.env.WORKER_INTERNAL_TOKEN;
     const suppliedToken = request.headers["x-meyou-worker-token"];
@@ -470,14 +617,63 @@ export function buildServer() {
       return reply.code(404).send({ error: "not_found" });
     }
     const body = request.body as {
-      circleId?: string; initiatorId?: string; sourceEventId?: string; idempotencyKey?: string;
+      circleId?: string; initiatorId?: string; sourceEventId?: string; threadRootId?: string;
+      round?: number; maxRounds?: number; idempotencyKey?: string;
     };
     if (!body.circleId || !body.initiatorId || !body.sourceEventId || !body.idempotencyKey) {
       return reply.code(400).send({ error: "invalid_job" });
     }
-    const result = await generatePlazaReply(body.circleId, body.initiatorId, body.sourceEventId);
+    const round = Math.max(1, Math.min(20, Number(body.round) || 1));
+    const maxRounds = Math.max(1, Math.min(20, Number(body.maxRounds) || 4));
+    const result = await generatePlazaReply(body.circleId, body.initiatorId, body.sourceEventId, {
+      threadRootId: body.threadRootId,
+      round,
+      maxRounds
+    });
     if (result.status === "sent") {
+      await db.update(plazaDiscussions).set({
+        lastEventId: result.nextSourceEventId ?? result.eventId,
+        currentRound: round,
+        status: result.shouldContinue ? "active" : "ended",
+        endReason: result.endReason ?? "",
+        updatedAt: new Date()
+      }).where(eq(plazaDiscussions.rootEventId, result.threadRootId));
       broadcastEvent({ type: "plaza.event", circleId: body.circleId, eventId: result.eventId });
+      if (result.shouldContinue && result.nextSourceEventId && round < maxRounds) {
+        await schedulePlazaConversation({
+          circleId: body.circleId,
+          initiatorId: body.initiatorId,
+          sourceEventId: result.nextSourceEventId,
+          threadRootId: result.threadRootId,
+          round: round + 1,
+          maxRounds,
+          idempotencyKey: `plaza-thread-${result.threadRootId}-round-${round + 1}`
+        }, { delay: 5_000 });
+      } else {
+        await db.insert(auditEvents).values({
+          ownerId: body.initiatorId,
+          action: "plaza.conversation_ended",
+          summary: `广场群聊在第 ${round} 轮自然结束`,
+          policyRefs: ["multi-round-group-chat", "natural-stop"],
+          toolCalls: result.status === "sent" ? ["model.chat.completions"] : [],
+          escalationReason: result.endReason
+        });
+      }
+    } else {
+      await db.update(plazaDiscussions).set({
+        currentRound: round,
+        status: "ended",
+        endReason: result.endReason ?? "没有新的合适发言者",
+        updatedAt: new Date()
+      }).where(eq(plazaDiscussions.rootEventId, result.threadRootId));
+      await db.insert(auditEvents).values({
+        ownerId: body.initiatorId,
+        action: "plaza.conversation_ended",
+        summary: `广场群聊在第 ${round} 轮结束`,
+        policyRefs: ["multi-round-group-chat", "natural-stop"],
+        toolCalls: [],
+        escalationReason: result.endReason
+      });
     }
     return result;
   });
@@ -491,8 +687,20 @@ export function buildServer() {
     const body = request.body as { limit?: number };
     const actions = await runContinuousPlazaTick(Math.max(1, Math.min(4, Number(body.limit) || 2)));
     for (const action of actions) {
+      await db.insert(plazaDiscussions).values({
+        rootEventId: action.sourceEventId,
+        circleId: action.circleId,
+        initiatorId: action.initiatorId,
+        lastEventId: action.sourceEventId,
+        currentRound: 0,
+        maxRounds: action.maxRounds,
+        status: "active"
+      }).onConflictDoNothing();
       await schedulePlazaConversation({
         ...action,
+        threadRootId: action.sourceEventId,
+        round: 1,
+        maxRounds: action.maxRounds,
         idempotencyKey: `plaza-continuous-response-${action.sourceEventId}`
       });
       broadcastEvent({ type: "plaza.event", circleId: action.circleId, eventId: action.sourceEventId });
@@ -544,18 +752,45 @@ export function buildServer() {
     if (!body.content?.trim() || body.content.trim().length > 2000) {
       return reply.code(400).send({ error: "invalid_inquiry" });
     }
+    const content = body.content.trim();
     const ip = request.ip ?? "";
     const ipHash = createHash("sha256")
       .update(`${process.env.SESSION_SECRET ?? "meyou"}:${ip}`)
       .digest("hex");
-    const [inquiry] = await db.insert(publicInquiries).values({
-      ownerId: profile.id,
-      guestName: body.name?.trim().slice(0, 80) || "匿名访客",
-      guestContact: body.contact?.trim().slice(0, 160) || "",
-      content: body.content.trim(),
-      ipHash
-    }).returning({ id: publicInquiries.id, status: publicInquiries.status });
+    const inquiry = await db.transaction(async (tx) => {
+      const [created] = await tx.insert(publicInquiries).values({
+        ownerId: profile.id,
+        guestName: body.name?.trim().slice(0, 80) || "匿名访客",
+        guestContact: body.contact?.trim().slice(0, 160) || "",
+        content,
+        ipHash
+      }).returning({ id: publicInquiries.id, status: publicInquiries.status });
+      if (!created) throw new Error("inquiry_create_failed");
+      await tx.insert(notifications).values({
+        ownerId: profile.id,
+        kind: "public_inquiry_received",
+        title: `${body.name?.trim().slice(0, 80) || "一位访客"}给你留言了`,
+        detail: content.slice(0, 160),
+        href: `/app/customers?inquiry=${created.id}`,
+        entityId: created.id
+      });
+      return created;
+    });
     return reply.code(201).send({ inquiry });
+  });
+
+  app.patch("/api/v1/public-inquiries/:id", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const parsed = z.object({ status: z.enum(["active", "resolved"]) }).safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_inquiry_status" });
+    const inquiry = await updatePublicInquiryStatus(
+      auth.user.id,
+      (request.params as { id: string }).id,
+      parsed.data.status
+    );
+    if (!inquiry) return reply.code(404).send({ error: "inquiry_not_found" });
+    return { inquiry };
   });
 
   app.put("/api/v1/agents/me", async (request, reply) => {
@@ -668,9 +903,10 @@ export function buildServer() {
       const mutual = match.ownerConsent && match.candidateConsent;
       const peerId = match.ownerId === auth.user.id ? match.candidateId : match.ownerId;
       const conversation = mutual
-        ? await createOrGetConversation(auth.user.id, peerId, "match")
+        ? await sendApprovedMatchIntroduction(match.id)
         : null;
-      return { match, mutual, conversationId: conversation?.id ?? null };
+      const updatedMatch = (await listMatches(auth.user.id)).find((item) => item.id === match.id) ?? match;
+      return { match: updatedMatch, mutual, conversationId: conversation?.id ?? null };
     } catch {
       return reply.code(404).send({ error: "match_not_found" });
     }
@@ -720,21 +956,33 @@ export function buildServer() {
     if (!body.content?.trim()) return reply.code(400).send({ error: "message_required" });
     const data = await getConversation(auth.user.id, id);
     if (!data) return reply.code(404).send({ error: "conversation_not_found" });
+    const peerId = data.conversation.ownerId === auth.user.id
+      ? data.conversation.peerId
+      : data.conversation.ownerId;
+    const blocked = peerId ? await db.query.blocks.findFirst({
+      where: or(
+        and(eq(blocks.ownerId, auth.user.id), eq(blocks.blockedId, peerId)),
+        and(eq(blocks.ownerId, peerId), eq(blocks.blockedId, auth.user.id))
+      )
+    }) : null;
+    if (blocked || data.conversation.participantState === "blocked") {
+      return reply.code(403).send({ error: "contact_blocked" });
+    }
     const message = await addMessage({
       conversationId: id,
       senderId: auth.user.id,
       actor: "human",
       content: body.content.trim()
     });
-    const recipientId = data.conversation.ownerId === auth.user.id
-      ? data.conversation.peerId
-      : data.conversation.ownerId;
+    const recipientId = peerId;
     const guard = guardAgentReply(body.content);
     const agent = !recipientId
       ? { status: "no_recipient" }
       : guard.escalate
-        ? { status: "waiting_human", reason: guard.reason }
+        ? (await escalateConversation(recipientId, id, guard.reason ?? "涉及高风险事项，需要真人处理"),
+          { status: "waiting_human", reason: guard.reason })
         : await generateAgentReply(id, recipientId);
+    broadcastEvent({ type: "conversation.message", conversationId: id, recipientId, messageId: message?.id });
     return reply.code(201).send({ message, agent });
   });
 
@@ -747,6 +995,77 @@ export function buildServer() {
     const conversation = await setConversationAgentMode(auth.user.id, id, mode);
     if (!conversation) return reply.code(404).send({ error: "conversation_not_found" });
     return { status: mode === "paused" ? "human" : "agent", conversation };
+  });
+
+  app.post("/api/v1/conversations/:id/read", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const participant = await markConversationRead(auth.user.id, (request.params as { id: string }).id);
+    if (!participant) return reply.code(404).send({ error: "conversation_not_found" });
+    return { read: true };
+  });
+
+  app.post("/api/v1/conversations/:id/drafts/:draftId/decision", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const { id, draftId } = request.params as { id: string; draftId: string };
+    const body = request.body as { approve?: unknown; content?: unknown };
+    if (typeof body.approve !== "boolean") return reply.code(400).send({ error: "invalid_draft_decision" });
+    try {
+      const result = await decideReplyDraft(
+        auth.user.id,
+        draftId,
+        body.approve,
+        typeof body.content === "string" ? body.content : undefined
+      );
+      if (result.message) {
+        const data = await getConversation(auth.user.id, id);
+        const recipientId = data?.conversation.ownerId === auth.user.id
+          ? data.conversation.peerId
+          : data?.conversation.ownerId;
+        broadcastEvent({
+          type: "conversation.message",
+          conversationId: id,
+          recipientId,
+          messageId: result.message.id
+        });
+      }
+      return result;
+    } catch {
+      return reply.code(404).send({ error: "draft_not_found" });
+    }
+  });
+
+  app.post("/api/v1/conversations/:id/block", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    try {
+      const reason = String((request.body as { reason?: unknown } | undefined)?.reason ?? "").trim().slice(0, 240);
+      return await blockConversationPeer(auth.user.id, (request.params as { id: string }).id, reason);
+    } catch {
+      return reply.code(404).send({ error: "conversation_not_found" });
+    }
+  });
+
+  app.post("/api/v1/conversations/:id/report", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const body = request.body as { reason?: unknown; detail?: unknown };
+    if (typeof body.reason !== "string" || !body.reason.trim()) {
+      return reply.code(400).send({ error: "report_reason_required" });
+    }
+    try {
+      return {
+        report: await reportConversationPeer(
+          auth.user.id,
+          (request.params as { id: string }).id,
+          body.reason.trim().slice(0, 80),
+          typeof body.detail === "string" ? body.detail.trim().slice(0, 1000) : ""
+        )
+      };
+    } catch {
+      return reply.code(404).send({ error: "conversation_not_found" });
+    }
   });
 
   app.get("/api/v1/communities", async (request, reply) => {
@@ -819,12 +1138,20 @@ export function buildServer() {
   app.put("/api/v1/plaza/runtime", async (request, reply) => {
     const auth = await requireUser(request);
     if (!auth) return reply.code(401).send({ error: "authentication_required" });
-    const parsed = plazaRuntimeSettingsSchema.safeParse(request.body);
+    const body = request.body && typeof request.body === "object" ? request.body as Record<string, unknown> : {};
+    const normalizedBody = {
+      ...body,
+      cooldownSeconds: typeof body.cooldownSeconds === "number"
+        ? body.cooldownSeconds
+        : Math.max(5, Math.trunc(Number(body.cooldownMinutes) || 120) * 60)
+    };
+    const parsed = plazaRuntimeSettingsSchema.safeParse(normalizedBody);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
       const field = issue?.path.join(".") || "settings";
       const fieldMessages: Record<string, string> = {
-        cooldownMinutes: "冷却时间至少 5 分钟、最多 1440 分钟。低于 15 分钟属于高频模式，建议只在活动现场或小圈子中使用。",
+        cooldownSeconds: "冷却时间至少 5 秒、最多 24 小时。热恋模式会明显增加模型消耗，建议只在明确同意的小圈子中使用。",
+        cooldownMinutes: "冷却时间至少 1 分钟、最多 1440 分钟；如需 5 秒请使用热恋模式。",
         dailyLimit: "每日上限需要在 1–50 次之间。",
         activeFrom: "开始时间需要使用 HH:MM 格式。",
         activeUntil: "结束时间需要使用 HH:MM 格式。",
@@ -838,7 +1165,106 @@ export function buildServer() {
         issues: parsed.error.issues
       });
     }
-    return { runtime: await updatePlazaRuntimeSettings(auth.user.id, parsed.data) };
+    const runtime = await updatePlazaRuntimeSettings(auth.user.id, {
+      ...parsed.data,
+      cooldownMinutes: Math.max(1, Math.ceil(parsed.data.cooldownSeconds / 60))
+    });
+    if (runtime.mode === "continuous" && runtime.cooldownSeconds <= 5) {
+      const actions = await runContinuousPlazaTick(2, auth.user.id);
+      for (const action of actions) {
+        await db.insert(plazaDiscussions).values({
+          rootEventId: action.sourceEventId,
+          circleId: action.circleId,
+          initiatorId: action.initiatorId,
+          lastEventId: action.sourceEventId,
+          currentRound: 0,
+          maxRounds: action.maxRounds,
+          status: "active"
+        }).onConflictDoNothing();
+        await schedulePlazaConversation({
+          ...action,
+          threadRootId: action.sourceEventId,
+          round: 1,
+          maxRounds: action.maxRounds,
+          idempotencyKey: `plaza-continuous-response-${action.sourceEventId}`
+        });
+        broadcastEvent({ type: "plaza.event", circleId: action.circleId, eventId: action.sourceEventId });
+      }
+    }
+    return { runtime };
+  });
+
+  app.get("/api/v1/society", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    return getSocietySnapshot(auth.user.id);
+  });
+
+  app.put("/api/v1/society/settings", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const parsed = societySettingsSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_society_settings" });
+    return { settings: await setSocietyPaused(auth.user.id, parsed.data.paused) };
+  });
+
+  app.post("/api/v1/society/proposals", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const parsed = societyProposalSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid_society_proposal", issues: parsed.error.issues });
+    }
+    try {
+      const proposal = await createSocietyProposal(auth.user.id, parsed.data);
+      broadcastEvent({ type: "society.proposal", proposalId: proposal.id, targetUserId: proposal.targetUserId });
+      return reply.code(201).send({ proposal });
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "society_proposal_failed";
+      const conflict = [
+        "society_automation_paused", "society_relationship_evidence_insufficient",
+        "society_partner_required", "society_contact_blocked"
+      ].includes(reason);
+      return reply.code(conflict ? 409 : 400).send({ error: reason });
+    }
+  });
+
+  app.post("/api/v1/society/proposals/:id/decision", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const parsed = societyDecisionSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_society_decision" });
+    try {
+      const proposal = await decideSocietyProposal(
+        auth.user.id,
+        (request.params as { id: string }).id,
+        parsed.data.decision
+      );
+      broadcastEvent({ type: "society.proposal_decided", proposalId: proposal?.id });
+      return { proposal };
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "society_decision_failed";
+      if (reason === "society_proposal_not_found") return reply.code(404).send({ error: reason });
+      if (reason === "society_proposal_forbidden") return reply.code(403).send({ error: reason });
+      return reply.code(409).send({ error: reason });
+    }
+  });
+
+  app.post("/api/v1/society/digital-agents/:id/learning", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const parsed = digitalLearningSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: "invalid_learning_evidence", issues: parsed.error.issues });
+    }
+    try {
+      const result = await recordLearning(auth.user.id, (request.params as { id: string }).id, parsed.data);
+      return reply.code(201).send(result);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "digital_learning_failed";
+      if (reason === "digital_agent_forbidden") return reply.code(403).send({ error: reason });
+      return reply.code(409).send({ error: reason });
+    }
   });
 
   app.post("/api/v1/plaza/actions", {
@@ -851,11 +1277,24 @@ export function buildServer() {
     try {
       const event = await enterPlaza(auth.user.id, parsed.data.circleId, parsed.data.activity, parsed.data.content);
       if (event) {
+        const runtime = await getPlazaRuntimeSettings(auth.user.id);
+        await db.insert(plazaDiscussions).values({
+          rootEventId: event.id,
+          circleId: parsed.data.circleId,
+          initiatorId: auth.user.id,
+          lastEventId: event.id,
+          currentRound: 0,
+          maxRounds: runtime.maxConversationRounds,
+          status: "active"
+        }).onConflictDoNothing();
         await schedulePlazaConversation({
           circleId: parsed.data.circleId,
           initiatorId: auth.user.id,
           sourceEventId: event.id,
-          idempotencyKey: `plaza-response-${event.id}`
+          threadRootId: event.id,
+          round: 1,
+          maxRounds: runtime.maxConversationRounds,
+          idempotencyKey: `plaza-thread-${event.id}-round-1`
         });
         broadcastEvent({ type: "plaza.event", circleId: parsed.data.circleId, eventId: event.id });
       }

@@ -17,7 +17,7 @@ SPEC.loader.exec_module(app)
 class PlatformTests(unittest.TestCase):
     def test_registry_loads_independent_products(self):
         products = app.load_products()
-        self.assertEqual(24, len(products))
+        self.assertEqual(25, len(products))
         self.assertEqual(
             ["frame60", "decision-studio", "travel-frame", "game-hub", "privacy-vault"],
             [item.id for item in products[:5]],
@@ -185,12 +185,12 @@ class PlatformTests(unittest.TestCase):
         self.assertIn("/products/privacy-vault?from=card", catalog)
         self.assertIn("/products/flowframe-studio?from=card", catalog)
         self.assertIn('rel="icon" type="image/svg+xml"', catalog)
-        self.assertIn('href="https://lifeyoume.icu/vault/"', detail)
+        self.assertIn('href="/products/privacy-vault/open"', detail)
         self.assertNotIn("avatar-generator-service", portal)
 
         resume = next(item for item in products if item.id == "resume-forge")
         resume_detail = app.product_page(resume, products).decode("utf-8")
-        self.assertIn('href="https://lifeyoume.icu/resume/"', resume_detail)
+        self.assertIn('href="/products/resume-forge/open"', resume_detail)
         self.assertIn("求职成长产品线", resume_detail)
         self.assertIn("/products/fde-playbook", resume_detail)
 
@@ -256,16 +256,33 @@ class PlatformTests(unittest.TestCase):
         self.assertIn('data-admin-search="products"', document)
         self.assertIn("产品访问", document)
         self.assertIn("关闭访问", document)
-        self.assertIn("产品运营看板", document)
+        self.assertIn("用户兴趣与产品表现", document)
         self.assertIn("热门产品榜", document)
         self.assertIn("7 日点击趋势", document)
-        self.assertIn("TOP 1", document)
+        self.assertIn("展示 1", document)
+        self.assertNotIn("TOP 1", document)
+        self.assertIn("还没有点击数据", document)
         self.assertIn("无公开入口 · 置底", document)
         self.assertNotIn('class="site-header"', document)
         self.assertIn("privacy-vault", document)
         self.assertNotIn("not used by this render", document)
         self.assertIn("https://meyou.lifeyoume.icu/admin", document)
         self.assertIn("遇见 MeYou · 模型控制台", document)
+
+    def test_discovery_filters_include_all_categories_and_distinguish_promotions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = app.AuthStore(Path(directory) / "auth.db")
+            store.initialize()
+            store.record_product_click("privacy-vault")
+            store.set_pinned_priority("flowframe-studio", 20, "test")
+            with mock.patch.object(app, "AUTH_STORE", store):
+                document = app.catalog_page(app.load_products(), home=True).decode()
+        self.assertIn('data-category-filter="轻松娱乐"', document)
+        self.assertIn('id="product-availability"', document)
+        self.assertIn("主推产品", document)
+        self.assertIn("热度 TOP 1", document)
+        self.assertNotIn("热度 TOP 2", document)
+        self.assertIn('/assets/discovery.css', document)
 
     def test_admin_session_cookie_is_cross_subdomain_for_child_admins(self):
         header = app.Handler.admin_session_cookie("token-value")

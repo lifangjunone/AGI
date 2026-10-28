@@ -1,5 +1,38 @@
 [
   {
+    "id": "daily-2026-10-23",
+    "title": "2026-10-23 每日热点：技术、新闻与社区讨论精选",
+    "slug": "daily-2026-10-23",
+    "author": "Trend Forum 编辑部",
+    "category": "每日热点",
+    "tags": [
+      "热点",
+      "技术",
+      "新闻",
+      "自动发布"
+    ],
+    "status": "published",
+    "publishedAt": "2026-10-23T06:53:35.835Z",
+    "sourceReport": {
+      "date": "2026-10-23",
+      "path": "/Users/bytedance/Library/Application Support/Technology Exploration Agent/reports/2026-10-23.json",
+      "generatedAt": "2026-10-23T06:50:51.644822+00:00",
+      "analysisModel": "local-rules"
+    },
+    "excerpt": "luongnv89/claude-howto 正在成为开发者关注的新工具，重点判断其工作流整合能力是否可替代现有方案。",
+    "body": "今天的热点由 Technology Exploration 项目的最新日报生成，覆盖知乎、微博、小红书、X、V2EX、GitHub、Hacker News、Bilibili 等来源。\n\n## 今日关键信号\n1. luongnv89/claude-howto —— luongnv89/claude-howto 正在成为开发者关注的新工具，重点判断其工作流整合能力是否可替代现有方案。 来源：GitHub Trending、AI今日热榜/Anthropic、X、AI今日热榜/极客公园\n2. Certified Execution Harness for Agentic AI: Safe and Least-Intrusive Petri-Net Supervisory Control Between Reasoning and Action —— 这项研究提出新的模型组合或路由方法，核心价值在于提升跨数据集场景的稳定性。 来源：arXiv\n3. 分享一下,workskill.tools — 给 coding agent 用的技能商店， 60 个免费技能无需注册一条链接安装 —— 面向复杂任务自动执行的 AI Agent 技术或产品。 来源：NewsNow/V2EX\n4. Graphify-Labs/graphify —— Graphify-Labs/graphify 正在成为开发者关注的新工具，重点判断其工作流整合能力是否可替代现有方案。 来源：GitHub Trending\n5. 深度使用 WorkBuddy 有哪些实用技巧？ —— 一项正在升温的 AI 产品或技术动态。 来源：知乎\n\n## 热门内容 Top 8\n1. Certified Execution Harness for Agentic AI: Safe and Least-Intrusive Petri-Net Supervisory Control Between Reasoning and Action（arXiv · 热度 69.4）\n2. Graphify-Labs/graphify（GitHub Trending · 热度 68）\n3. AgentPhishing: A Benchmark of LLM Email Agents Under Adaptive Attack（arXiv · 热度 65.3）\n4. Major Revision, Minor Accountability: LLMs as Reviewers of Published Articles in Top-Tier Journals（arXiv · 热度 65.1）\n5. DietrichGebert/ponytail（GitHub Trending · 热度 63.5）\n6. Evaluating the Applicability of LLM Inference Optimizations on Apple Silicon（arXiv · 热度 61.3）\n7. Hillhouse leads investment in AI agent enterprise（AI今日热榜/36Kr · 热度 59.7）\n8. Announcing Artificial Analysis Coding Agent Index v2.0: FrontierCode v1.1 from Cognition replaces DeepSWE, SWE-Atlas-QnA grading is revis...（X · 热度 58）\n\n## 编辑建议\n适合把这些热点拆成 3 类内容：即时快讯、深度解读、技术趋势观察。后续可以接入登录、评论、点赞、收藏和人工审核流程。",
+    "relatedItems": [
+      "88xr42",
+      "5655qw",
+      "s04bwg",
+      "rvx2id",
+      "1evvjs",
+      "glhts4",
+      "zby97a",
+      "rz5bq1"
+    ]
+  },
+  {
     "id": "daily-2026-10-13",
     "title": "2026-10-13 每日热点：技术、新闻与社区讨论精选",
     "slug": "daily-2026-10-13",

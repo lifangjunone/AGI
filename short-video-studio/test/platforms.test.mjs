@@ -66,10 +66,14 @@ test("generates a preview content pack without charging", async (t) => {
   const result = await response.json();
   assert.equal(result.pack.source, "local-template");
   assert.equal(result.pack.sellingPoints, "轻薄透气，UPF50+，可收纳，通勤穿着不闷热");
-  assert.equal(result.pack.titles.length, 10);
-  assert.equal(result.pack.scripts.length, 3);
-  assert.equal(result.pack.calendar.length, 7);
-  assert.equal(result.payment.status, "not-integrated");
+  assert.equal(result.pack.titles.length, 1);
+  assert.equal(result.pack.scripts.length, 1);
+  assert.equal(result.pack.calendar, undefined);
+  assert.equal(result.pack.captions, undefined);
+  assert.equal(result.pack.hashtags, undefined);
+  assert.deepEqual(result.pack.deliverables, { titles: 10, scripts: 3, calendar: 7 });
+  assert.equal(result.payment.status, "checkout-available");
+  assert.doesNotMatch(JSON.stringify(result.pack), /连续用了一周|日常使用了一段时间/);
 });
 
 test("builds an Alipay web payment form without trusting a browser result", async (t) => {
@@ -120,6 +124,31 @@ test("uses mobile website payment to launch the Alipay app flow", async (t) => {
   const result = await response.json();
   assert.match(result.paymentHtml, /alipay\.trade\.wap\.pay/);
   assert.match(result.paymentHtml, /QUICK_WAP_WAP_PAY/);
+});
+
+test("checkout locks the preview and denies order-only recovery", async t => {
+  const instance = await startServer({ host: "127.0.0.1", port: 0, quiet: true });
+  t.after(() => new Promise(resolve => instance.server.close(resolve)));
+  const base = `http://127.0.0.1:${instance.port}`;
+  const previewResponse = await fetch(`${base}/api/content-pack`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ productName: "预览锁定商品", audience: "真实测试用户", sellingPoints: "可折叠收纳，带内侧小口袋" })
+  });
+  const cookie = previewResponse.headers.get("set-cookie").split(";")[0];
+  const preview = (await previewResponse.json()).pack;
+  const checkout = async headers => fetch(`${base}/api/content-pack/checkout`, {
+    method: "POST", headers: { "content-type": "application/json", ...headers },
+    body: JSON.stringify({ previewId: preview.previewId, productName: "篡改商品", sellingPoints: "完全不同的卖点" })
+  });
+  assert.equal((await checkout({})).status, 409);
+  const first = await (await checkout({ cookie })).json();
+  const second = await (await checkout({ cookie })).json();
+  assert.equal(first.orderId, second.orderId);
+  assert.equal(first.amount, preview.price);
+  assert.equal((await fetch(`${base}/api/payments/${first.orderId}`)).status, 403);
+  assert.equal((await fetch(`${base}/payment/return?out_trade_no=${first.orderId}`)).status, 403);
+  const status = await (await fetch(`${base}/api/payments/${first.orderId}`, { headers: { cookie } })).json();
+  assert.deepEqual(Object.keys(status.order).sort(), ["amount", "fulfilledAt", "orderId", "status"]);
 });
 
 test("serves the Zhizhu assistant workspace and generates all three previews", async (t) => {

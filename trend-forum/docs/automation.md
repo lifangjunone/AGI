@@ -1,4 +1,4 @@
-# 每日自动同步、发布与公网部署
+# 每 6 小时自动同步、发布与公网部署
 
 本项目的自动链路参考已有 `Technology Exploration / Technology Intelligence` 项目的数据产出。
 
@@ -39,45 +39,38 @@ cp -a public/data/. /var/www/trends/data/
 
 这可以只更新 JSON 数据，不必每天重新发布整站。
 
-## 当前已启用的 macOS LaunchAgent
+## 当前生产环境：阿里云 systemd timer
 
-当前机器已经安装两条相互独立的后台任务：
+生产环境已经迁移到阿里云，不依赖本地 Mac。服务器使用：
 
-- `09:00`：`com.local.technology-exploration-daily`
-  - 后台执行 Technology Exploration 采集器。
-  - 当天报告已存在时跳过，避免重复采集。
-  - 日志：`~/Library/Logs/technology-exploration-daily.log`
-- `09:10`：`com.local.trend-forum-daily`
-  - 检查当天报告，验证日期和榜单内容后生成站点数据。
-  - 如果报告尚未完成，每分钟重试一次，最晚等待至 `09:40`。
-  - 验证失败时保留线上旧版本，不会用旧数据生成当天文章。
-  - 只原子更新服务器上的 `trends.json` 和 `posts.json`，无需每日重建整站。
-  - 日志：`~/Library/Logs/trend-forum-daily.log`
+- `trend-forum-refresh.timer`：每天 `00:00 / 06:00 / 12:00 / 18:00`
+- `trend-forum-refresh.service`：完成采集、报告校验、数据转换和原子发布
+- 日志：`/var/log/trend-forum-refresh.log`
+- 错误日志：`/var/log/trend-forum-refresh.error.log`
 
-任务配置：
+服务器目录：
 
 ```text
-~/Library/LaunchAgents/com.local.technology-exploration-daily.plist
-~/Library/LaunchAgents/com.local.trend-forum-daily.plist
+/data/app/trend-forum/automation
+/data/app/trend-forum/technology-exploration
 ```
 
 检查运行状态：
 
 ```bash
-launchctl print gui/$(id -u)/com.local.technology-exploration-daily
-launchctl print gui/$(id -u)/com.local.trend-forum-daily
+systemctl status trend-forum-refresh.timer
+systemctl status trend-forum-refresh.service
 ```
 
 手动触发：
 
 ```bash
-launchctl kickstart -k gui/$(id -u)/com.local.technology-exploration-daily
-launchctl kickstart -k gui/$(id -u)/com.local.trend-forum-daily
+systemctl start trend-forum-refresh.service
 ```
 
 ## 与 Technology Exploration 的关系
 
-`Technology Exploration` 每天 09:00 生成日报；`Trend Forum` 从 09:10 开始检查并生成网站文章。
+`Technology Exploration` 每 6 小时在阿里云生成一次报告；采集完成后立即更新网站数据。若某个来源本轮采集失败，保留该来源上一轮有效榜单，并在数据中标记为缓存。
 
 这样可以形成：
 

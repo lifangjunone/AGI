@@ -18,7 +18,15 @@ export interface PlazaConversationJob {
   circleId: string;
   initiatorId: string;
   sourceEventId: string;
+  threadRootId?: string;
+  round: number;
+  maxRounds: number;
   idempotencyKey: string;
+}
+
+export function retryDelay(baseMs: number, failures: number, maxMs = 300_000) {
+  if (failures <= 0) return baseMs;
+  return Math.min(maxMs, baseMs * (2 ** Math.min(failures, 10)));
 }
 
 export async function scheduleMission(job: DiscoveryJob, options: JobsOptions = {}) {
@@ -63,6 +71,56 @@ if (process.env.NODE_ENV !== "test") {
   worker.on("failed", (job, error) => {
     console.error(JSON.stringify({ level: "error", event: "discovery.failed", jobId: job?.id, message: error.message }));
   });
+  const discoveryTickMs = Math.max(30_000, Number(process.env.DISCOVERY_TICK_MS ?? 60_000));
+  let discoveryTickRunning = false;
+  let discoveryFailures = 0;
+  let discoveryTimer: NodeJS.Timeout | undefined;
+  function scheduleDiscovery(delay: number) {
+    discoveryTimer = setTimeout(() => void queueDueDiscovery(), delay);
+    discoveryTimer.unref();
+  }
+  async function queueDueDiscovery() {
+    if (!workerToken || discoveryTickRunning) {
+      scheduleDiscovery(discoveryTickMs);
+      return;
+    }
+    discoveryTickRunning = true;
+    try {
+      const response = await fetch(`${baseUrl}/internal/jobs/discovery-due`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-meyou-worker-token": workerToken
+        },
+        body: JSON.stringify({ limit: 10 }),
+        signal: AbortSignal.timeout(30_000)
+      });
+      if (!response.ok) throw new Error(`discovery_due_failed:${response.status}`);
+      const result = await response.json() as { queued: number };
+      if (result.queued > 0) {
+        console.info(JSON.stringify({ level: "info", event: "discovery.due", queued: result.queued }));
+      }
+      if (discoveryFailures > 0) {
+        console.info(JSON.stringify({ level: "info", event: "discovery.recovered", failures: discoveryFailures }));
+      }
+      discoveryFailures = 0;
+    } catch (error) {
+      discoveryFailures += 1;
+      if (discoveryFailures === 1 || (discoveryFailures & (discoveryFailures - 1)) === 0) {
+        console.error(JSON.stringify({
+          level: "error",
+          event: "discovery.due_failed",
+          failures: discoveryFailures,
+          retryInMs: retryDelay(discoveryTickMs, discoveryFailures),
+          message: error instanceof Error ? error.message : "unknown"
+        }));
+      }
+    } finally {
+      discoveryTickRunning = false;
+      scheduleDiscovery(retryDelay(discoveryTickMs, discoveryFailures));
+    }
+  }
+  scheduleDiscovery(3_000);
   const plazaWorker = new Worker<PlazaConversationJob>("plaza-conversation", async (job) => {
     if (!workerToken) throw new Error("worker_internal_token_missing");
     const response = await fetch(`${baseUrl}/internal/jobs/plaza`, {
@@ -80,10 +138,19 @@ if (process.env.NODE_ENV !== "test") {
   plazaWorker.on("failed", (job, error) => {
     console.error(JSON.stringify({ level: "error", event: "plaza.failed", jobId: job?.id, message: error.message }));
   });
-  const continuousTickMs = Math.max(60_000, Number(process.env.PLAZA_CONTINUOUS_TICK_MS ?? 300_000));
+  const continuousTickMs = Math.max(5_000, Number(process.env.PLAZA_CONTINUOUS_TICK_MS ?? 5_000));
   let continuousTickRunning = false;
+  let continuousFailures = 0;
+  let continuousTimer: NodeJS.Timeout | undefined;
+  function scheduleContinuous(delay: number) {
+    continuousTimer = setTimeout(() => void runContinuousTick(), delay);
+    continuousTimer.unref();
+  }
   async function runContinuousTick() {
-    if (!workerToken || continuousTickRunning) return;
+    if (!workerToken || continuousTickRunning) {
+      scheduleContinuous(continuousTickMs);
+      return;
+    }
     continuousTickRunning = true;
     try {
       const response = await fetch(`${baseUrl}/internal/jobs/plaza-continuous`, {
@@ -100,17 +167,25 @@ if (process.env.NODE_ENV !== "test") {
       if (result.processed > 0) {
         console.info(JSON.stringify({ level: "info", event: "plaza.continuous", processed: result.processed }));
       }
+      if (continuousFailures > 0) {
+        console.info(JSON.stringify({ level: "info", event: "plaza.continuous_recovered", failures: continuousFailures }));
+      }
+      continuousFailures = 0;
     } catch (error) {
-      console.error(JSON.stringify({
-        level: "error",
-        event: "plaza.continuous_failed",
-        message: error instanceof Error ? error.message : "unknown"
-      }));
+      continuousFailures += 1;
+      if (continuousFailures === 1 || (continuousFailures & (continuousFailures - 1)) === 0) {
+        console.error(JSON.stringify({
+          level: "error",
+          event: "plaza.continuous_failed",
+          failures: continuousFailures,
+          retryInMs: retryDelay(continuousTickMs, continuousFailures),
+          message: error instanceof Error ? error.message : "unknown"
+        }));
+      }
     } finally {
       continuousTickRunning = false;
+      scheduleContinuous(retryDelay(continuousTickMs, continuousFailures));
     }
   }
-  const continuousTimer = setInterval(() => void runContinuousTick(), continuousTickMs);
-  continuousTimer.unref();
-  setTimeout(() => void runContinuousTick(), 15_000).unref();
+  scheduleContinuous(5_000);
 }

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: nexora-runtime
+description: Nexora Runtime enterprise agent execution platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

@@ -4,8 +4,13 @@ CREATE TABLE IF NOT EXISTS agents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(), tenant_id uuid NOT NULL,
   name text NOT NULL, description text NOT NULL DEFAULT '', status text NOT NULL DEFAULT 'draft',
   owner_id uuid NOT NULL, graph jsonb NOT NULL DEFAULT '{"nodes":[],"edges":[]}',
+  execution_type text NOT NULL DEFAULT 'workflow'
+    CHECK (execution_type IN ('workflow', 'agent_loop')),
+  runtime jsonb NOT NULL DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS execution_type text NOT NULL DEFAULT 'workflow';
+ALTER TABLE agents ADD COLUMN IF NOT EXISTS runtime jsonb NOT NULL DEFAULT '{}';
 CREATE INDEX IF NOT EXISTS agents_tenant_idx ON agents (tenant_id, updated_at DESC);
 CREATE INDEX IF NOT EXISTS agents_tenant_status_updated_idx
   ON agents (tenant_id, status, updated_at DESC, id DESC);

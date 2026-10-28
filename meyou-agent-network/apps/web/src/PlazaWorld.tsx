@@ -13,7 +13,9 @@ interface PlazaWorldProps {
   camera: PlazaCamera;
   setCamera: Dispatch<SetStateAction<PlazaCamera>>;
   onEnterCircle: (circleId: string) => void;
+  onSelectAgent?: (userId: string) => void;
   onMoveAgent?: (circleId: string, x: number, y: number) => Promise<void>;
+  moveMode?: boolean;
   detailOpen?: boolean;
 }
 
@@ -26,9 +28,64 @@ const colors: Record<string, { roof: string; wall: string; accent: string }> = {
 };
 
 const peopleColors = ["#315c4a", "#df765f", "#6b7894", "#b8893d", "#795f7e", "#3f7182"];
+const DISCUSSION_LINGER_MS = 8_000;
+
+export interface DiscussionScene {
+  rootEventId: string;
+  participantIds: string[];
+  speakerId: string;
+  active: boolean;
+}
+
+interface SocialPose {
+  role: "speaker" | "listener" | "none";
+  facing: -1 | 1;
+  reactionIndex?: number;
+}
 
 function hash(value: string) {
   return [...value].reduce((total, char) => ((total * 31) + char.charCodeAt(0)) >>> 0, 7);
+}
+
+export function getDiscussionScene(
+  data: PlazaSnapshot,
+  circleId: string,
+  now = Date.now()
+): DiscussionScene | null {
+  const discussion = data.discussions
+    .filter((item) => item.circleId === circleId)
+    .filter((item) => item.status === "active" || now - Date.parse(item.updatedAt) < DISCUSSION_LINGER_MS)
+    .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0];
+  if (!discussion) return null;
+  const threadEvents = data.events
+    .filter((event) => event.circleId === circleId)
+    .filter((event) => event.id === discussion.rootEventId || event.metadata?.threadRootId === discussion.rootEventId)
+    .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
+  const participantIds = [...new Set(threadEvents.map((event) => event.userId))];
+  const speakerId = threadEvents.at(-1)?.userId;
+  if (participantIds.length < 2 || !speakerId) return null;
+  return {
+    rootEventId: discussion.rootEventId,
+    participantIds,
+    speakerId,
+    active: discussion.status === "active"
+  };
+}
+
+export function getDiscussionSlot(index: number, count: number, centerX: number, centerY: number) {
+  if (count === 2) {
+    return { x: centerX + (index === 0 ? -34 : 34), y: centerY + (index === 0 ? 3 : -3) };
+  }
+  const ring = Math.floor(index / 6);
+  const ringIndex = index % 6;
+  const ringCount = Math.min(6, count - ring * 6);
+  const radiusX = 48 + ring * 42;
+  const radiusY = 25 + ring * 22;
+  const angle = -Math.PI / 2 + (ringIndex / ringCount) * Math.PI * 2;
+  return {
+    x: centerX + Math.cos(angle) * radiusX,
+    y: centerY + Math.sin(angle) * radiusY
+  };
 }
 
 function roundedRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
@@ -110,20 +167,32 @@ function drawNpc(
   x: number,
   y: number,
   time: number,
-  moving = false
+  moving = false,
+  socialPose: SocialPose = { role: "none", facing: 1 }
 ) {
   const seed = hash(agent.userId);
   const shirt = agent.npcColor ?? (agent.mine ? "#e86751" : peopleColors[seed % peopleColors.length]!);
   const skin = ["#f2c9a8", "#e5b58d", "#f5d2b5", "#c98f68", "#9f684d"][seed % 5]!;
   const hair = ["#30231f", "#5f4437", "#211d1c", "#8a5a35"][seed % 4]!;
-  const walking = moving || agent.activity === "walking";
-  const bob = Math.sin(time * (walking ? .009 : .003) + seed) * (walking ? 2.5 : 1);
+  const social = socialPose.role !== "none";
+  const walking = !social && (moving || agent.activity === "walking");
+  const moment = agent.momentState;
+  const momentEnergy = moment?.energy ?? 0;
+  const momentValence = moment?.valence ?? 0;
+  const speakingBeat = socialPose.role === "speaker" ? Math.sin(time * .012 + seed) : 0;
+  const listeningBeat = socialPose.role === "listener" ? Math.max(0, Math.sin(time * .004 + seed)) : 0;
+  const bob = social
+    ? (socialPose.role === "speaker" ? speakingBeat * 1.1 : listeningBeat * 1.4)
+    : Math.sin(time * (walking ? .009 : .0025 + Math.max(0, momentEnergy) * .002) + seed)
+      * (walking ? 2.5 : 1 + Math.max(0, momentEnergy) * .9);
   context.save();
   context.translate(x, y + bob);
   context.fillStyle = "rgba(24,50,67,.16)";
   context.beginPath();
   context.ellipse(0, 12, 15, 5, 0, 0, Math.PI * 2);
   context.fill();
+  context.scale(socialPose.facing, 1);
+  if (socialPose.role === "speaker") context.rotate(speakingBeat * .018 - .025);
   context.strokeStyle = shirt;
   context.lineWidth = 5;
   context.lineCap = "round";
@@ -140,10 +209,25 @@ function drawNpc(
   context.strokeStyle = skin;
   context.lineWidth = 4;
   context.beginPath();
-  context.moveTo(-8, -18);
-  context.lineTo(-13 - stride * .45, -7);
-  context.moveTo(8, -18);
-  context.lineTo(13 + stride * .45, -7);
+  if (socialPose.role === "speaker") {
+    const gesture = speakingBeat * 3;
+    context.moveTo(-8, -18);
+    context.lineTo(-14, -8);
+    context.moveTo(8, -18);
+    context.lineTo(14 + gesture, -24 - Math.abs(gesture));
+    context.lineTo(19 + gesture, -19);
+  } else if (socialPose.role === "listener") {
+    context.moveTo(-8, -18);
+    context.lineTo(-12, -7);
+    context.moveTo(8, -18);
+    context.lineTo(13, -24);
+    context.lineTo(9, -30);
+  } else {
+    context.moveTo(-8, -18);
+    context.lineTo(-13 - stride * .45, -7);
+    context.moveTo(8, -18);
+    context.lineTo(13 + stride * .45, -7);
+  }
   context.stroke();
   context.fillStyle = skin;
   context.beginPath();
@@ -156,6 +240,74 @@ function drawNpc(
   context.lineTo(-9, -31);
   context.closePath();
   context.fill();
+  context.strokeStyle = "#513c34";
+  context.fillStyle = "#513c34";
+  context.lineWidth = 1.2;
+  context.beginPath();
+  context.arc(-3.2, -32, .8, 0, Math.PI * 2);
+  context.arc(3.2, -32, .8, 0, Math.PI * 2);
+  context.fill();
+  context.beginPath();
+  if (socialPose.role === "speaker") {
+    context.ellipse(3.5, -27.4, 2.1, 1.2 + Math.abs(speakingBeat) * .8, 0, 0, Math.PI * 2);
+  } else if (momentValence < -.25) {
+    context.arc(2.5, -25.8, 3, Math.PI * 1.18, Math.PI * 1.82);
+  } else {
+    context.arc(2.5, -28.5, 3, .12, Math.PI * .82);
+  }
+  context.stroke();
+  context.restore();
+}
+
+function drawDiscussionLinks(
+  context: CanvasRenderingContext2D,
+  participants: Array<{ x: number; y: number }>,
+  centerX: number,
+  centerY: number,
+  time: number,
+  reducedMotion: boolean
+) {
+  context.save();
+  context.strokeStyle = "rgba(232,103,81,.18)";
+  context.lineWidth = 1.5;
+  context.setLineDash([3, 7]);
+  for (const participant of participants) {
+    context.beginPath();
+    context.moveTo(participant.x, participant.y - 12);
+    context.quadraticCurveTo(centerX, centerY - 34, centerX, centerY - 10);
+    context.stroke();
+  }
+  context.setLineDash([]);
+  context.fillStyle = "rgba(232,103,81,.58)";
+  const pulseRadius = reducedMotion ? 3 : 2.5 + (Math.sin(time * .005) + 1) * 1.2;
+  context.beginPath();
+  context.arc(centerX, centerY - 10, pulseRadius, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function drawListeningCue(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  time: number,
+  reducedMotion: boolean,
+  reactionIndex: number
+) {
+  const reactions = ["···", "嗯", "✓"];
+  const label = reactions[reactionIndex % reactions.length]!;
+  const lift = reducedMotion ? 0 : Math.sin(time * .0035 + reactionIndex * 1.7) * 1.2;
+  context.save();
+  roundedRect(context, x + 12, y - 83 + lift, 25, 20, 9);
+  context.fillStyle = "rgba(255,253,249,.92)";
+  context.strokeStyle = "rgba(49,92,74,.18)";
+  context.lineWidth = 1;
+  context.fill();
+  context.stroke();
+  context.fillStyle = "#315c4a";
+  context.font = '800 10px "Noto Sans SC", sans-serif';
+  context.textAlign = "center";
+  context.fillText(label, x + 24.5, y - 69 + lift);
   context.restore();
 }
 
@@ -196,14 +348,128 @@ function drawMineGlow(context: CanvasRenderingContext2D, x: number, y: number, t
   context.restore();
 }
 
+function activityBubble(agent: PlazaSnapshot["agents"][number]) {
+  if (agent.momentState?.label) return agent.momentState.label;
+  if (agent.activity === "idle") return "?";
+  if (agent.activity === "looking") return "找人";
+  if (agent.activity === "business") return "业务";
+  if (agent.activity === "dating") return "关系";
+  if (agent.activity === "chatting") return "正在聊";
+  return "走";
+}
+
+export function buildBubbleLines(content: string, maxChars = 14, maxLines = 2) {
+  const normalized = content.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  const characters = Array.from(normalized);
+  const visibleLimit = maxChars * maxLines;
+  const clipped = characters.length > visibleLimit;
+  const visible = characters.slice(0, visibleLimit);
+  const lines = Array.from({ length: Math.ceil(visible.length / maxChars) }, (_, index) =>
+    visible.slice(index * maxChars, (index + 1) * maxChars).join("")
+  );
+  if (clipped && lines.length) {
+    const lastIndex = lines.length - 1;
+    lines[lastIndex] = `${Array.from(lines[lastIndex]!).slice(0, Math.max(1, maxChars - 1)).join("")}…`;
+  }
+  return lines;
+}
+
+function drawRuntimeBadge(
+  context: CanvasRenderingContext2D,
+  agent: PlazaSnapshot["agents"][number],
+  x: number,
+  y: number
+) {
+  const continuous = agent.runtimeMode === "continuous";
+  const label = continuous ? "持续自治" : "受控自治";
+  context.save();
+  context.font = '800 9px "Noto Sans SC", sans-serif';
+  const width = context.measureText(label).width + 16;
+  const bx = x - width / 2;
+  const by = y - 57;
+  roundedRect(context, bx, by, width, 19, 9);
+  context.fillStyle = continuous ? "rgba(255,239,233,.97)" : "rgba(238,243,240,.97)";
+  context.strokeStyle = continuous ? "rgba(232,103,81,.32)" : "rgba(49,92,74,.24)";
+  context.lineWidth = 1;
+  context.fill();
+  context.stroke();
+  context.beginPath();
+  context.arc(bx + 8, by + 9.5, 2.5, 0, Math.PI * 2);
+  context.fillStyle = continuous ? "#e86751" : "#315c4a";
+  context.fill();
+  context.fillStyle = continuous ? "#a84939" : "#315c4a";
+  context.textAlign = "center";
+  context.fillText(label, bx + width / 2 + 3, by + 13);
+  context.restore();
+}
+
+function drawStatusBubble(
+  context: CanvasRenderingContext2D,
+  agent: PlazaSnapshot["agents"][number],
+  x: number,
+  y: number,
+  time: number,
+  reducedMotion: boolean,
+  content?: string
+) {
+  const isSpeech = Boolean(content?.trim());
+  const label = isSpeech ? content!.trim() : activityBubble(agent);
+  const lines = isSpeech ? buildBubbleLines(label) : [label];
+  const pulse = reducedMotion ? 0 : Math.sin(time * .004 + hash(agent.userId)) * 1.5;
+  context.save();
+  context.font = `700 ${isSpeech ? 11 : 12}px "Noto Sans SC", sans-serif`;
+  const measuredWidth = Math.max(...lines.map((line) => context.measureText(line).width), 0);
+  const width = Math.min(176, Math.max(isSpeech ? 108 : 34, measuredWidth + (isSpeech ? 26 : 18)));
+  const height = isSpeech ? 46 : 24;
+  const bx = isSpeech ? x - width / 2 : x + 14;
+  const by = y - (isSpeech ? 119 : 91) + pulse;
+  context.fillStyle = isSpeech ? "rgba(255,253,249,.97)" : "rgba(255,250,241,.9)";
+  context.strokeStyle = isSpeech ? "rgba(232,103,81,.35)" : "rgba(24,50,67,.12)";
+  context.lineWidth = 1;
+  roundedRect(context, bx, by, width, height, 12);
+  context.fill();
+  context.stroke();
+  context.beginPath();
+  const tailX = isSpeech ? x : bx + 11;
+  context.moveTo(tailX - 7, by + height - 1);
+  context.lineTo(tailX, by + height + 8);
+  context.lineTo(tailX + 8, by + height - 1);
+  context.closePath();
+  context.fill();
+  context.fillStyle = isSpeech ? "#a84939" : "#526672";
+  context.textAlign = "center";
+  if (isSpeech) {
+    lines.forEach((line, index) => {
+      context.fillText(line, bx + width / 2, by + 17 + index * 16);
+    });
+  } else {
+    context.fillText(label, bx + width / 2, by + 16);
+  }
+  context.restore();
+}
+
 export function PlazaWorld({
-  data, view, camera, setCamera, onEnterCircle, onMoveAgent, detailOpen = true
+  data, view, camera, setCamera, onEnterCircle, onSelectAgent, onMoveAgent, moveMode = false, detailOpen = true
 }: PlazaWorldProps) {
+  type AmbientWalk = {
+    x: number;
+    y: number;
+    targetX: number;
+    targetY: number;
+    moving: boolean;
+    nextMoveAt: number;
+    step: number;
+  };
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dragRef = useRef<{ id: number; x: number; y: number; originX: number; originY: number; moved: boolean } | null>(null);
   const frameRef = useRef(0);
   const hitRef = useRef<Array<{ id: string; x: number; y: number; radius: number }>>([]);
+  const circleHitRef = useRef<Map<string, { x: number; y: number }>>(new Map());
   const minePositionRef = useRef<{ x: number; y: number; targetX: number; targetY: number; moving: boolean } | null>(null);
+  const ambientWalkRef = useRef<Map<string, AmbientWalk>>(new Map());
+  const discussionRootRef = useRef<string | null>(null);
+  const lastFrameTimeRef = useRef(0);
   const movingRef = useRef(false);
   const mine = data.agents.find((agent) => agent.mine);
 
@@ -218,6 +484,30 @@ export function PlazaWorld({
   }, [mine?.userId, mine?.x, mine?.y]);
 
   useEffect(() => {
+    if (view !== "circle") {
+      ambientWalkRef.current.clear();
+      return;
+    }
+    const now = performance.now();
+    const visibleIds = new Set(data.agents.filter((agent) => !agent.mine).map((agent) => agent.userId));
+    for (const userId of ambientWalkRef.current.keys()) {
+      if (!visibleIds.has(userId)) ambientWalkRef.current.delete(userId);
+    }
+    for (const agent of data.agents) {
+      if (agent.mine || ambientWalkRef.current.has(agent.userId)) continue;
+      ambientWalkRef.current.set(agent.userId, {
+        x: agent.x,
+        y: agent.y,
+        targetX: agent.x,
+        targetY: agent.y,
+        moving: false,
+        nextMoveAt: now + 900 + (hash(agent.userId) % 4_800),
+        step: 0
+      });
+    }
+  }, [data.agents, view]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const context = canvas.getContext("2d");
@@ -226,6 +516,10 @@ export function PlazaWorld({
     let stopped = false;
     const render = (time: number) => {
       if (stopped) return;
+      const frameDelta = lastFrameTimeRef.current
+        ? Math.min(50, Math.max(0, time - lastFrameTimeRef.current))
+        : 16;
+      lastFrameTimeRef.current = time;
       const rect = canvas.getBoundingClientRect();
       const ratio = Math.min(2, window.devicePixelRatio || 1);
       const pixelWidth = Math.max(1, Math.round(rect.width * ratio));
@@ -359,14 +653,58 @@ export function PlazaWorld({
           const angle = (index / treeCount) * Math.PI * 2;
           drawTree(context, centerX + Math.cos(angle) * rect.width * .37, centerY + 40 + Math.sin(angle) * rect.height * .29, 25);
         }
-        data.agents
+        const discussion = circle ? getDiscussionScene(data, circle.id) : null;
+        const participantIndex = new Map(discussion?.participantIds.map((userId, index) => [userId, index]) ?? []);
+        const latestThreadEvent = discussion
+          ? data.events
+            .filter((event) => event.circleId === circle?.id)
+            .filter((event) => event.id === discussion.rootEventId || event.metadata?.threadRootId === discussion.rootEventId)
+            .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0]
+          : undefined;
+        const drawerSafeWidth = detailOpen
+          ? (rect.width >= 760 ? rect.width * .62 : rect.width * .47)
+          : rect.width * .84;
+        if (!discussion && discussionRootRef.current && minePositionRef.current && mine) {
+          minePositionRef.current.targetX = mine.x;
+          minePositionRef.current.targetY = mine.y;
+          minePositionRef.current.moving = !reducedMotion;
+          movingRef.current = !reducedMotion;
+        }
+        discussionRootRef.current = discussion?.rootEventId ?? null;
+        const renderedAgents = data.agents
           .map((agent) => {
             const radius = Math.max(8, circle?.radius ?? 18);
             let worldX = agent.x;
             let worldY = agent.y;
             let moving = false;
+            const socialIndex = participantIndex.get(agent.userId);
+            const discussionCenterAngle = discussion ? (hash(discussion.rootEventId) % 360) * Math.PI / 180 : 0;
+            const discussionCenter = circle && discussion ? {
+              x: circle.x + Math.cos(discussionCenterAngle) * circle.radius * .12,
+              y: circle.y + Math.sin(discussionCenterAngle) * circle.radius * .08
+            } : null;
+            const screenSlot = socialIndex !== undefined && discussionCenter
+              ? getDiscussionSlot(
+                socialIndex,
+                discussion!.participantIds.length,
+                0,
+                0
+              )
+              : null;
+            const discussionTarget = screenSlot && discussionCenter && circle ? {
+              x: discussionCenter.x + screenSlot.x * (radius * 2 / drawerSafeWidth),
+              y: discussionCenter.y + screenSlot.y * (radius * 2 / (rect.height * .5))
+            } : null;
             if (agent.mine && minePositionRef.current) {
               const position = minePositionRef.current;
+              if (discussionTarget && !moveMode) {
+                position.targetX = discussionTarget.x;
+                position.targetY = discussionTarget.y;
+                if (Math.hypot(position.targetX - position.x, position.targetY - position.y) > .035) {
+                  position.moving = !reducedMotion;
+                  movingRef.current = !reducedMotion;
+                }
+              }
               const dx = position.targetX - position.x;
               const dy = position.targetY - position.y;
               if (!reducedMotion && Math.hypot(dx, dy) > .035) {
@@ -382,23 +720,95 @@ export function PlazaWorld({
               worldX = position.x;
               worldY = position.y;
               moving = position.moving;
+            } else if (!agent.mine && circle) {
+              const state = ambientWalkRef.current.get(agent.userId);
+              if (state) {
+                if (discussionTarget) {
+                  state.targetX = discussionTarget.x;
+                  state.targetY = discussionTarget.y;
+                  if (reducedMotion) {
+                    state.x = state.targetX;
+                    state.y = state.targetY;
+                    state.moving = false;
+                  } else {
+                    state.moving = Math.hypot(state.targetX - state.x, state.targetY - state.y) > .035;
+                  }
+                } else if (!reducedMotion && !state.moving && time >= state.nextMoveAt) {
+                  state.step += 1;
+                  const seed = hash(`${agent.userId}:${state.step}`);
+                  const angle = ((seed % 360) / 180) * Math.PI;
+                  const distance = circle.radius * (.18 + ((seed >>> 8) % 54) / 100);
+                  state.targetX = circle.x + Math.cos(angle) * distance;
+                  state.targetY = circle.y + Math.sin(angle) * distance * .82;
+                  state.moving = true;
+                }
+                if (!reducedMotion && state.moving) {
+                  const dx = state.targetX - state.x;
+                  const dy = state.targetY - state.y;
+                  const remaining = Math.hypot(dx, dy);
+                  const speed = (.00055 + (hash(agent.userId) % 5) * .00008) * frameDelta;
+                  if (remaining <= Math.max(.04, speed)) {
+                    state.x = state.targetX;
+                    state.y = state.targetY;
+                    state.moving = false;
+                    state.nextMoveAt = time + 2_400 + (hash(`${agent.userId}:wait:${state.step}`) % 7_600);
+                  } else {
+                    state.x += (dx / remaining) * speed;
+                    state.y += (dy / remaining) * speed;
+                  }
+                }
+                worldX = state.x;
+                worldY = state.y;
+                moving = state.moving;
+              }
             }
             const localX = Math.max(0, Math.min(1, .5 + (worldX - (circle?.x ?? 50)) / (radius * 2)));
             const localY = Math.max(0, Math.min(1, .5 + (worldY - (circle?.y ?? 50)) / (radius * 2)));
-            const drawerSafeWidth = detailOpen
-              ? (rect.width >= 760 ? rect.width * .62 : rect.width * .47)
-              : rect.width * .84;
             return {
               agent,
               x: rect.width * .08 + localX * drawerSafeWidth,
               y: rect.height * .25 + localY * rect.height * .5,
-              moving
+              moving,
+              socialIndex
             };
-          })
+          });
+        circleHitRef.current = new Map(renderedAgents.map(({ agent, x, y }) => [agent.userId, { x, y }]));
+        const socialAgents = renderedAgents.filter((item) => item.socialIndex !== undefined);
+        if (discussion && socialAgents.length >= 2) {
+          const centerX = socialAgents.reduce((sum, item) => sum + item.x, 0) / socialAgents.length;
+          const centerY = socialAgents.reduce((sum, item) => sum + item.y, 0) / socialAgents.length;
+          drawDiscussionLinks(context, socialAgents, centerX, centerY, reducedMotion ? 0 : time, reducedMotion);
+        }
+        renderedAgents
           .sort((a, b) => a.y - b.y)
-          .forEach(({ agent, x, y, moving }) => {
+          .forEach(({ agent, x, y, moving, socialIndex }) => {
+            const social = socialIndex !== undefined && discussion;
+            const socialCenterX = socialAgents.length
+              ? socialAgents.reduce((sum, item) => sum + item.x, 0) / socialAgents.length
+              : x;
+            const socialPose: SocialPose = social ? {
+              role: agent.userId === discussion.speakerId ? "speaker" : "listener",
+              facing: socialCenterX >= x ? 1 : -1,
+              reactionIndex: socialIndex
+            } : { role: "none", facing: 1 };
             if (agent.mine) drawMineGlow(context, x, y, time, reducedMotion);
-            drawNpc(context, agent, x, y, reducedMotion ? 0 : time, moving);
+            drawNpc(context, agent, x, y, reducedMotion ? 0 : time, moving, socialPose);
+            drawRuntimeBadge(context, agent, x, y);
+            if (socialPose.role === "speaker") {
+              drawStatusBubble(
+                context,
+                agent,
+                x,
+                y,
+                reducedMotion ? 0 : time,
+                reducedMotion,
+                latestThreadEvent?.content
+              );
+            } else if (socialPose.role === "listener") {
+              drawListeningCue(context, x, y, reducedMotion ? 0 : time, reducedMotion, socialPose.reactionIndex ?? 0);
+            } else {
+              drawStatusBubble(context, agent, x, y, reducedMotion ? 0 : time, reducedMotion);
+            }
             context.font = '700 11px "Noto Sans SC", sans-serif';
             const label = `${agent.agentName}${agent.mine ? " · 我的" : ""}`;
             const width = context.measureText(label).width + 14;
@@ -419,6 +829,7 @@ export function PlazaWorld({
     observer.observe(canvas);
     return () => {
       stopped = true;
+      lastFrameTimeRef.current = 0;
       observer.disconnect();
       window.cancelAnimationFrame(frameRef.current);
     };
@@ -442,15 +853,30 @@ export function PlazaWorld({
   function onPointerUp(event: PointerEvent<HTMLCanvasElement>) {
     if (view === "circle") {
       const circle = data.circles[0];
-      const currentMine = data.agents.find((agent) => agent.mine);
-      if (!circle || !currentMine || !onMoveAgent) return;
       const rect = event.currentTarget.getBoundingClientRect();
       const screenX = event.clientX - rect.left;
       const screenY = event.clientY - rect.top;
       const drawerSafeWidth = detailOpen
         ? (rect.width >= 760 ? rect.width * .62 : rect.width * .47)
         : rect.width * .84;
-      const radius = Math.max(8, circle.radius);
+      const radius = Math.max(8, circle?.radius ?? 18);
+      if (!moveMode && circle && onSelectAgent) {
+        const hit = data.agents
+          .map((agent) => {
+            const rendered = circleHitRef.current.get(agent.userId);
+            const x = rendered?.x ?? rect.width * .5;
+            const y = rendered?.y ?? rect.height * .5;
+            return { userId: agent.userId, distance: Math.hypot(screenX - x, screenY - y) };
+          })
+          .sort((left, right) => left.distance - right.distance)[0];
+        if (hit && hit.distance <= 32) {
+          onSelectAgent(hit.userId);
+          return;
+        }
+      }
+      if (!moveMode) return;
+      const currentMine = data.agents.find((agent) => agent.mine);
+      if (!circle || !currentMine || !onMoveAgent) return;
       const localX = Math.max(.03, Math.min(.97, (screenX - rect.width * .08) / drawerSafeWidth));
       const localY = Math.max(.03, Math.min(.97, (screenY - rect.height * .25) / (rect.height * .5)));
       const rawX = circle.x + (localX - .5) * radius * 2;
@@ -510,7 +936,7 @@ export function PlazaWorld({
 
   return <canvas
     ref={canvasRef}
-    className={`living-town-canvas ${view === "circle" && mine && onMoveAgent ? "agent-controllable" : ""}`}
+    className={`living-town-canvas ${view === "circle" && mine && onMoveAgent && moveMode ? "agent-controllable" : ""}`}
     aria-hidden="true"
     onPointerDown={onPointerDown}
     onPointerMove={onPointerMove}

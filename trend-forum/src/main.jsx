@@ -144,7 +144,7 @@ function Hero({ trends, loading }) {
         </nav>
         <div className="update-badge">
           <span className={loading ? "pulse-dot loading-dot" : "pulse-dot"} />
-          {loading ? "正在更新" : `${trends.sourceReport?.date || "今日"} 已更新`}
+          {loading ? "正在更新" : `${formatUpdateTime(trends.sourceReport)} 更新`}
         </div>
       </div>
     </header>
@@ -415,7 +415,9 @@ function TrendFeed({ items }) {
 }
 
 function CoverageCard({ trends }) {
-  const availableSources = (trends.sourceStatus || []).filter((item) => item.status === "ok").length;
+  const availableSources = (trends.sourceStatus || []).filter((item) =>
+    ["ok", "cached"].includes(item.status),
+  ).length;
   const boardCount = trends.boards?.length || 0;
   const signalCount = trends.signals?.length || 0;
   const topHub = (trends.contentPortals || []).find((item) => item.url?.includes("tophub.today"));
@@ -454,6 +456,21 @@ function formatDate(value) {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+  }).format(date);
+}
+
+function formatUpdateTime(sourceReport = {}) {
+  const value = sourceReport.generatedAt;
+  if (!value) return sourceReport.date || "今日";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return sourceReport.date || "今日";
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   }).format(date);
 }
 

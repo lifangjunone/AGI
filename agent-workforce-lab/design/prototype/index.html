@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Agent Workforce Lab · UI 设计原型</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+<aside class="sidebar">
+  <a class="brand" href="#overview"><span class="brandmark">W<span>·</span></span><span>WORKFORCE<span class="brand-sub">LAB / 数字员工工作室</span></span></a>
+  <button class="mobile-toggle" id="menu" aria-expanded="false" aria-controls="navigation">展开导航</button>
+  <nav id="navigation" aria-label="主导航"></nav>
+  <div class="side-bottom"><span class="tiny-label">LOCAL WORKSPACE</span><strong>组织能力，从这里开始。</strong><p>真实经验 → 数字能力 → 可验收交付</p><span class="side-tag">本地 UI 原型 · 不连接服务</span></div>
+</aside>
+<div class="shell">
+  <header class="topbar"><span>工作空间 <span class="slash">/</span> 客服知识实验室</span><div class="top-right"><span class="badge warning">UI 原型 · 样例数据</span><span class="identity">管<span>管理员 · 模拟身份</span></span></div></header>
+  <main id="main" tabindex="-1"></main>
+  <footer>Agent Workforce Lab / Design Review 03 <span>仅演示设计交互，不保存数据、不调用模型、不执行真实授权。</span></footer>
+</div>
+<dialog id="dialog" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="close-dialog" class="icon-button" aria-label="关闭弹窗">×</button></div><div id="dialog-body"></div></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="prototype.js"></script>
+</body>
+</html>

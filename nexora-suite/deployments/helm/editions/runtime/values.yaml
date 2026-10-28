@@ -1,0 +1,12 @@
+nexora-infrastructure:
+  enabled: true
+nexora-core:
+  config:
+    products: runtime
+    studioPublicURL: ""
+    controlPublicURL: ""
+    maasPublicURL: ""
+    runtimePublicURL: https://runtime.nexora.example
+nexora-runtime:
+  config:
+    maasURL: ""

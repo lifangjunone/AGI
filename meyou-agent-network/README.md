@@ -80,6 +80,7 @@ npm run dev -w @meyou/worker
 ADMIN_EMAIL=admin@lifeyoume.icu
 ADMIN_PASSWORD_HASH=scrypt:<salt>:<digest>
 MODEL_CONFIG_ENCRYPTION_KEY=<independent-random-secret-at-least-32-characters>
+MODEL_CONFIG_SYNC_TOKEN=<independent-random-secret-at-least-32-characters>
 ```
 
 生成管理员密码哈希（命令只输出哈希，不把明文写入仓库）：
@@ -92,6 +93,7 @@ node -e "const {scryptSync,randomBytes}=require('crypto');const p=process.argv[1
 - 模型 API Key 使用 AES-256-GCM 加密入库，浏览器只读取掩码。
 - 数据库中的活动模型配置优先于环境变量；尚未接管时可直接测试并沿用服务器现有模型密钥。
 - 管理员会话 12 小时失效，普通用户会话不能访问管理接口。
+- `MODEL_CONFIG_SYNC_TOKEN` 只用于同机或受信任服务间同步当前活动模型；不要提供给浏览器。
 
 ## 验证
 

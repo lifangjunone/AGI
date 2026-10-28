@@ -1,0 +1,59 @@
+---
+title: 'Download and installation'
+description: 'Download and set up the Duix iOS SDK demo project to quickly test real-time digital human capabilities.'
+---
+
+## Overview
+
+This section provides the setup guide for the **Duix iOS SDK demo project**,
+which allows developers to experience the SDK’s real-time digital human capabilities — including initialization, rendering, and audio-video interaction — directly in **Xcode**.
+
+---
+
+## Step 1: Download the iOS Demo
+
+Click below to download the latest official iOS demo package:
+
+👉 [**duix-cloud-demo-ios_1.2.7.zip**](https://duix-sgp.obs.ap-southeast-3.myhuaweicloud.com/duix/sdk/duix-cloud-demo-ios_1.2.7.zip)
+
+> **Note:**
+> The demo project includes all required SDK dependencies and configuration for quick testing.
+
+---
+
+## Step 2: Open the Project in Xcode
+
+1. Extract the downloaded `.zip` file.
+2. Open the project folder in **Xcode 14.0 or later**.
+3. Wait for Xcode to automatically index and resolve dependencies.
+4. Confirm that your **iOS deployment target** matches your connected device or simulator.
+
+---
+
+## Step 3: Configure and Run
+
+1. Select your build target (e.g., iPhone 14 Pro).
+2. Click **Run ▶️** to launch the demo.
+3. Once initialized, the digital human should appear and respond in real time.
+
+> **Tip:**
+> The first run may require microphone and camera permissions. Grant access when prompted.
+
+---
+
+## Environment Requirements
+
+| Component | Minimum Version | Notes |
+|------------|------------------|-------|
+| **macOS** | 12.0 (Monterey) | Required for Xcode 14 or higher |
+| **Xcode** | 14.0+ | Enable Developer Mode for device testing |
+| **iOS** | 15.0+ | Recommended for best SDK performance |
+| **Network** | HTTPS (TLS 1.2+) | WebRTC requires a secure connection to `duix.com` |
+
+---
+
+## Troubleshooting
+
+- **Build failed?** Ensure **CocoaPods** and **Xcode Command Line Tools** are up to date.
+- **Network issues?** Confirm your device can reach `duix.com` and your firewall allows WebRTC ports.
+- **Permissions denied?** Re-enable microphone and camera in **Settings → Privacy → App Permissions**.

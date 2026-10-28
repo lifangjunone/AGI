@@ -5,6 +5,7 @@ const path = require("node:path");
 const webPush = require("web-push");
 const {
   DIST_DIR,
+  DATA_DIR,
   appendEvent,
   appendServerViewEvent,
   buildLab,
@@ -67,6 +68,7 @@ const {
   scanOpportunitySources,
   syncPaymentFeed,
   systemStatus,
+  unifiedBusinessState,
 } = require("./engine");
 
 const types = {
@@ -159,19 +161,14 @@ function configureWebPush(env = process.env) {
   return config;
 }
 
-async function notifyAdminNewCheckout(checkout) {
+async function notifyAdmin(payloadInput) {
   const config = configureWebPush();
   if (!config) return { sent: 0, removed: 0, status: "not-configured" };
   const subscriptions = loadAdminPushSubscriptions();
   const valid = [];
   let sent = 0;
   let removed = 0;
-  const payload = JSON.stringify({
-    title: `新订单 ¥${checkout.paymentAmount}`,
-    body: "请核对微信到账金额后，在手机管理端确认。",
-    url: "./",
-    tag: checkout.id,
-  });
+  const payload = JSON.stringify(payloadInput);
   for (const item of subscriptions) {
     try {
       await webPush.sendNotification(item.subscription, payload, { TTL: 1800, urgency: "high" });
@@ -184,6 +181,149 @@ async function notifyAdminNewCheckout(checkout) {
   }
   if (removed) saveAdminPushSubscriptions(valid);
   return { sent, removed, status: "attempted" };
+}
+
+async function notifyAdminNewCheckout(checkout) {
+  return notifyAdmin({
+    title: `新订单 ¥${checkout.paymentAmount}`,
+    body: "请核对微信到账金额后，在手机管理端确认。",
+    url: "./#orders",
+    tag: checkout.id,
+  });
+}
+
+async function ensurePaymentMigrationTask(businessState) {
+  const migration = businessState?.paymentMigration;
+  if (migration?.status !== "action-required") return { created: false, reason: "threshold-not-reached" };
+  const result = createOwnerActionTask({
+    type: "merchant-payment-migration",
+    idempotencyKey: `merchant-payment-migration:${migration.month}`,
+    message: `本月已有 ${migration.monthlyPaidOrders} 笔真实付款，达到自动支付迁移门槛。请完成微信支付或支付宝商户签约；官方回调验证通过后，系统将关闭人工到账确认。`,
+  });
+  if (!result.duplicate) {
+    await notifyAdmin({
+      title: "升级官方商户支付",
+      body: "本月已达到 10 笔真实付款，打开管理端完成一次性商户签约。",
+      url: "./#actions",
+      tag: result.task.id,
+    });
+  }
+  return { created: !result.duplicate, task: ownerActionTaskView(result.task) };
+}
+
+const ACTION_TASKS_FILE = path.join(DATA_DIR, "owner-action-tasks.json");
+const ACTION_TASK_ASSETS = path.join(DATA_DIR, "owner-action-task-assets");
+
+function readOwnerActionTasks() {
+  try {
+    const value = JSON.parse(fs.readFileSync(ACTION_TASKS_FILE, "utf8"));
+    return Array.isArray(value) ? value : [];
+  } catch (error) {
+    if (error.code === "ENOENT") return [];
+    throw error;
+  }
+}
+
+function saveOwnerActionTasks(tasks) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const temporary = `${ACTION_TASKS_FILE}.${crypto.randomBytes(6).toString("hex")}.tmp`;
+  fs.writeFileSync(temporary, JSON.stringify(tasks, null, 2), { mode: 0o600 });
+  fs.renameSync(temporary, ACTION_TASKS_FILE);
+}
+
+function ownerActionTaskView(task) {
+  return {
+    id: task.id,
+    type: task.type,
+    channel: task.channel,
+    title: task.title,
+    message: task.message,
+    status: task.status,
+    createdAt: task.createdAt,
+    expiresAt: task.expiresAt,
+    confirmedAt: task.confirmedAt || null,
+    completedAt: task.completedAt || null,
+    actionUrl: task.actionUrl || "",
+    qrImageUrl: task.qrFile ? `../api/admin-mobile/action-tasks/${encodeURIComponent(task.id)}/qr` : "",
+  };
+}
+
+function createOwnerActionTask(input) {
+  if (!["xiaohongshu-login", "merchant-payment-migration"].includes(input.type)) {
+    const error = new Error("unsupported owner action task type");
+    error.statusCode = 400;
+    throw error;
+  }
+  const idempotencyKey = String(input.idempotencyKey || "").slice(0, 160);
+  if (!idempotencyKey) {
+    const error = new Error("idempotencyKey is required");
+    error.statusCode = 400;
+    throw error;
+  }
+  const tasks = readOwnerActionTasks();
+  const existing = tasks.find((item) =>
+    item.idempotencyKey === idempotencyKey &&
+    ["pending", "owner-confirmed", "completed"].includes(item.status)
+  );
+  if (existing) return { task: existing, duplicate: true };
+  const now = new Date();
+  if (input.type === "merchant-payment-migration") {
+    const task = {
+      id: `owner_${Date.now()}_${crypto.randomBytes(6).toString("hex")}`,
+      idempotencyKey,
+      type: input.type,
+      channel: "payment",
+      title: "升级官方商户支付",
+      message: String(input.message || "本月已达到 10 笔真实付款，请完成微信支付或支付宝商户签约。接通官方回调后，付款和交付将无需人工确认。").slice(0, 300),
+      status: "pending",
+      actionUrl: String(input.actionUrl || "").slice(0, 500),
+      createdAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    };
+    tasks.push(task);
+    saveOwnerActionTasks(tasks.slice(-100));
+    return { task, duplicate: false };
+  }
+  const match = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(String(input.qrImage || ""));
+  if (!match) {
+    const error = new Error("a PNG or JPEG login QR image is required");
+    error.statusCode = 400;
+    throw error;
+  }
+  const bytes = Buffer.from(match[2], "base64");
+  if (!bytes.length || bytes.length > 2 * 1024 * 1024) {
+    const error = new Error("login QR image size is invalid");
+    error.statusCode = 400;
+    throw error;
+  }
+  fs.mkdirSync(ACTION_TASK_ASSETS, { recursive: true, mode: 0o700 });
+  const id = `owner_${Date.now()}_${crypto.randomBytes(6).toString("hex")}`;
+  const extension = match[1] === "jpeg" ? "jpg" : "png";
+  const qrFile = path.join(ACTION_TASK_ASSETS, `${id}.${extension}`);
+  fs.writeFileSync(qrFile, bytes, { mode: 0o600 });
+  const expiresAt = new Date(input.expiresAt || now.getTime() + 10 * 60 * 1000);
+  if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= now) {
+    const error = new Error("login QR expiry must be in the future");
+    error.statusCode = 400;
+    fs.unlinkSync(qrFile);
+    throw error;
+  }
+  const task = {
+    id,
+    idempotencyKey,
+    type: "xiaohongshu-login",
+    channel: "xiaohongshu",
+    title: "小红书需要扫码认证",
+    message: String(input.message || "请用小红书 App 扫码，完成后点击“我已完成认证”。").slice(0, 300),
+    status: "pending",
+    qrFile,
+    qrMime: extension === "jpg" ? "image/jpeg" : "image/png",
+    createdAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+  };
+  tasks.push(task);
+  saveOwnerActionTasks(tasks.slice(-100));
+  return { task, duplicate: false };
 }
 
 function sendJson(res, status, body) {
@@ -679,12 +819,83 @@ async function handler(req, res) {
     });
   }
 
+  if (req.method === "GET" && urlPath === "/api/admin-mobile/action-tasks") {
+    const now = Date.now();
+    const tasks = readOwnerActionTasks()
+      .map((task) => {
+        if (task.status === "pending" && Date.parse(task.expiresAt) <= now) {
+          return { ...task, status: "expired", expiredAt: new Date().toISOString() };
+        }
+        return task;
+      });
+    if (tasks.some((task, index) => task.status !== readOwnerActionTasks()[index]?.status)) saveOwnerActionTasks(tasks);
+    return sendJson(res, 200, {
+      ok: true,
+      tasks: tasks.slice().reverse().map(ownerActionTaskView),
+      summary: {
+        pending: tasks.filter((task) => task.status === "pending").length,
+        confirmed: tasks.filter((task) => task.status === "owner-confirmed").length,
+      },
+    });
+  }
+
+  if (req.method === "GET" && /^\/api\/admin-mobile\/action-tasks\/[^/]+\/qr$/.test(urlPath)) {
+    try {
+      const taskId = decodeURIComponent(urlPath.split("/")[4] || "");
+      const task = readOwnerActionTasks().find((item) => item.id === taskId);
+      if (!task?.qrFile || !fs.existsSync(task.qrFile)) {
+        const error = new Error("认证二维码不存在或已过期");
+        error.statusCode = 404;
+        throw error;
+      }
+      res.writeHead(200, {
+        "Content-Type": task.qrMime || "image/png",
+        "Cache-Control": "no-store, private",
+        "X-Content-Type-Options": "nosniff",
+      });
+      return fs.createReadStream(task.qrFile).pipe(res);
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "POST" && /^\/api\/admin-mobile\/action-tasks\/[^/]+\/confirm$/.test(urlPath)) {
+    try {
+      const taskId = decodeURIComponent(urlPath.split("/")[4] || "");
+      const tasks = readOwnerActionTasks();
+      const task = tasks.find((item) => item.id === taskId);
+      if (!task) {
+        const error = new Error("待处理任务不存在");
+        error.statusCode = 404;
+        throw error;
+      }
+      if (task.status === "owner-confirmed") {
+        return sendJson(res, 200, { ok: true, duplicate: true, task: ownerActionTaskView(task) });
+      }
+      if (task.status !== "pending" || Date.parse(task.expiresAt) <= Date.now()) {
+        const error = new Error("认证二维码已过期，请等待系统生成新的二维码");
+        error.statusCode = 409;
+        throw error;
+      }
+      task.status = "owner-confirmed";
+      task.confirmedAt = new Date().toISOString();
+      saveOwnerActionTasks(tasks);
+      return sendJson(res, 200, { ok: true, duplicate: false, task: ownerActionTaskView(task) });
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
   if (req.method === "GET" && urlPath === "/api/admin-mobile/promotion-center") {
     return sendJson(res, 200, { ok: true, promotion: promotionCenterSnapshot() });
   }
 
   if (req.method === "GET" && urlPath === "/api/admin-mobile/product-matrix") {
     return sendJson(res, 200, { ok: true, matrix: productMatrixSnapshot() });
+  }
+
+  if (req.method === "GET" && urlPath === "/api/admin-mobile/business-state") {
+    return sendJson(res, 200, { ok: true, business: unifiedBusinessState({ persist: true }) });
   }
 
   if (req.method === "POST" && urlPath.startsWith("/api/admin-mobile/promotion-packages/") && urlPath.endsWith("/published")) {
@@ -733,6 +944,106 @@ async function handler(req, res) {
         checkout: buyerCheckoutView(result.checkout),
         order: buyerOrderView(result.order),
       });
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "POST" && urlPath === "/api/admin/channel-authenticated") {
+    const body = await readJson(req);
+    if (body.channel !== "xiaohongshu" || body.verification !== "publisher-rechecked-authenticated-session") {
+      return sendJson(res, 400, { ok: false, error: "authenticated publisher verification required" });
+    }
+    const tasks = readOwnerActionTasks();
+    let resolved = 0;
+    for (const task of tasks) {
+      if (task.type !== "xiaohongshu-login" || !["pending", "owner-confirmed"].includes(task.status)) continue;
+      task.status = "completed";
+      task.completedAt = new Date().toISOString();
+      task.verification = body.verification;
+      resolved += 1;
+    }
+    if (resolved) saveOwnerActionTasks(tasks);
+    return sendJson(res, 200, { ok: true, resolved });
+  }
+
+  if (req.method === "POST" && urlPath === "/api/admin/action-tasks") {
+    try {
+      const result = createOwnerActionTask(await readJson(req));
+      const view = ownerActionTaskView(result.task);
+      if (!result.duplicate) {
+        notifyAdmin({
+          title: result.task.title,
+          body: result.task.type === "xiaohongshu-login"
+            ? "打开手机管理端扫描登录二维码，完成后点击确认。"
+            : "本月真实付款达到迁移门槛，打开管理端查看官方支付升级任务。",
+          url: `./#actions`,
+          tag: result.task.id,
+        }).catch(() => {});
+      }
+      return sendJson(res, result.duplicate ? 200 : 201, { ok: true, duplicate: result.duplicate, task: view });
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "GET" && /^\/api\/admin\/action-tasks\/[^/]+$/.test(urlPath)) {
+    const taskId = decodeURIComponent(urlPath.split("/")[4] || "");
+    const task = readOwnerActionTasks().find((item) => item.id === taskId);
+    if (!task) return sendJson(res, 404, { ok: false, error: "owner action task not found" });
+    return sendJson(res, 200, { ok: true, task: ownerActionTaskView(task) });
+  }
+
+  if (req.method === "POST" && /^\/api\/admin\/action-tasks\/[^/]+\/complete$/.test(urlPath)) {
+    try {
+      const taskId = decodeURIComponent(urlPath.split("/")[4] || "");
+      const tasks = readOwnerActionTasks();
+      const task = tasks.find((item) => item.id === taskId);
+      if (!task) {
+        const error = new Error("owner action task not found");
+        error.statusCode = 404;
+        throw error;
+      }
+      if (task.status === "completed") {
+        return sendJson(res, 200, { ok: true, duplicate: true, task: ownerActionTaskView(task) });
+      }
+      if (!["pending", "owner-confirmed"].includes(task.status)) {
+        const error = new Error("owner confirmation is required before login can be completed");
+        error.statusCode = 409;
+        throw error;
+      }
+      task.status = "completed";
+      task.completedAt = new Date().toISOString();
+      task.verification = "publisher-rechecked-authenticated-session";
+      saveOwnerActionTasks(tasks);
+      return sendJson(res, 200, { ok: true, duplicate: false, task: ownerActionTaskView(task) });
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "POST" && urlPath === "/api/admin/social-tasks/claim") {
+    try {
+      const body = await readJson(req);
+      const task = require("./social-scheduler").claimDueSocialTask({
+        dataDir: DATA_DIR,
+        workerId: body.workerId || "xhs-browser-agent",
+      });
+      return sendJson(res, 200, { ok: true, task });
+    } catch (error) {
+      return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
+    }
+  }
+
+  if (req.method === "POST" && urlPath === "/api/admin/social-tasks/result") {
+    try {
+      const body = await readJson(req);
+      const task = require("./social-scheduler").recordSocialTaskResult({
+        dataDir: DATA_DIR,
+        key: body.key,
+        result: body.result,
+      });
+      return sendJson(res, 200, { ok: true, task });
     } catch (error) {
       return sendJson(res, error.statusCode || 500, { ok: false, error: error.message });
     }
@@ -1315,7 +1626,8 @@ if (require.main === module) {
       const runCommerce = () => {
         if (commerceInFlight) return commerceInFlight;
         commerceInFlight = runStorefrontCommerceCycle({ dryRun: false })
-          .then((cycle) => {
+          .then(async (cycle) => {
+            cycle.paymentMigrationTask = await ensurePaymentMigrationTask(cycle.businessState);
             console.log(
               `固定商品商务循环：product=${cycle.productId} orders=${cycle.orders} revenue=${cycle.revenue} payments=${cycle.paymentsCreated} fulfilled=${cycle.fulfillmentSent + cycle.fulfillmentHandedOff} search=${cycle.searchStatus}`
             );

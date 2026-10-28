@@ -26,10 +26,12 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`english-foundation/`](english-foundation/README.md) | English Foundation | 面向初学者的词汇、句子、语法和错项复习桌面产品 | Tauri 2、React、TypeScript、Rust |
 | [`fde-playbook/`](fde-playbook/README.md) | FDE Playbook | FDE 岗位认知、交付方法、能力地图和制造业实战 | React、TypeScript、Vite |
 | [`agent-workforce-console/`](agent-workforce-console/README.md) | Agent Workforce Console | 多 Agent 任务图、协作、评审和人工门禁控制台 | React、TypeScript、Vite |
+| [`agent-workforce-lab/`](agent-workforce-lab/README.md) | Agent Workforce Lab | 本地数字员工校园，覆盖教学、考核、任务协作、成果验收和经验沉淀 | React、FastAPI、SQLite、Semantica |
 | [`hover-translator/`](hover-translator/README.md) | Hover Translator | macOS 全局划词、悬停取词和英译中桌面工具 | Electron、React、Swift、Apple Vision |
 | [`short-video-studio/`](short-video-studio/README.md) | FRAME/60 / 智助乖乖 | 生成 5–60 秒精确时长的 AI 短视频，并提供商品、公众号、朋友圈和开单页服务变现模块 | Node.js、FFmpeg、PWA、Electron、Taro、React |
 | [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验来源发现作品，按正文与章节动态规划全书分集，用户选定本季范围后再生产五分钟连续成片 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
+| [`model-radar/`](model-radar/README.md) | LifeYouMe 模型雷达 | 每小时采集公开 AI 模型信号，按趋势动量、新鲜度和社区采用生成热度榜 | Node.js、原生 Web |
 | [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 使用统一账号进入、业务数据仍无服务端的个人隐私档案，支持本地搜索、自动锁定和加密备份 | React、TypeScript、Web Crypto、IndexedDB |
 | [`daily-focus-widget/`](daily-focus-widget/README.md) | 今日小记 | 菜单栏常驻的轻量每日待办，支持全局呼出、快速隐藏、本地持久化和智能系统提醒 | Electron、原生 HTML/CSS/JS |
 | [`kaidan-page/`](kaidan-page/README.md) | 开单页 Kaidan | 把个人技能商品化为三档报价、收入测算和可独立分享的服务售卖页 | React、TypeScript、Vite、Playwright |
@@ -45,11 +47,13 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`message-pet-mvp/`](message-pet-mvp/README.md) | 消息灵宠 MVP | 桌面宠物式多平台消息提醒、紧急待办和每日总结原型 | Electron、Node.js、原生 Web |
 | [`meyou-agent-network/`](meyou-agent-network/README.md) | 遇见 MeYou | Agent 先替用户找人、破冰、接待和撮合，覆盖社群、心动、个人与企业四类关系入口 | React、Fastify、PostgreSQL、Redis |
 | [`nexora-suite/`](nexora-suite/README.md) | Nexora Suite | 面向 AI 平台工程的 Core、Control、MaaS 与 Studio 四套件 | Go、Next.js、Kubernetes、Helm |
+| [`lifeyoume-staffdeck/`](lifeyoume-staffdeck/README.md) | LifeYouMe StaffDeck | 企业数字员工平台本地化副本，覆盖知识检索、SOP 技能、执行闭环和桌面部署 | Python、FastAPI、React、Electron |
 | [`novel-series-factory/`](novel-series-factory/README.md) | Novel Series Factory | 小说到完整多集视频的 AI 桌面制片系统商业 Beta | Electron、Node.js、Ark、Seedream、Seedance |
 | [`skill-radar/`](skill-radar/README.md) | Skill Radar | 每日发现和展示增长最快的 AI Agent Skill 榜单 | Node.js、原生 Web、Nginx |
 | [`travel-frame/`](travel-frame/README.md) | 旅帧 TravelFrame | 本地优先旅行照片整理、精选和隐私友好分析原型 | Vite、TensorFlow.js |
 | [`trend-forum/`](trend-forum/README.md) | Trend Forum | 热点聚合、社区信息流和每日自动发文公网网站 | React、Vite、自动发布脚本 |
 | [`video-intelligence-studio/`](video-intelligence-studio/README.md) | 叙镜 Narrative Lens | 视频理解、二创、裂变、知识图谱和任务中心工作台 | React、TypeScript、Express、Neo4j |
+| [`duix-replica/`](duix-replica/README.md) | Duix Product Replica | Duix 营销站高保真复刻、官方开源 Avatar 客户端和文档源码归档 | React、Vite、Vue、Electron |
 
 ## 门户信息架构
 
@@ -85,7 +89,7 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 ## README 状态
 
-当前 30 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
+当前 39 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
 定位、真实运行状态、构建测试方式、数据边界和统一身份接入方式；根 README 只
 维护产品地图、门户架构和跨项目约束。
 
@@ -151,10 +155,12 @@ cd ../avatar-generator-service && npm run download:weights && npm start
 cd ../english-foundation && npm install && npm run tauri dev
 cd ../fde-playbook && npm install && npm run dev
 cd ../agent-workforce-console && npm install && npm run dev
+cd ../agent-workforce-lab && python3 run.py
 cd ../hover-translator && npm install && npm run dev
 cd ../short-video-studio && npm install && npm run web
 cd ../novel-video-studio && npm start
 cd ../model-operations-studio && npm install && npm run dev
+cd ../model-radar && npm start
 cd ../personal-privacy-vault && npm install && npm run dev
 cd ../daily-focus-widget && npm install && npm start
 cd ../kaidan-page && npm install && npm run dev
@@ -170,11 +176,13 @@ cd ../local-growth-cashflow && npm start
 cd ../message-pet-mvp && npm install && npm run desktop
 cd ../meyou-agent-network && npm install && npm run dev
 cd ../nexora-suite && make test
+cd ../lifeyoume-staffdeck && ./scripts/dev_up.sh --detach
 cd ../novel-series-factory && npm install && npm start
 cd ../skill-radar && npm install && npm run serve
 cd ../travel-frame && npm install && npm run dev
 cd ../trend-forum && npm install && npm run dev
 cd ../video-intelligence-studio && npm install && npm run dev
+cd ../duix-replica/site && npm install && npm run dev
 ```
 
 平台服务运行：
@@ -223,6 +231,10 @@ LaunchAgent 任务标识为 `com.lifeyoume.agi-github-sync`；后台循环 PID �
 
 ## 新增功能说明
 
+- `agent-workforce-lab`：新增本地数字员工校园系统，支持创建员工、导入经验、教学确认、场景考试、试岗授权、多成员任务、成果版本、真人验收和积分账本；另含零依赖 Work Shadow Recorder 原型。
+- `model-radar`：新增 LifeYouMe 模型雷达，按小时采集 Hugging Face Trending 与 OpenRouter Models，提供热度榜、手动刷新、缓存兜底和 `/models/` 生产部署边界。
+- `lifeyoume-staffdeck`：新增 StaffDeck 企业数字员工平台本地化副本，保留官方桌面、后端、前端、Harness 和打包资料，用于评估数字员工、SOP 技能、知识检索、MCP/API 执行和持续改进闭环。
+- `duix-replica`：新增 Duix 产品复刻目录，包含高保真营销站实现、官方 Duix Avatar 开源客户端、官方文档和技能源码归档，并明确账号、计费、云生成和授权边界。
 - `meyou-agent-network`：新增“遇见 MeYou”Agent 原生关系网络 Beta，支持持续找人、18+ 匿名双向心动匹配、个人公开页接待、社群成员撮合、企业客户收件箱、真人接管、授权审计和中英双语响应式体验。
 - `flowframe-studio`：新增 AI 视频创作工作台，支持模型配置校验、生成任务、项目素材、图生视频、双轨时间线和 `/flowframe/` 生产部署边界。
 - `nexora-suite`：新增 Nexora AI 平台套件，覆盖 Core、Control、MaaS 与 Studio 四个子系统，包含 Go API、Next.js 控制台、OpenAPI/事件契约、Docker Compose、Helm 与 Kubernetes 部署资料。

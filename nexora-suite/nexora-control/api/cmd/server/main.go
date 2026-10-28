@@ -223,7 +223,6 @@ func (a *app) createPolicy(w http.ResponseWriter, r *http.Request, c claims) {
 	write(w, 201, in)
 }
 func (a *app) invoke(w http.ResponseWriter, r *http.Request, c claims) {
-	start := time.Now()
 	v, ok := a.tenantAgent(r.PathValue("id"), c.TenantID)
 	if !ok {
 		fail(w, 404, "not_found", "agent not found")
@@ -241,11 +240,7 @@ func (a *app) invoke(w http.ResponseWriter, r *http.Request, c claims) {
 		fail(w, 403, "policy_denied", denied)
 		return
 	}
-	t := trace{ID: id("trace"), TenantID: c.TenantID, AgentID: v.ID, Version: v.Version, CallerID: c.Sub, Status: "success", RequestID: requestID(r), LatencyMS: int(time.Since(start).Milliseconds()) + 18, InputTokens: len(strings.Fields(in.Input)), OutputTokens: 5, CostUSD: .00012, CreatedAt: time.Now().UTC()}
-	a.mu.Lock()
-	a.traces = append(a.traces, t)
-	a.mu.Unlock()
-	write(w, 200, map[string]any{"trace_id": t.ID, "request_id": t.RequestID, "output": "Nexora governed response: " + in.Input, "usage": map[string]int{"input_tokens": t.InputTokens, "output_tokens": t.OutputTokens}})
+	fail(w, http.StatusNotImplemented, "gateway_transport_not_configured", "No Agent transport is configured. No upstream invocation was performed and no usage was recorded.")
 }
 func (a *app) denied(v managedAgent, c claims) string {
 	a.mu.RLock()

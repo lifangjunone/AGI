@@ -50,6 +50,48 @@
       "when": 1792680000000,
       "tag": "0006_admin_model_config",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792683600000,
+      "tag": "0007_plaza_runtime_seconds",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792692000000,
+      "tag": "0008_plaza_life",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792726200000,
+      "tag": "0009_plaza_moment_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792733400000,
+      "tag": "0010_agent_society",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792737600000,
+      "tag": "0011_discovery_network",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792744200000,
+      "tag": "0012_product_inbox",
+      "breakpoints": true
     }
   ]
 }

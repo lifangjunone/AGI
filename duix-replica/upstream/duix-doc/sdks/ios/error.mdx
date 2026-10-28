@@ -1,0 +1,75 @@
+---
+title: 'Common errors'
+description: 'List of common error codes, their causes, and possible solutions when using the Duix SDK.'
+---
+
+## Overview
+
+This page lists common error codes returned by the **Duix SDK** or related backend services.  
+Errors are grouped by category to help you quickly identify the cause of the problem.
+
+---
+
+## Client-Side Errors
+
+| Code | Description |
+| :---- | :----------- |
+| **-1** | **MQTT connection error.** The client failed to connect to the message broker. Check network stability and broker credentials. |
+| **-2** | **HTTP request failed.** The client received a non-2xx HTTP response. Verify the request URL and parameters. |
+| **-3** | **Failed to obtain Duix resources.** The client could not retrieve initialization assets or configuration. |
+| **-4** | **MQTT client connection failure.** The broker handshake or authentication failed. Retry or check server configuration. |
+| **-7** | **Client session interaction error.** May occur during authentication, ASR startup, or media negotiation. |
+
+---
+
+## WebRTC & Network Errors
+
+| Code | Description |
+| :---- | :----------- |
+| **-5** | **Failed to create SDP.** Typically caused by an ICE server configuration issue. Verify STUN/TURN credentials. |
+| **-6** | **Failed to set SDP.** Usually indicates an ICE negotiation or connectivity problem. Check WebRTC signaling paths. |
+
+---
+
+## Authentication & Token Errors
+
+| Code | Description |
+| :---- | :----------- |
+| **1005** | **Token cannot be empty.** Ensure that the authentication token is correctly generated and passed. |
+| **1006** | **Token service failure.** The authentication service returned an error. Retry or verify your credentials. |
+| **1007** | **Server endpoint not found.** The requested API endpoint does not exist or is misconfigured. |
+| **1009** | **Insufficient access quota.** The user has exceeded their allocated server usage quota. |
+
+---
+
+## Session & Resource Errors
+
+| Code | Description |
+| :---- | :----------- |
+| **2002** | **Session not found on server.** The specified session ID may be expired or invalid. |
+| **50001** | **Invalid or empty appId.** Check the application configuration. |
+| **50002** | **Resource check failed.** Contact your administrator to verify resource allocation. |
+| **50003** | **Resource in use.** Another session is occupying this resource. Retry after release. |
+| **50004** | **Request to human service timed out.** Network delay or backend overload; try again. |
+| **50005** | **Error obtaining resource from resource group.** The assigned resource group is unavailable. |
+| **50007** | **Insufficient concurrent resources.** Maximum concurrency reached; wait and retry. |
+| **50009** | **Resource timed out or not configured.** Verify resource binding and expiration time. |
+
+---
+
+## Authentication & Signature Errors
+
+| Code | Description |
+| :---- | :----------- |
+| **40001** | **Invalid `appId` or `appSecret`.** Confirm your developer credentials. |
+| **40002** | **Internal server error.** Retry later or contact support if persistent. |
+| **50006** | **Signature failed.** Ensure your request signature matches server requirements. |
+
+---
+
+## Notes
+
+- Client error codes (negative numbers) are generated locally by the SDK.  
+- Server error codes (positive numbers) originate from the Duix backend services.  
+- Always check both **network connectivity** and **authorization configuration** when troubleshooting.  
+- For real-time debugging, enable SDK logs or use browser DevTools to inspect HTTP and WebRTC traffic.

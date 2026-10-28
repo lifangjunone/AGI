@@ -53,7 +53,7 @@ const PRODUCT_MATRIX = Object.freeze([
     startEvent: "evidence-upload-started",
     downloadEvent: "evidence-pack-downloaded",
     launchedOn: "2026-10-19",
-    stopLoss: Object.freeze({ qualifiedVisits: 30, uploads: 10, completed: 5, checkouts: 2, paid: 1 }),
+    stopLoss: Object.freeze({ qualifiedVisits: 100, uploads: 10, completed: 5, checkouts: 2, paid: 1 }),
   }),
   Object.freeze({
     ...PUBLIC_INCOME_PRODUCT,
@@ -66,7 +66,7 @@ const PRODUCT_MATRIX = Object.freeze([
     startEvent: "upload-started",
     downloadEvent: "zip-downloaded",
     launchedOn: "2026-10-18",
-    stopLoss: Object.freeze({ qualifiedVisits: 50, uploads: 15, completed: 15, checkouts: 5, paid: 1 }),
+    stopLoss: Object.freeze({ qualifiedVisits: 100, uploads: 15, completed: 15, checkouts: 5, paid: 1 }),
   }),
   Object.freeze({
     id: "invoice-reimbursement-pack",
@@ -1364,7 +1364,7 @@ function promotionDiagnosis(funnel, days) {
   if (funnel.paid > 0) {
     return { stage: "first-sale", label: "真实首单已验证", action: "继续复用产生生成和付款的内容结构，并开始测试闲鱼入口。" };
   }
-  if (funnel.visits >= 50 && funnel.checkouts === 0) {
+  if (funnel.visits >= 100 && funnel.checkouts === 0) {
     return { stage: "stop-offer", label: "达到止损线", action: "暂停推广当前卖点，验证卖家是否愿意为尺寸整理付费，再决定是否增加白底或去背景能力。" };
   }
   if (funnel.checkouts > 0) {
@@ -8430,6 +8430,176 @@ function runIncomeEvolution({ now = new Date(), dryRun = false } = {}) {
   return next;
 }
 
+function calendarMonthKey(now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+  }).format(now);
+}
+
+function productCandidateQuality(product) {
+  const checks = {
+    namedDelivery: Boolean(product.delivery || product.promise),
+    paidOutcome: Boolean(product.spendReason || Number(product.price) === 0),
+    noOverclaim: !/(必赚|保证退款|保证胜诉|提升销量|真实客户案例)/.test(
+      `${product.title || ""}${product.promise || ""}${product.spendReason || ""}`
+    ),
+    privacyBoundary: Boolean(product.safety),
+    zeroBudgetCompatible: true,
+  };
+  return {
+    score: Object.values(checks).filter(Boolean).length * 20,
+    checks,
+    passed: Object.values(checks).every(Boolean),
+  };
+}
+
+function lifecycleForProduct(product, funnel, ranking, previous = {}) {
+  if (product.status === "candidate") {
+    return {
+      state: ranking.visible ? "exploring" : "queued",
+      reason: ranking.visible ? "候选已进入小流量探索位，尚未开放收费。" : "等待每周候选轮换。",
+    };
+  }
+  if (funnel.paid > 0) {
+    return { state: "promoted", reason: "出现真实付款，保留主推并扩大同类内容探索。" };
+  }
+  if (funnel.visits >= 100 && funnel.checkouts === 0) {
+    return { state: "long-tail", reason: "100 个有效目标访客仍无订单，停止主渠道推广，保留长尾页面。" };
+  }
+  if (ranking.rank && ranking.rank <= 3) {
+    return ranking.sampleEnough
+      ? { state: "promoted", reason: "进入真实转化榜前三。" }
+      : { state: "exploring", reason: "当前数据不足，只进入实验探索位，不视为已验证赢家。" };
+  }
+  return { state: previous.state === "demoted" ? "demoted" : "exploring", reason: "样本不足，继续有限探索。" };
+}
+
+function unifiedBusinessState({ now = new Date(), persist = true } = {}) {
+  const matrix = productMatrixSnapshot({ now });
+  const existingLifecycle = readJsonFile("product-lifecycle.json", { products: {} });
+  const products = matrix.products.map((product) => {
+    const source = PRODUCT_MATRIX.find((item) => item.id === product.id) || product;
+    const quality = productCandidateQuality(source);
+    const lifecycle = lifecycleForProduct(
+      source,
+      product.funnel,
+      product,
+      existingLifecycle.products?.[product.id] || {}
+    );
+    return {
+      id: product.id,
+      title: product.title,
+      version: readJsonFile("income-evolution.json", {}).products?.[product.id]?.variant || "control",
+      price: Number(product.price || 0),
+      buyer: product.buyer || "",
+      paidOutcome: product.delivery || product.spendReason || product.promise || "",
+      lifecycle: lifecycle.state,
+      lifecycleReason: lifecycle.reason,
+      rank: product.rank || null,
+      score: product.score,
+      quality,
+      funnel: product.funnel,
+      acquisition: product.acquisition,
+    };
+  });
+  const lifecycle = {
+    generatedAt: now.toISOString(),
+    products: Object.fromEntries(products.map((item) => [item.id, {
+      state: item.lifecycle,
+      reason: item.lifecycleReason,
+      rank: item.rank,
+      changedAt: existingLifecycle.products?.[item.id]?.state === item.lifecycle
+        ? existingLifecycle.products[item.id].changedAt
+        : now.toISOString(),
+    }])),
+  };
+  const candidates = {
+    generatedAt: now.toISOString(),
+    cadence: "daily-generate-weekly-promote",
+    items: products.filter((item) => ["queued", "exploring"].includes(item.lifecycle)).map((item) => ({
+      id: item.id,
+      title: item.title,
+      lifecycle: item.lifecycle,
+      quality: item.quality,
+    })),
+  };
+  const social = readJsonFile("social-schedule-state.json", { tasks: [] });
+  const recentSocial = (social.tasks || []).slice(-21);
+  const published = recentSocial.filter((item) => item.status === "published").length;
+  const scheduled = recentSocial.filter((item) => item.status === "platform-scheduled").length;
+  const failed = recentSocial.filter((item) => ["failed", "blocked", "verification-pending"].includes(item.status)).length;
+  const channelHealth = {
+    generatedAt: now.toISOString(),
+    xiaohongshu: {
+      state: failed ? "degraded" : published || scheduled ? "operational" : "awaiting-first-verified-run",
+      scheduled,
+      published,
+      failed,
+      publisher: "audited-browser-agent",
+      fallback: "owned-site-and-search",
+    },
+    ownedSite: { state: "operational", url: publicBaseUrl() },
+    search: { state: "enabled", last: loadLastSearchSubmit() },
+  };
+  const month = calendarMonthKey(now);
+  const paidOrders = loadOrders().filter((order) => {
+    const at = order.paidAt || order.createdAt || "";
+    return (order.status === "paid" || order.status === "delivered") && calendarMonthKey(new Date(at)) === month;
+  });
+  const paymentMigration = {
+    generatedAt: now.toISOString(),
+    month,
+    mode: "manual-wechat",
+    monthlyPaidOrders: paidOrders.length,
+    threshold: 10,
+    status: paidOrders.length >= 10 ? "action-required" : "waiting-threshold",
+    remaining: Math.max(0, 10 - paidOrders.length),
+    target: "official-merchant-payment-callback",
+    fullyAutonomous: false,
+  };
+  const evolution = readJsonFile("income-evolution.json", {});
+  const decisions = {
+    generatedAt: now.toISOString(),
+    cadence: { daily: "one-primary-variable", weekly: "rank-promote-demote-candidate" },
+    latest: (evolution.history || []).slice(-20),
+    guardrails: {
+      stopPrimaryPromotionAtQualifiedVisitsWithoutCheckout: 100,
+      excludeBotsTestsAndSelfTraffic: true,
+      zeroBudget: true,
+      noFakeClaims: true,
+    },
+  };
+  const operatingMode = paymentMigration.status === "action-required"
+    ? "等待商户支付迁移"
+    : "半自动收款 · 自动经营";
+  const state = {
+    generatedAt: now.toISOString(),
+    operatingMode,
+    fullyAutonomous: false,
+    autonomyBlockers: [
+      "个人微信收款需要店主核对真实到账",
+      ...(paymentMigration.status === "action-required" ? ["需要完成官方商户支付签约与回调验证"] : []),
+    ],
+    products,
+    productCandidates: candidates,
+    productLifecycle: lifecycle,
+    evolutionDecisions: decisions,
+    channelHealth,
+    paymentMigration,
+  };
+  if (persist) {
+    writeJsonFile("product-candidates.json", candidates);
+    writeJsonFile("product-lifecycle.json", lifecycle);
+    writeJsonFile("evolution-decisions.json", decisions);
+    writeJsonFile("channel-health.json", channelHealth);
+    writeJsonFile("payment-migration.json", paymentMigration);
+    writeJsonFile("business-state.json", state);
+  }
+  return state;
+}
+
 function consumerEvidenceGuideUrl(guide) {
   return toPublicUrl(`/guides/${guide.slug}/`);
 }
@@ -13277,6 +13447,7 @@ async function runStorefrontCommerceCycle({
   const fulfillment = await fulfiller({ dryRun });
   const search = await searchSubmitter({ dryRun, lab: publicLab });
   const status = systemStatus();
+  const businessState = unifiedBusinessState({ now: new Date(now()), persist: !dryRun });
   const funnel = acquisitionFunnelSnapshot({
     lab: publicLab,
     orders: loadOrders(),
@@ -13302,6 +13473,7 @@ async function runStorefrontCommerceCycle({
     orders: status.orders,
     revenue: status.revenue,
     evolution,
+    businessState,
     socialSchedule,
   };
   writeJsonFile("storefront-commerce-cycle.json", summary);
@@ -14757,6 +14929,7 @@ module.exports = {
   runAutopilot,
   runWorkerOnce,
   runStorefrontCommerceCycle,
+  unifiedBusinessState,
   runAutonomousCycle,
   systemStatus,
   deliveryMarkdown,

@@ -325,7 +325,9 @@ function switchView(view) {
   elements.libraryView.hidden = content || create;
   document.querySelectorAll(".view-tab").forEach((tab) => {
     tab.classList.toggle("is-active", tab.dataset.view === view);
+    tab.setAttribute("aria-current", tab.dataset.view === view ? "page" : "false");
   });
+  document.body.classList.toggle("content-mode", content);
   if (view === "library") loadLibrary();
 }
 
@@ -333,6 +335,9 @@ async function generateContentPack(event) {
   event.preventDefault();
   const formData = new FormData(elements.contentPackForm);
   const payload = Object.fromEntries(formData.entries());
+  const errors = document.querySelector("#pack-errors");
+  errors.hidden = true;
+  try { localStorage.setItem("frame60-content-draft", JSON.stringify(payload)); } catch {}
   const submit = elements.contentPackForm.querySelector("button[type=submit]");
   submit.disabled = true;
   submit.querySelector("span").textContent = "正在生成预览…";
@@ -340,7 +345,8 @@ async function generateContentPack(event) {
     const response = await fetch(apiUrl("/api/content-pack"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(30000)
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "生成失败");
@@ -350,10 +356,15 @@ async function generateContentPack(event) {
     elements.freeTitle.textContent = result.pack.titles[0];
     elements.sampleScript.textContent = result.pack.scripts[0].voiceover;
     elements.unlockPack.dataset.pack = JSON.stringify(result.pack);
+    elements.packContent.setAttribute("tabindex", "-1");
+    elements.packContent.focus({ preventScroll: true });
+    if (window.innerWidth < 820) elements.packContent.scrollIntoView({ behavior: "instant", block: "start" });
     iconRefresh();
     showToast("预览已生成，完整内容包可通过支付宝解锁");
   } catch (error) {
-    showToast(error.message || "内容包生成失败", true);
+    errors.textContent = `预览未生成：${error.name === "TimeoutError" ? "请求超时，请检查网络后重试" : error.message || "请稍后重试"}。已保留填写内容，不会扣费。`;
+    errors.hidden = false;
+    errors.focus();
   } finally {
     submit.disabled = false;
     submit.querySelector("span").textContent = "免费生成预览";
@@ -362,6 +373,35 @@ async function generateContentPack(event) {
 
 elements.form.addEventListener("submit", generate);
 elements.contentPackForm.addEventListener("submit", generateContentPack);
+document.querySelector("#fill-pack-example").addEventListener("click", () => {
+  const example = { productName: "折叠帆布购物袋", audience: "需要日常收纳和携带购物用品的人", sellingPoints: "帆布材质，可折叠收纳，提手便于携带，有内侧小口袋", platform: "小红书", tone: "专业测评", offer: "了解尺寸和材质后再选择" };
+  for (const [name, value] of Object.entries(example)) elements.contentPackForm.elements.namedItem(name).value = value;
+  elements.contentPackForm.elements.namedItem("productName").focus();
+});
+document.querySelector("#copy-pack-preview").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(`${elements.freeTitle.textContent}\n\n${elements.sampleScript.textContent}`);
+    showToast("免费预览已复制，请核对事实后发布");
+  } catch { showToast("复制失败，请手动选择预览文字复制", true); }
+});
+try {
+  const draft = JSON.parse(localStorage.getItem("frame60-content-draft") || "null");
+  if (draft) for (const [name, value] of Object.entries(draft)) {
+    const field = elements.contentPackForm.elements.namedItem(name);
+    if (field && typeof value === "string") field.value = value;
+  }
+  const recoveryUrl = localStorage.getItem("frame60-last-recovery");
+  const orderId = localStorage.getItem("frame60-last-order");
+  if (/^FRAME60_[A-Za-z0-9_-]+$/.test(orderId || "")) {
+    const restore = document.querySelector("#restore-pack-order");
+    restore.href = recoveryUrl?.startsWith(apiUrl("/payment/return?")) ? recoveryUrl : apiUrl(`/payment/return?out_trade_no=${encodeURIComponent(orderId)}`);
+    restore.hidden = false;
+  }
+} catch {}
+elements.contentPackForm.addEventListener("input", () => {
+  try { localStorage.setItem("frame60-content-draft", JSON.stringify(Object.fromEntries(new FormData(elements.contentPackForm)))); } catch {}
+});
+document.body.classList.add("content-mode");
 elements.prompt.addEventListener("input", updateControls);
 elements.clearPrompt.addEventListener("click", () => {
   elements.prompt.value = "";
@@ -405,6 +445,7 @@ async function startCheckout(pack) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        previewId: pack.previewId,
         productName: pack.product,
         audience: pack.audience,
         sellingPoints: pack.sellingPoints,
@@ -415,6 +456,13 @@ async function startCheckout(pack) {
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "无法创建支付宝订单");
+    try {
+      localStorage.setItem("frame60-last-order", result.orderId);
+      localStorage.setItem("frame60-last-recovery", result.recoveryUrl);
+    } catch {}
+    const restore = document.querySelector("#restore-pack-order");
+    restore.href = result.recoveryUrl;
+    restore.hidden = false;
     const container = document.createElement("div");
     container.className = "payment-form-host";
     container.innerHTML = result.paymentHtml;
@@ -425,6 +473,9 @@ async function startCheckout(pack) {
     form.submit();
   } catch (error) {
     showToast(error.message || "支付宝支付启动失败", true);
+    const feedback = document.querySelector("#pack-payment-feedback");
+    feedback.hidden = false;
+    feedback.textContent = `未能打开支付：${error.message || "请重试"}。如果已付款，请先查看上次订单，不要重复付款。`;
     elements.unlockPack.disabled = false;
     label.textContent = `解锁完整内容包 · ${elements.contentPackPrice?.textContent || "¥9.90"}`;
   }

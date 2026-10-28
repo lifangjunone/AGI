@@ -1,0 +1,934 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Duix OpenAPI V2",
+    "description": "Duix OpenAPI V2",
+    "version": "v2"
+  },
+  "servers": [
+    {
+      "url": "https://app.duix.ai/duix-openapi-v2/sdk/v2"
+    }
+  ],
+  "security": [
+    {
+      "tokenAuth": []
+    }
+  ],
+  "paths": {
+    "/createAvatar": {
+      "post": {
+        "description": "Create an avatar",
+        "requestBody": {
+          "description": "Avatar to add to the store",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/createAvatarRequestBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "plant response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/createAvatarResponses"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getconcurrentNumber": {
+      "get": {
+        "summary": "Retrieve the real-time concurrency",
+        "description": "Retrieve the real-time concurrency status of an application",
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "query",
+            "description": "Application ID created on the Duix platform",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "plant response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getNumberResponse"
+                },
+                "example": {
+                  "code": "200",
+                  "data": {
+                    "cropId": "your-crop-id",
+                    "totalConcurrentNumber": 10,
+                    "userConcurrentNumber": 10
+                  },
+                  "message": "",
+                  "success": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getconcurrentList": {
+      "get": {
+        "summary": "Retrieve active sessions",
+        "description": "Retrieve a list of all active (in-call) sessions for an app.",
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "query",
+            "description": "App ID created on the Duix",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "plant response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getNumberResponse"
+                },
+                "example": {
+                  "code": "200",
+                  "data": {
+                    "cropId": "your-crop-id",
+                    "totalConcurrentNumber": 10,
+                    "userConcurrentNumber": 10
+                  },
+                  "message": "",
+                  "success": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/distroyCallSessionsByAppId": {
+      "get": {
+        "summary": "Close all sessions",
+        "description": "Terminate all active sessions for a specific app.",
+        "parameters": [
+          {
+            "name": "appId",
+            "in": "query",
+            "description": "App ID created on the Duix",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "plant response",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "200",
+                  "data": {},
+                  "message": "",
+                  "success": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sessionStop": {
+      "get": {
+        "summary": "Close a specific session",
+        "description": "Terminate a active sessions by its session ID.",
+        "parameters": [
+          {
+            "name": "uuid",
+            "in": "query",
+            "description": "sessionId returned in the start-complete event",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/getConversationById": {
+      "get": {
+        "summary": "Get conversation details",
+        "description": "Query conversation details by providing the conversation ID.",
+        "parameters": [
+          {
+            "name": "conversationId",
+            "in": "query",
+            "description": "Unique conversation ID.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved conversation details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/getConversationDetailsResponse"
+                },
+                "example": {
+                  "success": true,
+                  "code": "0",
+                  "message": "SUCCESS",
+                  "msg": "SUCCESS",
+                  "data": {
+                    "id": "108",
+                    "conversationName": "Unnamed-18:04",
+                    "language": "zh",
+                    "corpId": "1003645",
+                    "userId": "3959",
+                    "conversationConfigDto": null,
+                    "maxConversation": 2,
+                    "dataModelIsUsed": 1,
+                    "knowledgeIsUsed": 1,
+                    "fileIsUsed": 0,
+                    "thirdIsUsed": 0,
+                    "isFreedom": 0,
+                    "asrProvider": null,
+                    "conversationInfoDto": {
+                      "id": 109,
+                      "name": "1",
+                      "nickName": "",
+                      "gender": 1,
+                      "age": 0,
+                      "height": 0,
+                      "weight": 0,
+                      "characters": "",
+                      "backStory": ""
+                    },
+                    "detailDto": {
+                      "id": 95,
+                      "conversationId": "108",
+                      "proportion": "16:9",
+                      "terminalType": 0,
+                      "modelId": "321486924406853",
+                      "modelIdType": 0,
+                      "imageId": null,
+                      "sceneId": null,
+                      "modelName": "Model name",
+                      "sceneType": 0,
+                      "background": 1,
+                      "backgroundDto": {
+                        "id": 1,
+                        "backgroundCode": "1591003727513522176",
+                        "backgroundName": "zuoyi.jpg",
+                        "backgroundUrl": "/video-server/jpg/1592809647136509954.jpg",
+                        "fileType": 0,
+                        "proportion": "16:9",
+                        "userId": null
+                      },
+                      "modelConfig": null,
+                      "ttsId": "15",
+                      "ttsName": "guina",
+                      "ttsConfig": null,
+                      "ttsUrl": "",
+                      "ttsVolume": 0,
+                      "ttsSpeaker": "zhifeng_emo",
+                      "ttsSpeedRate": 0,
+                      "ttsPitch": 0,
+                      "ttsSource": 20,
+                      "samplePictureUrl": "/model/2023/02/06/c5348a17fac75feb0152a0c599b7af87.png",
+                      "videoWidth": 1920,
+                      "videoHeight": 1920,
+                      "humanProportion": "9:16",
+                      "humanWidth": 540,
+                      "humanHeight": 960,
+                      "humanX": 690,
+                      "humanY": 120,
+                      "localModelInfo": null
+                    },
+                    "knowledgeDtoList": [],
+                    "kbConversationDto": null,
+                    "modelDtoList": [
+                      {
+                        "id": 487,
+                        "conversationId": "108",
+                        "largeModelType": 0,
+                        "modelCode": 0,
+                        "largeName": "chatbot_law",
+                        "modelId": "1",
+                        "prompt": "Task: Your name is Zhang San...",
+                        "botUrl": ""
+                      }
+                    ],
+                    "thirdDto": null,
+                    "scriptDtoList": [
+                      {
+                        "id": 2728,
+                        "conversationId": "108",
+                        "scriptType": 0,
+                        "scriptContent": "Els silvrants",
+                        "ttsContent": null,
+                        "emotion": "0"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queryAvatar": {
+      "get": {
+        "summary": "Query avatar creation status",
+        "description": "Query avatar creation status about the AI avatar using its unique taskId.",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "query",
+            "description": "Unique task ID returned by the createAvatar API.",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved avatar creation status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/queryAvatarResponse"
+                },
+                "example": {
+                  "code": "0",
+                  "msg": "SUCCESS",
+                  "success": true,
+                  "data": {
+                    "name": "Khalid Hassan",
+                    "modelSceneId": "735917732520006",
+                    "conversationId": "1983775419508027393",
+                    "coverImage": "https://xxx.xxx.xxx/image/img_3076d14.png",
+                    "status": 2,
+                    "processingStep": "done"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queryAccount": {
+      "get": {
+        "summary": "Query user account information",
+        "description": "Query user account information.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved user account information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/queryAccountResponse"
+                },
+                "example": {
+                  "code": "0",
+                  "msg": "SUCCESS",
+                  "success": true,
+                  "data": {
+                    "companionCreateTimesBalance": 10,
+                    "durationBalance": 600
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "getNumberResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Response code.",
+            "type": "string"
+          },
+          "data": {
+            "description": "Concurrency details",
+            "type": "object",
+            "properties": {
+              "cropId": {
+                "description": "Corporate ID",
+                "type": "string"
+              },
+              "totalConcurrentNumber": {
+                "description": "Total concurrent sessions",
+                "type": "integer",
+                "format": "int32"
+              },
+              "userConcurrentNumber": {
+                "description": "User-specific concurrent sessions",
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          "message": {
+            "description": "Response message.",
+            "type": "string"
+          },
+          "success": {
+            "description": "Indicates whether the request succeeded.",
+            "type": "boolean"
+          }
+        }
+      },
+      "createAvatarRequestBody": {
+        "required": [
+          "ttsName",
+          "conversationId"
+        ],
+        "type": "object",
+        "properties": {
+          "ttsName": {
+            "description": "TTS name, select the public TTS voice. See at Settings -> Avatar creator -> Select voice",
+            "type": "string"
+          },
+          "conversationId": {
+            "description": "The conversation ID. Value is required when using public AI avatar Get Conversation ID",
+            "type": "string"
+          },
+          "coverImage": {
+            "description": "A value is needed if you are using images to customize your AI avatar. Base64 format. e.g. `data:image/png;base64,iVBORw0KGgoAAAANSUhEUgA`",
+            "type": "string"
+          },
+          "defaultSpeakingLanguage": {
+            "description": "Default speaking language. default English",
+            "type": "string"
+          },
+          "greetings": {
+            "description": "Enter a greeting for your AI avatar’s first words, If not, the system will generate it randomly",
+            "type": "string"
+          },
+          "name": {
+            "description": "Enter a name for your AI avatar. If not, the system will generate it randomly",
+            "type": "string"
+          },
+          "profile": {
+            "description": "Enter a description of personality and preferences you’d love your AI avatar to have.. If not, the system will generate it randomly",
+            "type": "string"
+          }
+        }
+      },
+      "createAvatarResponses": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Response code.",
+            "type": "string"
+          },
+          "msg": {
+            "description": "Response message.",
+            "type": "string"
+          },
+          "success": {
+            "description": "Indicates whether the request succeeded.",
+            "type": "boolean"
+          },
+          "data": {
+            "description": "Response payload containing avatar details.",
+            "type": "object",
+            "properties": {
+              "taskId": {
+                "description": "The task ID of create AI avatar.",
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "getConversationDetailsResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Response code",
+            "type": "string"
+          },
+          "message": {
+            "description": "Text message returned by the API",
+            "type": "string"
+          },
+          "msg": {
+            "description": "Additional message field",
+            "type": "string"
+          },
+          "success": {
+            "description": "Request success flag",
+            "type": "boolean"
+          },
+          "data": {
+            "description": "Main conversation data",
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "Conversation ID",
+                "type": "string"
+              },
+              "conversationName": {
+                "description": "Conversation name",
+                "type": "string"
+              },
+              "language": {
+                "description": "Conversation language",
+                "type": "string"
+              },
+              "corpId": {
+                "description": "Corporate ID",
+                "type": "string"
+              },
+              "userId": {
+                "description": "User ID",
+                "type": "string"
+              },
+              "conversationConfigDto": {
+                "description": "Conversation configuration",
+                "type": "object"
+              },
+              "maxConversation": {
+                "description": "Maximum concurrent conversations",
+                "type": "integer"
+              },
+              "dataModelIsUsed": {
+                "description": "Whether data model is used",
+                "type": "integer"
+              },
+              "knowledgeIsUsed": {
+                "description": "Whether knowledge base is used",
+                "type": "integer"
+              },
+              "fileIsUsed": {
+                "description": "Whether file is used",
+                "type": "integer"
+              },
+              "thirdIsUsed": {
+                "description": "Whether third-party integration is used",
+                "type": "integer"
+              },
+              "isFreedom": {
+                "description": "Whether in freedom mode",
+                "type": "integer"
+              },
+              "asrProvider": {
+                "description": "ASR provider",
+                "type": "string"
+              },
+              "conversationInfoDto": {
+                "description": "Conversation information details",
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "Info ID",
+                    "type": "integer"
+                  },
+                  "name": {
+                    "description": "Name",
+                    "type": "string"
+                  },
+                  "nickName": {
+                    "description": "Nickname",
+                    "type": "string"
+                  },
+                  "gender": {
+                    "description": "Gender (1=Male, 2=Female)",
+                    "type": "integer"
+                  },
+                  "age": {
+                    "description": "Age",
+                    "type": "integer"
+                  },
+                  "height": {
+                    "description": "Height",
+                    "type": "integer"
+                  },
+                  "weight": {
+                    "description": "Weight",
+                    "type": "integer"
+                  },
+                  "characters": {
+                    "description": "Character traits",
+                    "type": "string"
+                  },
+                  "backStory": {
+                    "description": "Background story",
+                    "type": "string"
+                  }
+                }
+              },
+              "detailDto": {
+                "description": "Conversation resource details (includes model, background, and TTS configuration)",
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "description": "Detail ID",
+                    "type": "integer"
+                  },
+                  "conversationId": {
+                    "description": "Conversation ID",
+                    "type": "string"
+                  },
+                  "proportion": {
+                    "description": "Video proportion",
+                    "type": "string"
+                  },
+                  "terminalType": {
+                    "description": "Terminal type",
+                    "type": "integer"
+                  },
+                  "modelId": {
+                    "description": "Model ID",
+                    "type": "string"
+                  },
+                  "modelIdType": {
+                    "description": "Model type (0 = Cloud Digital Human, 1 = Local Digital Human)",
+                    "type": "integer"
+                  },
+                  "imageId": {
+                    "description": "Image ID",
+                    "type": "string"
+                  },
+                  "sceneId": {
+                    "description": "Scene ID",
+                    "type": "string"
+                  },
+                  "modelName": {
+                    "description": "Model name",
+                    "type": "string"
+                  },
+                  "sceneType": {
+                    "description": "Scene type",
+                    "type": "integer"
+                  },
+                  "background": {
+                    "description": "Background type",
+                    "type": "integer"
+                  },
+                  "backgroundDto": {
+                    "description": "Background resource details",
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "description": "Background ID",
+                        "type": "integer"
+                      },
+                      "backgroundCode": {
+                        "description": "Background code",
+                        "type": "string"
+                      },
+                      "backgroundName": {
+                        "description": "Background name",
+                        "type": "string"
+                      },
+                      "backgroundUrl": {
+                        "description": "Background image or video URL",
+                        "type": "string"
+                      },
+                      "fileType": {
+                        "description": "File type",
+                        "type": "integer"
+                      },
+                      "proportion": {
+                        "description": "Background proportion",
+                        "type": "string"
+                      },
+                      "userId": {
+                        "description": "User ID",
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "modelConfig": {
+                    "description": "Model configuration",
+                    "type": "object"
+                  },
+                  "ttsId": {
+                    "description": "TTS ID",
+                    "type": "string"
+                  },
+                  "ttsName": {
+                    "description": "TTS name",
+                    "type": "string"
+                  },
+                  "ttsConfig": {
+                    "description": "TTS configuration",
+                    "type": "object"
+                  },
+                  "ttsUrl": {
+                    "description": "TTS URL",
+                    "type": "string"
+                  },
+                  "ttsVolume": {
+                    "description": "TTS volume",
+                    "type": "integer"
+                  },
+                  "ttsSpeaker": {
+                    "description": "TTS speaker ID",
+                    "type": "string"
+                  },
+                  "ttsSpeedRate": {
+                    "description": "TTS speed rate",
+                    "type": "integer"
+                  },
+                  "ttsPitch": {
+                    "description": "TTS pitch",
+                    "type": "integer"
+                  },
+                  "ttsSource": {
+                    "description": "TTS source",
+                    "type": "integer"
+                  },
+                  "samplePictureUrl": {
+                    "description": "Sample picture URL",
+                    "type": "string"
+                  },
+                  "videoWidth": {
+                    "description": "Video width",
+                    "type": "integer"
+                  },
+                  "videoHeight": {
+                    "description": "Video height",
+                    "type": "integer"
+                  },
+                  "humanProportion": {
+                    "description": "Human proportion",
+                    "type": "string"
+                  },
+                  "humanWidth": {
+                    "description": "Human width",
+                    "type": "integer"
+                  },
+                  "humanHeight": {
+                    "description": "Human height",
+                    "type": "integer"
+                  },
+                  "humanX": {
+                    "description": "Human X coordinate",
+                    "type": "integer"
+                  },
+                  "humanY": {
+                    "description": "Human Y coordinate",
+                    "type": "integer"
+                  },
+                  "localModelInfo": {
+                    "description": "Local digital human information",
+                    "type": "object"
+                  }
+                }
+              },
+              "knowledgeDtoList": {
+                "description": "Knowledge base list",
+                "type": "array"
+              },
+              "kbConversationDto": {
+                "description": "Knowledge base conversation",
+                "type": "object"
+              },
+              "modelDtoList": {
+                "description": "Model data transfer object list",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "description": "Model DTO ID",
+                      "type": "integer"
+                    },
+                    "conversationId": {
+                      "description": "Conversation ID",
+                      "type": "string"
+                    },
+                    "largeModelType": {
+                      "description": "Large model type",
+                      "type": "integer"
+                    },
+                    "modelCode": {
+                      "description": "Model code",
+                      "type": "integer"
+                    },
+                    "largeName": {
+                      "description": "Large model name",
+                      "type": "string"
+                    },
+                    "modelId": {
+                      "description": "Model ID",
+                      "type": "string"
+                    },
+                    "prompt": {
+                      "description": "Prompt template for the model",
+                      "type": "string"
+                    },
+                    "botUrl": {
+                      "description": "Bot URL",
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "thirdDto": {
+                "description": "Third-party integration data",
+                "type": "object"
+              },
+              "scriptDtoList": {
+                "description": "Predefined dialog scripts",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "description": "Script ID",
+                      "type": "integer"
+                    },
+                    "conversationId": {
+                      "description": "Conversation ID",
+                      "type": "string"
+                    },
+                    "scriptType": {
+                      "description": "Script type (0: Wake-up Word, 1: Opening Line, 2: Waiting Phrase, 3: Unknown Question, 4: Farewell, 5: Interruption, 6: Interruption Sentence, 7: Guiding Phrase)",
+                      "type": "integer"
+                    },
+                    "scriptContent": {
+                      "description": "Script text",
+                      "type": "string"
+                    },
+                    "ttsContent": {
+                      "description": "Script audio file URL",
+                      "type": "string"
+                    },
+                    "emotion": {
+                      "description": "Emotion level",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "queryAvatarResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Response code.",
+            "type": "string"
+          },
+          "msg": {
+            "description": "Response message.",
+            "type": "string"
+          },
+          "success": {
+            "description": "Indicates whether the request succeeded.",
+            "type": "boolean"
+          },
+          "data": {
+            "description": "Response payload containing avatar details.",
+            "type": "object",
+            "properties": {
+              "name": {
+                "description": "Avatar name.",
+                "type": "string"
+              },
+              "modelSceneId": {
+                "description": "The avatar model scene ID.",
+                "type": "string"
+              },
+              "conversationId": {
+                "description": "Conversation ID associated with this avatar.",
+                "type": "string"
+              },
+              "coverImage": {
+                "description": "The avatar cover image.",
+                "type": "string"
+              },
+              "status": {
+                "description": "Avatar training status (0: training, 1: failed, 2: success).",
+                "type": "integer"
+              },
+              "processingStep": {
+                "description": "Training progress (preparing, processing, after_processing, done).",
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "queryAccountResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Response code.",
+            "type": "string"
+          },
+          "msg": {
+            "description": "Response message.",
+            "type": "string"
+          },
+          "success": {
+            "description": "Indicates whether the request succeeded.",
+            "type": "boolean"
+          },
+          "data": {
+            "description": "Response payload containing avatar details.",
+            "type": "object",
+            "properties": {
+              "companionCreateTimesBalance": {
+                "description": "The balance of companion creation times",
+                "type": "integer"
+              },
+              "durationBalance": {
+                "description": "The balance of conversation duration",
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "tokenAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "token",
+        "description": "Token [generated](/documentation/get-token) from your API keys."
+      }
+    }
+  }
+}

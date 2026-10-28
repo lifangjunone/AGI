@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { addEdge, Background, Controls, Handle, Position, ReactFlow, useEdgesState, useNodesState, type Connection, type Edge, type NodeProps } from "@xyflow/react";
-import { AppstoreOutlined, BranchesOutlined, CheckOutlined, CodeOutlined, DatabaseOutlined, DeleteOutlined, ExperimentOutlined, FileTextOutlined, FunctionOutlined, HomeOutlined, LinkOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined, MinusOutlined, PlusOutlined, RadarChartOutlined, RocketOutlined, SearchOutlined, SendOutlined, SettingOutlined, ToolOutlined, UploadOutlined, UserOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, BranchesOutlined, CheckOutlined, CodeOutlined, DatabaseOutlined, DeleteOutlined, ExperimentOutlined, FileTextOutlined, FunctionOutlined, HomeOutlined, LinkOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MessageOutlined, MinusOutlined, PlusOutlined, RadarChartOutlined, RocketOutlined, SafetyCertificateOutlined, SearchOutlined, SendOutlined, SettingOutlined, ToolOutlined, UploadOutlined, UserOutlined } from "@ant-design/icons";
 
 type View = "workspace"|"agent"|"chat"|"builder"|"knowledge"|"tools"|"evaluations"|"releases";
-type Agent = {ID?:string;id?:string;Name?:string;name?:string;Description?:string;description?:string;Status?:string;status?:string;OwnerID?:string;owner_id?:string;Template?:string;template?:string;Model?:string;model?:string;SystemPrompt?:string;system_prompt?:string;KnowledgeBase?:string[];knowledge_base?:string[];Tools?:string[];tools?:string[];Intents?:string[];intents?:string[];Skills?:string[];skills?:string[];Plugins?:string[];plugins?:string[]};
+type RuntimeConfig = {runtime_id?:string;deployment_mode?:string;endpoint?:string;credential_ref?:string;permission_profile?:string;max_steps?:number;timeout_seconds?:number};
+type RuntimeDescriptor = {id:string;name:string;vendor:string;category:string;description:string;transport:string;deployment_modes:string[];capabilities:string[];status:string;endpoint?:string;permission_profile?:string;status_reason?:string};
+type Agent = {ID?:string;id?:string;Name?:string;name?:string;Description?:string;description?:string;ExecutionType?:string;execution_type?:string;Runtime?:RuntimeConfig;runtime?:RuntimeConfig;Status?:string;status?:string;OwnerID?:string;owner_id?:string;Template?:string;template?:string;Model?:string;model?:string;SystemPrompt?:string;system_prompt?:string;KnowledgeBase?:string[];knowledge_base?:string[];Tools?:string[];tools?:string[];Intents?:string[];intents?:string[];Skills?:string[];skills?:string[];Plugins?:string[];plugins?:string[]};
 type Version = {ID?:string;id?:string;Version?:string;version?:string;Endpoint?:string;endpoint?:string;PublishedAt?:string;published_at?:string};
 type Resource = {id:string;kind:string;name:string;description:string;status:string;config?:Record<string,unknown>;created_at?:string};
 type KnowledgeDraft = {name:string;description:string;sourceType:"file"|"url"|"text";sourceValue:string;files:File[];embedding:string;chunkSize:number;chunkOverlap:number};
-type ChatMessage = {id:string;role:"user"|"assistant";content:string;trace?:ChatTrace};
+type ChatProgress = {stage:string;label:string;status:"running"|"completed";detail?:string};
+type ChatMessage = {id:string;role:"user"|"assistant";content:string;reasoning?:string;streaming?:boolean;progress?:ChatProgress[];trace?:ChatTrace;error?:boolean;startedAt?:number;finishedAt?:number;stopped?:boolean};
 type ChatTrace = {trace_id:string;runtime_mode:string;runtime_notice:string;plan:string[];steps:{id:string;kind:string;name:string;status:string;summary:string;duration_ms:number}[];citations:{resource_id:string;name:string;snippet:string}[];message:{role:string;content:string}};
 type ModelRoute = {alias:string;name:string;model:string};
 type AgentPage = {items:Agent[];total:number;next_cursor:string;has_more:boolean};
@@ -18,6 +21,83 @@ const labels = {
   "zh-CN": {workspace:"Agent 工作台",agent:"Agent 详情",chat:"体验与调试",builder:"Agent 编排",knowledge:"知识库",tools:"工具与 MCP",evaluations:"评测",releases:"发布管理",create:"新建 Agent",publish:"发布版本",debug:"运行调试",evaluate:"运行评测",login:"登录已失效，请返回 Nexora Core 重新登录。"},
   "en-US": {workspace:"Agent Workspace",agent:"Agent Overview",chat:"Playground",builder:"Agent Builder",knowledge:"Knowledge",tools:"Tools & MCP",evaluations:"Evaluations",releases:"Releases",create:"New Agent",publish:"Publish",debug:"Run debug",evaluate:"Run evaluation",login:"Your session is missing or expired. Return to Nexora Core and sign in again."}
 } as const;
+
+function inlineMarkdown(value:string){
+  const parts=value.split(/(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g);
+  return parts.map((part,index)=>{
+    if(/^`[^`]+`$/.test(part))return <code key={index}>{part.slice(1,-1)}</code>;
+    if(/^\*\*[^*]+\*\*$/.test(part))return <strong key={index}>{part.slice(2,-2)}</strong>;
+    const link=part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+    if(link)return <a key={index} href={link[2]} target="_blank" rel="noreferrer">{link[1]}</a>;
+    return part;
+  });
+}
+
+function MarkdownView({text}:{text:string}){
+  const lines=text.replace(/\r\n/g,"\n").split("\n");
+  const output:React.ReactNode[]=[];
+  let index=0;
+  while(index<lines.length){
+    const line=lines[index];
+    if(!line.trim()){index++;continue}
+    if(line.startsWith("```")){
+      const language=line.slice(3).trim();
+      const code:string[]=[];
+      index++;
+      while(index<lines.length&&!lines[index].startsWith("```"))code.push(lines[index++]);
+      index++;
+      output.push(language==="markdown"||language==="md"?<MarkdownView key={`md-${index}`} text={code.join("\n")}/>:<pre key={`code-${index}`} data-language={language}><code>{code.join("\n")}</code></pre>);
+      continue;
+    }
+    const heading=line.match(/^(#{1,4})\s+(.+)$/);
+    if(heading){
+      const content=inlineMarkdown(heading[2]);
+      output.push(heading[1].length<=2?<h3 key={`h-${index}`}>{content}</h3>:<h4 key={`h-${index}`}>{content}</h4>);
+      index++;continue;
+    }
+    if(/^[-*]\s+/.test(line)){
+      const items:React.ReactNode[]=[];
+      while(index<lines.length&&/^[-*]\s+/.test(lines[index]))items.push(<li key={index}>{inlineMarkdown(lines[index++].replace(/^[-*]\s+/,""))}</li>);
+      output.push(<ul key={`ul-${index}`}>{items}</ul>);continue;
+    }
+    if(/^\d+[.)]\s+/.test(line)){
+      const items:React.ReactNode[]=[];
+      while(index<lines.length&&/^\d+[.)]\s+/.test(lines[index])){
+        const itemIndex=index;
+        const content=[lines[index++].replace(/^\d+[.)]\s+/,"")];
+        while(index<lines.length&&!/^\d+[.)]\s+/.test(lines[index])){
+          if(!lines[index].trim()){
+            const next=lines.slice(index+1).findIndex(value=>value.trim());
+            const nextLine=next<0?"":lines[index+1+next];
+            index++;
+            if(/^\d+[.)]\s+/.test(nextLine))break;
+            continue;
+          }
+          if(/^(#{1,4})\s+|^```|^[-*]\s+|^>\s?/.test(lines[index]))break;
+          content.push(lines[index++]);
+        }
+        items.push(<li key={itemIndex}>{inlineMarkdown(content.join(" "))}</li>);
+        while(index<lines.length&&!lines[index].trim())index++;
+      }
+      output.push(<ol key={`ol-${index}`}>{items}</ol>);continue;
+    }
+    if(/^>\s?/.test(line)){
+      const quote:string[]=[];
+      while(index<lines.length&&/^>\s?/.test(lines[index]))quote.push(lines[index++].replace(/^>\s?/,""));
+      output.push(<blockquote key={`quote-${index}`}>{inlineMarkdown(quote.join("\n"))}</blockquote>);continue;
+    }
+    const paragraph=[line];
+    index++;
+    while(index<lines.length&&lines[index].trim()&&!/^(#{1,4})\s+|^```|^[-*]\s+|^\d+[.)]\s+|^>\s?/.test(lines[index]))paragraph.push(lines[index++]);
+    output.push(<p key={`p-${index}`}>{inlineMarkdown(paragraph.join("\n"))}</p>);
+  }
+  return <div className="chat-markdown">{output}</div>;
+}
+
+function elapsed(startedAt?:number,finishedAt?:number,clock=Date.now()){
+  if(!startedAt)return "0.0s";
+  return `${Math.max(0,((finishedAt??clock)-startedAt)/1000).toFixed(1)}s`;
+}
 
 function FlowNode({data}: NodeProps) {
   const kind=String(data.kind).toLowerCase();
@@ -92,6 +172,8 @@ function KnowledgeCenter({resources,onOpenCreate,message}:{resources:Resource[];
 const aid=(a:Agent)=>a.ID??a.id??"";
 const aname=(a:Agent)=>a.Name??a.name??"Untitled Agent";
 const astatus=(a:Agent)=>a.Status??a.status??"draft";
+const aexecution=(a?:Agent)=>a?.ExecutionType??a?.execution_type??"workflow";
+const aruntime=(a?:Agent)=>a?.Runtime??a?.runtime??{};
 
 export default function Studio() {
   const[locale,setLocale]=useState<keyof typeof labels>("zh-CN");
@@ -115,6 +197,7 @@ export default function Studio() {
   const[tools,setTools]=useState<string[]>(["Customer CRM API","Nexora Web Search"]);
   const[resources,setResources]=useState<Resource[]>([]);
   const[modelRoutes,setModelRoutes]=useState<ModelRoute[]>([]);
+  const[runtimes,setRuntimes]=useState<RuntimeDescriptor[]>([]);
   const[menuOpen,setMenuOpen]=useState(false);
   const[embedded,setEmbedded]=useState(false);
   const[loggingOut,setLoggingOut]=useState(false);
@@ -122,15 +205,22 @@ export default function Studio() {
   const[agentName,setAgentName]=useState("");
   const[agentDescription,setAgentDescription]=useState("");
   const[agentTemplate,setAgentTemplate]=useState("customer-support");
+  const[agentExecutionType,setAgentExecutionType]=useState<"workflow"|"agent_loop">("workflow");
+  const[agentRuntime,setAgentRuntime]=useState<RuntimeConfig>({runtime_id:"nexora-native",deployment_mode:"managed",permission_profile:"tools_only",max_steps:20,timeout_seconds:300});
   const[toolOpen,setToolOpen]=useState(false);
   const[toolName,setToolName]=useState("");
   const[knowledgeOpen,setKnowledgeOpen]=useState(false);
   const[knowledgeStep,setKnowledgeStep]=useState<1|2>(1);
   const[knowledgeDraft,setKnowledgeDraft]=useState<KnowledgeDraft>({name:"",description:"",sourceType:"file",sourceValue:"",files:[],embedding:"bge-m3",chunkSize:800,chunkOverlap:100});
   const[config,setConfig]=useState<{model:string;prompt:string;knowledge:string[];tools:string[];intents:string[];skills:string[];plugins:string[]}>({model:"",prompt:"",knowledge:[],tools:[],intents:[],skills:[],plugins:[]});
+  const[runtimeConfig,setRuntimeConfig]=useState<RuntimeConfig>({runtime_id:"nexora-native",deployment_mode:"managed",permission_profile:"tools_only",max_steps:20,timeout_seconds:300});
   const[chatInput,setChatInput]=useState("");
   const[chatMessages,setChatMessages]=useState<ChatMessage[]>([]);
   const[chatRunning,setChatRunning]=useState(false);
+  const[chatClock,setChatClock]=useState(Date.now());
+  const[chatAtBottom,setChatAtBottom]=useState(true);
+  const chatStreamRef=useRef<HTMLDivElement|null>(null);
+  const chatAbortRef=useRef<AbortController|null>(null);
   const[traceOpen,setTraceOpen]=useState<string>("");
   const[builderSettingsOpen,setBuilderSettingsOpen]=useState(false);
   const[builderTestOpen,setBuilderTestOpen]=useState(false);
@@ -153,24 +243,74 @@ export default function Studio() {
       skills:current.Skills??current.skills??[],
       plugins:current.Plugins??current.plugins??[]
     });
+    setRuntimeConfig({...{runtime_id:"nexora-native",deployment_mode:"managed",permission_profile:"tools_only",max_steps:20,timeout_seconds:300},...aruntime(current)});
   },[selected, current]);
   const nodeTypes=useMemo(()=>({nexora:FlowNode}),[]);
-  const initialNodes=useMemo(()=>[
+  const workflowNodes=useMemo(()=>[
     {id:"start",type:"nexora",position:{x:80,y:220},data:{kind:"INPUT",label:message("用户输入","User input"),description:message("接收消息或任务","Receive request")}},
     {id:"intent",type:"nexora",position:{x:330,y:220},data:{kind:"INTENT",label:message("意图识别","Intent router"),description:message("判断请求类型","Classify request")}},
     {id:"knowledge",type:"nexora",position:{x:590,y:90},data:{kind:"KNOWLEDGE",label:message("知识检索","Knowledge retrieval"),description:message("检索已绑定知识库","Search bound knowledge")}},
     {id:"model",type:"nexora",position:{x:590,y:340},data:{kind:"MODEL",label:modelRoutes.find(route=>route.alias===config.model)?.model||message("选择 MaaS 模型","Choose MaaS model"),description:message("通过星模统一路由推理","Reason through MaaS routing")}},
     {id:"output",type:"nexora",position:{x:870,y:220},data:{kind:"OUTPUT",label:message("回复用户","Reply"),description:message("输出最终结果","Return result")}}
   ],[locale,modelRoutes,config.model]);
-  const initialEdges=useMemo<Edge[]>(()=>[
+  const workflowEdges=useMemo<Edge[]>(()=>[
     {id:"a",source:"start",target:"intent",animated:true},{id:"b",source:"intent",target:"knowledge"},{id:"c",source:"intent",target:"model"},
     {id:"d",source:"knowledge",target:"model",animated:true},{id:"e",source:"model",target:"output",animated:true}
   ],[]);
+  const initialNodes=aexecution(current)==="agent_loop"?[]:workflowNodes;
+  const initialEdges=aexecution(current)==="agent_loop"?[]:workflowEdges;
   const[nodes,setNodes,onNodesChange]=useNodesState(initialNodes);
   const[edges,setEdges,onEdgesChange]=useEdgesState(initialEdges);
   useEffect(()=>{setNodes(initialNodes);setEdges(initialEdges)},[initialNodes,initialEdges,setNodes,setEdges]);
+  useEffect(()=>{
+    const stream=chatStreamRef.current;
+    if(!stream||!chatRunning)return;
+    const distanceFromBottom=stream.scrollHeight-stream.scrollTop-stream.clientHeight;
+    if(distanceFromBottom>160)return;
+    const frame=window.requestAnimationFrame(()=>stream.scrollTo({top:stream.scrollHeight,behavior:"smooth"}));
+    setChatAtBottom(true);
+    return()=>window.cancelAnimationFrame(frame);
+  },[chatMessages,chatRunning]);
+  useEffect(()=>{
+    if(!chatRunning)return;
+    const timer=window.setInterval(()=>setChatClock(Date.now()),100);
+    return()=>window.clearInterval(timer);
+  },[chatRunning]);
+  const reasoningFollowRef=useRef(new WeakMap<HTMLElement,{follow:boolean}>());
+  useLayoutEffect(()=>{
+    const stream=chatStreamRef.current;
+    if(!stream)return;
+    const articles=stream.querySelectorAll<HTMLElement>(".chat-message");
+    articles.forEach((article,index)=>{
+      const item=chatMessages[index];
+      const panel=article.querySelector<HTMLDetailsElement>(".reasoning-stream");
+      const body=panel?.querySelector<HTMLElement>(":scope > div");
+      if(!item||!panel||!body)return;
+      let state=reasoningFollowRef.current.get(body);
+      if(!state){
+        const next={follow:true};
+        const onScroll=()=>{next.follow=body.scrollHeight-body.scrollTop-body.clientHeight<32};
+        body.addEventListener("scroll",onScroll,{passive:true});
+        reasoningFollowRef.current.set(body,next);
+        state=next;
+        panel.open=true;
+        body.scrollTop=body.scrollHeight;
+      }
+      // Keep upstream reasoning visible through the entire streamed turn,
+      // including tool execution and the transition to answer generation.
+      if(item.streaming){
+        panel.open=true;
+        panel.dataset.live="true";
+        if(state.follow)body.scrollTop=body.scrollHeight;
+      }else{
+        if(panel.dataset.live==="true")panel.open=true;
+        delete panel.dataset.live;
+      }
+    });
+  },[chatMessages]);
   const auth=useCallback(()=>({"Content-Type":"application/json","Authorization":`Bearer ${localStorage.getItem("nexora_token")??""}`}),[]);
   const suiteURL=(port:number,path="/")=>typeof window==="undefined"?"":`${window.location.protocol}//${window.location.hostname}:${port}${path}`;
+  const streamingAPI=()=>api||(typeof window!=="undefined"&&window.location.port==="3001"?suiteURL(8081,""):"");
   const productURL=(port:number)=>{
     if(typeof window==="undefined")return "#";
     const url=new URL(suiteURL(port));
@@ -178,6 +318,17 @@ export default function Studio() {
     if(token)url.searchParams.set("token",token);
     url.searchParams.set("locale",locale);
     return url.toString();
+  };
+  const scrollChatToBottom=(behavior:ScrollBehavior="smooth")=>{
+    const stream=chatStreamRef.current;
+    if(!stream)return;
+    stream.scrollTo({top:stream.scrollHeight,behavior});
+    setChatAtBottom(true);
+  };
+  const onChatScroll=()=>{
+    const stream=chatStreamRef.current;
+    if(!stream)return;
+    setChatAtBottom(stream.scrollHeight-stream.scrollTop-stream.clientHeight<96);
   };
 
   async function request(path:string, init?:RequestInit) {
@@ -222,7 +373,34 @@ export default function Studio() {
     setChatMessages([]);
     setNotice("");
   }
-  const isAgentReady=(agent?:Agent)=>Boolean((agent?.Model??agent?.model)?.trim()&&(agent?.SystemPrompt??agent?.system_prompt)?.trim());
+  const isRuntimeReady=(agent?:Agent)=>{
+    if(aexecution(agent)!=="agent_loop")return true;
+    const runtime=aruntime(agent);
+    return Boolean(runtime.runtime_id);
+  };
+  const isAgentReady=(agent?:Agent)=>Boolean((agent?.Model??agent?.model)?.trim()&&(agent?.SystemPrompt??agent?.system_prompt)?.trim()&&isRuntimeReady(agent));
+  const selectedRuntime=()=>runtimes.find(item=>item.id===runtimeConfig.runtime_id);
+  const capabilityTotals=()=>{
+    const knowledge=config.knowledge.length;
+    const tools=config.tools.length;
+    const skills=config.skills.length;
+    const plugins=config.plugins.length;
+    return {knowledge,tools,skills,plugins,total:knowledge+tools+skills+plugins};
+  };
+  const readinessItems=()=>{
+    const runtime=selectedRuntime();
+    const unsupportedPermission=["workspace_write","device_control"].includes(runtimeConfig.permission_profile??"");
+    return [
+      {id:"model",required:true,ready:Boolean(config.model.trim()),label:message("星模路由","MaaS route"),detail:config.model.trim()?config.model:message("选择一个已验证的模型路由","Choose a verified model route")},
+      {id:"prompt",required:true,ready:Boolean(config.prompt.trim()),label:message("目标与系统提示词","Goal and system prompt"),detail:config.prompt.trim()?message("已定义角色、目标和边界","Role, goal, and boundaries are defined"):message("定义 Agent 要完成什么以及禁止什么","Define what the agent should achieve and avoid")},
+      {id:"runtime",required:aexecution(current)==="agent_loop",ready:isRuntimeReady({...current,Runtime:runtimeConfig,runtime:runtimeConfig})&&Boolean(runtime),label:"Runtime Profile",detail:runtime?`${runtime.name} · ${runtime.status}`:message("选择 Nexora Runtime 中的可用 Profile","Choose an available profile in Nexora Runtime")},
+      {id:"permission",required:true,ready:!unsupportedPermission,label:message("权限边界","Permission boundary"),detail:unsupportedPermission?message("该高风险档位后端当前会拒绝，需等待审批/隔离能力交付","This high-risk level is currently rejected until approval and isolation are delivered"):message("当前权限档位可用于运行","Current permission level can run")},
+      {id:"capabilities",required:false,ready:capabilityTotals().total>0,label:message("增强能力","Enhanced capabilities"),detail:capabilityTotals().total>0?message(`已绑定 ${capabilityTotals().total} 项能力`,`${capabilityTotals().total} capabilities bound`):message("未绑定知识库、工具、Skill 或插件；仍可先用模型对话","No knowledge, tools, skills, or plugins bound; model-only chat is still available")}
+    ];
+  };
+  const blockingReadiness=()=>readinessItems().filter(item=>item.required&&!item.ready);
+  const canRunCurrent=()=>blockingReadiness().length===0;
+  const runBlockReason=()=>blockingReadiness().map(item=>item.label).join("、")||message("可运行","Ready");
   const enterAgent=(agent:Agent)=>{
     chooseAgent(agent);
     if(isAgentReady(agent)){
@@ -239,6 +417,10 @@ export default function Studio() {
   }
   async function loadModelRoutes(){
     try{const data=await request("/api/v1/model-routes");setModelRoutes(data.items??[])}
+    catch(e){setNotice(e instanceof Error?e.message:"Error")}
+  }
+  async function loadRuntimes(){
+    try{const data=await request("/api/v1/runtimes");setRuntimes(data.items??[])}
     catch(e){setNotice(e instanceof Error?e.message:"Error")}
   }
   useEffect(()=>{
@@ -259,6 +441,7 @@ export default function Studio() {
     }
     void loadResources();
     void loadModelRoutes();
+    void loadRuntimes();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
   useEffect(()=>{
@@ -286,6 +469,8 @@ export default function Studio() {
     setAgentName("");
     setAgentDescription("");
     setAgentTemplate("customer-support");
+    setAgentExecutionType("workflow");
+    setAgentRuntime({runtime_id:"nexora-native",deployment_mode:"managed",permission_profile:"tools_only",max_steps:20,timeout_seconds:300});
     setCreateOpen(true);
   }
   function openCreateKnowledge(){
@@ -320,8 +505,8 @@ export default function Studio() {
     try{
       const templateLabel={blank:"Blank","customer-support":"Customer Support",rag:"Knowledge Q&A"}[agentTemplate]??agentTemplate;
       const description=agentDescription.trim()||message(`基于 ${templateLabel} 模板创建`,`Created from the ${templateLabel} template`);
-      const data=await request("/api/v1/agents",{method:"POST",body:JSON.stringify({name,description})});
-      setCreateOpen(false);chooseAgent(data);setAgentTotal(total=>total+1);setBuilderSettingsOpen(true);setSelectedNode("model");setView("builder");setNotice(message("Agent 已创建。请先选择模型并填写系统提示词。","Agent created. Choose a model and add a system prompt first."));
+      const data=await request("/api/v1/agents",{method:"POST",body:JSON.stringify({name,description,template:agentTemplate,execution_type:agentExecutionType,runtime:agentExecutionType==="agent_loop"?agentRuntime:{}})});
+      setCreateOpen(false);chooseAgent(data);setAgentTotal(total=>total+1);setBuilderSettingsOpen(true);setSelectedNode(agentExecutionType==="agent_loop"?"act":"model");setView("builder");setNotice(agentExecutionType==="agent_loop"?message("Agent Loop 已创建。请确认 Runtime、模型、权限和执行预算。","Agent Loop created. Review its runtime, model, permissions, and execution budget."):message("工作流 Agent 已创建。请先选择模型并填写系统提示词。","Workflow agent created. Choose a model and add a system prompt first."));
     }catch(e){setNotice(e instanceof Error?e.message:"Error")}
   }
   async function run(action:"debug"|"evaluate"|"publish"){
@@ -338,7 +523,7 @@ export default function Studio() {
     if(!selected)return false;
     setSaveState("saving");
     try{
-      const payload={model:config.model,system_prompt:config.prompt,knowledge_base:config.knowledge,tools:config.tools,intents:config.intents,skills:config.skills,plugins:config.plugins};
+      const payload={model:config.model,system_prompt:config.prompt,knowledge_base:config.knowledge,tools:config.tools,intents:config.intents,skills:config.skills,plugins:config.plugins,runtime:aexecution(current)==="agent_loop"?runtimeConfig:undefined};
       const data=await request(`/api/v1/agents/${selected}`,{method:"PUT",body:JSON.stringify(payload)});
       setAgents(items=>items.map(item=>aid(item)===selected?data:item));
       setSelectedAgent(data);
@@ -390,31 +575,70 @@ export default function Studio() {
     });
     setSaveState("dirty");
   },[setEdges,locale]);
-  async function sendChat(){
-    const input=chatInput.trim();
+  async function sendChat(inputOverride?:string){
+    const input=(inputOverride??chatInput).trim();
     if(!selected||!input||chatRunning)return;
+    if(!canRunCurrent()){
+      setNotice(message(`还不能运行：请先完成 ${runBlockReason()}。`,`Not ready to run: finish ${runBlockReason()} first.`));
+      setView("builder");
+      return;
+    }
     const userMessage:ChatMessage={id:`user-${Date.now()}`,role:"user",content:input};
     const next=[...chatMessages,userMessage];
     setChatMessages(next);setChatInput("");setChatRunning(true);
     const assistantID=`assistant-${Date.now()}`;
-    setChatMessages(items=>[...items,{id:assistantID,role:"assistant",content:""}]);
+    const startedAt=Date.now();
+    const controller=new AbortController();
+    chatAbortRef.current=controller;
+    setChatClock(startedAt);
+    setChatMessages(items=>[...items,{id:assistantID,role:"assistant",content:"",reasoning:"",streaming:true,startedAt,progress:[{stage:"connect",label:message("连接 MaaS 模型","Connecting to MaaS model"),status:"running"}]}]);
     try{
-      const res=await fetch(`${api}/api/v1/agents/${selected}/chat/stream`,{method:"POST",headers:auth(),body:JSON.stringify({input,messages:next.map(item=>({role:item.role,content:item.content}))})});
+      const res=await fetch(`${streamingAPI()}/api/v1/agents/${selected}/chat/stream`,{method:"POST",headers:auth(),signal:controller.signal,body:JSON.stringify({input,messages:next.map(item=>({role:item.role,content:item.content}))})});
       if(!res.ok){const detail=await res.json().catch(()=>({}));throw new Error(detail?.error?.message??`Request failed (${res.status})`)}
       if(!res.body)throw new Error(message("浏览器未收到流式响应。","No streaming response body."));
       const reader=res.body.getReader();
       const decoder=new TextDecoder();
-      let buffer="";let streamed="";let trace:ChatTrace|undefined;
+      let buffer="";let streamed="";let reasoning="";let trace:ChatTrace|undefined;
+      const updateProgress=(progress:ChatProgress)=>{
+        setChatMessages(items=>items.map(item=>{
+          if(item.id!==assistantID)return item;
+          const current=item.progress??[];
+          const existing=current.findIndex(value=>value.stage===progress.stage);
+          const settled=current.map(value=>value.stage!==progress.stage&&value.status==="running"?{...value,status:"completed" as const}:value);
+          return {...item,progress:existing<0?[...settled,progress]:settled.map((value,index)=>index===existing?progress:value)};
+        }));
+      };
       const consume=(block:string)=>{
         const event=block.split("\n").find(line=>line.startsWith("event:"))?.slice(6).trim();
         const raw=block.split("\n").filter(line=>line.startsWith("data:")).map(line=>line.slice(5).trim()).join("");
         if(!raw)return;
         const data=JSON.parse(raw);
+        if(event==="meta"){
+          updateProgress({stage:"connect",label:message("模型路由已连接","Model route connected"),status:"completed",detail:data.model_route});
+          updateProgress({stage:"plan",label:message("正在理解任务并规划","Understanding and planning"),status:"running"});
+        }
+        if(event==="progress"){
+          updateProgress({stage:data.stage??"runtime",label:data.label??message("正在执行","Running"),status:data.status??"running",detail:data.detail});
+        }
+        if(event==="reasoning"&&data.content){
+          reasoning+=data.content;
+          setChatMessages(items=>items.map(item=>item.id===assistantID?{...item,reasoning}:item));
+        }
         if(event==="delta"&&data.content){
           streamed+=data.content;
           setChatMessages(items=>items.map(item=>item.id===assistantID?{...item,content:streamed}:item));
+          updateProgress({stage:"answer",label:message("正在生成回答","Generating answer"),status:"running"});
         }
-        if(event==="done"){trace=data;setChatMessages(items=>items.map(item=>item.id===assistantID?{...item,content:data.message?.content??streamed,trace:data}:item));setTraceOpen(data.trace_id)}
+        if(event==="done"){
+          const completedLabels:Record<string,string>={
+            connect:message("模型路由已连接","Model route connected"),
+            plan:message("任务理解与规划完成","Task planning complete"),
+            knowledge:message("知识检索完成","Knowledge retrieval complete"),
+            model:message("模型推理完成","Model reasoning complete"),
+            answer:message("回答生成完成","Answer complete")
+          };
+          trace=data;setChatMessages(items=>items.map(item=>item.id===assistantID?{...item,content:data.message?.content??streamed,reasoning,streaming:false,finishedAt:Date.now(),progress:(item.progress??[]).map(progress=>({...progress,label:completedLabels[progress.stage]??progress.label,status:"completed"})),trace:data}:item));setTraceOpen(data.trace_id)
+        }
         if(event==="error")throw new Error(data.message??"Streaming failed");
       };
       while(true){
@@ -426,9 +650,28 @@ export default function Studio() {
       }
       if(buffer.trim())consume(buffer);
       if(!streamed&&!trace)throw new Error(message("模型没有返回内容。","The model returned no content."));
-    }catch(e){setChatMessages(items=>[...items,{id:`error-${Date.now()}`,role:"assistant",content:e instanceof Error?e.message:"Error"}])}
-    finally{setChatMessages(items=>items.filter(item=>item.id!==assistantID||item.content||item.trace));setChatRunning(false)}
+    }catch(e){
+      if(e instanceof DOMException&&e.name==="AbortError"){
+        setChatMessages(items=>items.map(item=>item.id===assistantID?{...item,streaming:false,stopped:true,finishedAt:Date.now(),progress:(item.progress??[]).map(progress=>progress.status==="running"?{...progress,label:message("已停止生成","Generation stopped"),status:"completed"}:progress)}:item));
+      }else{
+        setChatMessages(items=>items.map(item=>item.id===assistantID?{...item,content:e instanceof Error?e.message:"Error",streaming:false,finishedAt:Date.now(),error:true}:item))
+      }
+    }
+    finally{chatAbortRef.current=null;setChatMessages(items=>items.map(item=>item.id===assistantID?{...item,streaming:false,finishedAt:item.finishedAt??Date.now()}:item).filter(item=>item.id!==assistantID||item.content||item.reasoning||item.trace||item.error||item.stopped));setChatRunning(false)}
   }
+  function stopChat(){
+    chatAbortRef.current?.abort();
+  }
+  async function copyText(value:string){
+    try{await navigator.clipboard.writeText(value);setNotice(message("已复制到剪贴板。","Copied to clipboard."))}
+    catch{setNotice(message("复制失败，请手动选择文本。","Copy failed. Select the text manually."))}
+  }
+  function retryMessage(index:number){
+    const previous=chatMessages.slice(0,index).reverse().find(item=>item.role==="user");
+    if(!previous)return;
+    void sendChat(previous.content);
+  }
+  const activeProgress=(item?:ChatMessage)=>item?.progress?.find(progress=>progress.status==="running")??item?.progress?.[item.progress.length-1];
   async function loadVersions(){
     if(!selected){setVersions([]);return}
     try{const data=await request(`/api/v1/agents/${selected}/versions`);setVersions(data.items??[])}catch(e){setNotice(e instanceof Error?e.message:"Error")}
@@ -449,6 +692,25 @@ export default function Studio() {
     return <div className="agent-context"><AgentFinder label={label} help={help} current={current} onSearch={searchAgents} onSelect={chooseAgent} message={message}/>{current&&<em>{astatus(current)}</em>}</div>
   };
   const EmptyAgent=({purpose}:{purpose:string})=><div className="agent-empty"><span><FunctionOutlined/></span><strong>{message(`还没有可${purpose}的 Agent`,`No agent is available`)}</strong><p>{message("先创建 Agent 项目，创建完成后会直接进入可视化编排器。","Create an agent project first. You will continue directly in the visual builder.")}</p><button className="primary" onClick={openCreateAgent}><PlusOutlined/> {t.create}</button></div>;
+  const AgentLoopConsole=()=>(
+    <div className="loop-console">
+      <header className="loop-console-hero"><span><small>AGENT LOOP</small><h2>{message("运行前配置","Runtime readiness")}</h2><p>{message("先确认模型、Runtime、目标和权限边界可运行，再把知识、工具、MCP、Skill 与插件作为增强能力逐步接入。","Confirm the model, runtime, goal, and permission boundary first; then attach knowledge, tools, MCP, skills, and plugins as enhanced capabilities.")}</p></span><div className={canRunCurrent()?"ready":"blocked"}><b>{canRunCurrent()?message("可以试运行","Ready to test"):message("暂不能运行","Not ready")}</b><small>{canRunCurrent()?message("最低运行条件已满足","Minimum requirements met"):message(`缺少：${runBlockReason()}`,`Missing: ${runBlockReason()}`)}</small></div></header>
+      <main className="loop-console-main">
+        <section className="loop-config-column">
+          <article className="loop-config-card loop-goal-card"><header><span>01</span><div><strong>{message("目标与完成标准","Goal and success criteria")}</strong><small>{message("定义要实现什么、何时算完成，以及绝不能做什么。","Define the outcome, completion criteria, and prohibited actions.")}</small></div></header><label><span>{message("系统目标与约束","System goal and constraints")}</span><textarea value={config.prompt} placeholder={message("例如：完成客户问题调研；关键结论必须提供证据；涉及写操作、终端或外部发送时先请求人工批准。","Example: Research the customer issue; cite evidence; request approval before writes, terminal commands, or external messages.")} onChange={e=>{setConfig(x=>({...x,prompt:e.target.value}));setSaveState("dirty")}}/></label></article>
+          <article className="loop-config-card"><header><span>02</span><div><strong>{message("推理与执行 Runtime","Reasoning and execution runtime")}</strong><small>{message("模型负责推理；独立的 Nexora Runtime 产品负责循环、工具执行、工作区与设备能力。","The model reasons; the independent Nexora Runtime product owns the loop, tools, workspace, and device capabilities.")}</small></div></header><div className="loop-form-grid"><label><span>{message("Runtime Profile","Runtime profile")}</span><select value={runtimeConfig.runtime_id??""} onChange={e=>{const descriptor=runtimes.find(item=>item.id===e.target.value);setRuntimeConfig(x=>({...x,runtime_id:e.target.value,deployment_mode:descriptor?.deployment_modes[0]??"managed",endpoint:"",permission_profile:descriptor?.permission_profile??x.permission_profile}));setSaveState("dirty")}}><option value="">{message("选择星驰中的可用 Runtime","Choose a Runtime profile")}</option>{runtimes.map(runtime=><option key={runtime.id} value={runtime.id}>{runtime.name} · {runtime.status==="healthy"?message("健康","Healthy"):runtime.status}</option>)}</select></label><label><span>{message("星模路由","MaaS route")}</span><select value={config.model} onChange={e=>{setConfig(x=>({...x,model:e.target.value}));setSaveState("dirty")}}><option value="">{message("选择可用模型路由","Choose a model route")}</option>{modelRoutes.map(route=><option key={route.alias} value={route.alias}>{route.model||route.name} · {route.alias}</option>)}</select></label></div><p className="loop-runtime-managed">{message("Runtime 的端点、凭据、健康检查与适配器由 Nexora Runtime · 星驰统一管理。","Endpoints, credentials, health checks, and adapters are managed by Nexora Runtime.")}</p></article>
+          <article className="loop-config-card"><header><span>03</span><div><strong>{message("可自主使用的能力","Autonomous capabilities")}</strong><small>{message("这里只定义能力边界，具体调用顺序由运行时计划决定。","This defines capability boundaries; runtime planning decides the call order.")}</small></div></header><div className="loop-capability-grid"><ResourcePicker label={message("知识库","Knowledge bases")} help={message("检索企业事实与文档","Retrieve enterprise facts and documents")} kind="knowledge_base" resources={resources} selected={config.knowledge} onChange={value=>{setConfig(x=>({...x,knowledge:value}));setSaveState("dirty")}}/><ResourcePicker label={message("工具与 MCP","Tools and MCP")} help={message("执行外部系统操作","Act on external systems")} kind={["tool","mcp_server"]} resources={resources} selected={config.tools} onChange={value=>{setConfig(x=>({...x,tools:value}));setSaveState("dirty")}}/><ResourcePicker label="Skills" help={message("复用专业任务能力","Reuse specialized capabilities")} kind="skill" resources={resources} selected={config.skills} onChange={value=>{setConfig(x=>({...x,skills:value}));setSaveState("dirty")}}/><ResourcePicker label={message("安全与扩展插件","Safety and extension plugins")} help={message("在执行前后施加策略","Apply policies around actions")} kind="plugin" resources={resources} selected={config.plugins} onChange={value=>{setConfig(x=>({...x,plugins:value}));setSaveState("dirty")}}/></div></article>
+        </section>
+        <aside className="loop-policy-column">
+          <article className="loop-readiness-card"><header><strong>{message("运行前检查","Pre-run checklist")}</strong><small>{message("阻塞项必须完成；增强项不影响开始问答。","Required items must pass; optional enhancements do not block chat.")}</small></header><ul>{readinessItems().map(item=><li key={item.id} className={item.ready?"ready":item.required?"blocked":"optional"}><i>{item.ready?<CheckOutlined/>:item.required?"!":"+"}</i><span><b>{item.label}</b><small>{item.detail}</small></span><em>{item.required?message("必需","Required"):message("可选","Optional")}</em></li>)}</ul></article>
+          <article className="loop-policy-card"><header><SafetyCertificateOutlined/><span><strong>{message("安全边界","Safety boundary")}</strong><small>{message("限制 Agent 可以执行到什么程度","Control how far the agent may act")}</small></span></header><label>{message("权限档位","Permission profile")}<select value={runtimeConfig.permission_profile??"tools_only"} onChange={e=>{setRuntimeConfig(x=>({...x,permission_profile:e.target.value}));setSaveState("dirty")}}><option value="tools_only">{message("仅已授权工具","Approved tools only")}</option><option value="workspace_read">{message("工作区只读","Workspace read-only")}</option><option disabled value="workspace_write">{message("工作区读写（未交付审批/隔离，当前不可用）","Workspace read/write (unavailable until approval and isolation ship)")}</option><option disabled value="device_control">{message("设备控制（未交付逐次审批，当前不可用）","Device control (unavailable until per-action approval ships)")}</option></select></label><p className="loop-policy-warning">{message("后端当前会拒绝写入、Shell 与设备控制，避免展示无法真实执行的能力。","The backend currently rejects writes, shell, and device control, so unavailable capabilities are not presented as runnable.")}</p><label>{message("部署位置","Deployment")}<select value={runtimeConfig.deployment_mode??"managed"} onChange={e=>{setRuntimeConfig(x=>({...x,deployment_mode:e.target.value}));setSaveState("dirty")}}>{(runtimes.find(item=>item.id===runtimeConfig.runtime_id)?.deployment_modes??["managed"]).map(mode=><option key={mode} value={mode}>{mode}</option>)}</select></label></article>
+          <article className="loop-policy-card"><header><RadarChartOutlined/><span><strong>{message("执行预算与停止条件","Execution budget")}</strong><small>{message("防止无限循环和失控执行","Prevent runaway execution")}</small></span></header><div className="loop-form-grid"><label>{message("最大循环步数","Max steps")}<input type="number" min="1" max="100" value={runtimeConfig.max_steps??20} onChange={e=>{setRuntimeConfig(x=>({...x,max_steps:Number(e.target.value)}));setSaveState("dirty")}}/></label><label>{message("超时（秒）","Timeout")}<input type="number" min="10" max="3600" value={runtimeConfig.timeout_seconds??300} onChange={e=>{setRuntimeConfig(x=>({...x,timeout_seconds:Number(e.target.value)}));setSaveState("dirty")}}/></label></div><ul><li><CheckOutlined/>{message("达到完成标准时结束","Stop when success criteria are met")}</li><li><CheckOutlined/>{message("超出预算或超时立即停止","Stop on budget or timeout")}</li><li><CheckOutlined/>{message("高风险动作暂停并请求审批","Pause high-risk actions for approval")}</li></ul></article>
+          <article className="loop-runtime-preview"><small>{message("运行时动态发生","CREATED AT RUNTIME")}</small><strong>{message("计划不是在这里画出来的","Plans are not drawn here")}</strong><p>{message("收到任务后，Runtime 动态生成计划、选择知识与工具、观察结果，并决定继续、重规划或结束。完整过程显示在问答页执行轨迹中。","At runtime, the agent creates a plan, selects knowledge and tools, observes results, and decides whether to continue, replan, or stop. The full trace appears in Chat.")}</p><div><span>{message("规划","Plan")}</span><i>→</i><span>{message("行动","Act")}</span><i>→</i><span>{message("观察","Observe")}</span><i>↻</i></div></article>
+          <button className="primary loop-save-chat" title={canRunCurrent()?message("保存并进入问答","Save and open chat"):message(`请先完成：${runBlockReason()}`,`Finish first: ${runBlockReason()}`)} disabled={!canRunCurrent()||saveState==="saving"} onClick={async()=>{if(await saveConfig())setView("chat")}}><MessageOutlined/> {canRunCurrent()?message("保存并开始真实任务","Save and run a real task"):message("完成阻塞项后可运行","Finish blockers to run")}</button>
+        </aside>
+      </main>
+    </div>
+  );
   const agentScoped=(["agent","chat","builder","evaluations","releases"] as View[]).includes(view)&&Boolean(current);
   if(embedded)return <div className="signed-out">{message("已退出 Studio","Studio signed out")}</div>;
   return <div className={`app view-${view}${sidebarCollapsed?" sidebar-collapsed":""}`}>
@@ -502,7 +764,8 @@ export default function Studio() {
             return <article className="agent-project-card" key={aid(a)}><button className="agent-card-open" aria-label={ready?message(`与 ${aname(a)} 对话`,`Chat with ${aname(a)}`):message(`配置 ${aname(a)}`,`Configure ${aname(a)}`)} onClick={()=>openAgent(a)}>
               <span className="agent-card-head"><i>{aname(a).trim().slice(0,1).toUpperCase()||"N"}</i><span><strong>{aname(a)}</strong><code>{aid(a)}</code></span><em className={`agent-status status-${status}`}>{status==="published"?message("已发布","Published"):message("草稿","Draft")}</em></span>
               <p>{a.Description??a.description??message("暂无描述。打开项目补充定位与使用说明。","No description yet. Open the project to define its purpose.")}</p>
-              <dl><div><dt>{message("模型","Model")}</dt><dd>{a.Model??a.model??message("待配置","Not configured")}</dd></div><div><dt>{message("已绑定能力","Capabilities")}</dt><dd>{capabilityCount}</dd></div><div><dt>{message("负责人","Owner")}</dt><dd>{a.OwnerID??a.owner_id??"Nexora Admin"}</dd></div></dl>
+              <span className={`execution-badge ${aexecution(a)}`}>{aexecution(a)==="agent_loop"?message("Agent Loop · 敏态","Agent Loop · Adaptive"):message("工作流 · 稳态","Workflow · Deterministic")}</span>
+              <dl><div><dt>{aexecution(a)==="agent_loop"?"Runtime":message("模型","Model")}</dt><dd>{aexecution(a)==="agent_loop"?(runtimes.find(item=>item.id===aruntime(a).runtime_id)?.name??aruntime(a).runtime_id??message("待配置","Not configured")):(a.Model??a.model??message("待配置","Not configured"))}</dd></div><div><dt>{message("已绑定能力","Capabilities")}</dt><dd>{capabilityCount}</dd></div><div><dt>{message("负责人","Owner")}</dt><dd>{a.OwnerID??a.owner_id??"Nexora Admin"}</dd></div></dl>
             </button><footer><button className="open-project" onClick={()=>openAgent(a)}>{ready?<><MessageOutlined/> {message("开始对话","Start chat")}</>:<><SettingOutlined/> {message("完成配置","Finish setup")}</>} →</button><button onClick={()=>{chooseAgent(a);setView("builder")}}><FunctionOutlined/> {message("编排配置","Build & configure")}</button></footer></article>;
           })}</div>}
           {agentTotal>0&&<div ref={agentLoadMoreRef} className="agent-scroll-status" aria-live="polite">{agentsLoading?<><span className="catalog-loader"/><b>{message("正在加载更多 Agent…","Loading more agents…")}</b></>:agentsHaveMore?<><span>↓</span><b>{message("继续向下滚动加载更多","Keep scrolling to load more")}</b></>:<><CheckOutlined/><b>{message(`已加载全部 ${agentTotal} 个 Agent`,`All ${agentTotal} agents loaded`)}</b></>}</div>}
@@ -543,15 +806,16 @@ export default function Studio() {
       </section>:<section className="panel view-panel"><EmptyAgent purpose={message("管理","manage")}/></section>)}
       {(["chat","evaluations","releases"] as View[]).includes(view)&&current&&<div className="agent-scope-bar"><button onClick={()=>setView("workspace")}>← {message("全部 Agent","All agents")}</button><span><small>{message("当前 Agent","Current agent")}</small><strong>{aname(current)}</strong><code>{aid(current)}</code></span><nav aria-label={message("Agent 功能","Agent sections")}><button className={view==="chat"?"active":""} onClick={()=>setView("chat")}>{message("问答体验","Chat")}</button><button className={view==="builder"?"active":""} onClick={()=>setView("builder")}>{message("编排配置","Build")}</button><button className={view==="evaluations"?"active":""} onClick={()=>setView("evaluations")}>{message("评测","Evaluate")}</button><button className={view==="releases"?"active":""} onClick={()=>setView("releases")}>{message("发布","Release")}</button></nav><em>{astatus(current)}</em></div>}
       {view==="chat"&&(!current?<section className="panel view-panel"><EmptyAgent purpose={message("体验","test")}/></section>:<section className="playground">
-        <aside className="playground-agents"><AgentFinder label={message("切换 Agent","Switch agent")} help={message("按名称或 ID 从服务端查找","Search server-side by name or ID")} current={current} onSearch={searchAgents} onSelect={agent=>{chooseAgent(agent);if(!isAgentReady(agent)){setBuilderSettingsOpen(true);setView("builder")}}} message={message}/><div className="agent-capabilities"><strong>{message("运行能力","Runtime capabilities")}</strong><span><DatabaseOutlined/>{message("知识库","Knowledge")} <b>{current?.KnowledgeBase?.length??current?.knowledge_base?.length??0}</b></span><span><ToolOutlined/>{message("工具 / MCP","Tools / MCP")} <b>{current?.Tools?.length??current?.tools?.length??0}</b></span><span><FunctionOutlined/>Skills <b>{current?.Skills?.length??current?.skills?.length??0}</b></span><span><AppstoreOutlined/>{message("插件","Plugins")} <b>{current?.Plugins?.length??current?.plugins?.length??0}</b></span></div>{((current?.KnowledgeBase?.length??current?.knowledge_base?.length??0)+(current?.Tools?.length??current?.tools?.length??0)+(current?.Skills?.length??current?.skills?.length??0)+(current?.Plugins?.length??current?.plugins?.length??0)===0)&&<div className="capability-hint"><span>i</span><p>{message("当前仅使用模型与提示词。可按需添加知识库、工具、Skill 或插件。","This agent currently uses only its model and prompt. Add knowledge, tools, skills, or plugins when needed.")}</p></div>}<button className="ghost full" onClick={()=>setView("builder")}>{message("编排配置","Build & configure")}</button></aside>
-        <div className="chat-shell"><header><div><span className="agent-online"><MessageOutlined/></span><span><strong>{current?aname(current):message("Agent 对话","Agent chat")}</strong><small>{message("输入问题或任务，查看 Agent 的规划、检索和能力调用过程","Ask a question or give a task, then inspect planning, retrieval, and capability calls")}</small></span></div><button className="ghost" disabled={chatMessages.length===0} onClick={()=>setChatMessages([])}>{message("清空对话","Clear")}</button></header>
-          <div className="chat-stream">{chatMessages.length===0?<div className="chat-welcome"><span><MessageOutlined/></span><strong>{message("现在可以直接与 Agent 对话","Start a conversation with your agent")}</strong><p>{message("你可以提出问题，或交给它一个需要规划和执行的任务。运行结果会明确展示知识库、Skill、插件和工具的调用情况。","Ask a question or give it a task to plan and execute. The result will show knowledge, skills, plugins, and tool calls.")}</p><div>{[message("根据产品知识库介绍 Nexora","Explain Nexora using the product knowledge base"),message("规划一个客户投诉处理任务","Plan a customer complaint workflow"),message("查询售后政策并判断是否需要转人工","Check after-sales policy and decide whether to hand off")].map(prompt=><button key={prompt} onClick={()=>setChatInput(prompt)}>{prompt}</button>)}</div></div>:chatMessages.map(item=><article className={`chat-message ${item.role}`} key={item.id}><span>{item.role==="user"?message("我","Me"):"N"}</span><div><p>{item.content}</p>{item.trace&&<><button className="trace-toggle" onClick={()=>setTraceOpen(traceOpen===item.id?"":item.id)}>{traceOpen===item.id?message("收起运行过程","Hide execution"):message("查看运行过程","View execution")} · {item.trace.steps.length} {message("步","steps")}</button>{traceOpen===item.id&&<div className="execution-trace"><div className="runtime-notice"><b>{message("运行模式","Runtime")}: {item.trace.runtime_mode}</b><span>{item.trace.runtime_notice}</span></div><ol>{item.trace.steps.map(step=><li key={step.id} className={step.status}><i>{step.status==="completed"?"✓":"–"}</i><span><strong>{step.name}</strong><small>{step.summary}</small></span><em>{step.kind}</em></li>)}</ol>{item.trace.citations.length>0&&<div className="trace-citations"><strong>{message("知识引用","Knowledge citations")}</strong>{item.trace.citations.map(source=><blockquote key={`${source.resource_id}-${source.snippet}`}>{source.snippet}<cite>{source.name}</cite></blockquote>)}</div>}</div>}</>}</div></article>)}{chatRunning&&<article className="chat-message assistant"><span>N</span><div className="thinking"><i/><i/><i/>{message("正在规划与执行…","Planning and executing…")}</div></article>}</div>
-          <footer className="chat-composer"><textarea aria-label={message("输入问题或任务","Enter a question or task")} value={chatInput} placeholder={message("输入问题或任务，Enter 发送，Shift + Enter 换行","Ask a question or give a task. Enter to send, Shift + Enter for a new line")} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();void sendChat()}}}/><button aria-label={message("发送","Send")} disabled={!chatInput.trim()||chatRunning} onClick={()=>void sendChat()}><SendOutlined/></button><small>{message("Agent 的输出可能不准确，请核验重要信息。","Agent output may be inaccurate. Verify important information.")}</small></footer>
+        <aside className="playground-agents"><AgentFinder label={message("切换 Agent","Switch agent")} help={message("按名称或 ID 从服务端查找","Search server-side by name or ID")} current={current} onSearch={searchAgents} onSelect={agent=>{chooseAgent(agent);if(!isAgentReady(agent)){setBuilderSettingsOpen(true);setView("builder")}}} message={message}/><div className="agent-capabilities"><strong>{message("运行能力","Runtime capabilities")}</strong><span><DatabaseOutlined/>{message("知识库","Knowledge")} <b>{current?.KnowledgeBase?.length??current?.knowledge_base?.length??0}</b></span><span><ToolOutlined/>{message("工具 / MCP","Tools / MCP")} <b>{current?.Tools?.length??current?.tools?.length??0}</b></span><span><FunctionOutlined/>Skills <b>{current?.Skills?.length??current?.skills?.length??0}</b></span><span><AppstoreOutlined/>{message("插件","Plugins")} <b>{current?.Plugins?.length??current?.plugins?.length??0}</b></span></div><div className={canRunCurrent()?"chat-readiness ready":"chat-readiness blocked"}><strong>{canRunCurrent()?message("已满足最低运行条件","Ready to run"):message("需要先完成配置","Setup required")}</strong><small>{canRunCurrent()?message("模型、提示词、Runtime 和权限可用","Model, prompt, runtime, and permissions are available"):message(`缺少：${runBlockReason()}`,`Missing: ${runBlockReason()}`)}</small></div>{((current?.KnowledgeBase?.length??current?.knowledge_base?.length??0)+(current?.Tools?.length??current?.tools?.length??0)+(current?.Skills?.length??current?.skills?.length??0)+(current?.Plugins?.length??current?.plugins?.length??0)===0)&&<div className="capability-hint"><span>i</span><p>{message("当前仅使用模型与提示词。可按需添加知识库、工具、Skill 或插件。","This agent currently uses only its model and prompt. Add knowledge, tools, skills, or plugins when needed.")}</p></div>}<button className="ghost full" onClick={()=>setView("builder")}>{message("编排配置","Build & configure")}</button></aside>
+        <div className="chat-shell"><header><div><span className="agent-online"><MessageOutlined/></span><span><strong>{current?aname(current):message("Agent 对话","Agent chat")}</strong><small>{chatRunning?message(`正在执行：${activeProgress(chatMessages[chatMessages.length-1])?.label??"等待模型"}`,`Running: ${activeProgress(chatMessages[chatMessages.length-1])?.label??"waiting for model"}`):message("输入问题或任务，查看 Agent 的规划、检索和能力调用过程","Ask a question or give a task, then inspect planning, retrieval, and capability calls")}</small></span></div><button className="ghost clear-chat" disabled={chatMessages.length===0||chatRunning} onClick={()=>setChatMessages([])}>{message("清空","Clear")}</button></header>
+          <div className="chat-stream" ref={chatStreamRef} onScroll={onChatScroll}>{chatMessages.length===0?<div className="chat-welcome"><span><MessageOutlined/></span><strong>{message("现在可以直接与 Agent 对话","Start a conversation with your agent")}</strong><p>{message("你可以提出问题，或交给它一个需要规划和执行的任务。运行结果会明确展示知识库、Skill、插件和工具的调用情况。","Ask a question or give it a task to plan and execute. The result will show knowledge, skills, plugins, and tool calls.")}</p><div>{[message("根据产品知识库介绍 Nexora","Explain Nexora using the product knowledge base"),message("规划一个客户投诉处理任务","Plan a customer complaint workflow"),message("查询售后政策并判断是否需要转人工","Check after-sales policy and decide whether to hand off")].map(prompt=><button key={prompt} onClick={()=>setChatInput(prompt)}>{prompt}</button>)}</div></div>:chatMessages.map((item,index)=><article className={`chat-message ${item.role}${item.error?" error":""}`} key={item.id}><span>{item.role==="user"?message("我","Me"):"N"}</span><div>{item.role==="user"?<MarkdownView text={item.content}/>:<>{item.progress&&item.progress.length>0&&<details className="live-progress" open={item.streaming}><summary><span className={item.streaming?"runtime-pulse":""}/><strong>{item.stopped?message("已停止生成","Generation stopped"):item.streaming?(activeProgress(item)?.label??message("正在执行","Running")):message("已完成","Completed")}</strong><small>{item.progress.length} {message("个步骤","steps")}</small><time>{elapsed(item.startedAt,item.finishedAt,chatClock)}</time></summary><ol>{item.progress.map((progress,progressIndex)=><li key={`${progress.stage}-${progressIndex}`} className={progress.status}><i>{progress.status==="completed"?"✓":""}</i><span><b>{progress.label}</b>{progress.detail&&<small>{progress.detail}</small>}</span></li>)}</ol></details>}{item.reasoning&&<details className="reasoning-stream" open={item.streaming&&!item.content}><summary><span>{item.streaming&&!item.content?message("正在思考","Thinking"):message(`思考了 ${elapsed(item.startedAt,item.finishedAt,chatClock)}`,`Thought for ${elapsed(item.startedAt,item.finishedAt,chatClock)}`)}</span><em>{item.streaming&&!item.content?`${item.reasoning.length} ${message("字符","chars")}`:message("查看过程","View reasoning")}</em></summary><div className={item.streaming&&!item.content?"streaming-text":""}><MarkdownView text={item.reasoning}/></div></details>}{item.content&&<section className="answer-stream">{item.streaming&&<header><strong>{message("正在回答","Answering")}</strong><em>{item.content.length} {message("字符","chars")}</em></header>}<div className={item.streaming?"streaming-text":""}><MarkdownView text={item.content}/></div></section>}{item.streaming&&!item.reasoning&&!item.content&&<div className="waiting-first-token"><i/><span>{message(`正在连接模型 · ${elapsed(item.startedAt,item.finishedAt,chatClock)}`,`Connecting to the model · ${elapsed(item.startedAt,item.finishedAt,chatClock)}`)}</span></div>}</>}{item.role==="assistant"&&!item.streaming&&<div className="response-actions">{item.content&&<button className="trace-toggle" onClick={()=>void copyText(item.content)}>{message("复制答案","Copy answer")}</button>}<button className="trace-toggle" onClick={()=>retryMessage(index)}>{message("重试","Retry")}</button>{item.trace&&<button className="trace-toggle" onClick={()=>setTraceOpen(traceOpen===item.id?"":item.id)}>{traceOpen===item.id?message("收起运行记录","Hide run log"):message("运行记录","Run log")} · {item.trace.steps.length} {message("步","steps")}</button>}</div>}{item.trace&&traceOpen===item.id&&<div className="execution-trace"><div className="runtime-notice"><b>{message("运行模式","Runtime")}: {item.trace.runtime_mode}</b><span>{item.trace.runtime_notice}</span></div><ol>{item.trace.steps.map(step=><li key={step.id} className={step.status}><i>{step.status==="completed"?"✓":"–"}</i><span><strong>{step.name}</strong><small>{step.summary}</small></span><em>{step.kind}</em></li>)}</ol>{item.trace.citations.length>0&&<div className="trace-citations"><strong>{message("知识引用","Knowledge citations")}</strong>{item.trace.citations.map(source=><blockquote key={`${source.resource_id}-${source.snippet}`}>{source.snippet}<cite>{source.name}</cite></blockquote>)}</div>}</div>}</div></article>)}</div>
+          {!chatAtBottom&&<button className="jump-latest" onClick={()=>scrollChatToBottom()}>{message("回到最新","Jump to latest")}</button>}
+          <footer className="chat-composer"><textarea aria-label={message("输入问题或任务","Enter a question or task")} value={chatInput} placeholder={message("输入问题或任务，Enter 发送，Shift + Enter 换行","Ask a question or give a task. Enter to send, Shift + Enter for a new line")} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&!chatRunning){e.preventDefault();void sendChat()}}}/>{chatRunning?<button className="stop-generation" aria-label={message("停止生成","Stop generating")} onClick={stopChat}><i/></button>:<button aria-label={message("发送","Send")} disabled={!chatInput.trim()} onClick={()=>void sendChat()}><SendOutlined/></button>}<small>{message("Agent 的输出可能不准确，请核验重要信息。","Agent output may be inaccurate. Verify important information.")}</small></footer>
         </div>
       </section>)}
       {view==="builder"&&(!current?<section className="panel view-panel"><EmptyAgent purpose={message("编排","build")}/></section>:<section className="agent-builder">
-        <header className="builder-toolbar"><div className="builder-identity"><button onClick={()=>{setNotice("");setBuilderSettingsOpen(false);setView(isAgentReady(current)?"chat":"workspace")}}>←</button><span><strong>{aname(current)}</strong><small>{message("工作流编排","Workflow builder")} · {aid(current)}</small></span><em>{astatus(current)}</em></div><div className="builder-actions"><span className={`save-state ${saveState}`}>{saveState==="saving"?message("保存中…","Saving…"):saveState==="dirty"?message("有未保存更改","Unsaved changes"):message("已保存","Saved")}</span><button className="ghost" onClick={()=>setBuilderSettingsOpen(x=>!x)}><SettingOutlined/> {message("Agent 设置","Agent settings")}</button><button className="ghost" onClick={()=>void saveConfig()}><CheckOutlined/> {message("保存","Save")}</button><button className="primary" disabled={!config.model.trim()||!config.prompt.trim()} onClick={()=>setBuilderTestOpen(true)}><SendOutlined/> {message("试运行","Test run")}</button></div></header>
-        <div className="builder-workspace">
+        <header className="builder-toolbar"><div className="builder-identity"><button aria-label={message("返回","Back")} onClick={()=>{setNotice("");setBuilderSettingsOpen(false);setView(isAgentReady(current)?"chat":"workspace")}}>←</button><span><strong>{aname(current)}</strong><small>{aexecution(current)==="agent_loop"?message("Agent Loop 自主执行","Agent Loop runtime"):message("工作流编排","Workflow builder")} · {aid(current)}</small></span><em>{astatus(current)}</em></div><div className="builder-actions"><span className={`save-state ${saveState}`}>{saveState==="saving"?message("保存中…","Saving…"):saveState==="dirty"?message("有未保存更改","Unsaved changes"):message("已保存","Saved")}</span>{aexecution(current)!=="agent_loop"&&<button className="ghost" onClick={()=>setBuilderSettingsOpen(x=>!x)}><SettingOutlined/> {message("Agent 设置","Agent settings")}</button>}<button className="ghost" onClick={()=>void saveConfig()}><CheckOutlined/> {message("保存","Save")}</button><button className="primary" title={canRunCurrent()?message("打开真实问答试运行","Open real chat test run"):message(`请先完成：${runBlockReason()}`,`Finish first: ${runBlockReason()}`)} disabled={!canRunCurrent()} onClick={()=>setBuilderTestOpen(true)}><SendOutlined/> {message("试运行","Test run")}</button></div></header>
+        {aexecution(current)==="agent_loop"?<AgentLoopConsole/>:<div className="builder-workspace">
           <aside className="builder-library"><div><strong>{message("能力节点","Blocks")}</strong><small>{message("点击添加到画布","Click to add to canvas")}</small></div><label><SearchOutlined/><input placeholder={message("搜索节点","Search blocks")}/></label><nav>
             <p>{message("基础","Core")}</p><button onClick={()=>addBuilderNode("MODEL","LLM")}><span className="block-purple">AI</span><span><strong>{message("大模型","LLM")}</strong><small>{message("理解并生成内容","Reason and generate")}</small></span><PlusOutlined/></button><button onClick={()=>addBuilderNode("INTENT",message("意图识别","Intent router"))}><span className="block-blue"><BranchesOutlined/></span><span><strong>{message("意图识别","Intent router")}</strong><small>{message("分类并路由请求","Classify and route")}</small></span><PlusOutlined/></button>
             <p>{message("知识与行动","Knowledge & actions")}</p><button onClick={()=>addBuilderNode("KNOWLEDGE",message("知识检索","Knowledge retrieval"))}><span className="block-green"><DatabaseOutlined/></span><span><strong>{message("知识检索","Knowledge retrieval")}</strong><small>RAG</small></span><PlusOutlined/></button><button onClick={()=>addBuilderNode("TOOL",message("工具调用","Tool call"))}><span className="block-orange"><ToolOutlined/></span><span><strong>{message("工具 / MCP","Tools / MCP")}</strong><small>{message("调用外部服务","Call services")}</small></span><PlusOutlined/></button><button onClick={()=>addBuilderNode("SKILL","Skill")}><span className="block-cyan"><FunctionOutlined/></span><span><strong>Skill</strong><small>{message("复用专业能力","Reusable capability")}</small></span><PlusOutlined/></button><button onClick={()=>addBuilderNode("PLUGIN",message("插件","Plugin"))}><span className="block-gray"><AppstoreOutlined/></span><span><strong>{message("插件","Plugin")}</strong><small>{message("安全与扩展","Safety and extension")}</small></span><PlusOutlined/></button>
@@ -559,8 +823,8 @@ export default function Studio() {
           </nav></aside>
           <main className={`builder-canvas${connecting?" is-connecting":""}`}><div className="canvas-toolbar"><span>{message("主流程","Main flow")}</span><div><button title={message("自动布局","Auto layout")}>⌘</button><button title={message("缩小","Zoom out")}><MinusOutlined/></button><button title={message("放大","Zoom in")}><PlusOutlined/></button></div></div><ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={connectNodes} onConnectStart={()=>{setConnecting(true);setConnectionNotice(message("拖到另一个节点左侧的输入端口","Drag to the input port on the left of another node"))}} onConnectEnd={()=>setConnecting(false)} onEdgeClick={(_,edge)=>selectEdge(edge)} onPaneClick={clearCanvasSelection} onNodeClick={(_,node)=>{clearCanvasSelection();setSelectedNode(node.id)}} edgesFocusable edgesReconnectable={false} isValidConnection={connection=>Boolean(connection.source&&connection.target&&connection.source!==connection.target&&!edges.some(edge=>edge.source===connection.source&&edge.target===connection.target&&edge.sourceHandle===connection.sourceHandle&&edge.targetHandle===connection.targetHandle))} fitView minZoom={.35} maxZoom={1.5} connectionLineStyle={{stroke:"#635bdb",strokeWidth:2}} defaultEdgeOptions={{type:"smoothstep",interactionWidth:24,style:{stroke:"#8f88dc",strokeWidth:1.6}}}><Background gap={24} size={1}/><Controls showInteractive={false}/></ReactFlow>{selectedEdge&&(()=>{const edge=edges.find(item=>item.id===selectedEdge);const source=nodes.find(item=>item.id===edge?.source);const target=nodes.find(item=>item.id===edge?.target);return edge?<div className="selected-edge-toolbar"><span><LinkOutlined/><b>{String(source?.data.label??edge.source)}</b><i>→</i><b>{String(target?.data.label??edge.target)}</b></span><button aria-label={message("删除选中连线","Delete selected connection")} onClick={removeSelectedEdge}><DeleteOutlined/> {message("删除连线","Delete")}</button></div>:null})()}{connectionNotice&&!selectedEdge&&<div className={`connection-notice${connecting?" active":""}`}>{connecting?<LinkOutlined/>:<CheckOutlined/>}{connectionNotice}</div>}<div className="canvas-hint">{message("点击连线可选择 · 从输出端口拖到输入端口创建连线","Click a connection to select · drag output to input to connect")}</div></main>
           <aside className="builder-inspector">{selectedNode?<><header><span><small>{message("节点配置","Node settings")}</small><strong>{String(nodes.find(node=>node.id===selectedNode)?.data.label??selectedNode)}</strong></span>{![ "start","output"].includes(selectedNode)&&<button aria-label={message("删除节点","Delete node")} onClick={removeSelectedNode}><DeleteOutlined/></button>}</header><div className="inspector-body">{selectedNode==="model"?<><label>{message("星模路由","MaaS route")}<select value={config.model} onChange={e=>{setConfig(x=>({...x,model:e.target.value}));setSaveState("dirty")}}><option value="">{message("请选择星模中的可用路由","Choose an active MaaS route")}</option>{modelRoutes.map(route=><option key={route.alias} value={route.alias}>{route.model||route.name} · {route.alias}</option>)}</select></label>{modelRoutes.length===0&&<div className="setup-requirements"><span>{message("星模中暂无生效路由，请先前往 MaaS 完成供应商、模型和路由配置。","No active MaaS route. Configure a provider, model, and route in MaaS first.")}</span></div>}<div className="field-grid"><label>{message("温度","Temperature")}<input defaultValue="0.3"/></label><label>Max tokens<input defaultValue="2048"/></label></div><label>{message("节点指令","Node instruction")}<textarea value={config.prompt} onChange={e=>{setConfig(x=>({...x,prompt:e.target.value}));setSaveState("dirty")}}/></label></>:selectedNode==="knowledge"?<ResourcePicker label={message("知识库","Knowledge bases")} help={message("选择本节点检索的数据源","Select sources for this node")} kind="knowledge_base" resources={resources} selected={config.knowledge} onChange={value=>{setConfig(x=>({...x,knowledge:value}));setSaveState("dirty")}}/>:selectedNode==="intent"?<ResourcePicker label={message("意图路由","Intent router")} help={message("选择分类器与路由规则","Choose classifier and routes")} kind="intent" resources={resources} selected={config.intents} onChange={value=>{setConfig(x=>({...x,intents:value}));setSaveState("dirty")}}/>:<><div className="node-summary"><span className="node-icon-large"><FunctionOutlined/></span><strong>{message("配置此节点的输入与输出","Configure node input and output")}</strong><p>{message("连接上游节点后，变量会显示在这里。","Upstream variables appear after connection.")}</p></div><label>{message("节点名称","Node name")}<input value={String(nodes.find(node=>node.id===selectedNode)?.data.label??"")} readOnly/></label></>}</div></>:<div className="inspector-empty"><FunctionOutlined/><strong>{message("选择一个节点","Select a node")}</strong><p>{message("在画布中选择节点后配置属性。","Select a node on the canvas to edit its settings.")}</p></div>}</aside>
-        </div>
-        {builderSettingsOpen&&<div className="builder-drawer"><header><span><small>{isAgentReady(current)?message("AGENT 设置","AGENT SETTINGS"):message("开始前完成配置","SET UP TO START")}</small><strong>{isAgentReady(current)?message("全局设置","Global settings"):message("让 Agent 可以开始对话","Make this agent ready to chat")}</strong></span><button aria-label={message("关闭","Close")} onClick={()=>setBuilderSettingsOpen(false)}>×</button></header><div>{!isAgentReady(current)&&<div className="setup-requirements"><strong>{message("需要完成 2 项","Two required settings")}</strong><span className={config.model.trim()?"ready":""}>{config.model.trim()?<CheckOutlined/>:"1"} {message("选择星模路由","Choose a MaaS route")}</span><span className={config.prompt.trim()?"ready":""}>{config.prompt.trim()?<CheckOutlined/>:"2"} {message("填写系统提示词","Add a system prompt")}</span></div>}<label>{message("星模路由","MaaS route")}<select value={config.model} onChange={e=>{setConfig(x=>({...x,model:e.target.value}));setSaveState("dirty")}}><option value="">{message("请选择星模中的可用路由","Choose an active MaaS route")}</option>{modelRoutes.map(route=><option key={route.alias} value={route.alias}>{route.model||route.name} · {route.alias}</option>)}</select></label><label>{message("系统提示词","System prompt")}<textarea value={config.prompt} placeholder={message("说明 Agent 的角色、目标、行为规则和回答方式","Define the agent's role, goals, rules, and response style")} onChange={e=>{setConfig(x=>({...x,prompt:e.target.value}));setSaveState("dirty")}}/></label><button className="primary full" disabled={!config.model.trim()||!config.prompt.trim()||saveState==="saving"} onClick={async()=>{if(await saveConfig()){setBuilderSettingsOpen(false);setView("chat")}}}><MessageOutlined/> {message("保存并开始对话","Save and start chatting")}</button><ResourcePicker label={message("全局插件（可选）","Global plugins (optional)")} help={message("不影响开始对话，可稍后添加","Optional. You can add these later.")} kind="plugin" resources={resources} selected={config.plugins} onChange={value=>{setConfig(x=>({...x,plugins:value}));setSaveState("dirty")}}/></div></div>}
+        </div>}
+        {builderSettingsOpen&&aexecution(current)!=="agent_loop"&&<div className="builder-drawer"><header><span><small>{isAgentReady(current)?message("AGENT 设置","AGENT SETTINGS"):message("开始前完成配置","SET UP TO START")}</small><strong>{isAgentReady(current)?message("全局设置","Global settings"):message("让 Agent 可以开始对话","Make this agent ready to chat")}</strong></span><button aria-label={message("关闭","Close")} onClick={()=>setBuilderSettingsOpen(false)}>×</button></header><div>{!isAgentReady(current)&&<div className="setup-requirements"><strong>{message("需要完成 2 项","Two required settings")}</strong><span className={config.model.trim()?"ready":""}>{config.model.trim()?<CheckOutlined/>:"1"} {message("选择星模路由","Choose a MaaS route")}</span><span className={config.prompt.trim()?"ready":""}>{config.prompt.trim()?<CheckOutlined/>:"2"} {message("填写系统提示词","Add a system prompt")}</span></div>}<label>{message("星模路由","MaaS route")}<select value={config.model} onChange={e=>{setConfig(x=>({...x,model:e.target.value}));setSaveState("dirty")}}><option value="">{message("请选择星模中的可用路由","Choose an active MaaS route")}</option>{modelRoutes.map(route=><option key={route.alias} value={route.alias}>{route.model||route.name} · {route.alias}</option>)}</select></label><label>{message("系统提示词","System prompt")}<textarea value={config.prompt} placeholder={message("说明 Agent 的角色、目标、行为规则和回答方式","Define the agent's role, goals, rules, and response style")} onChange={e=>{setConfig(x=>({...x,prompt:e.target.value}));setSaveState("dirty")}}/></label><button className="primary full" disabled={!config.model.trim()||!config.prompt.trim()||saveState==="saving"} onClick={async()=>{if(await saveConfig()){setBuilderSettingsOpen(false);setView("chat")}}}><MessageOutlined/> {message("保存并开始对话","Save and start chatting")}</button><ResourcePicker label={message("全局插件（可选）","Global plugins (optional)")} help={message("不影响开始对话，可稍后添加","Optional. You can add these later.")} kind="plugin" resources={resources} selected={config.plugins} onChange={value=>{setConfig(x=>({...x,plugins:value}));setSaveState("dirty")}}/></div></div>}
         {builderTestOpen&&<div className="builder-test-drawer"><header><span><small>PLAYGROUND</small><strong>{message("试运行当前草稿","Test current draft")}</strong></span><button onClick={()=>setBuilderTestOpen(false)}>×</button></header><div className="mini-chat"><MessageOutlined/><strong>{message("输入一条消息验证流程","Enter a message to test the flow")}</strong><textarea value={chatInput} onChange={e=>setChatInput(e.target.value)} placeholder={message("例如：如何申请退款？","e.g. How can I request a refund?")}/><button className="primary" disabled={!chatInput.trim()} onClick={()=>{setBuilderTestOpen(false);setView("chat");void sendChat()}}><SendOutlined/> {message("运行","Run")}</button></div></div>}
       </section>)}
       {view==="knowledge"&&<KnowledgeCenter resources={resources} onOpenCreate={openCreateKnowledge} message={message}/>}
@@ -569,11 +833,12 @@ export default function Studio() {
       {view==="releases"&&<section className="panel view-panel">{!current?<EmptyAgent purpose={message("发布","publish")}/>:<><div className="panelhead"><div><h3>{t.releases}</h3><p className="muted">{message("生成不可变版本，并将 Agent 身份与端点同步到治理平台。","Create immutable versions and sync agent identity and endpoints to governance.")}</p></div><button className="primary" disabled={!selected} onClick={()=>void run("publish")}>{t.publish}</button></div><AgentContext purpose="release"/>{versions.length===0?<div className="empty">{message("该 Agent 暂无已发布版本。","This agent has no published versions yet.")}</div>:versions.map((v,i)=><div className="list-row static" key={v.ID??v.id??i}><span><strong>v{v.Version??v.version}</strong><small>{v.Endpoint??v.endpoint}</small></span><span className="tag">{message("不可变","Immutable")}</span></div>)}</>}</section>}
     </main>
     {createOpen&&<div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setCreateOpen(false)}}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="create-agent-title">
-      <div className="modal-head"><div><small>NEXORA STUDIO</small><h2 id="create-agent-title">{message("创建 Agent","Create agent")}</h2><p>{message("填写基本信息，创建后进入可视化编排器。","Add the basics, then continue in the visual builder.")}</p></div><button className="modal-close" aria-label={message("关闭","Close")} onClick={()=>setCreateOpen(false)}>×</button></div>
-      <label className="form-field"><span>{message("Agent 名称","Agent name")} <em>*</em></span><input autoFocus value={agentName} maxLength={80} placeholder={message("例如：客户服务助手","e.g. Customer Support Assistant")} onChange={e=>setAgentName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")void createAgent()}}/><small>{agentName.length}/80</small></label>
-      <label className="form-field"><span>{message("描述","Description")}</span><textarea value={agentDescription} maxLength={300} placeholder={message("说明这个 Agent 解决什么问题","Describe what this agent is designed to solve")} onChange={e=>setAgentDescription(e.target.value)}/></label>
-      <label className="form-field"><span>{message("起始模板","Starter template")}</span><select value={agentTemplate} onChange={e=>setAgentTemplate(e.target.value)}><option value="customer-support">{message("客户服务","Customer support")}</option><option value="rag">{message("知识问答 RAG","Knowledge Q&A (RAG)")}</option><option value="blank">{message("空白工作流","Blank workflow")}</option></select></label>
-      <div className="modal-actions"><button className="ghost" onClick={()=>setCreateOpen(false)}>{message("取消","Cancel")}</button><button className="primary" disabled={!agentName.trim()} onClick={()=>void createAgent()}><PlusOutlined/> {message("创建并开始编排","Create and start building")}</button></div>
+      <div className="modal-head"><div><small>NEXORA STUDIO</small><h2 id="create-agent-title">{message("创建 Agent","Create agent")}</h2><p>{message("先选择执行范式，再配置模板或自主执行 Runtime。","Choose an execution model, then configure its workflow or autonomous runtime.")}</p></div><button className="modal-close" aria-label={message("关闭","Close")} onClick={()=>setCreateOpen(false)}>×</button></div>
+      <fieldset className="agent-type-picker"><legend>{message("执行范式","Execution model")} <em>*</em></legend><button type="button" className={agentExecutionType==="workflow"?"selected":""} onClick={()=>setAgentExecutionType("workflow")}><span><BranchesOutlined/></span><strong>{message("工作流 Agent","Workflow agent")}</strong><p>{message("稳态执行。按固定节点和条件运行，可预测、可回放、易审计。","Deterministic execution through fixed nodes and conditions. Predictable, replayable, and auditable.")}</p><small>{message("适合客服流程、审批、数据处理和强合规任务","Best for support flows, approvals, data processing, and regulated tasks")}</small></button><button type="button" className={agentExecutionType==="agent_loop"?"selected":""} onClick={()=>setAgentExecutionType("agent_loop")}><span><RadarChartOutlined/></span><strong>{message("Agent Loop","Agent Loop")}</strong><p>{message("敏态执行。围绕目标自主规划、行动、观察和迭代，受 Runtime 与权限策略约束。","Adaptive execution that plans, acts, observes, and iterates under runtime and permission controls.")}</p><small>{message("适合研究、编码、复杂任务和个人助理","Best for research, coding, complex tasks, and personal assistants")}</small></button></fieldset>
+      <label className="form-field"><span>{message("Agent 名称","Agent name")} <em>*</em></span><input aria-label={message("Agent 名称","Agent name")} autoFocus value={agentName} maxLength={80} placeholder={message("例如：客户服务助手","e.g. Customer Support Assistant")} onChange={e=>setAgentName(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")void createAgent()}}/><small>{agentName.length}/80</small></label>
+      <label className="form-field"><span>{message("描述","Description")}</span><textarea aria-label={message("描述","Description")} value={agentDescription} maxLength={300} placeholder={message("说明这个 Agent 解决什么问题","Describe what this agent is designed to solve")} onChange={e=>setAgentDescription(e.target.value)}/></label>
+      {agentExecutionType==="workflow"?<label className="form-field"><span>{message("起始模板","Starter template")}</span><select value={agentTemplate} onChange={e=>setAgentTemplate(e.target.value)}><option value="customer-support">{message("客户服务","Customer support")}</option><option value="rag">{message("知识问答 RAG","Knowledge Q&A (RAG)")}</option><option value="blank">{message("空白工作流","Blank workflow")}</option></select></label>:<div className="runtime-create"><label className="form-field"><span>{message("Runtime Profile","Runtime profile")} <em>*</em></span><select value={agentRuntime.runtime_id} onChange={e=>{const runtime=runtimes.find(item=>item.id===e.target.value);setAgentRuntime(current=>({...current,runtime_id:e.target.value,deployment_mode:runtime?.deployment_modes[0]??"managed",endpoint:"",permission_profile:runtime?.permission_profile??current.permission_profile}))}}><option value="">{message("选择星驰中的可用 Runtime","Choose a Runtime profile")}</option>{runtimes.map(runtime=><option key={runtime.id} value={runtime.id}>{runtime.name} · {runtime.status==="healthy"?message("健康","Healthy"):runtime.status}</option>)}</select></label><div className="runtime-summary">{runtimes.find(item=>item.id===agentRuntime.runtime_id)&&<><strong>{runtimes.find(item=>item.id===agentRuntime.runtime_id)?.description}</strong><span>{(runtimes.find(item=>item.id===agentRuntime.runtime_id)?.capabilities??[]).map(item=><b key={item}>{item}</b>)}</span><p>{message("端点、凭据与适配器由独立的 Nexora Runtime 产品管理；Studio 只引用 Runtime Profile。","The independent Nexora Runtime product owns endpoints, credentials, and adapters; Studio only references a Runtime profile.")}</p></>}</div></div>}
+      <div className="modal-actions"><button className="ghost" onClick={()=>setCreateOpen(false)}>{message("取消","Cancel")}</button><button className="primary" disabled={!agentName.trim()||(agentExecutionType==="agent_loop"&&agentRuntime.runtime_id!=="nexora-native"&&!agentRuntime.endpoint?.trim())} onClick={()=>void createAgent()}><PlusOutlined/> {agentExecutionType==="agent_loop"?message("创建并配置 Runtime","Create and configure runtime"):message("创建并开始编排","Create and start building")}</button></div>
     </section></div>}
     {knowledgeOpen&&<div className="modal-backdrop" role="presentation" onMouseDown={e=>{if(e.target===e.currentTarget)setKnowledgeOpen(false)}}><section className="modal knowledge-modal" role="dialog" aria-modal="true" aria-labelledby="create-knowledge-title">
       <div className="modal-head"><div><small>NEXORA KNOWLEDGE</small><h2 id="create-knowledge-title">{message("创建知识库","Create knowledge base")}</h2><p>{message("建立可复用的企业知识源，创建后可绑定到多个 Agent。","Build a reusable enterprise knowledge source that can be bound to multiple agents.")}</p></div><button className="modal-close" aria-label={message("关闭","Close")} onClick={()=>setKnowledgeOpen(false)}>×</button></div>

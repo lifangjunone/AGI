@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.codex.autonomous-income-engine.xhs-auth</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/bytedance/Desktop/projects/.tools/bin/node</string>
+    <string>/Users/bytedance/Desktop/agi/autonomous-income-engine/scripts/xhs-auth-agent.js</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/bytedance/Desktop/agi/autonomous-income-engine</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/bytedance/Desktop/projects/.tools/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>XHS_AGENT_API_BASE</key>
+    <string>https://lifeyoume.icu/image</string>
+    <key>XHS_AGENT_SSH</key>
+    <string>/usr/bin/ssh</string>
+    <key>XHS_AGENT_SSH_HOST</key>
+    <string>aliyun</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/Users/bytedance/Desktop/agi/autonomous-income-engine/runtime/logs/xhs-auth-agent.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/bytedance/Desktop/agi/autonomous-income-engine/runtime/logs/xhs-auth-agent.err.log</string>
+</dict>
+</plist>
