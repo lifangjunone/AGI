@@ -15,7 +15,7 @@ const CURATED_SKILLS = [
     source: "LifeYouMe Studio",
     url: "https://github.com/lifangjunone/AGI/tree/main/skill-radar/skills/product-ui-director",
     repositoryUrl: "https://github.com/lifangjunone/AGI",
-    installCommand: "npx skills add lifangjunone/AGI --skill product-ui-director",
+    installCommand: "npx skills add https://github.com/lifangjunone/AGI/tree/main/skill-radar/skills/product-ui-director",
     category: "design",
     description: "从产品叙事、三方向高保真原型，到真实实现与截图验收的产品 UI 设计总导演。",
     installs: 0,

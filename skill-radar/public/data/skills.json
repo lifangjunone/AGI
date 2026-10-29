@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "collectedAt": "2026-10-29T13:31:17.064Z",
+  "collectedAt": "2026-10-29T13:37:53.033Z",
   "timezone": "Asia/Shanghai",
   "sourceStatus": "live",
   "methodology": {
@@ -74,7 +74,7 @@
       "source": "LifeYouMe Studio",
       "url": "https://github.com/lifangjunone/AGI/tree/main/skill-radar/skills/product-ui-director",
       "repositoryUrl": "https://github.com/lifangjunone/AGI",
-      "installCommand": "npx skills add lifangjunone/AGI --skill product-ui-director",
+      "installCommand": "npx skills add https://github.com/lifangjunone/AGI/tree/main/skill-radar/skills/product-ui-director",
       "category": "design",
       "description": "从产品叙事、三方向高保真原型，到真实实现与截图验收的产品 UI 设计总导演。",
       "installs": 0,
@@ -102,7 +102,7 @@
       "installCommand": "npx skills add vercel-labs/skills --skill find-skills",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 121,665 次。",
-      "installs": 4104549,
+      "installs": 4106253,
       "weeklyInstalls": [
         101561,
         101317,
@@ -134,7 +134,7 @@
       "installCommand": "npx skills add vercel-labs/agent-browser --skill agent-browser",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 78,806 次。",
-      "installs": 1293450,
+      "installs": 1294908,
       "weeklyInstalls": [
         42484,
         45195,
@@ -166,7 +166,7 @@
       "installCommand": "npx skills add anthropics/skills --skill frontend-design",
       "category": "development",
       "description": "来自 anthropics 的 开发与代码 Skill，近一周安装 29,060 次。",
-      "installs": 1048070,
+      "installs": 1048489,
       "weeklyInstalls": [
         24029,
         22329,
@@ -198,7 +198,7 @@
       "installCommand": "npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 23,623 次。",
-      "installs": 851175,
+      "installs": 851523,
       "weeklyInstalls": [
         16627,
         16436,
@@ -230,7 +230,7 @@
       "installCommand": "npx skills add vercel-labs/agent-skills --skill web-design-guidelines",
       "category": "design",
       "description": "来自 vercel-labs 的 设计与体验 Skill，近一周安装 30,032 次。",
-      "installs": 799687,
+      "installs": 800076,
       "weeklyInstalls": [
         19714,
         18182,
@@ -262,7 +262,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-best-practices",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 42,697 次。",
-      "installs": 705966,
+      "installs": 706614,
       "weeklyInstalls": [
         10378,
         10200,
@@ -294,7 +294,7 @@
       "installCommand": "npx skills add supabase/agent-skills --skill supabase-postgres-best-practices",
       "category": "agent",
       "description": "来自 supabase 的 Agent 工程 Skill，近一周安装 10,147 次。",
-      "installs": 465450,
+      "installs": 465596,
       "weeklyInstalls": [
         10577,
         10251,
@@ -326,7 +326,7 @@
       "installCommand": "npx skills add vercel-labs/agent-skills --skill vercel-composition-patterns",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 15,399 次。",
-      "installs": 426027,
+      "installs": 426235,
       "weeklyInstalls": [
         10311,
         10276,
@@ -358,7 +358,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-client-api",
       "category": "development",
       "description": "来自 prisma 的 开发与代码 Skill，近一周安装 19,206 次。",
-      "installs": 399455,
+      "installs": 399814,
       "weeklyInstalls": [
         16778,
         17649,
@@ -390,7 +390,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-database-setup",
       "category": "agent",
       "description": "来自 prisma 的 Agent 工程 Skill，近一周安装 18,966 次。",
-      "installs": 398112,
+      "installs": 398467,
       "weeklyInstalls": [
         16705,
         17607,
@@ -422,7 +422,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-cli",
       "category": "agent",
       "description": "来自 prisma 的 Agent 工程 Skill，近一周安装 19,100 次。",
-      "installs": 396649,
+      "installs": 397008,
       "weeklyInstalls": [
         16711,
         17611,
@@ -454,7 +454,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-postgres",
       "category": "agent",
       "description": "来自 prisma 的 Agent 工程 Skill，近一周安装 18,733 次。",
-      "installs": 390110,
+      "installs": 390465,
       "weeklyInstalls": [
         16592,
         17433,
@@ -486,7 +486,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-driver-adapter-implementation",
       "category": "business",
       "description": "来自 prisma 的 商业与办公 Skill，近一周安装 18,669 次。",
-      "installs": 384729,
+      "installs": 385083,
       "weeklyInstalls": [
         16483,
         17294,
@@ -518,7 +518,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-postgres-setup",
       "category": "agent",
       "description": "来自 prisma 的 Agent 工程 Skill，近一周安装 18,833 次。",
-      "installs": 384700,
+      "installs": 385057,
       "weeklyInstalls": [
         16575,
         17387,
@@ -550,7 +550,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-upgrade-v7",
       "category": "agent",
       "description": "来自 prisma 的 Agent 工程 Skill，近一周安装 18,704 次。",
-      "installs": 384507,
+      "installs": 384861,
       "weeklyInstalls": [
         16433,
         17265,
@@ -582,7 +582,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-compute",
       "category": "agent",
       "description": "来自 prisma 的 Agent 工程 Skill，近一周安装 18,661 次。",
-      "installs": 379662,
+      "installs": 380017,
       "weeklyInstalls": [
         16394,
         17245,
@@ -614,7 +614,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-mongodb-upgrade",
       "category": "agent",
       "description": "来自 prisma 的 Agent 工程 Skill，近一周安装 18,650 次。",
-      "installs": 378196,
+      "installs": 378551,
       "weeklyInstalls": [
         16369,
         17218,
@@ -646,7 +646,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill microsoft-foundry",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,630 次。",
-      "installs": 582668,
+      "installs": 582873,
       "weeklyInstalls": [
         11636,
         12086,
@@ -678,7 +678,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-upgrade",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,427 次。",
-      "installs": 467470,
+      "installs": 467645,
       "weeklyInstalls": [
         10770,
         11401,
@@ -710,7 +710,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-kubernetes",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,371 次。",
-      "installs": 438216,
+      "installs": 438416,
       "weeklyInstalls": [
         10796,
         11418,
@@ -742,7 +742,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-diagnostics",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,141 次。",
-      "installs": 573402,
+      "installs": 573586,
       "weeklyInstalls": [
         10836,
         11448,
@@ -774,7 +774,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-prepare",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,082 次。",
-      "installs": 572736,
+      "installs": 572921,
       "weeklyInstalls": [
         10816,
         11573,
@@ -806,7 +806,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-ai",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,099 次。",
-      "installs": 572103,
+      "installs": 572278,
       "weeklyInstalls": [
         10813,
         11452,
@@ -838,7 +838,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-deploy",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,068 次。",
-      "installs": 571862,
+      "installs": 572037,
       "weeklyInstalls": [
         10804,
         11432,
@@ -870,7 +870,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-validate",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,050 次。",
-      "installs": 571205,
+      "installs": 571379,
       "weeklyInstalls": [
         10787,
         11420,
@@ -902,7 +902,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-storage",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,051 次。",
-      "installs": 570691,
+      "installs": 570865,
       "weeklyInstalls": [
         10790,
         11420,
@@ -934,7 +934,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-compliance",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,049 次。",
-      "installs": 570295,
+      "installs": 570469,
       "weeklyInstalls": [
         10783,
         11567,
@@ -966,7 +966,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill appinsights-instrumentation",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,038 次。",
-      "installs": 570098,
+      "installs": 570272,
       "weeklyInstalls": [
         10780,
         11422,
@@ -998,7 +998,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-resource-lookup",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,026 次。",
-      "installs": 570045,
+      "installs": 570219,
       "weeklyInstalls": [
         10780,
         11422,
@@ -1030,7 +1030,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-resource-visualizer",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,025 次。",
-      "installs": 570005,
+      "installs": 570179,
       "weeklyInstalls": [
         10807,
         11423,
@@ -1062,7 +1062,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill entra-app-registration",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 6,986 次。",
-      "installs": 569965,
+      "installs": 570140,
       "weeklyInstalls": [
         10782,
         11427,
@@ -1094,7 +1094,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-kusto",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,047 次。",
-      "installs": 569712,
+      "installs": 569886,
       "weeklyInstalls": [
         10771,
         11414,
@@ -1126,7 +1126,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-aigateway",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 6,977 次。",
-      "installs": 569323,
+      "installs": 569497,
       "weeklyInstalls": [
         10770,
         11412,
@@ -1158,7 +1158,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-messaging",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 6,978 次。",
-      "installs": 560978,
+      "installs": 561152,
       "weeklyInstalls": [
         10770,
         11412,
@@ -1190,7 +1190,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-compute",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,003 次。",
-      "installs": 525802,
+      "installs": 525975,
       "weeklyInstalls": [
         10780,
         11413,
@@ -1222,7 +1222,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-cloud-migrate",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 6,986 次。",
-      "installs": 518575,
+      "installs": 518748,
       "weeklyInstalls": [
         10812,
         11421,
@@ -1254,7 +1254,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-quotas",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,122 次。",
-      "installs": 474337,
+      "installs": 474511,
       "weeklyInstalls": [
         10781,
         11406,
@@ -1286,7 +1286,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-enterprise-infra-planner",
       "category": "business",
       "description": "来自 microsoft 的 商业与办公 Skill，近一周安装 7,040 次。",
-      "installs": 444099,
+      "installs": 444273,
       "weeklyInstalls": [
         10853,
         11427,
@@ -1318,7 +1318,7 @@
       "installCommand": "npx skills add supabase/agent-skills --skill supabase",
       "category": "agent",
       "description": "来自 supabase 的 Agent 工程 Skill，近一周安装 11,380 次。",
-      "installs": 348945,
+      "installs": 349106,
       "weeklyInstalls": [
         12406,
         12464,
@@ -1350,7 +1350,7 @@
       "installCommand": "npx skills add anthropics/skills --skill skill-creator",
       "category": "agent",
       "description": "来自 anthropics 的 Agent 工程 Skill，近一周安装 6,146 次。",
-      "installs": 418462,
+      "installs": 418549,
       "weeklyInstalls": [
         6821,
         5922,
@@ -1382,7 +1382,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill airunway-aks-setup",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,040 次。",
-      "installs": 363662,
+      "installs": 363836,
       "weeklyInstalls": [
         10760,
         11403,
@@ -1414,7 +1414,7 @@
       "installCommand": "npx skills add neondatabase/agent-skills --skill neon-postgres",
       "category": "agent",
       "description": "来自 neondatabase 的 Agent 工程 Skill，近一周安装 22,834 次。",
-      "installs": 291101,
+      "installs": 291447,
       "weeklyInstalls": [
         17131,
         17462,
@@ -1446,7 +1446,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill entra-agent-id",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 6,962 次。",
-      "installs": 339778,
+      "installs": 339952,
       "weeklyInstalls": [
         10765,
         11400,
@@ -1478,7 +1478,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-reliability",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 7,004 次。",
-      "installs": 303109,
+      "installs": 303283,
       "weeklyInstalls": [
         10761,
         11410,
@@ -1510,7 +1510,7 @@
       "installCommand": "npx skills add vercel-labs/agent-skills --skill vercel-react-native-skills",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 9,387 次。",
-      "installs": 259823,
+      "installs": 259934,
       "weeklyInstalls": [
         5123,
         4876,
@@ -1542,7 +1542,7 @@
       "installCommand": "npx skills add neondatabase/agent-skills --skill neon",
       "category": "agent",
       "description": "来自 neondatabase 的 Agent 工程 Skill，近一周安装 22,650 次。",
-      "installs": 244013,
+      "installs": 244362,
       "weeklyInstalls": [
         16847,
         17215,
@@ -1574,7 +1574,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-render",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 38,006 次。",
-      "installs": 234735,
+      "installs": 235335,
       "weeklyInstalls": [
         8540,
         8361,
@@ -1606,7 +1606,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-create",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 37,764 次。",
-      "installs": 233349,
+      "installs": 233940,
       "weeklyInstalls": [
         8437,
         8258,
@@ -1620,7 +1620,7 @@
       "weeklyLatest": 37764,
       "trend": 38,
       "official": true,
-      "score": 93,
+      "score": 93.1,
       "agents": [
         "Codex",
         "Claude Code",
@@ -1638,7 +1638,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-captions",
       "category": "media",
       "description": "来自 remotion-dev 的 图像与视频 Skill，近一周安装 37,881 次。",
-      "installs": 231308,
+      "installs": 231899,
       "weeklyInstalls": [
         8293,
         8153,
@@ -1670,7 +1670,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-markup",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 37,490 次。",
-      "installs": 226951,
+      "installs": 227531,
       "weeklyInstalls": [
         8015,
         7858,
@@ -1702,7 +1702,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-interactivity",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 36,790 次。",
-      "installs": 221818,
+      "installs": 222391,
       "weeklyInstalls": [
         7783,
         7628,
@@ -1734,7 +1734,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-saas",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 36,667 次。",
-      "installs": 219603,
+      "installs": 220176,
       "weeklyInstalls": [
         7670,
         7472,
@@ -1766,7 +1766,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-docs",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 37,190 次。",
-      "installs": 219354,
+      "installs": 219938,
       "weeklyInstalls": [
         7980,
         7773,
@@ -1798,7 +1798,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-upgrade",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 36,903 次。",
-      "installs": 210839,
+      "installs": 211411,
       "weeklyInstalls": [
         7662,
         7483,
@@ -1830,7 +1830,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-multimedia",
       "category": "media",
       "description": "来自 remotion-dev 的 图像与视频 Skill，近一周安装 37,115 次。",
-      "installs": 205988,
+      "installs": 206574,
       "weeklyInstalls": [
         8148,
         7941,
@@ -1862,7 +1862,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-maps",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 36,772 次。",
-      "installs": 204239,
+      "installs": 204810,
       "weeklyInstalls": [
         7666,
         7514,
@@ -1894,7 +1894,7 @@
       "installCommand": "npx skills add remotion-dev/skills --skill remotion-studio",
       "category": "design",
       "description": "来自 remotion-dev 的 设计与体验 Skill，近一周安装 37,357 次。",
-      "installs": 196429,
+      "installs": 197019,
       "weeklyInstalls": [
         8173,
         8003,
@@ -1926,7 +1926,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill python-appservice-deploy",
       "category": "development",
       "description": "来自 microsoft 的 开发与代码 Skill，近一周安装 6,966 次。",
-      "installs": 233334,
+      "installs": 233508,
       "weeklyInstalls": [
         10756,
         11411,
@@ -1949,6 +1949,38 @@
       "rank": 58
     },
     {
+      "id": "vercel-labs/agent-skills/deploy-to-vercel",
+      "name": "Deploy TO Vercel",
+      "slug": "deploy-to-vercel",
+      "source": "vercel-labs/agent-skills",
+      "url": "https://skills.sh/vercel-labs/agent-skills/deploy-to-vercel",
+      "repositoryUrl": "https://github.com/vercel-labs/agent-skills",
+      "installCommand": "npx skills add vercel-labs/agent-skills --skill deploy-to-vercel",
+      "category": "agent",
+      "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 9,550 次。",
+      "installs": 174956,
+      "weeklyInstalls": [
+        4287,
+        4158,
+        6576,
+        6385,
+        7506,
+        6664,
+        7687,
+        9550
+      ],
+      "weeklyLatest": 9550,
+      "trend": 22,
+      "official": true,
+      "score": 91.6,
+      "agents": [
+        "Codex",
+        "Claude Code",
+        "Cursor"
+      ],
+      "rank": 59
+    },
+    {
       "id": "vercel-labs/agent-skills/vercel-react-view-transitions",
       "name": "Vercel React View Transitions",
       "slug": "vercel-react-view-transitions",
@@ -1958,7 +1990,7 @@
       "installCommand": "npx skills add vercel-labs/agent-skills --skill vercel-react-view-transitions",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 9,781 次。",
-      "installs": 173084,
+      "installs": 173193,
       "weeklyInstalls": [
         5143,
         4574,
@@ -1978,7 +2010,7 @@
         "Claude Code",
         "Cursor"
       ],
-      "rank": 59
+      "rank": 60
     },
     {
       "id": "microsoft/playwright-cli/playwright-cli",
@@ -1990,7 +2022,7 @@
       "installCommand": "npx skills add microsoft/playwright-cli --skill playwright-cli",
       "category": "productivity",
       "description": "来自 microsoft 的 通用与效率 Skill，近一周安装 7,267 次。",
-      "installs": 200160,
+      "installs": 200304,
       "weeklyInstalls": [
         7613,
         7894,
@@ -2010,38 +2042,6 @@
         "Claude Code",
         "Cursor"
       ],
-      "rank": 60
-    },
-    {
-      "id": "vercel-labs/agent-skills/deploy-to-vercel",
-      "name": "Deploy TO Vercel",
-      "slug": "deploy-to-vercel",
-      "source": "vercel-labs/agent-skills",
-      "url": "https://skills.sh/vercel-labs/agent-skills/deploy-to-vercel",
-      "repositoryUrl": "https://github.com/vercel-labs/agent-skills",
-      "installCommand": "npx skills add vercel-labs/agent-skills --skill deploy-to-vercel",
-      "category": "agent",
-      "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 9,550 次。",
-      "installs": 174854,
-      "weeklyInstalls": [
-        4287,
-        4158,
-        6576,
-        6385,
-        7506,
-        6664,
-        7687,
-        9550
-      ],
-      "weeklyLatest": 9550,
-      "trend": 22,
-      "official": true,
-      "score": 91.5,
-      "agents": [
-        "Codex",
-        "Claude Code",
-        "Cursor"
-      ],
       "rank": 61
     },
     {
@@ -2054,7 +2054,7 @@
       "installCommand": "npx skills add anthropics/skills --skill webapp-testing",
       "category": "development",
       "description": "来自 anthropics 的 开发与代码 Skill，近一周安装 7,142 次。",
-      "installs": 191829,
+      "installs": 191914,
       "weeklyInstalls": [
         4978,
         4704,
@@ -2086,7 +2086,7 @@
       "installCommand": "npx skills add anthropics/skills --skill pptx",
       "category": "agent",
       "description": "来自 anthropics 的 Agent 工程 Skill，近一周安装 4,206 次。",
-      "installs": 244762,
+      "installs": 244835,
       "weeklyInstalls": [
         4371,
         4015,
@@ -2118,7 +2118,7 @@
       "installCommand": "npx skills add anthropics/skills --skill pdf",
       "category": "research",
       "description": "来自 anthropics 的 研究与知识 Skill，近一周安装 4,049 次。",
-      "installs": 219194,
+      "installs": 219251,
       "weeklyInstalls": [
         3988,
         3670,
@@ -2150,7 +2150,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-app-onboard",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 6,997 次。",
-      "installs": 157879,
+      "installs": 158053,
       "weeklyInstalls": [
         10758,
         11409,
@@ -2182,7 +2182,7 @@
       "installCommand": "npx skills add microsoft/azure-skills --skill azure-app-onboard-prereq",
       "category": "agent",
       "description": "来自 microsoft 的 Agent 工程 Skill，近一周安装 6,984 次。",
-      "installs": 157683,
+      "installs": 157857,
       "weeklyInstalls": [
         10755,
         11405,
@@ -2214,7 +2214,7 @@
       "installCommand": "npx skills add anthropics/skills --skill docx",
       "category": "agent",
       "description": "来自 anthropics 的 Agent 工程 Skill，近一周安装 3,873 次。",
-      "installs": 209297,
+      "installs": 209357,
       "weeklyInstalls": [
         3735,
         3423,
@@ -2246,7 +2246,7 @@
       "installCommand": "npx skills add vercel-labs/agent-skills --skill vercel-cli-with-tokens",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 8,074 次。",
-      "installs": 140228,
+      "installs": 140313,
       "weeklyInstalls": [
         3786,
         3479,
@@ -2278,7 +2278,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill cloudflare",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 7,813 次。",
-      "installs": 141502,
+      "installs": 141593,
       "weeklyInstalls": [
         7502,
         7448,
@@ -2310,7 +2310,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill wrangler",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 7,278 次。",
-      "installs": 132906,
+      "installs": 132997,
       "weeklyInstalls": [
         7097,
         7475,
@@ -2342,7 +2342,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill workers-best-practices",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 7,544 次。",
-      "installs": 129679,
+      "installs": 129763,
       "weeklyInstalls": [
         7307,
         7440,
@@ -2374,7 +2374,7 @@
       "installCommand": "npx skills add anthropics/skills --skill xlsx",
       "category": "agent",
       "description": "来自 anthropics 的 Agent 工程 Skill，近一周安装 3,589 次。",
-      "installs": 189924,
+      "installs": 189979,
       "weeklyInstalls": [
         3650,
         3279,
@@ -2406,7 +2406,7 @@
       "installCommand": "npx skills add vercel-labs/agent-skills --skill vercel-optimize",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 8,484 次。",
-      "installs": 115256,
+      "installs": 115349,
       "weeklyInstalls": [
         4320,
         4189,
@@ -2420,7 +2420,7 @@
       "weeklyLatest": 8484,
       "trend": 12,
       "official": true,
-      "score": 89.2,
+      "score": 89.3,
       "agents": [
         "Codex",
         "Claude Code",
@@ -2438,7 +2438,7 @@
       "installCommand": "npx skills add vercel-labs/agent-skills --skill writing-guidelines",
       "category": "agent",
       "description": "来自 vercel-labs 的 Agent 工程 Skill，近一周安装 8,760 次。",
-      "installs": 111253,
+      "installs": 111349,
       "weeklyInstalls": [
         4609,
         4367,
@@ -2470,7 +2470,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-basics",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,632 次。",
-      "installs": 177508,
+      "installs": 177561,
       "weeklyInstalls": [
         5072,
         4771,
@@ -2502,7 +2502,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-auth-basics",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,591 次。",
-      "installs": 176402,
+      "installs": 176455,
       "weeklyInstalls": [
         5060,
         4763,
@@ -2534,7 +2534,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-hosting-basics",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,496 次。",
-      "installs": 171918,
+      "installs": 171968,
       "weeklyInstalls": [
         4978,
         4683,
@@ -2548,7 +2548,7 @@
       "weeklyLatest": 3496,
       "trend": -6,
       "official": true,
-      "score": 88.8,
+      "score": 88.9,
       "agents": [
         "Codex",
         "Claude Code",
@@ -2566,7 +2566,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-app-hosting-basics",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,515 次。",
-      "installs": 171301,
+      "installs": 171351,
       "weeklyInstalls": [
         4949,
         4669,
@@ -2598,7 +2598,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-data-connect",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,449 次。",
-      "installs": 170396,
+      "installs": 170446,
       "weeklyInstalls": [
         4934,
         4648,
@@ -2630,7 +2630,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill web-perf",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 6,686 次。",
-      "installs": 113362,
+      "installs": 113439,
       "weeklyInstalls": [
         6498,
         6700,
@@ -2662,7 +2662,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill durable-objects",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 6,446 次。",
-      "installs": 113579,
+      "installs": 113650,
       "weeklyInstalls": [
         6899,
         7037,
@@ -2694,7 +2694,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill agents-sdk",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 6,226 次。",
-      "installs": 109473,
+      "installs": 109543,
       "weeklyInstalls": [
         6718,
         6813,
@@ -2726,7 +2726,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-security-rules-auditor",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,607 次。",
-      "installs": 140319,
+      "installs": 140370,
       "weeklyInstalls": [
         5103,
         4787,
@@ -2758,7 +2758,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill cloudflare-email-service",
       "category": "marketing",
       "description": "来自 cloudflare 的 营销与增长 Skill，近一周安装 6,301 次。",
-      "installs": 105182,
+      "installs": 105252,
       "weeklyInstalls": [
         6634,
         6684,
@@ -2790,7 +2790,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-firestore",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,643 次。",
-      "installs": 137040,
+      "installs": 137091,
       "weeklyInstalls": [
         5085,
         4808,
@@ -2822,7 +2822,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-ai-logic-basics",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,472 次。",
-      "installs": 137316,
+      "installs": 137366,
       "weeklyInstalls": [
         4937,
         4659,
@@ -2854,7 +2854,7 @@
       "installCommand": "npx skills add anthropics/skills --skill mcp-builder",
       "category": "agent",
       "description": "来自 anthropics 的 Agent 工程 Skill，近一周安装 3,712 次。",
-      "installs": 133718,
+      "installs": 133775,
       "weeklyInstalls": [
         2845,
         2337,
@@ -2886,7 +2886,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill cloudflare-one",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 6,670 次。",
-      "installs": 96189,
+      "installs": 96268,
       "weeklyInstalls": [
         6199,
         6423,
@@ -2918,7 +2918,7 @@
       "installCommand": "npx skills add prisma/skills --skill prisma-orm-setup",
       "category": "agent",
       "description": "来自 prisma 的 Agent 工程 Skill，近一周安装 18,890 次。",
-      "installs": 75841,
+      "installs": 76198,
       "weeklyInstalls": [
         0,
         0,
@@ -2950,7 +2950,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-crashlytics",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,480 次。",
-      "installs": 133297,
+      "installs": 133346,
       "weeklyInstalls": [
         4948,
         4667,
@@ -2982,7 +2982,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill xcode-project-setup",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,457 次。",
-      "installs": 132330,
+      "installs": 132379,
       "weeklyInstalls": [
         4940,
         4648,
@@ -3014,7 +3014,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill turnstile-spin",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 6,243 次。",
-      "installs": 95943,
+      "installs": 96014,
       "weeklyInstalls": [
         6191,
         6446,
@@ -3046,7 +3046,7 @@
       "installCommand": "npx skills add mastra-ai/skills --skill mastra",
       "category": "agent",
       "description": "来自 mastra-ai 的 Agent 工程 Skill，近一周安装 6,834 次。",
-      "installs": 87305,
+      "installs": 87394,
       "weeklyInstalls": [
         4441,
         4683,
@@ -3078,7 +3078,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill cloudflare-one-migrations",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 6,113 次。",
-      "installs": 92339,
+      "installs": 92408,
       "weeklyInstalls": [
         6131,
         6373,
@@ -3110,7 +3110,7 @@
       "installCommand": "npx skills add anthropics/skills --skill canvas-design",
       "category": "design",
       "description": "来自 anthropics 的 设计与体验 Skill，近一周安装 3,334 次。",
-      "installs": 123920,
+      "installs": 123958,
       "weeklyInstalls": [
         2292,
         1920,
@@ -3142,7 +3142,7 @@
       "installCommand": "npx skills add firebase/agent-skills --skill firebase-remote-config-basics",
       "category": "development",
       "description": "来自 firebase 的 开发与代码 Skill，近一周安装 3,459 次。",
-      "installs": 122866,
+      "installs": 122915,
       "weeklyInstalls": [
         4943,
         4663,
@@ -3174,7 +3174,7 @@
       "installCommand": "npx skills add anthropics/skills --skill brand-guidelines",
       "category": "design",
       "description": "来自 anthropics 的 设计与体验 Skill，近一周安装 4,041 次。",
-      "installs": 112190,
+      "installs": 112243,
       "weeklyInstalls": [
         3181,
         3016,
@@ -3206,7 +3206,7 @@
       "installCommand": "npx skills add cloudflare/security-audit-skill --skill security-audit",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 16,762 次。",
-      "installs": 65395,
+      "installs": 65707,
       "weeklyInstalls": [
         639,
         478,
@@ -3238,7 +3238,7 @@
       "installCommand": "npx skills add anthropics/skills --skill web-artifacts-builder",
       "category": "design",
       "description": "来自 anthropics 的 设计与体验 Skill，近一周安装 2,545 次。",
-      "installs": 113857,
+      "installs": 113897,
       "weeklyInstalls": [
         1974,
         1691,
@@ -3270,7 +3270,7 @@
       "installCommand": "npx skills add cloudflare/skills --skill sandbox-stable",
       "category": "agent",
       "description": "来自 cloudflare 的 Agent 工程 Skill，近一周安装 6,040 次。",
-      "installs": 71229,
+      "installs": 71296,
       "weeklyInstalls": [
         6175,
         6427,
@@ -3302,7 +3302,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill grill-me",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 48,664 次。",
-      "installs": 1457855,
+      "installs": 1458607,
       "weeklyInstalls": [
         62524,
         57027,
@@ -3334,7 +3334,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill hyperframes-cli",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 144,957 次。",
-      "installs": 1314548,
+      "installs": 1316349,
       "weeklyInstalls": [
         36139,
         46204,
@@ -3366,7 +3366,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill hyperframes",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 156,397 次。",
-      "installs": 1280102,
+      "installs": 1281772,
       "weeklyInstalls": [
         29357,
         43983,
@@ -3398,7 +3398,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill grill-with-docs",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 41,171 次。",
-      "installs": 1248235,
+      "installs": 1248883,
       "weeklyInstalls": [
         54211,
         49063,
@@ -3430,7 +3430,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill improve-codebase-architecture",
       "category": "development",
       "description": "来自 mattpocock 的 开发与代码 Skill，近一周安装 38,894 次。",
-      "installs": 1190259,
+      "installs": 1191135,
       "weeklyInstalls": [
         49681,
         43664,
@@ -3462,7 +3462,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill media-use",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 150,801 次。",
-      "installs": 1185339,
+      "installs": 1187123,
       "weeklyInstalls": [
         31547,
         47443,
@@ -3494,7 +3494,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill tdd",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 39,153 次。",
-      "installs": 1166895,
+      "installs": 1167525,
       "weeklyInstalls": [
         49000,
         43678,
@@ -3526,7 +3526,7 @@
       "installCommand": "npx skills add flowkit-labs/skills --skill reddit-automation",
       "category": "agent",
       "description": "来自 flowkit-labs 的 Agent 工程 Skill，近一周安装 103,833 次。",
-      "installs": 1148901,
+      "installs": 1150223,
       "weeklyInstalls": [
         113490,
         108855,
@@ -3558,7 +3558,7 @@
       "installCommand": "npx skills add designed-by-ai/skills --skill design-mobile-apps",
       "category": "design",
       "description": "来自 designed-by-ai 的 设计与体验 Skill，近一周安装 136,799 次。",
-      "installs": 1100450,
+      "installs": 1102806,
       "weeklyInstalls": [
         53047,
         140172,
@@ -3590,7 +3590,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill setup-matt-pocock-skills",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 35,702 次。",
-      "installs": 1078532,
+      "installs": 1079194,
       "weeklyInstalls": [
         46072,
         40968,
@@ -3622,7 +3622,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill hyperframes-registry",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 111,877 次。",
-      "installs": 1076475,
+      "installs": 1078215,
       "weeklyInstalls": [
         28880,
         42444,
@@ -3654,7 +3654,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill handoff",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 39,160 次。",
-      "installs": 1065371,
+      "installs": 1065975,
       "weeklyInstalls": [
         47996,
         43887,
@@ -3686,7 +3686,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill triage",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 33,488 次。",
-      "installs": 1012645,
+      "installs": 1013170,
       "weeklyInstalls": [
         43767,
         38590,
@@ -3718,7 +3718,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill grilling",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 47,202 次。",
-      "installs": 1011803,
+      "installs": 1012803,
       "weeklyInstalls": [
         56891,
         52487,
@@ -3750,7 +3750,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill prototype",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 34,602 次。",
-      "installs": 1010788,
+      "installs": 1011325,
       "weeklyInstalls": [
         45348,
         40553,
@@ -3782,7 +3782,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill hyperframes-animation",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 64,260 次。",
-      "installs": 1004955,
+      "installs": 1004957,
       "weeklyInstalls": [
         26843,
         41855,
@@ -3814,7 +3814,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill hyperframes-core",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 55,617 次。",
-      "installs": 930641,
+      "installs": 930643,
       "weeklyInstalls": [
         29520,
         47589,
@@ -3846,7 +3846,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill hyperframes-creative",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 58,088 次。",
-      "installs": 916690,
+      "installs": 916692,
       "weeklyInstalls": [
         29650,
         42452,
@@ -3878,7 +3878,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill domain-modeling",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 39,443 次。",
-      "installs": 903673,
+      "installs": 904305,
       "weeklyInstalls": [
         49823,
         45486,
@@ -3910,7 +3910,7 @@
       "installCommand": "npx skills add 101-skills/superpowers --skill ai-video-generation",
       "category": "media",
       "description": "来自 101-skills 的 图像与视频 Skill，近一周安装 67,605 次。",
-      "installs": 897750,
+      "installs": 897755,
       "weeklyInstalls": [
         13241,
         64317,
@@ -3942,7 +3942,7 @@
       "installCommand": "npx skills add 101-skills/superpowers --skill ai-image-generation",
       "category": "media",
       "description": "来自 101-skills 的 图像与视频 Skill，近一周安装 67,369 次。",
-      "installs": 896477,
+      "installs": 896480,
       "weeklyInstalls": [
         13165,
         63881,
@@ -4006,7 +4006,7 @@
       "installCommand": "npx skills add 101-skills/superpowers --skill ai-avatar-video",
       "category": "media",
       "description": "来自 101-skills 的 图像与视频 Skill，近一周安装 67,288 次。",
-      "installs": 895864,
+      "installs": 895865,
       "weeklyInstalls": [
         13376,
         63412,
@@ -4038,7 +4038,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill teach",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 35,109 次。",
-      "installs": 885388,
+      "installs": 885949,
       "weeklyInstalls": [
         44684,
         40223,
@@ -4070,7 +4070,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill codebase-design",
       "category": "design",
       "description": "来自 mattpocock 的 设计与体验 Skill，近一周安装 37,697 次。",
-      "installs": 876459,
+      "installs": 877310,
       "weeklyInstalls": [
         48130,
         43787,
@@ -4102,7 +4102,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill diagnosing-bugs",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 37,477 次。",
-      "installs": 860868,
+      "installs": 861471,
       "weeklyInstalls": [
         46576,
         42055,
@@ -4134,7 +4134,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-doc",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,631 次。",
-      "installs": 830269,
+      "installs": 830740,
       "weeklyInstalls": [
         27226,
         25433,
@@ -4166,7 +4166,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-base",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,533 次。",
-      "installs": 829622,
+      "installs": 830092,
       "weeklyInstalls": [
         27188,
         25425,
@@ -4198,7 +4198,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-drive",
       "category": "business",
       "description": "来自 open.feishu.cn 的 商业与办公 Skill，近一周安装 25,528 次。",
-      "installs": 829598,
+      "installs": 830069,
       "weeklyInstalls": [
         27192,
         25413,
@@ -4230,7 +4230,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-shared",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,586 次。",
-      "installs": 829366,
+      "installs": 829838,
       "weeklyInstalls": [
         27065,
         25407,
@@ -4262,7 +4262,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-im",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,463 次。",
-      "installs": 828659,
+      "installs": 829129,
       "weeklyInstalls": [
         27147,
         25351,
@@ -4294,7 +4294,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-calendar",
       "category": "business",
       "description": "来自 open.feishu.cn 的 商业与办公 Skill，近一周安装 25,438 次。",
-      "installs": 828270,
+      "installs": 828739,
       "weeklyInstalls": [
         27124,
         25317,
@@ -4326,7 +4326,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-sheets",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,466 次。",
-      "installs": 828164,
+      "installs": 828634,
       "weeklyInstalls": [
         27140,
         25317,
@@ -4358,7 +4358,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-approval",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,421 次。",
-      "installs": 828155,
+      "installs": 828625,
       "weeklyInstalls": [
         27022,
         25245,
@@ -4390,7 +4390,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-wiki",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,495 次。",
-      "installs": 828047,
+      "installs": 828517,
       "weeklyInstalls": [
         26995,
         25312,
@@ -4422,7 +4422,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-contact",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,390 次。",
-      "installs": 827306,
+      "installs": 827776,
       "weeklyInstalls": [
         26932,
         25212,
@@ -4454,7 +4454,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-task",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,451 次。",
-      "installs": 827190,
+      "installs": 827660,
       "weeklyInstalls": [
         26959,
         25211,
@@ -4486,7 +4486,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-slides",
       "category": "research",
       "description": "来自 open.feishu.cn 的 研究与知识 Skill，近一周安装 25,403 次。",
-      "installs": 827069,
+      "installs": 827539,
       "weeklyInstalls": [
         26971,
         25275,
@@ -4518,7 +4518,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-mail",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,389 次。",
-      "installs": 827020,
+      "installs": 827490,
       "weeklyInstalls": [
         26977,
         25261,
@@ -4550,7 +4550,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-whiteboard",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,380 次。",
-      "installs": 826869,
+      "installs": 827339,
       "weeklyInstalls": [
         26925,
         25213,
@@ -4582,7 +4582,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-event",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,379 次。",
-      "installs": 826780,
+      "installs": 827250,
       "weeklyInstalls": [
         26906,
         25194,
@@ -4614,7 +4614,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-openapi-explorer",
       "category": "development",
       "description": "来自 open.feishu.cn 的 开发与代码 Skill，近一周安装 25,368 次。",
-      "installs": 826543,
+      "installs": 827013,
       "weeklyInstalls": [
         26889,
         25172,
@@ -4646,7 +4646,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-attendance",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,351 次。",
-      "installs": 826448,
+      "installs": 826918,
       "weeklyInstalls": [
         26871,
         25159,
@@ -4678,7 +4678,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-skill-maker",
       "category": "agent",
       "description": "来自 open.feishu.cn 的 Agent 工程 Skill，近一周安装 25,355 次。",
-      "installs": 826082,
+      "installs": 826552,
       "weeklyInstalls": [
         26854,
         25148,
@@ -4710,7 +4710,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-workflow-meeting-summary",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,345 次。",
-      "installs": 825937,
+      "installs": 826407,
       "weeklyInstalls": [
         26889,
         25143,
@@ -4742,7 +4742,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-minutes",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,187 次。",
-      "installs": 825820,
+      "installs": 826288,
       "weeklyInstalls": [
         26920,
         25180,
@@ -4774,7 +4774,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-workflow-standup-report",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,336 次。",
-      "installs": 825655,
+      "installs": 826125,
       "weeklyInstalls": [
         26839,
         25128,
@@ -4806,7 +4806,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-vc",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,169 次。",
-      "installs": 825081,
+      "installs": 825549,
       "weeklyInstalls": [
         26901,
         25150,
@@ -4838,7 +4838,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill code-review",
       "category": "development",
       "description": "来自 mattpocock 的 开发与代码 Skill，近一周安装 38,605 次。",
-      "installs": 815689,
+      "installs": 816522,
       "weeklyInstalls": [
         49617,
         45428,
@@ -4870,7 +4870,7 @@
       "installCommand": "npx skills add uizze.sh --skill ui-taste",
       "category": "design",
       "description": "来自 uizze.sh 的 设计与体验 Skill，近一周安装 92,139 次。",
-      "installs": 810937,
+      "installs": 813717,
       "weeklyInstalls": [
         0,
         0,
@@ -4902,7 +4902,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-okr",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,366 次。",
-      "installs": 807404,
+      "installs": 807874,
       "weeklyInstalls": [
         27010,
         25201,
@@ -4934,7 +4934,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill implement",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 35,700 次。",
-      "installs": 797803,
+      "installs": 798383,
       "weeklyInstalls": [
         45477,
         41589,
@@ -4966,7 +4966,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-markdown",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,416 次。",
-      "installs": 793262,
+      "installs": 793731,
       "weeklyInstalls": [
         26996,
         25250,
@@ -4998,7 +4998,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill ask-matt",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 33,162 次。",
-      "installs": 788998,
+      "installs": 789539,
       "weeklyInstalls": [
         44245,
         39031,
@@ -5158,7 +5158,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-vc-agent",
       "category": "agent",
       "description": "来自 open.feishu.cn 的 Agent 工程 Skill，近一周安装 25,169 次。",
-      "installs": 769710,
+      "installs": 770178,
       "weeklyInstalls": [
         26885,
         25144,
@@ -5190,7 +5190,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill hyperframes-keyframes",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 35,916 次。",
-      "installs": 754375,
+      "installs": 754377,
       "weeklyInstalls": [
         24220,
         28637,
@@ -5222,7 +5222,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill wayfinder",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 34,673 次。",
-      "installs": 741391,
+      "installs": 742159,
       "weeklyInstalls": [
         45372,
         40175,
@@ -5254,7 +5254,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill to-spec",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 34,900 次。",
-      "installs": 738665,
+      "installs": 739218,
       "weeklyInstalls": [
         47056,
         42452,
@@ -5286,7 +5286,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-apps",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,532 次。",
-      "installs": 738443,
+      "installs": 738914,
       "weeklyInstalls": [
         27181,
         25356,
@@ -5318,7 +5318,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill to-tickets",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 35,922 次。",
-      "installs": 734989,
+      "installs": 735573,
       "weeklyInstalls": [
         46144,
         41660,
@@ -5350,7 +5350,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill research",
       "category": "research",
       "description": "来自 mattpocock 的 研究与知识 Skill，近一周安装 33,920 次。",
-      "installs": 733846,
+      "installs": 734618,
       "weeklyInstalls": [
         46003,
         40902,
@@ -5382,7 +5382,7 @@
       "installCommand": "npx skills add leonxlnx/taste-skill --skill design-taste-frontend",
       "category": "development",
       "description": "来自 leonxlnx 的 开发与代码 Skill，近一周安装 42,584 次。",
-      "installs": 698044,
+      "installs": 698645,
       "weeklyInstalls": [
         26670,
         24448,
@@ -5414,7 +5414,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill hyperframes-audio",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 44,827 次。",
-      "installs": 663446,
+      "installs": 663448,
       "weeklyInstalls": [
         26037,
         34716,
@@ -5446,7 +5446,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill general-video",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 32,560 次。",
-      "installs": 661325,
+      "installs": 661327,
       "weeklyInstalls": [
         15346,
         28322,
@@ -5478,7 +5478,7 @@
       "installCommand": "npx skills add open.feishu.cn --skill lark-note",
       "category": "productivity",
       "description": "来自 open.feishu.cn 的 通用与效率 Skill，近一周安装 25,163 次。",
-      "installs": 609961,
+      "installs": 610429,
       "weeklyInstalls": [
         26890,
         25167,
@@ -5510,7 +5510,7 @@
       "installCommand": "npx skills add juliusbrussee/caveman --skill caveman",
       "category": "productivity",
       "description": "来自 juliusbrussee 的 通用与效率 Skill，近一周安装 12,419 次。",
-      "installs": 599115,
+      "installs": 599338,
       "weeklyInstalls": [
         17672,
         18867,
@@ -5606,7 +5606,7 @@
       "installCommand": "npx skills add qu-skills/superpowers --skill ai-video-generation",
       "category": "media",
       "description": "来自 qu-skills 的 图像与视频 Skill，近一周安装 67,252 次。",
-      "installs": 580029,
+      "installs": 580030,
       "weeklyInstalls": [
         6040,
         30726,
@@ -5670,7 +5670,7 @@
       "installCommand": "npx skills add mattpocock/skills --skill wizard",
       "category": "agent",
       "description": "来自 mattpocock 的 Agent 工程 Skill，近一周安装 32,039 次。",
-      "installs": 574628,
+      "installs": 575138,
       "weeklyInstalls": [
         40680,
         36906,
@@ -5702,7 +5702,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill product-launch-video",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 27,784 次。",
-      "installs": 538887,
+      "installs": 538889,
       "weeklyInstalls": [
         12453,
         21145,
@@ -5734,7 +5734,7 @@
       "installCommand": "npx skills add heygen-com/hyperframes --skill remotion-to-hyperframes",
       "category": "media",
       "description": "来自 heygen-com 的 图像与视频 Skill，近一周安装 37,927 次。",
-      "installs": 532661,
+      "installs": 533212,
       "weeklyInstalls": [
         10075,
         14538,
@@ -5766,7 +5766,7 @@
       "installCommand": "npx skills add google/agents-cli --skill google-agents-cli-adk-code",
       "category": "development",
       "description": "来自 google 的 开发与代码 Skill，近一周安装 11,140 次。",
-      "installs": 523262,
+      "installs": 523965,
       "weeklyInstalls": [
         42979,
         57886,
@@ -5798,7 +5798,7 @@
       "installCommand": "npx skills add google/agents-cli --skill google-agents-cli-deploy",
       "category": "agent",
       "description": "来自 google 的 Agent 工程 Skill，近一周安装 11,134 次。",
-      "installs": 522593,
+      "installs": 523298,
       "weeklyInstalls": [
         42957,
         57879,
@@ -5830,7 +5830,7 @@
       "installCommand": "npx skills add google/agents-cli --skill google-agents-cli-publish",
       "category": "agent",
       "description": "来自 google 的 Agent 工程 Skill，近一周安装 11,115 次。",
-      "installs": 522382,
+      "installs": 523083,
       "weeklyInstalls": [
         42946,
         57859,
