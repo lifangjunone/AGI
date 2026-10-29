@@ -39,17 +39,44 @@ function currentSkills() {
   const query = state.query.trim().toLowerCase();
   const filtered = state.data.skills.filter((skill) => {
     const categoryMatch = state.category === "all" || skill.category === state.category;
-    const searchText = `${skill.name} ${skill.source} ${skill.description} ${categoryName(skill.category)}`.toLowerCase();
-    return categoryMatch && (!query || searchText.includes(query));
+    const creatorMatch = state.sort !== "creator" || skill.curatorOriginal;
+    const searchText = `${skill.name} ${skill.source} ${skill.description} ${skill.authorLabel || ""} ${categoryName(skill.category)}`.toLowerCase();
+    return categoryMatch && creatorMatch && (!query || searchText.includes(query));
   });
   return filtered.sort((a, b) => {
+    if (state.sort === "creator") return Number(b.curatorOriginal) - Number(a.curatorOriginal);
     if (state.sort === "growth") return b.trend - a.trend || b.weeklyLatest - a.weeklyLatest;
     if (state.sort === "official") return Number(b.official) - Number(a.official) || b.score - a.score;
+    if (a.curatorOriginal !== b.curatorOriginal) return Number(b.curatorOriginal) - Number(a.curatorOriginal);
     return b.score - a.score || b.installs - a.installs;
   });
 }
 
 function skillTemplate(skill, index) {
+  const delayClass = state.sort === "creator" ? "" : ` delay-${Math.min(index, 8)}`;
+  if (skill.curatorOriginal) {
+    return `
+      <li class="skill-row creator-original${state.sort === "creator" ? " is-isolated" : ""}${delayClass}">
+        <div class="skill-identity">
+          <span class="creator-sigil" aria-hidden="true">L</span>
+          <div>
+            <p class="creator-kicker"><span>${escapeHtml(skill.authorLabel)}</span> LIFEYOUME STUDIO</p>
+            <h3 class="skill-name">${escapeHtml(skill.name)}</h3>
+            <p class="skill-source">${escapeHtml(skill.description)}</p>
+          </div>
+        </div>
+        <div class="category-cell">${escapeHtml(categoryName(skill.category))}</div>
+        <div class="creator-proof">
+          <b>原创方法论</b>
+          <span>产品叙事 · 多方向原型 · 截图验收</span>
+        </div>
+        <div class="creator-status"><i></i>持续维护</div>
+        <div class="actions">
+          <button class="copy-button" type="button" data-command="${escapeHtml(skill.installCommand)}">复制安装</button>
+          <a class="open-link" href="${escapeHtml(skill.url)}" target="_blank" rel="noreferrer" aria-label="打开 ${escapeHtml(skill.name)} 详情">↗</a>
+        </div>
+      </li>`;
+  }
   const installWidth = Math.min(100, 18 + Math.log10(Math.max(skill.installs, 1)) * 14);
   const weeklyWidth = Math.min(100, 12 + Math.log10(Math.max(skill.weeklyLatest, 1)) * 17);
   const installBand = Math.max(1, Math.min(10, Math.round(installWidth / 10)));
@@ -59,7 +86,7 @@ function skillTemplate(skill, index) {
   const podiumLabel = skill.rank <= 3 ? `<span class="podium-label">TOP ${skill.rank}</span>` : "";
   const trendLabel = skill.trend > 0 ? `↑ ${skill.trend}%` : skill.trend < 0 ? `↓ ${Math.abs(skill.trend)}%` : "— 持平";
   return `
-    <li class="skill-row delay-${delayBand}${podiumClass}">
+    <li class="skill-row${state.sort === "creator" ? "" : ` delay-${delayBand}`}${podiumClass}">
       <div class="skill-identity">
         <span class="rank" aria-label="第 ${skill.rank} 名">${String(skill.rank).padStart(2, "0")}</span>
         <div>
@@ -138,7 +165,7 @@ async function load() {
     document.querySelector("#stat-sources").textContent = number.format(state.data.stats.sources);
     document.querySelector("#stat-official").textContent = number.format(state.data.stats.official);
     document.querySelector("#stat-categories").textContent = number.format(state.data.stats.categories);
-    const leader = state.data.skills[0];
+    const leader = state.data.skills.find((skill) => !skill.curatorOriginal);
     document.querySelector("#top-skill-name").textContent = leader.name;
     document.querySelector("#top-skill-source").textContent =
       `${leader.source} · ${categoryName(leader.category)} · ${leader.official ? "官方发布" : "社区发布"}`;

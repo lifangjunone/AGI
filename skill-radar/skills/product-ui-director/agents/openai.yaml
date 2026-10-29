@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product UI Director"
+  short_description: "从产品叙事、多方向原型到产品级实现与视觉验收的总导演"
+  default_prompt: "使用 $product-ui-director 为这个产品探索多个设计方向，评审确认后再实现。"

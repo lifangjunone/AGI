@@ -7,6 +7,28 @@ const OUTPUT = resolve(ROOT, "public/data/skills.json");
 const HISTORY = resolve(ROOT, "data/history.json");
 const MAX_SKILLS = Number(process.env.SKILL_RADAR_LIMIT || 180);
 const USER_AGENT = "SkillRadar/1.0 (+https://lifeyoume.icu/skills/)";
+const CURATED_SKILLS = [
+  {
+    id: "lifeyoume/product-ui-director",
+    name: "Product UI Director",
+    slug: "product-ui-director",
+    source: "LifeYouMe Studio",
+    url: "https://github.com/lifangjunone/AGI/tree/main/skill-radar/skills/product-ui-director",
+    repositoryUrl: "https://github.com/lifangjunone/AGI",
+    installCommand: "npx skills add lifangjunone/AGI --skill product-ui-director",
+    category: "design",
+    description: "从产品叙事、三方向高保真原型，到真实实现与截图验收的产品 UI 设计总导演。",
+    installs: 0,
+    weeklyInstalls: [],
+    weeklyLatest: 0,
+    trend: 0,
+    official: false,
+    score: 0,
+    agents: ["Codex", "Claude Code", "Cursor"],
+    curatorOriginal: true,
+    authorLabel: "主理人原创",
+  },
+];
 
 export const categories = [
   {
@@ -160,7 +182,7 @@ async function main() {
     console.warn(`skills.sh collection failed, preserving cached data: ${error.message}`);
   }
 
-  const normalized = rawSkills
+  const rankedSkills = rawSkills
     .map((skill) => {
       if (skill.category && skill.score) return skill;
       const category = classify(`${skill.source} ${skill.skillId} ${skill.name}`);
@@ -190,6 +212,10 @@ async function main() {
     .sort((a, b) => b.score - a.score || b.installs - a.installs)
     .slice(0, MAX_SKILLS)
     .map((skill, index) => ({ ...skill, rank: index + 1 }));
+  const normalized = [
+    ...CURATED_SKILLS.map((skill) => ({ ...skill, rank: null })),
+    ...rankedSkills,
+  ];
 
   const categoryCounts = Object.fromEntries(
     categories.map((category) => [
@@ -203,15 +229,16 @@ async function main() {
     timezone: "Asia/Shanghai",
     sourceStatus,
     methodology: {
-      summary: "综合安装规模、最近一周安装量与官方标识排序；增长率用于发现近期上升项目，不代表绝对质量。",
+      summary: "公开榜单综合安装规模、最近一周安装量与官方标识排序；“主理人原创”为独立策展条目，不参与公开热度排名。",
       sources: [
         { name: "skills.sh", url: "https://skills.sh", fields: ["安装量", "8 周趋势", "官方标识"] },
       ],
     },
     stats: {
       skills: normalized.length,
-      sources: new Set(normalized.map((skill) => skill.source)).size,
-      official: normalized.filter((skill) => skill.official).length,
+      sources: new Set(rankedSkills.map((skill) => skill.source)).size,
+      official: rankedSkills.filter((skill) => skill.official).length,
+      curatorOriginals: normalized.filter((skill) => skill.curatorOriginal).length,
       categories: categories.length,
     },
     categories: categories.map(({ id, name }) => ({ id, name, count: categoryCounts[id] })),
@@ -226,7 +253,7 @@ async function main() {
       date: collectedAt.slice(0, 10),
       collectedAt,
       total: normalized.length,
-      leaders: normalized.slice(0, 20).map(({ id, installs, weeklyLatest, score }) => ({
+      leaders: rankedSkills.slice(0, 20).map(({ id, installs, weeklyLatest, score }) => ({
         id,
         installs,
         weeklyLatest,

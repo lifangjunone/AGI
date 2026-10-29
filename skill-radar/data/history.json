@@ -126,6 +126,133 @@
           "score": 95.7
         }
       ]
+    },
+    {
+      "date": "2026-10-29",
+      "collectedAt": "2026-10-29T13:31:17.064Z",
+      "total": 181,
+      "leaders": [
+        {
+          "id": "vercel-labs/skills/find-skills",
+          "installs": 4104549,
+          "weeklyLatest": 121665,
+          "score": 96
+        },
+        {
+          "id": "vercel-labs/agent-browser/agent-browser",
+          "installs": 1293450,
+          "weeklyLatest": 78806,
+          "score": 96
+        },
+        {
+          "id": "anthropics/skills/frontend-design",
+          "installs": 1048070,
+          "weeklyLatest": 29060,
+          "score": 96
+        },
+        {
+          "id": "vercel-labs/agent-skills/vercel-react-best-practices",
+          "installs": 851175,
+          "weeklyLatest": 23623,
+          "score": 96
+        },
+        {
+          "id": "vercel-labs/agent-skills/web-design-guidelines",
+          "installs": 799687,
+          "weeklyLatest": 30032,
+          "score": 96
+        },
+        {
+          "id": "remotion-dev/skills/remotion-best-practices",
+          "installs": 705966,
+          "weeklyLatest": 42697,
+          "score": 96
+        },
+        {
+          "id": "supabase/agent-skills/supabase-postgres-best-practices",
+          "installs": 465450,
+          "weeklyLatest": 10147,
+          "score": 96
+        },
+        {
+          "id": "vercel-labs/agent-skills/vercel-composition-patterns",
+          "installs": 426027,
+          "weeklyLatest": 15399,
+          "score": 95.9
+        },
+        {
+          "id": "prisma/skills/prisma-client-api",
+          "installs": 399455,
+          "weeklyLatest": 19206,
+          "score": 95.6
+        },
+        {
+          "id": "prisma/skills/prisma-database-setup",
+          "installs": 398112,
+          "weeklyLatest": 18966,
+          "score": 95.6
+        },
+        {
+          "id": "prisma/skills/prisma-cli",
+          "installs": 396649,
+          "weeklyLatest": 19100,
+          "score": 95.6
+        },
+        {
+          "id": "prisma/skills/prisma-postgres",
+          "installs": 390110,
+          "weeklyLatest": 18733,
+          "score": 95.5
+        },
+        {
+          "id": "prisma/skills/prisma-driver-adapter-implementation",
+          "installs": 384729,
+          "weeklyLatest": 18669,
+          "score": 95.4
+        },
+        {
+          "id": "prisma/skills/prisma-postgres-setup",
+          "installs": 384700,
+          "weeklyLatest": 18833,
+          "score": 95.4
+        },
+        {
+          "id": "prisma/skills/prisma-upgrade-v7",
+          "installs": 384507,
+          "weeklyLatest": 18704,
+          "score": 95.4
+        },
+        {
+          "id": "prisma/skills/prisma-compute",
+          "installs": 379662,
+          "weeklyLatest": 18661,
+          "score": 95.4
+        },
+        {
+          "id": "prisma/skills/prisma-mongodb-upgrade",
+          "installs": 378196,
+          "weeklyLatest": 18650,
+          "score": 95.4
+        },
+        {
+          "id": "microsoft/azure-skills/microsoft-foundry",
+          "installs": 582668,
+          "weeklyLatest": 7630,
+          "score": 95.3
+        },
+        {
+          "id": "microsoft/azure-skills/azure-upgrade",
+          "installs": 467470,
+          "weeklyLatest": 7427,
+          "score": 95.2
+        },
+        {
+          "id": "microsoft/azure-skills/azure-kubernetes",
+          "installs": 438216,
+          "weeklyLatest": 7371,
+          "score": 95.2
+        }
+      ]
     }
   ]
 }
