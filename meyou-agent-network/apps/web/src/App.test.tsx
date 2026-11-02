@@ -6,6 +6,84 @@ import { App } from "./App";
 import { useAppStore } from "./store";
 
 describe("MeYou web experience", () => {
+  it("removes the previous user's private cache after successful sign-in", async () => {
+    useAppStore.getState().setLocale("en");
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(["private-old-user"], { messages: ["previous account content"] });
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async input =>
+      String(input).endsWith("/auth/login")
+        ? new Response(JSON.stringify({ user: { name: "New user" } }))
+        : String(input).endsWith("/session")
+        ? new Response(JSON.stringify({ user: { id: "new-user", name: "New user" } }))
+        : new Response("{}", { status: 404 }));
+    try {
+      render(<QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={["/login?returnTo=/company/test-company"]}><App /></MemoryRouter>
+      </QueryClientProvider>);
+      fireEvent.change(screen.getByLabelText("Email"), { target: { value: "fixture@example.invalid" } });
+      fireEvent.change(screen.getByLabelText("Password"), { target: { value: "test-password" } });
+      fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+      await screen.findByText("Organization unavailable");
+      expect(client.getQueryData(["private-old-user"])).toBeUndefined();
+    } finally {
+      fetchMock.mockRestore();
+      useAppStore.getState().setLocale("zh-CN");
+    }
+  });
+  it("localizes login and registration, preserves failed input, and announces safe errors", async () => {
+    useAppStore.getState().setLocale("en");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
+      error: "invalid_credentials", message: "内部中文错误"
+    }), { status: 401 }));
+    try {
+      const rendered = render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={["/login"]}><App /></MemoryRouter>
+      </QueryClientProvider>);
+      expect(screen.getByRole("heading", { name: "Sign in to your MeYou space" })).toBeTruthy();
+      fireEvent.change(screen.getByLabelText("Email"), { target: { value: "test@example.invalid" } });
+      fireEvent.change(screen.getByLabelText("Password"), { target: { value: "test-password" } });
+      fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect email or password");
+      expect(screen.getByLabelText("Email")).toHaveValue("test@example.invalid");
+      expect(rendered.container.textContent).not.toMatch(/\p{Script=Han}/u);
+      fireEvent.click(screen.getByRole("button", { name: "New here? Create an account" }));
+      expect(screen.getByRole("heading", { name: "Create your MeYou account" })).toBeTruthy();
+      expect(screen.getByText("2–40 characters")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "Switch to Chinese" }));
+      expect(screen.getByRole("heading", { name: "创建你的遇见账号" })).toBeTruthy();
+    } finally {
+      fetchMock.mockRestore();
+      useAppStore.getState().setLocale("zh-CN");
+    }
+  });
+  it("clears the delivered message and explains an unavailable Agent instead of encouraging a resend", async () => {
+    useAppStore.getState().setLocale("zh-CN");
+    const sends = vi.fn();
+    const record = { id: "delivery-thread", agentMode: "auto", peer: { id: "peer", displayName: "测试联系人" } };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const path = String(input);
+      if (path.endsWith("/messages") && init?.method === "POST") {
+        sends(JSON.parse(String(init.body)));
+        return new Response(JSON.stringify({ delivery: "delivered", agent: { status: "unavailable", reason: "model_disabled" } }), { status: 201 });
+      }
+      if (path === "/api/v1/conversations") return new Response(JSON.stringify({ conversations: [record] }));
+      if (path === "/api/v1/conversations/delivery-thread") return new Response(JSON.stringify({ conversation: record, messages: [], drafts: [] }));
+      if (path === "/api/v1/me") return new Response(JSON.stringify({ user: { id: "owner", displayName: "测试用户" }, agent: { modes: {} } }));
+      return new Response(JSON.stringify({}));
+    });
+    try {
+      render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={["/app/messages?conversation=delivery-thread"]}><App /></MemoryRouter>
+      </QueryClientProvider>);
+      const input = await screen.findByPlaceholderText("以你本人身份回复……");
+      fireEvent.change(input, { target: { value: "这是真人消息" } });
+      fireEvent.click(screen.getByRole("button", { name: "发送消息" }));
+      expect(await screen.findByText(/消息已送达。模型未启用/)).toBeTruthy();
+      expect(input).toHaveValue("");
+      expect(sends).toHaveBeenCalledOnce();
+      expect(screen.getByRole("button", { name: "发送消息" })).toBeDisabled();
+    } finally { fetchMock.mockRestore(); }
+  });
   it("renders the original product promise on the landing page", () => {
     render(
       <QueryClientProvider client={new QueryClient()}>

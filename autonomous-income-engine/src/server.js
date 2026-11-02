@@ -85,6 +85,7 @@ const types = {
 };
 const publicRateLimitBuckets = new Map();
 const ADMIN_SESSION_COOKIE = "aie_admin_session";
+const SECOND_ME_DEFAULT_ADMIN_API = "http://127.0.0.1:4395";
 
 function staticSiteRoot() {
   const deployTarget = loadAdapters().deploy?.targetDir;
@@ -152,6 +153,107 @@ function adminPushConfig(env = process.env) {
     privateKey: String(env.WEB_PUSH_PRIVATE_KEY || ""),
     subject: String(env.WEB_PUSH_SUBJECT || "mailto:admin@lifeyoume.icu"),
   };
+}
+
+function secondMeAdminConfig(env = process.env) {
+  return {
+    apiBase: String(env.SECOND_ME_ADMIN_API || env.SECOND_ME_INTERNAL_URL || SECOND_ME_DEFAULT_ADMIN_API).replace(/\/+$/, ""),
+    token: String(env.SECOND_ME_ADMIN_TOKEN || ""),
+  };
+}
+
+function secondMeEnabled(env = process.env) {
+  const config = secondMeAdminConfig(env);
+  return Boolean(config.apiBase && config.token);
+}
+
+function httpRequestJson(url, { method = "GET", headers = {}, body, timeoutMs = 6000 } = {}) {
+  return new Promise((resolve, reject) => {
+    const target = new URL(url);
+    const client = target.protocol === "https:" ? require("node:https") : require("node:http");
+    const payload = body === undefined ? null : Buffer.from(typeof body === "string" ? body : JSON.stringify(body));
+    const request = client.request(target, {
+      method,
+      timeout: timeoutMs,
+      headers: {
+        Accept: "application/json",
+        ...(payload ? { "Content-Type": "application/json", "Content-Length": payload.length } : {}),
+        ...headers,
+      },
+    }, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => {
+        const text = Buffer.concat(chunks).toString("utf8");
+        let parsed = {};
+        try {
+          parsed = text ? JSON.parse(text) : {};
+        } catch (error) {
+          error.statusCode = response.statusCode || 502;
+          error.body = text;
+          return reject(error);
+        }
+        if ((response.statusCode || 500) >= 400) {
+          const error = new Error(parsed.error || `HTTP ${response.statusCode}`);
+          error.statusCode = response.statusCode || 500;
+          error.body = parsed;
+          return reject(error);
+        }
+        resolve(parsed);
+      });
+    });
+    request.on("timeout", () => request.destroy(new Error("request timeout")));
+    request.on("error", reject);
+    if (payload) request.write(payload);
+    request.end();
+  });
+}
+
+function secondMeOrderView(order) {
+  const pending = order.status === "PENDING";
+  return {
+    id: `second-me:${order.outTradeNo}`,
+    source: "second-me",
+    sourceLabel: "Second Me",
+    productKey: "second-me",
+    productLabel: "Second Me",
+    externalId: order.outTradeNo,
+    experimentId: "second-me",
+    productTitle: "Second Me · 7 天使用权",
+    contactReference: order.remark || "",
+    amount: Number(order.amount || 0),
+    status: pending ? "pending" : String(order.status || "").toUpperCase() === "PAID" ? "paid" : "closed",
+    createdAt: order.createdAt,
+    expiresAt: "",
+    expiresInSeconds: 0,
+    paidAt: order.paidAt || null,
+    buyerLabel: order.user?.displayName || order.user?.email || "",
+    note: order.remark ? `备注/留言：${order.remark}` : "核对 Second Me 收款订单",
+    confirmLabel: "确认到账并开通 7 天",
+    successMessage: "Second Me 已开通 7 天使用权。",
+  };
+}
+
+async function loadSecondMeManualOrders({ includePaid = true } = {}) {
+  if (!secondMeEnabled()) return [];
+  const config = secondMeAdminConfig();
+  const query = new URLSearchParams({ token: config.token });
+  if (includePaid) query.set("include_paid", "1");
+  const payload = await httpRequestJson(`${config.apiBase}/api/admin/manual-payments?${query}`);
+  return (payload.orders || []).map(secondMeOrderView);
+}
+
+async function confirmSecondMeManualOrder(externalId) {
+  if (!secondMeEnabled()) {
+    const error = new Error("Second Me 管理接口未配置");
+    error.statusCode = 503;
+    throw error;
+  }
+  const config = secondMeAdminConfig();
+  return httpRequestJson(`${config.apiBase}/api/admin/manual-payments/confirm?token=${encodeURIComponent(config.token)}`, {
+    method: "POST",
+    body: { outTradeNo: externalId },
+  });
 }
 
 function configureWebPush(env = process.env) {
@@ -790,12 +892,17 @@ async function handler(req, res) {
   if (req.method === "GET" && urlPath === "/api/admin-mobile/orders") {
     const checkouts = loadCheckouts({ expire: true });
     const now = Date.now();
-    const items = checkouts
+    const localItems = checkouts
       .filter((item) => item.checkoutMode === "manual-wechat")
       .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
       .slice(0, 100)
       .map((item) => ({
         id: item.id,
+        source: "image",
+        sourceLabel: "图像批量处理",
+        productKey: item.experimentId || "image",
+        productLabel: knownExperiments().find((product) => product.id === item.experimentId)?.title || item.experimentId || "图像批量处理",
+        externalId: item.id,
         experimentId: item.experimentId,
         productTitle: knownExperiments().find((product) => product.id === item.experimentId)?.title || item.experimentId,
         contactReference: item.contactReference,
@@ -805,10 +912,25 @@ async function handler(req, res) {
         expiresAt: item.expiresAt,
         expiresInSeconds: Math.max(0, Math.floor((Date.parse(item.expiresAt) - now) / 1000)),
         paidAt: item.paidAt || null,
+        buyerLabel: "",
+        note: item.contactReference ? `付款备注：${item.contactReference}` : "核对微信收款通知里的金额",
+        confirmLabel: "确认到账并交付",
+        successMessage: "订单已确认，买家页面会自动解锁。",
       }));
+    let remoteItems = [];
+    let remoteError = "";
+    try {
+      remoteItems = await loadSecondMeManualOrders({ includePaid: true });
+    } catch (error) {
+      remoteError = `Second Me 订单同步失败：${error.message}`;
+    }
+    const items = [...localItems, ...remoteItems]
+      .sort((left, right) => Date.parse(right.createdAt || 0) - Date.parse(left.createdAt || 0))
+      .slice(0, 120);
     return sendJson(res, 200, {
       ok: true,
       orders: items,
+      remoteError,
       summary: {
         pending: items.filter((item) => item.status === "pending").length,
         paid: items.filter((item) => item.status === "paid").length,
@@ -936,7 +1058,17 @@ async function handler(req, res) {
 
   if (req.method === "POST" && urlPath.startsWith("/api/admin-mobile/orders/") && urlPath.endsWith("/confirm")) {
     try {
-      const checkoutId = urlPath.split("/")[4];
+      const checkoutId = decodeURIComponent(urlPath.split("/")[4] || "");
+      if (checkoutId.startsWith("second-me:")) {
+        const outTradeNo = checkoutId.slice("second-me:".length);
+        const result = await confirmSecondMeManualOrder(outTradeNo);
+        return sendJson(res, 200, {
+          ok: true,
+          duplicate: Boolean(result.alreadyApplied),
+          checkout: { id: checkoutId, status: "paid" },
+          order: result.order || null,
+        });
+      }
       const result = confirmManualCheckoutDirect(checkoutId);
       return sendJson(res, 200, {
         ok: true,

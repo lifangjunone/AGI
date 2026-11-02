@@ -1,0 +1,17 @@
+{
+  "viewport": {
+    "name": "desktop",
+    "width": 1440,
+    "height": 900
+  },
+  "overflow": false,
+  "loadMoreVisible": false,
+  "color": "rgb(16, 35, 63)",
+  "opacity": "1",
+  "card": {
+    "x": 57.59375,
+    "y": 875.34375,
+    "width": 1324.796875,
+    "height": 132
+  }
+}

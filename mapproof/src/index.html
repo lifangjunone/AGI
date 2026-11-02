@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MapProof 图证：发布前检查 Mermaid 和 AI 生成图的语义、路径与可读性。">
+  <title>MapProof 图证｜AI 图表发布验收台</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到主要内容</a>
+  <header class="masthead">
+    <a class="brand" href="./" aria-label="MapProof 图证首页">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 7.5h22v17H5z"/><path d="M9 20l5-5 3 3 6-7"/><circle cx="23" cy="11" r="1.8"/></svg>
+      <span>MapProof</span><b>图证</b>
+    </a>
+    <div class="privacy-note"><span></span>本地分析，不上传图稿</div>
+    <button class="ghost-button" id="download-report" type="button">下载验收报告</button>
+  </header>
+
+  <main id="main-content">
+    <section class="intro">
+      <div>
+        <p class="kicker">给 AI 生成图加一道发布门</p>
+        <h1>图画得快，<br>也要经得住追问。</h1>
+      </div>
+      <div class="intro-copy">
+        <p>粘贴 Mermaid，检查分支条件、复杂连线、孤立节点和关键路径。适合架构评审、投标方案与交付文档。</p>
+        <div class="evidence-strip">
+          <span>语义完整</span><span>路径可追</span><span>复杂度可控</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="workbench" aria-label="图表验收工作台">
+      <div class="panel source-panel">
+        <div class="panel-head">
+          <div><span>源图</span><strong>Mermaid</strong></div>
+          <button class="text-button" id="load-risky" type="button">载入问题示例</button>
+        </div>
+        <label for="diagram-source">图表源码</label>
+        <textarea id="diagram-source" spellcheck="false" aria-describedby="source-help"></textarea>
+        <div class="source-foot">
+          <p id="source-help">支持 flowchart / graph。内容只在当前浏览器中处理。</p>
+          <button class="primary-button" id="run-review" type="button">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 10 3.5 3.5L16 5"/></svg>
+            重新验图
+          </button>
+        </div>
+      </div>
+
+      <div class="panel canvas-panel">
+        <div class="panel-head">
+          <div><span>画布</span><strong id="diagram-title">跨云生产拓扑</strong></div>
+          <div class="zoom-note">适配画布</div>
+        </div>
+        <div id="diagram-canvas" aria-live="polite"></div>
+        <div id="render-error" role="alert"></div>
+      </div>
+
+      <aside class="panel review-panel" aria-label="验收结果">
+        <div class="score-block">
+          <div>
+            <span>发布可信度</span>
+            <strong id="score">--</strong>
+          </div>
+          <div class="verdict" id="verdict">等待验图</div>
+        </div>
+        <div class="metrics" id="metrics"></div>
+        <section class="critical-section">
+          <h2>关键路径</h2>
+          <div id="critical-path" class="critical-path"></div>
+        </section>
+        <section class="findings-section">
+          <div class="section-title"><h2>审稿意见</h2><span id="finding-count">0 项</span></div>
+          <div id="findings"></div>
+        </section>
+      </aside>
+    </section>
+
+    <section class="business-case">
+      <div><span class="case-index">01</span><h2>不是再造一个画图工具</h2><p>生成工具解决“从无到有”，MapProof 解决“能不能发布”。两者是天然上下游。</p></div>
+      <div><span class="case-index">02</span><h2>卖的是交付确定性</h2><p>为方案架构师、售前与研发负责人留下可复核的图表验收证据。</p></div>
+      <div><span class="case-index">03</span><h2>从免费检查切入</h2><p>个人免费本地验图；团队版扩展品牌规则、基线对比和 CI 门禁。</p></div>
+    </section>
+  </main>
+  <footer><span>MapProof 0.1</span><span>LifeYouMe 子项目</span><span>不保存输入内容</span></footer>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

@@ -1,7 +1,6 @@
 import { moduleLabel, operationLabel } from '../../lib/harnessLabels';
-import { useState, type ReactNode } from 'react';
+import { lazy, Suspense, useState, type ReactNode } from 'react';
 
-import CodeBlock from '@/components/CodeBlock';
 import { ApiError } from '@/api/client';
 import type { StreamEvent } from '@/api/client';
 import { formatClientDateTime } from '@/lib/timezone';
@@ -34,14 +33,22 @@ import type {
   TraceTool,
   TurnTrace,
 } from './chatTypes';
+
+const CodeBlock = lazy(() => import('@/components/CodeBlock'));
 export {
   SELECTED_AGENT_STORAGE_KEY,
   SESSION_FILTER_STORAGE_PREFIX,
   sessionFilterStorageKey,
 } from '@/lib/agent-scope-storage';
+export {
+  loadSessionReadTimes,
+  persistSessionReadTimes,
+  SESSION_READ_STORAGE_PREFIX,
+  sessionHasUnreadReply,
+  sessionReadStorageKey,
+} from './sessionReadState';
 
 export const MODEL_CONFIG_STORAGE_PREFIX = 'skill_agent_selected_model_config';
-export const SESSION_READ_STORAGE_PREFIX = 'skill_agent_session_read_at';
 export const SIDEBAR_COLLAPSED_STORAGE_KEY = 'skill_agent_sidebar_collapsed';
 export const RUNNING_EVENT_RECOVERY_WINDOW_MS = 600 * 1000;
 export const CHAT_STREAM_IDLE_TIMEOUT_MS = 600 * 1000;
@@ -59,41 +66,8 @@ const DRAFT_SCHEDULE_TYPE_LABELS: Record<DraftScheduleType, string> = {
 };
 const DRAFT_WEEKDAY_LABELS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
-export function sessionReadStorageKey(userId: string): string {
-  return `${SESSION_READ_STORAGE_PREFIX}:${userId || 'anonymous'}`;
-}
-
-export function loadSessionReadTimes(userId: string): Record<string, string> {
-  try {
-    const raw = window.localStorage.getItem(sessionReadStorageKey(userId));
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-export function persistSessionReadTimes(userId: string, values: Record<string, string>): void {
-  window.localStorage.setItem(sessionReadStorageKey(userId), JSON.stringify(values));
-}
-
 export function isScheduledSession(session: ChatSession): boolean {
   return session.is_scheduled === true;
-}
-
-export function sessionHasUnreadReply(
-  session: ChatSession,
-  readTimes: Record<string, string>,
-  activeSessionId?: string,
-): boolean {
-  if (session.id === activeSessionId) return false;
-  const summary = session.summary || session.last_agent_question || '';
-  if (!summary) return false;
-  if (session.status === 'running' || session.status === 'executing') return false;
-  const updatedAt = Date.parse(session.updated_at || '');
-  const readAt = Date.parse(readTimes[session.id] || '');
-  return Number.isFinite(updatedAt) && (!Number.isFinite(readAt) || updatedAt > readAt + 1000);
 }
 
 export function draftConversationKey(agentId: string): string {
@@ -486,7 +460,9 @@ export function renderMarkdownBlocks(
       }
       if (index < lines.length) index += 1;
       blocks.push(
-        <CodeBlock key={key} className="md-code-block" code={codeLines.join('\n')} language={language || undefined} />,
+        <Suspense key={key} fallback={<pre className="md-code-block"><code>{codeLines.join('\n')}</code></pre>}>
+          <CodeBlock className="md-code-block" code={codeLines.join('\n')} language={language || undefined} />
+        </Suspense>,
       );
       blockIndex += 1;
       continue;

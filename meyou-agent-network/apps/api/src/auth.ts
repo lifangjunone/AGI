@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { eq } from "drizzle-orm";
 import { db } from "./db/client.js";
 import { authAccounts, authSessions, users } from "./db/schema.js";
+import { platformCookie } from "./platform-cookie.js";
 
 export interface AuthUser {
   id: string;
@@ -26,7 +27,37 @@ function hashToken(token: string) {
 function parseCookie(request: FastifyRequest, name: string) {
   const value = request.headers.cookie?.split(";").map((part) => part.trim())
     .find((part) => part.startsWith(`${name}=`));
-  return value ? decodeURIComponent(value.slice(name.length + 1)) : "";
+  if (!value) return "";
+  try { return decodeURIComponent(value.slice(name.length + 1)); }
+  catch { return ""; }
+}
+
+function stableIdentityId(value: unknown): string | null {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+  if (typeof value === "number" && (!Number.isSafeInteger(value) || value < 0)) return null;
+  const id = String(value).trim();
+  if (!id || id.length > 256 || /[\u0000-\u0020\u007f]/.test(id)
+    || ["undefined", "null", "[object Object]"].includes(id)) return null;
+  return id;
+}
+
+/** Fail closed: malformed account payloads must never become shared identities. */
+export function parsePlatformIdentity(value: unknown): AuthUser | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const envelope = value as Record<string, unknown>;
+  if (envelope.authenticated === false) return null;
+  const payload = envelope.user ?? envelope;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const record = payload as Record<string, unknown>;
+  const id = stableIdentityId(record.id ?? record.user_id);
+  if (!id) return null;
+  const displayName = record.display_name ?? record.name;
+  return {
+    id,
+    name: typeof displayName === "string" && displayName.trim()
+      ? displayName.trim().slice(0, 200) : "MeYou 用户",
+    email: typeof record.email === "string" && record.email.trim() ? record.email.trim() : undefined
+  };
 }
 
 export async function hashPassword(password: string) {
@@ -52,15 +83,18 @@ export async function registerLocalAccount(emailInput: string, password: string,
   const lifeYouMeId = `local:${email}`;
   const handleBase = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 20) || "user";
   const handle = `${handleBase}-${randomBytes(3).toString("hex")}`;
-  const [user] = await db.insert(users).values({
-    lifeYouMeId,
-    handle,
-    displayName: name.trim(),
-    locale: "zh-CN",
-    plan: "free"
-  }).returning();
-  if (!user) throw new Error("user_create_failed");
-  await db.insert(authAccounts).values({ email, passwordHash, userId: user.id });
+  const user = await db.transaction(async tx => {
+    const [created] = await tx.insert(users).values({
+      lifeYouMeId,
+      handle,
+      displayName: name.trim(),
+      locale: "zh-CN",
+      plan: "free"
+    }).returning();
+    if (!created) throw new Error("user_create_failed");
+    await tx.insert(authAccounts).values({ email, passwordHash, userId: created.id });
+    return created;
+  });
   // AuthUser.id is the stable external identity. The database UUID stays
   // internal and is resolved by ensureUser exactly once after registration.
   return { id: lifeYouMeId, name: user.displayName, email };
@@ -110,9 +144,10 @@ export function resolveTrustedHeaderUser(
   // on this product. The platform gateway header is only the SSO fallback.
   if (localUser) return localUser;
   const trustedUserId = headers["x-lifeyoume-user-id"];
-  if (trustedUserId) {
+  const id = stableIdentityId(trustedUserId);
+  if (id) {
     return {
-      id: String(trustedUserId),
+      id,
       name: String(headers["x-lifeyoume-user-name"] ?? "LifeYouMe 用户"),
       email: headers["x-lifeyoume-user-email"]
         ? String(headers["x-lifeyoume-user-email"])
@@ -124,26 +159,32 @@ export function resolveTrustedHeaderUser(
 
 export async function resolveUser(request: FastifyRequest): Promise<AuthUser | null> {
   const localUser = await resolveLocalSession(request);
-  const sessionOrHeaderUser = resolveTrustedHeaderUser(request.headers, localUser);
-  if (sessionOrHeaderUser) return sessionOrHeaderUser;
+  if (localUser) return localUser;
+  // Header fixtures are permitted only in automated tests. In real runtime,
+  // authenticate credentials with the central service, not caller assertions.
+  if (process.env.NODE_ENV === "test") {
+    const headerUser = resolveTrustedHeaderUser(request.headers, null);
+    if (headerUser) return headerUser;
+  }
   if (process.env.NODE_ENV === "test" || (process.env.DEV_AUTH_BYPASS === "true" && process.env.NODE_ENV !== "production")) {
     return { id: "demo-lifeyoume-user", name: "林澄", email: "demo@meyou.local" };
   }
-  const cookie = request.headers.cookie;
+  const cookie = platformCookie(request.headers.cookie, "lym_sso_session");
   const bearer = request.headers.authorization;
   if (!cookie && !bearer) return null;
-  const response = await fetch(process.env.AUTH_ME_URL ?? "https://auth.lifeyoume.icu/api/v1/me", {
-    headers: {
-      ...(cookie ? { cookie } : {}),
-      ...(bearer ? { authorization: bearer } : {})
-    },
-    signal: AbortSignal.timeout(5000)
-  });
-  if (!response.ok) return null;
-  const value = await response.json() as Record<string, unknown>;
-  return {
-    id: String(value.id ?? value.user_id),
-    name: String(value.display_name ?? value.name ?? "MeYou 用户"),
-    email: value.email ? String(value.email) : undefined
-  };
+  try {
+    const response = await fetch(process.env.AUTH_ME_URL ?? "https://auth.lifeyoume.icu/api/v1/me", {
+      headers: {
+        ...(cookie ? { cookie } : {}),
+        ...(bearer ? { authorization: bearer } : {})
+      },
+      redirect: "error",
+      signal: AbortSignal.timeout(5000)
+    });
+    if (!response.ok) return null;
+    return parsePlatformIdentity(await response.json());
+  } catch {
+    // Missing authentication is preferable to inventing a fallback identity.
+    return null;
+  }
 }

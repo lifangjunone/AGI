@@ -16,6 +16,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import EmployeeAvatarEditor from '../components/EmployeeAvatarEditor';
 import EmployeeApiKeyDialog from '../components/EmployeeApiKeyDialog';
 import EmployeeCard from '../components/EmployeeCard';
+import EmployeeCardActions from '../components/EmployeeCardActions';
 import EmployeeProfileEditor from '../components/EmployeeProfileEditor';
 import {
   canManageEmployeeAgent,
@@ -218,7 +219,7 @@ export default function AgentsPage({
   ];
 
   const summaryCardClass =
-    'flex h-[100px] flex-1 basis-[220px] items-center gap-[16px] rounded-[20px] bg-[#f6f6f6] px-[32px] py-[20px] text-left transition-shadow';
+    'flex h-[100px] flex-1 basis-[220px] items-center gap-[16px] rounded-[20px] bg-[#f6f6f6] px-[32px] py-[20px] text-left transition-shadow max-[620px]:h-[88px] max-[620px]:basis-[calc(50%-6px)] max-[620px]:gap-[10px] max-[620px]:rounded-[16px] max-[620px]:px-[16px] max-[620px]:py-[14px]';
   const summaryStats: { key: typeof employeeFilter; value: number; label: string; sub: string }[] = [
     { key: 'all', value: employees.length, label: '员工总数', sub: `${onlineEmployees.length}位在线` },
     { key: 'offline', value: offlineEmployees.length, label: '下线员工', sub: '0位在线' },
@@ -254,7 +255,7 @@ export default function AgentsPage({
       />
 
 
-      <div className="flex flex-wrap items-stretch gap-[20px] my-[36px]" aria-label="数字员工统计">
+      <div className="my-[36px] flex flex-wrap items-stretch gap-[20px] max-[620px]:my-[24px] max-[620px]:gap-[12px]" aria-label="数字员工统计">
         {summaryStats.map((stat) => (
           <button
             key={stat.key}
@@ -297,16 +298,23 @@ export default function AgentsPage({
             key={employee.id}
             employee={employee}
             busy={selectingAgentId === employee.id}
-            canManage={canManageEmployeeAgent(employee, currentUser)}
             selected={employee.id === selectedAgentId}
             onOpen={() => void selectEmployee(employee)}
-            onStatus={(status) => void updateStatus(employee, status)}
-            onGallery={(published) => void updateGalleryState(employee, published)}
-            onDelete={() => setDeleteTarget(employee)}
-            onAvatar={() => setAvatarAgent(employee)}
-            onEdit={() => setProfileAgent(employee)}
             onChat={() => startEmployeeChat(employee)}
-            onApiKeys={() => setApiKeyAgent(employee)}
+            actions={(
+              <EmployeeCardActions
+                employee={employee}
+                busy={selectingAgentId === employee.id}
+                canManage={canManageEmployeeAgent(employee, currentUser)}
+                onStatus={(status) => void updateStatus(employee, status)}
+                onGallery={(published) => void updateGalleryState(employee, published)}
+                onDelete={() => setDeleteTarget(employee)}
+                onAvatar={() => setAvatarAgent(employee)}
+                onEdit={() => setProfileAgent(employee)}
+                onChat={() => startEmployeeChat(employee)}
+                onApiKeys={() => setApiKeyAgent(employee)}
+              />
+            )}
           />
         ))}
         {!filteredEmployees.length && (

@@ -1,0 +1,66 @@
+services:
+  tts-runtime:
+    build:
+      context: ../tts-runtime
+    restart: unless-stopped
+    env_file:
+      - /etc/lifeyoume-maas/maas.env
+    environment:
+      TTS_MODEL_DIR: /models
+      TTS_CACHE_DIR: /cache
+      TTS_DEFAULT_VOICE: ${TTS_DEFAULT_VOICE:-1}
+      TTS_MAX_QUEUE: 8
+      TTS_NUM_THREADS: 2
+    volumes:
+      - /data/app/lifeyoume-tts/models/sherpa-onnx-vits-zh-ll:/models:ro
+      - tts-cache:/cache
+    mem_limit: 768m
+    cpus: 2.0
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:43281/health/ready', timeout=2)"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+
+  maas:
+    build:
+      context: ..
+    restart: unless-stopped
+    env_file:
+      - /etc/lifeyoume-maas/maas.env
+    environment:
+      NODE_ENV: production
+      MAAS_HOST: 0.0.0.0
+      MAAS_PORT: 43280
+      MAAS_DATA_PATH: /var/lib/lifeyoume-maas/state.json
+      MAAS_TTS_BASE_URL: http://tts-runtime:43281/v1
+    ports:
+      - "127.0.0.1:43280:43280"
+    volumes:
+      - maas-data:/var/lib/lifeyoume-maas
+    mem_limit: 384m
+    cpus: 0.75
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:43280/health/live"]
+      interval: 15s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      tts-runtime:
+        condition: service_healthy
+
+volumes:
+  maas-data:
+  tts-cache:

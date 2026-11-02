@@ -4,6 +4,7 @@ import { notify } from '@/components/ui/app-toast';
 
 import { Input } from '@/components/ui';
 import { Button as UIButton } from '@/components/ui/button';
+import { appPath } from '@/lib/app-path';
 import { copyTextToClipboard } from '@/lib/clipboard';
 
 import { api, TENANT_ID } from '../../api/client';
@@ -60,7 +61,7 @@ export default function WechatKfSetup({
   const [accountLinks, setAccountLinks] = useState<Record<string, { url: string; qr: string }>>({});
   const [editingAccount, setEditingAccount] = useState<string | null>(null);
   const [editingAccountName, setEditingAccountName] = useState('');
-  const callbackUrl = `${window.location.origin}/api/channels/wechat-kf/${binding.id}/callback`;
+  const callbackUrl = `${window.location.origin}${appPath(`/api/channels/wechat-kf/${binding.id}/callback`)}`;
 
   async function prepareCallbackConfig() {
     const corpId = String(values.corp_id || binding.corp_id || '').trim();

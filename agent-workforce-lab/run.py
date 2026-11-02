@@ -19,10 +19,10 @@ if env_path.exists():
     command = [
         str(PYTHON), "-c",
         "from dotenv import load_dotenv;load_dotenv('.env');"
-        "import uvicorn;uvicorn.run('main:app',host='127.0.0.1',port=43222)",
+        "import uvicorn;uvicorn.run('app:app',host='127.0.0.1',port=43222)",
     ]
 else:
-    command = [str(PYTHON), "-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "43222"]
+    command = [str(PYTHON), "-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "43222"]
 try:
     subprocess.run(command, cwd=ROOT / "backend", env=env, check=True)
 except KeyboardInterrupt:

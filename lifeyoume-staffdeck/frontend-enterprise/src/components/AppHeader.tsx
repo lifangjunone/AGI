@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui';
+} from '@/components/ui/dropdown-menu';
 import { Button as UIButton } from '@/components/ui/button';
 import { notify } from '@/components/ui/app-toast';
 import { cn } from '@/lib/utils';
@@ -21,8 +21,10 @@ import {
   type EnterpriseAuthUser,
 } from '../auth';
 import LanguageSwitcher from './LanguageSwitcher';
-import AccountApiKeyDialog from './AccountApiKeyDialog';
 import { APP_BASE, appPath } from '@/lib/app-path';
+import { BRAND } from '../config/brand';
+
+const AccountApiKeyDialog = lazy(() => import('./AccountApiKeyDialog'));
 
 /** 只允许 http/https/data:image/blob 协议的图片地址,其余一律视为无效。 */
 function safeImageUrl(value: string): string {
@@ -60,6 +62,8 @@ export type AppHeaderProps = {
   /** Current user's display name, used for the avatar initial. */
   userName?: string;
   className?: string;
+  /** Stack the left slot below touch-sized account actions on narrow screens. */
+  mobileStack?: boolean;
 };
 
 /**
@@ -77,6 +81,7 @@ export default function AppHeader({
   onLogout,
   userName,
   className,
+  mobileStack = false,
 }: AppHeaderProps) {
   const [user, setUser] = useState(() => getEnterpriseAuthSession()?.user);
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState('');
@@ -225,15 +230,30 @@ export default function AppHeader({
   );
 
   return (
-    <header className={cn('flex w-full items-start gap-[16px]', className)}>
-      <div className="min-w-0 flex-1">{leftContent}</div>
-      <div className="flex h-[32px] shrink-0 items-center gap-[8px]">
-        <LanguageSwitcher />
+    <header className={cn(
+      'flex w-full items-start gap-[16px]',
+      mobileStack && 'max-[560px]:flex-wrap max-[560px]:gap-y-[12px]',
+      className,
+    )}>
+      <div className={cn(
+        'min-w-0 flex-1',
+        mobileStack && 'max-[560px]:order-2 max-[560px]:basis-full',
+      )}>
+        {leftContent}
+      </div>
+      <div className={cn(
+        'flex h-[32px] shrink-0 items-center gap-[8px]',
+        mobileStack && 'max-[767px]:h-[44px] max-[560px]:ml-auto',
+      )}>
+        <LanguageSwitcher touchFriendly={mobileStack} className={mobileStack ? 'w-[74px]' : undefined} />
         {right !== undefined ? right : (
           <DropdownMenu>
             <DropdownMenuTrigger
               aria-label="账户菜单"
-              className="flex h-[32px] shrink-0 items-center gap-[8px] rounded-[10px] pl-[4px] pr-[8px] outline-none"
+              className={cn(
+                'flex h-[32px] shrink-0 items-center gap-[8px] rounded-[10px] pl-[4px] pr-[8px] outline-none',
+                mobileStack && 'max-[767px]:h-[44px]',
+              )}
             >
               <span className="grid size-[32px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#eef1fb] text-[14px] font-medium leading-none text-[#7e96dc]">
                 {safeAvatarUrl ? (
@@ -336,8 +356,19 @@ export default function AppHeader({
               )}
               {user && (
                 <DropdownMenuItem
+                  asChild
+                  className="h-[44px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
+                >
+                  <a href={BRAND.accountUrl}>
+                    <KeyRound className="size-[16px]" />
+                    统一账号与安全
+                  </a>
+                </DropdownMenuItem>
+              )}
+              {user && (
+                <DropdownMenuItem
                   onSelect={() => setApiKeyOpen(true)}
-                  className="h-[36px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
+                  className="h-[44px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
                 >
                   <KeyRound className="size-[16px]" />
                   API 全量密钥
@@ -345,7 +376,7 @@ export default function AppHeader({
               )}
               <DropdownMenuItem
                 onSelect={() => onLogout?.()}
-                className="h-[36px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
+                className="h-[44px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
               >
                 <IconLogout className="size-[16px]" />
                 退出登录
@@ -363,11 +394,15 @@ export default function AppHeader({
         className="hidden"
         onChange={(event) => pickAvatar(event.target.files?.[0] || null)}
       />
-      <AccountApiKeyDialog
-        account={user ?? null}
-        open={apiKeyOpen}
-        onClose={() => setApiKeyOpen(false)}
-      />
+      {apiKeyOpen && (
+        <Suspense fallback={null}>
+          <AccountApiKeyDialog
+            account={user ?? null}
+            open
+            onClose={() => setApiKeyOpen(false)}
+          />
+        </Suspense>
+      )}
     </header>
   );
 }

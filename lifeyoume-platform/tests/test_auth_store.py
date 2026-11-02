@@ -106,6 +106,92 @@ class AuthStoreTests(unittest.TestCase):
         self.assertEqual(user.id, authenticated.id)
         self.assertEqual(3, len(self.store.recent_admin_audit()))
 
+    def test_user_password_change_revokes_sessions_tokens_and_pending_devices(self):
+        user = self.create_user()
+        session = self.store.create_session(user.id, 300, now=4_100)
+
+        device_code, user_code, _ = self.store.start_device_authorization(
+            "delivery-control-center", now=4_100
+        )
+        self.assertTrue(self.store.approve_device(user_code, user.id, now=4_101))
+        status, access_token, _ = self.store.exchange_device(device_code, now=4_102)
+        self.assertEqual("ok", status)
+
+        pending_code, pending_user_code, _ = self.store.start_device_authorization(
+            "delivery-control-center", now=4_103
+        )
+        self.assertTrue(
+            self.store.approve_device(pending_user_code, user.id, now=4_104)
+        )
+
+        self.assertFalse(
+            self.store.change_user_password(
+                user.id,
+                "wrong current password",
+                app.password_hash("replacement password 2026"),
+                app.verify_password,
+                now=4_105,
+            )
+        )
+        self.assertIsNotNone(self.store.session_user(session, now=4_106))
+        self.assertIsNotNone(self.store.bearer_user(access_token, now=4_106))
+
+        self.assertTrue(
+            self.store.change_user_password(
+                user.id,
+                "correct horse battery staple",
+                app.password_hash("replacement password 2026"),
+                app.verify_password,
+                now=4_107,
+            )
+        )
+        self.assertIsNone(self.store.session_user(session, now=4_108))
+        self.assertIsNone(self.store.bearer_user(access_token, now=4_108))
+        self.assertEqual(
+            ("expired_token", None, None),
+            self.store.exchange_device(pending_code, now=4_108),
+        )
+        self.assertIsNone(
+            self.store.authenticate(
+                "user@example.com",
+                "correct horse battery staple",
+                app.verify_password,
+            )
+        )
+        self.assertEqual(
+            user.id,
+            self.store.authenticate(
+                "user@example.com",
+                "replacement password 2026",
+                app.verify_password,
+            ).id,
+        )
+
+    def test_admin_credential_initializes_once_and_increments_revision(self):
+        initial = app.password_hash("initial administrator password")
+        replacement = app.password_hash("replacement administrator password")
+        self.store.ensure_admin_credential("admin", initial, now=100)
+        credential = self.store.admin_credential("admin")
+        self.assertEqual(initial, credential["password_hash"])
+        self.assertEqual(1, credential["revision"])
+
+        self.assertEqual(
+            2,
+            self.store.change_admin_password(
+                "admin", replacement, "admin", now=101
+            ),
+        )
+        self.store.ensure_admin_credential(
+            "admin", app.password_hash("must not overwrite"), now=102
+        )
+        credential = self.store.admin_credential("admin")
+        self.assertEqual(replacement, credential["password_hash"])
+        self.assertEqual(2, credential["revision"])
+        self.assertEqual(
+            "admin.password_changed",
+            self.store.recent_admin_audit()[0]["action"],
+        )
+
     def test_product_login_policy_defaults_to_required_and_is_mutable(self):
         self.assertTrue(self.store.login_required("privacy-vault"))
         self.store.set_login_required("privacy-vault", False, "admin", now=5_000)

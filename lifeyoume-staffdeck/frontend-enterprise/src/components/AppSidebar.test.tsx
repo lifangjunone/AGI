@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -155,6 +155,36 @@ describe('AppSidebar agent switcher team group', () => {
     const trigger = screen.getByLabelText('切换当前员工');
     expect(within(trigger).getByText('当前团队')).toBeTruthy();
     expect(within(trigger).getByText('团队')).toBeTruthy();
+  });
+});
+
+describe('AppSidebar collapsed mobile rail', () => {
+  it('hides the inoperative expand control and keeps every rail action touch-sized', async () => {
+    vi.stubGlobal('innerWidth', 390);
+    render(
+      <I18nProvider>
+        <TooltipProvider>
+          <SidebarProvider defaultOpen={false}>
+            <AppSidebar
+              selected="/enterprise/dashboard"
+              onNavigate={() => {}}
+              isAdmin
+              scopeAgents={[agent]}
+              scopeTeams={[team]}
+              selectedAgentId={agent.id}
+              onSelectAgent={() => {}}
+              onOpenChat={() => {}}
+            />
+          </SidebarProvider>
+        </TooltipProvider>
+      </I18nProvider>,
+    );
+
+    await waitFor(() => expect(screen.queryByLabelText('展开边栏')).toBeNull());
+    expect(screen.getByLabelText('我的数字员工').className).toContain('size-[44px]');
+    expect(screen.getByLabelText('切换当前员工').className).toContain('w-[44px]');
+    expect(screen.getByLabelText('切换到对话端').className).toContain('size-[44px]');
+    expect(screen.getByLabelText('工具')).toBeTruthy();
   });
 });
 

@@ -1,0 +1,51 @@
+/* Loaded only by the independent control-plane entry. Business pages retain their theme. */
+.admin-shell, .admin-login-page {
+  --admin-bg: #f5f6fa;
+  --admin-paper: #fff;
+  --admin-ink: #1e293b;
+  --admin-muted: #526079;
+  --admin-deep: #4f46e5;
+  --admin-green: #4338ca;
+  --admin-line: #dce1ed;
+  background: var(--admin-bg);
+}
+.admin-sidebar {
+  background: #fff;
+  color: #1e293b;
+  border-right: 1px solid #dce1ed;
+}
+.admin-sidebar .admin-brand { color: #1e293b; }
+.admin-brand b { font-family: Inter, "Noto Sans SC", system-ui, sans-serif; }
+.admin-sidebar nav > span, .admin-brand small { color: #526079; font-size: 10px; }
+.admin-sidebar nav button { color: #526079; font-size: 14px; }
+.admin-sidebar nav button.active { color: #4338ca; background: #eeedff; }
+.admin-sidebar nav button:hover { background: #f5f5ff; }
+.admin-account { border-color: #dce1ed; }
+.admin-account > span { background: #eeedff; color: #4338ca; }
+.admin-account b { font-size: 12px; }
+.admin-account small { color: #526079; font-size: 11px; }
+.admin-account button { color: #526079; min-width: 36px; min-height: 36px; }
+.admin-topbar { background: #fff; }
+.admin-topbar span { color: #526079; font-size: 10px; }
+.admin-status-icon { color: #4338ca; background: #eeedff; }
+.admin-status-strip small { font-size: 12px; }
+.admin-status-strip b { font-size: 13px; white-space: normal; overflow-wrap: anywhere; }
+.admin-secret-panel { background: #fff; border-color: #dce1ed; color: #1e293b; }
+.admin-secret-panel p { color: #526079; font-size: 14px; }
+.admin-primary { background: #4f46e5; }
+.admin-primary:hover:not(:disabled) { background: #4338ca; }
+.admin-secondary { color: #334155; background: #fff; border-color: #cbd5e1; }
+.admin-primary:focus-visible, .admin-secondary:focus-visible,
+.admin-sidebar button:focus-visible, .admin-sidebar a:focus-visible {
+  outline: 3px solid #4f46e5;
+  outline-offset: 3px;
+}
+.admin-login-story { background: #eef0ff; color: #1e293b; }
+.admin-login-story .admin-brand { color: #1e293b; }
+.admin-login-story p, .admin-login-story footer span { color: #526079; }
+.admin-login-story h1 span, .admin-login-story footer svg { color: #4338ca; }
+@media (max-width: 760px) {
+  .admin-sidebar { border-bottom: 1px solid #dce1ed; }
+  .admin-account b { font-size: 12px; }
+  .admin-secret-panel p { font-size: 16px; }
+}

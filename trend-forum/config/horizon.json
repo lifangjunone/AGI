@@ -1,0 +1,133 @@
+{
+  "ai": {
+    "provider": "openai",
+    "model": "lym-chat-quality",
+    "base_url": "http://127.0.0.1:43280/v1",
+    "api_key_env": "TREND_FORUM_MAAS_KEY",
+    "temperature": 0.2,
+    "max_tokens": 4096,
+    "throttle_sec": 0,
+    "analysis_concurrency": 3,
+    "enrichment_concurrency": 2,
+    "languages": ["zh"]
+  },
+  "processing": {
+    "profiles_dir": "profiles",
+    "default_profile": "tech-news",
+    "profile_settings": {
+      "tech-news": {
+        "threshold": 7,
+        "topic_dedup": true
+      },
+      "tech-blog": {
+        "threshold": 6,
+        "topic_dedup": true
+      }
+    }
+  },
+  "display": {
+    "icon_style": "ascii"
+  },
+  "sources": {
+    "github": [],
+    "hackernews": {
+      "enabled": false
+    },
+    "rss": [
+      {
+        "name": "Simon Willison",
+        "url": "https://simonwillison.net/atom/everything/",
+        "enabled": true,
+        "category": "ai-engineering",
+        "profile": "tech-blog",
+        "content_extractor": "trafilatura"
+      },
+      {
+        "name": "vLLM Blog",
+        "url": "https://vllm.ai/blog/rss.xml",
+        "enabled": true,
+        "category": "llm-inference",
+        "profile": "tech-blog",
+        "content_extractor": "trafilatura"
+      },
+      {
+        "name": "Sean Goedecke",
+        "url": "https://www.seangoedecke.com/rss.xml",
+        "enabled": true,
+        "category": "software-engineering",
+        "profile": "tech-blog",
+        "content_extractor": "trafilatura"
+      },
+      {
+        "name": "NVIDIA CUDA Technical Blog",
+        "url": "https://developer.nvidia.com/blog/tag/cuda/feed/",
+        "enabled": true,
+        "category": "accelerated-computing",
+        "profile": "tech-blog",
+        "content_extractor": "trafilatura"
+      }
+    ],
+    "reddit": {
+      "enabled": false,
+      "subreddits": [],
+      "users": []
+    },
+    "telegram": {
+      "enabled": false,
+      "channels": []
+    },
+    "twitter": {
+      "enabled": false,
+      "users": [],
+      "keywords": []
+    },
+    "openbb": {
+      "enabled": false,
+      "watchlists": []
+    },
+    "ossinsight": {
+      "enabled": false
+    },
+    "gdelt": {
+      "enabled": true,
+      "query": "(artificial intelligence OR software engineering OR semiconductor OR computing)",
+      "mode": "ArtList",
+      "max_records": 20,
+      "timespan": "12h",
+      "language": "english",
+      "category": "world-tech",
+      "profile": "tech-news"
+    },
+    "google_news": {
+      "enabled": false,
+      "query": "artificial intelligence",
+      "language": "zh-CN",
+      "country": "CN",
+      "max_results": 30,
+      "category": "world-tech",
+      "profile": "tech-news"
+    }
+  },
+  "collection": {
+    "time_window_hours": 12
+  },
+  "digest": {
+    "max_items": 12,
+    "profile_order": ["tech-news", "tech-blog"],
+    "category_groups": {},
+    "default_group": "other",
+    "default_group_limit": null
+  },
+  "extractors": {
+    "trafilatura": {
+      "type": "trafilatura",
+      "favor_precision": true
+    }
+  },
+  "webhook": {
+    "enabled": false
+  },
+  "wechat": {
+    "enabled": false
+  }
+}

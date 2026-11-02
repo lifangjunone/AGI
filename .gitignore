@@ -84,6 +84,10 @@ env/
 *.ipa
 *.apk
 *.aab
+dist-admin/
+
+# Deployment staging artifacts
+.deploy-cache/
 
 # Runtime data
 lifeyoume-platform/data/*.db
@@ -103,6 +107,8 @@ temp/
 
 # Reproducible third-party source assets (downloaded by setup scripts)
 english-immersion-studio/services/metahuman-renderer/ExternalAssets/
+agent-workforce-lab/open-source/mycontext/
+agent-workforce-lab/open-source/digital-twin-skill/
 
 # Epic-licensed MetaHuman source and assembled assets stay in private storage
 english-immersion-studio/services/metahuman-renderer/Content/Characters/MetaHumans/

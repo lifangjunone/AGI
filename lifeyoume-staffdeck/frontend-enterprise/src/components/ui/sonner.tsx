@@ -20,6 +20,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           '--normal-text': 'var(--popover-foreground)',
           '--normal-border': 'var(--border)',
           '--border-radius': 'var(--radius)',
+          '--width': 'min(356px, calc(100vw - 32px))',
         } as CSSProperties
       }
       toastOptions={{

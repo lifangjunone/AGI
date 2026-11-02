@@ -40,7 +40,7 @@ import IconSearch from '../assets/icons/search.svg?react';
 import { StatusBadge } from './scheduled-tasks/StatusBadge';
 import { useClientPagination } from '../hooks/useClientPagination';
 import type { ModelConfigRead } from '../types';
-import { OPEN_MODEL_CREATE_EVENT } from '@/components/QuickStartGuide';
+import { OPEN_MODEL_CREATE_EVENT } from '@/lib/guide-events';
 
 const MODEL_PAGE_SIZE = 8;
 const MODEL_TEST_UI_TIMEOUT_MS = 100_000;

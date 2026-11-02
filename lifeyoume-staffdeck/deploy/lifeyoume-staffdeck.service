@@ -1,0 +1,27 @@
+[Unit]
+Description=LifeYouMe AI Team (StaffDeck)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/data/app/lifeyoume-staffdeck/current/usr/lib/staffdeck
+EnvironmentFile=/data/app/lifeyoume-staffdeck/runtime.env
+Environment=STAFFDECK_HEADLESS=true
+Environment=ULTRARAG_HOST=127.0.0.1
+Environment=ULTRARAG_PORT=45173
+Environment=ULTRARAG_PORT_RANGE_START=45173
+Environment=ULTRARAG_PORT_RANGE_END=45173
+Environment=ULTRARAG_DATA_DIR=/data/app/lifeyoume-staffdeck/data
+Environment=STAFFDECK_CONFIG_DIR=/data/app/lifeyoume-staffdeck/data/profiles
+ExecStart=/data/app/lifeyoume-staffdeck/current/usr/lib/staffdeck/staffdeck
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+MemoryMax=600M
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

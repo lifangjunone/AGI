@@ -1,0 +1,17 @@
+{
+  "viewport": {
+    "name": "mobile",
+    "width": 390,
+    "height": 844
+  },
+  "overflow": false,
+  "loadMoreVisible": false,
+  "color": "rgb(16, 35, 63)",
+  "opacity": "1",
+  "card": {
+    "x": 18,
+    "y": 1063.796875,
+    "width": 354,
+    "height": 274.15625
+  }
+}

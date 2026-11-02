@@ -79,11 +79,11 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-[8px]">
-        <LanguageSwitcher />
+        <LanguageSwitcher touchFriendly className="w-[74px]" />
         <DropdownMenu>
           <DropdownMenuTrigger
             aria-label="账户菜单"
-            className="flex shrink-0 items-center gap-[10px] rounded-[10px] py-[4px] pl-[6px] pr-[10px] outline-none transition-colors"
+            className="flex min-h-[44px] shrink-0 items-center gap-[10px] rounded-[10px] py-[4px] pl-[6px] pr-[10px] outline-none transition-colors"
           >
             <span className="grid size-[32px] shrink-0 place-items-center overflow-hidden rounded-full bg-[#eef1fb] text-[14px] font-medium text-[#7e96dc]">
               {initial}
@@ -96,7 +96,7 @@ export default function ChatHeader({ chat }: { chat: UseChatSession }) {
           >
             <DropdownMenuItem
               onSelect={logout}
-              className="h-[36px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
+              className="h-[44px] cursor-pointer gap-2 rounded-[10px] px-[12px] text-[14px] text-[#464C5E]"
             >
               <IconLogout className="size-[16px]" />
               退出登录

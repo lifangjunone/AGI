@@ -1,0 +1,18 @@
+{
+  "name": "mapproof",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Publish-time QA for Mermaid and AI-generated diagrams.",
+  "scripts": {
+    "dev": "node --watch server.mjs",
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "mermaid": "^11.12.1"
+  }
+}

@@ -1,0 +1,24 @@
+[Unit]
+Description=LifeYouMe AI Team SSO bridge
+After=network-online.target lifeyoume-staffdeck.service lifeyoume-platform@auth.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/data/app/lifeyoume-staffdeck/sso
+EnvironmentFile=/data/app/lifeyoume-staffdeck/runtime.env
+Environment=LIFEYOUME_SSO_BRIDGE_PORT=45174
+Environment=LIFEYOUME_AI_TEAM_INDEX=/data/app/lifeyoume-staffdeck/current/usr/lib/staffdeck/_internal/frontend-enterprise/dist/index.html
+ExecStart=/usr/bin/python3 /data/app/lifeyoume-staffdeck/sso/lifeyoume_sso_bridge.py
+Restart=on-failure
+RestartSec=3
+MemoryMax=64M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/app/lifeyoume-staffdeck/data
+
+[Install]
+WantedBy=multi-user.target

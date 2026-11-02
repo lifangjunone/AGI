@@ -1,4 +1,7 @@
-import { UnderlineTabs, type UnderlineTabItem } from '@/components/ui';
+import {
+  UnderlineTabs,
+  type UnderlineTabItem,
+} from '@/components/ui/underline-tabs';
 import { notify } from '@/components/ui/app-toast';
 
 import IconSearch from '../assets/icons/search.svg?react';
@@ -7,23 +10,17 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { api, TENANT_ID } from '../api/client';
-import { isGalleryEmployee, type EnterpriseAuthUser } from '../auth';
+import { type EnterpriseAuthUser } from '../auth';
 
 import AppHeader from '../components/AppHeader';
-import { ConfirmDialog } from '../components/ConfirmDialog';
-import EmployeeAvatarEditor from '../components/EmployeeAvatarEditor';
 import EmployeeCard from '../components/EmployeeCard';
-import EmployeeProfileEditor from '../components/EmployeeProfileEditor';
 import TeamCard, { teamLeader } from '../components/TeamCard';
 import {
-  canManageEmployeeAgent,
   employeeDisplayName,
   employeeDisplayNameWithCreator,
   employeeProfile,
 } from '../employee';
 import type { AgentProfileRead, TeamRead } from '../types';
-
-const ENTERPRISE_AGENT_STORAGE_KEY = 'ultrarag_enterprise_agent_scope';
 
 type GalleryScope = 'all' | 'mine' | 'teams' | 'gallery' | 'shared';
 
@@ -32,21 +29,23 @@ export default function EmployeeGalleryPage({
   isAdmin = false,
   onStartChat,
   onLogout,
+  teams: sharedTeams,
+  teamsLoadFailed: sharedTeamsLoadFailed,
+  onRetryTeams,
 }: {
   currentUser?: EnterpriseAuthUser;
   isAdmin?: boolean;
   onStartChat?: (agent: AgentProfileRead) => void | Promise<void>;
   onLogout?: () => void;
+  teams?: TeamRead[];
+  teamsLoadFailed?: boolean;
+  onRetryTeams?: () => void | Promise<void>;
 }) {
   const [agents, setAgents] = useState<AgentProfileRead[]>([]);
-  const [teams, setTeams] = useState<TeamRead[]>([]);
-  const [teamsLoadFailed, setTeamsLoadFailed] = useState(false);
+  const [localTeams, setLocalTeams] = useState<TeamRead[]>([]);
+  const [localTeamsLoadFailed, setLocalTeamsLoadFailed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const [avatarAgent, setAvatarAgent] = useState<AgentProfileRead | null>(null);
-  const [profileAgent, setProfileAgent] = useState<AgentProfileRead | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<AgentProfileRead | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const [startingAgentId, setStartingAgentId] = useState<string | null>(null);
   const [startingTeamId, setStartingTeamId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,12 +75,16 @@ export default function EmployeeGalleryPage({
   }
 
   async function loadTeams() {
+    if (sharedTeams !== undefined) {
+      await onRetryTeams?.();
+      return;
+    }
     try {
       const rows = await api.get<TeamRead[]>(`/api/enterprise/teams?tenant_id=${TENANT_ID}`);
-      setTeams(rows);
-      setTeamsLoadFailed(false);
+      setLocalTeams(rows);
+      setLocalTeamsLoadFailed(false);
     } catch (error) {
-      setTeamsLoadFailed(true);
+      setLocalTeamsLoadFailed(true);
       notify.error(error instanceof Error ? error.message : '加载团队失败');
     }
   }
@@ -92,8 +95,8 @@ export default function EmployeeGalleryPage({
   }, [scope]);
 
   useEffect(() => {
-    void loadTeams();
-  }, []);
+    if (sharedTeams === undefined) void loadTeams();
+  }, [sharedTeams]);
 
   // Keep these tabs aligned with the rest of the app:
   // - 所有员工: employees the current user can access and chat with
@@ -102,7 +105,6 @@ export default function EmployeeGalleryPage({
   // - 数字员工广场: the authoritative public directory, including my public employees
   // Directory membership is decided by the shared server contract, not inferred
   // from owner/public flags in a partial list. Public owners remain in the gallery.
-  const availableAgents = agents;
   const scopedEmployees = loading ? [] : agents;
 
   const filteredEmployees = scopedEmployees.filter((item) => {
@@ -119,6 +121,8 @@ export default function EmployeeGalleryPage({
     ].some((value) => value.toLowerCase().includes(keyword));
   });
 
+  const teams = sharedTeams ?? localTeams;
+  const teamsLoadFailed = sharedTeamsLoadFailed ?? localTeamsLoadFailed;
   const filteredTeams = teams.filter((team) => {
     const keyword = searchTerm.trim().toLowerCase();
     if (!keyword) return true;
@@ -162,80 +166,6 @@ export default function EmployeeGalleryPage({
     }
   }
 
-  async function updateStatus(row: AgentProfileRead, status: 'active' | 'archived') {
-    try {
-      await api.put<AgentProfileRead>(`/api/enterprise/agents/${row.id}`, {
-        tenant_id: TENANT_ID,
-        status,
-      });
-      notify.success(status === 'active' ? '员工已上线' : '员工已下线');
-      await load();
-      window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新员工状态失败');
-    }
-  }
-
-  async function updateGalleryState(row: AgentProfileRead, published: boolean) {
-    try {
-      const detail = row.metadata?.directory_summary
-        ? await api.get<AgentProfileRead>(`/api/enterprise/agents/${encodeURIComponent(row.id)}?tenant_id=${encodeURIComponent(row.tenant_id)}`)
-        : row;
-      const metadata: Record<string, unknown> = {
-        ...(detail.metadata || {}),
-        published_to_gallery: published,
-        gallery_published_at: published ? new Date().toISOString() : undefined,
-        gallery_published_by: published ? currentUser?.username : undefined,
-      };
-      if (published) {
-        delete metadata.gallery_unpublished_at;
-        delete metadata.gallery_unpublished_by;
-      }
-      await api.put<AgentProfileRead>(`/api/enterprise/agents/${row.id}`, {
-        tenant_id: TENANT_ID,
-        metadata,
-      });
-      notify.success(published ? '已发布到广场' : '已从广场下架');
-      await load();
-      window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : '更新广场状态失败');
-    }
-  }
-
-  async function confirmDelete() {
-    const row = deleteTarget;
-    if (!row) return;
-    setDeleting(true);
-    try {
-      await api.delete(`/api/enterprise/agents/${row.id}?tenant_id=${TENANT_ID}`);
-      if (window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY) === row.id) {
-        const nextAgent = availableAgents.find((item) => item.id !== row.id && item.status === 'active')
-          || availableAgents.find((item) => item.id !== row.id);
-        if (nextAgent) {
-          window.localStorage.setItem(ENTERPRISE_AGENT_STORAGE_KEY, nextAgent.id);
-          window.dispatchEvent(new CustomEvent('ultrarag-enterprise-agent-scope-change', { detail: { agentId: nextAgent.id } }));
-        } else {
-          window.localStorage.removeItem(ENTERPRISE_AGENT_STORAGE_KEY);
-          window.dispatchEvent(new CustomEvent('ultrarag-enterprise-agent-scope-change', { detail: { agentId: '' } }));
-        }
-      }
-      notify.success('员工已删除');
-      setDeleteTarget(null);
-      await load();
-      window.dispatchEvent(new Event('ultrarag-enterprise-agent-scope-refresh'));
-    } catch (error) {
-      notify.error(error instanceof Error ? error.message : '删除员工失败');
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  function updateAgentInList(row: AgentProfileRead) {
-    setAgents((current) => current.map((item) => (item.id === row.id ? row : item)));
-    void load();
-  }
-
   const galleryTabs: UnderlineTabItem<GalleryScope>[] = [
     { value: 'all', label: '所有员工' },
     { value: 'mine', label: '我的数字员工' },
@@ -266,6 +196,7 @@ export default function EmployeeGalleryPage({
       <AppHeader
         onLogout={onLogout}
         userName={currentUser?.username}
+        mobileStack
         left={(
           <div className="flex h-[50px] w-full items-center gap-[6px] rounded-[20px] bg-white px-[20px] text-[#757F9C] shadow-[0_0_6px_rgba(0,0,0,0.05)]">
             <IconSearch className="size-[20px] shrink-0" />
@@ -278,7 +209,7 @@ export default function EmployeeGalleryPage({
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="搜索"
               aria-label="搜索数字员工"
-              className="min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C]"
+              className="h-full min-w-0 flex-1 border-0 bg-transparent text-[14px] text-[#18181A] outline-none placeholder:text-[#757F9C]"
             />
           </div>
         )}
@@ -290,7 +221,7 @@ export default function EmployeeGalleryPage({
         value={scope}
         onChange={changeScope}
         items={galleryTabs}
-        tabClassName="max-[560px]:min-h-[54px] max-[560px]:w-auto max-[560px]:flex-1 max-[560px]:px-[6px] max-[560px]:text-[12px] max-[560px]:leading-[16px]"
+        tabClassName="max-[767px]:min-h-[44px] max-[767px]:w-auto max-[767px]:flex-1 max-[767px]:px-[6px] max-[767px]:text-[12px] max-[767px]:leading-[16px] max-[560px]:min-h-[54px]"
       />
 
       {scope === 'teams' ? (
@@ -317,14 +248,7 @@ export default function EmployeeGalleryPage({
               key={employee.id}
               employee={employee}
               busy={startingAgentId === employee.id}
-              canManage={canManageEmployeeAgent(employee, currentUser)}
-              showMenu={false}
               onOpen={() => void startEmployeeChat(employee)}
-              onStatus={(status) => void updateStatus(employee, status)}
-              onGallery={(published) => void updateGalleryState(employee, published)}
-              onDelete={() => setDeleteTarget(employee)}
-              onAvatar={() => setAvatarAgent(employee)}
-              onEdit={() => setProfileAgent(employee)}
               onChat={() => void startEmployeeChat(employee)}
             />
           ))}
@@ -334,29 +258,6 @@ export default function EmployeeGalleryPage({
         </div>
       )}
 
-      <EmployeeAvatarEditor
-        agent={avatarAgent}
-        open={Boolean(avatarAgent)}
-        onClose={() => setAvatarAgent(null)}
-        onSaved={updateAgentInList}
-      />
-      <EmployeeProfileEditor
-        agent={profileAgent}
-        open={Boolean(profileAgent)}
-        currentUser={currentUser}
-        onClose={() => setProfileAgent(null)}
-        onSaved={updateAgentInList}
-      />
-      <ConfirmDialog
-        open={Boolean(deleteTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        loading={deleting}
-        title={`删除员工「${deleteTarget ? employeeDisplayName(deleteTarget) : ''}」？`}
-        description="删除后该员工的所有配置将一并移除，操作不可撤销。"
-        onConfirm={() => void confirmDelete()}
-      />
     </div>
   );
 }

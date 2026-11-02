@@ -106,6 +106,12 @@ class AuthStore:
                 );
                 CREATE INDEX IF NOT EXISTS admin_audit_created_idx
                     ON admin_audit(created_at DESC);
+                CREATE TABLE IF NOT EXISTS platform_admin_credentials (
+                    username TEXT PRIMARY KEY,
+                    password_hash TEXT NOT NULL,
+                    revision INTEGER NOT NULL DEFAULT 1 CHECK (revision >= 1),
+                    updated_at INTEGER NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS product_clicks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     product_id TEXT NOT NULL,
@@ -129,6 +135,73 @@ class AuthStore:
                 """
             )
         self.path.chmod(0o600)
+
+    def ensure_admin_credential(
+        self,
+        username: str,
+        fallback_hash: str,
+        now: int | None = None,
+    ) -> None:
+        if not username or not fallback_hash:
+            return
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT OR IGNORE INTO platform_admin_credentials (
+                    username, password_hash, revision, updated_at
+                ) VALUES (?, ?, 1, ?)
+                """,
+                (username, fallback_hash, current),
+            )
+
+    def admin_credential(self, username: str) -> dict[str, object] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT username, password_hash, revision, updated_at
+                FROM platform_admin_credentials
+                WHERE username = ?
+                """,
+                (username,),
+            ).fetchone()
+        return dict(row) if row is not None else None
+
+    def change_admin_password(
+        self,
+        username: str,
+        encoded_password: str,
+        actor: str,
+        now: int | None = None,
+    ) -> int | None:
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE platform_admin_credentials
+                SET password_hash = ?, revision = revision + 1, updated_at = ?
+                WHERE username = ?
+                """,
+                (encoded_password, current, username),
+            )
+            if cursor.rowcount != 1:
+                return None
+            row = connection.execute(
+                """
+                SELECT revision FROM platform_admin_credentials
+                WHERE username = ?
+                """,
+                (username,),
+            ).fetchone()
+            self.record_admin_action(
+                connection,
+                actor,
+                "admin.password_changed",
+                "platform_admin",
+                username,
+                current,
+            )
+        return int(row["revision"]) if row is not None else None
 
     @staticmethod
     def row_to_user(row: sqlite3.Row | None) -> AuthUser | None:
@@ -427,8 +500,64 @@ class AuthStore:
                 """,
                 (current, user_id),
             )
+            connection.execute(
+                """
+                UPDATE device_codes SET consumed_at = ?
+                WHERE user_id = ? AND consumed_at IS NULL
+                """,
+                (current, user_id),
+            )
             self.record_admin_action(
                 connection, actor, "user.password_reset", "user", user_id, current
+            )
+        return True
+
+    def change_user_password(
+        self,
+        user_id: str,
+        current_password: str,
+        encoded_password: str,
+        verifier: Callable[[str, str], bool],
+        now: int | None = None,
+    ) -> bool:
+        current = int(time.time() if now is None else now)
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT password_hash FROM users
+                WHERE id = ? AND status = 'active'
+                """,
+                (user_id,),
+            ).fetchone()
+            if row is None or not verifier(current_password, row["password_hash"]):
+                return False
+            connection.execute(
+                """
+                UPDATE users SET password_hash = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (encoded_password, current, user_id),
+            )
+            connection.execute(
+                """
+                UPDATE sessions SET revoked_at = ?
+                WHERE user_id = ? AND revoked_at IS NULL
+                """,
+                (current, user_id),
+            )
+            connection.execute(
+                """
+                UPDATE access_tokens SET revoked_at = ?
+                WHERE user_id = ? AND revoked_at IS NULL
+                """,
+                (current, user_id),
+            )
+            connection.execute(
+                """
+                UPDATE device_codes SET consumed_at = ?
+                WHERE user_id = ? AND consumed_at IS NULL
+                """,
+                (current, user_id),
             )
         return True
 

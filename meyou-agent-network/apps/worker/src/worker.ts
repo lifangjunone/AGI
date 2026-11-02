@@ -1,5 +1,6 @@
 import { Queue, Worker, type JobsOptions } from "bullmq";
 import IORedis from "ioredis";
+import { startCustomerWorker } from "./customer-worker.js";
 
 export const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6383", {
   maxRetriesPerRequest: null,
@@ -93,7 +94,7 @@ if (process.env.NODE_ENV !== "test") {
           "x-meyou-worker-token": workerToken
         },
         body: JSON.stringify({ limit: 10 }),
-        signal: AbortSignal.timeout(30_000)
+        signal: AbortSignal.timeout(Number(process.env.MODEL_TIMEOUT_MS ?? 1_800_000) + 60_000)
       });
       if (!response.ok) throw new Error(`discovery_due_failed:${response.status}`);
       const result = await response.json() as { queued: number };
@@ -160,7 +161,7 @@ if (process.env.NODE_ENV !== "test") {
           "x-meyou-worker-token": workerToken
         },
         body: JSON.stringify({ limit: 2 }),
-        signal: AbortSignal.timeout(30_000)
+        signal: AbortSignal.timeout(Number(process.env.MODEL_TIMEOUT_MS ?? 1_800_000) + 60_000)
       });
       if (!response.ok) throw new Error(`plaza_continuous_failed:${response.status}`);
       const result = await response.json() as { processed: number };
@@ -188,4 +189,9 @@ if (process.env.NODE_ENV !== "test") {
     }
   }
   scheduleContinuous(5_000);
+  if (workerToken) {
+    const stopCustomerWorker = startCustomerWorker({ baseUrl, token: workerToken });
+    process.once("SIGTERM", stopCustomerWorker);
+    process.once("SIGINT", stopCustomerWorker);
+  }
 }

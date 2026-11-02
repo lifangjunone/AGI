@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import {bindAvatarDraft} from "./avatar-draft.js";
+const entries=new Map(),storage={getItem:k=>entries.get(k),setItem:(k,v)=>entries.set(k,v),removeItem:k=>entries.delete(k)};
+let values={name:"saved",image:"image",voice:"voice-1"},status;
+let draft=bindAvatarDraft({scope:"a",id:"one",read:()=>values,write:v=>values=v,storage,onStatus:s=>status=s});
+values={...values,name:"draft",image:"data:image/jpeg;base64,test",voice:"voice-2"};draft.capture();assert.equal(status,"local");
+values={name:"saved",image:"image",voice:"voice-1"};
+draft=bindAvatarDraft({scope:"a",id:"one",read:()=>values,write:v=>values=v,storage,onStatus:s=>status=s});
+assert.equal(status,"restored");assert.equal(values.name,"draft");assert.equal(values.voice,"voice-2");
+let isolated={name:"saved",image:"image",voice:"voice-1"};
+bindAvatarDraft({scope:"b",id:"one",read:()=>isolated,write:v=>isolated=v,storage});assert.equal(isolated.name,"saved");
+let changed={name:"server changed",image:"image",voice:"voice-1"};
+bindAvatarDraft({scope:"a",id:"one",read:()=>changed,write:v=>changed=v,storage,onStatus:s=>status=s});assert.equal(status,"stale");assert.equal(changed.name,"server changed");
+draft.clear();assert.equal(entries.size,0);
+console.log("PASS avatar draft photo/voice restore, scope isolation, changed base and clear");

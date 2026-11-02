@@ -9,6 +9,8 @@
     "start": "node dist/server.js",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "maas:preflight": "tsx src/maas-preflight-cli.ts",
+    "maas:shadow": "tsx src/maas-shadow-cli.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts"

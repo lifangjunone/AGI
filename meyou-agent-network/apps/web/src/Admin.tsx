@@ -6,16 +6,20 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { api as adminApi } from "./api-client";
+import { useAppStore } from "./store";
+import { tr } from "./i18n";
 
 interface AdminSession {
   admin: { email: string; source?: "platform" | "local" } | null;
   configured: boolean;
   provider?: string;
   localFallbackEnabled?: boolean;
+  modelProviderMode?: "legacy" | "maas";
 }
 
 interface ModelConfiguration {
-  provider: "ark" | "openai-compatible" | "custom";
+  provider: "ark" | "openai-compatible" | "custom" | "maas";
   baseUrl: string;
   modelId: string;
   apiKeyMasked: string;
@@ -64,43 +68,6 @@ interface AdminAuditResponse {
 }
 
 type AdminSection = "model" | "usage" | "audit";
-
-async function adminApi<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  if (init?.body !== undefined && !headers.has("content-type")) {
-    headers.set("content-type", "application/json");
-  }
-  const response = await fetch(path, {
-    credentials: "include",
-    ...init,
-    headers
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const messages: Record<string, string> = {
-      invalid_admin_credentials: "管理员邮箱或密码不正确",
-      admin_not_configured: "服务器尚未配置管理员账号",
-      admin_authentication_required: "平台管理员会话已失效，请回到底座管理后台登录",
-      platform_admin_required: "请先登录 LifeYouMe 平台管理后台，再进入 MeYou 控制台",
-      invalid_model_configuration: "请检查模型地址、Model ID 和参数范围",
-      api_key_required: "首次保存或测试时必须填写 API Key",
-      model_provider_error: "模型服务返回异常",
-      model_timeout: "模型连接超时，请检查地址或适当增加超时时间",
-      model_connection_failed: "无法连接模型服务，请检查 Endpoint、网络和密钥",
-      invalid_model_status: "模型开关状态无效",
-      model_configuration_required: "请先保存模型连接配置，再开启服务",
-      secret_reveal_origin_denied: "请从 MeYou 管理页面发起查看操作",
-      secret_reveal_confirmation_required: "请先确认查看敏感密钥",
-      api_key_not_configured: "当前没有已保存的密钥"
-    };
-    const code = String(body.error ?? "");
-    const providerStatus = code.startsWith("model_provider_error:") ? code.split(":")[1] : "";
-    throw new Error(providerStatus
-      ? `模型服务返回 HTTP ${providerStatus}，请检查密钥、Model ID 和权限`
-      : messages[code] ?? "请求未完成，请稍后重试");
-  }
-  return body as T;
-}
 
 function AdminMark() {
   return <Link to="/admin" className="admin-brand" aria-label="MeYou 管理控制台">
@@ -204,6 +171,16 @@ function AdminEmptyState({ icon, title, copy }: { icon: React.ReactNode; title: 
   return <div className="admin-empty-panel">{icon}<b>{title}</b><span>{copy}</span></div>;
 }
 
+function AdminRequestError({ error, retry, busy }: { error: unknown; retry: () => void; busy: boolean }) {
+  const locale = useAppStore(s => s.locale);
+  return <div className="admin-alert error" role="alert">
+    <CircleAlert aria-hidden="true" /><span>{error instanceof Error ? error.message : tr(locale, "读取失败，请重试", "Could not load data. Please retry.")}</span>
+    <button className="admin-secondary" disabled={busy} onClick={retry}>
+      <RefreshCw aria-hidden="true" />{tr(locale, busy ? "重试中…" : "重试", busy ? "Retrying…" : "Retry")}
+    </button>
+  </div>;
+}
+
 export function AdminConsole() {
   const queryClient = useQueryClient();
   const session = useQuery({
@@ -212,7 +189,7 @@ export function AdminConsole() {
     retry: false
   });
   const configuration = useQuery({
-    queryKey: ["admin-model-config"],
+    queryKey: ["admin-model-config", session.data?.modelProviderMode ?? "legacy"],
     queryFn: () => adminApi<{ configuration: ModelConfiguration }>("/api/v1/admin/model-config"),
     enabled: Boolean(session.data?.admin),
     retry: false
@@ -242,7 +219,9 @@ export function AdminConsole() {
   }
   useEffect(() => {
     clearRevealedKey();
-  }, [section, configuration.data]);
+    setShowKey(false);
+    setForm(value => ({ ...value, apiKey: "" }));
+  }, [section, configuration.data, session.data?.modelProviderMode]);
   useEffect(() => {
     if (!revealedKey) return;
     const timer = setTimeout(clearRevealedKey, 30_000);
@@ -320,7 +299,8 @@ export function AdminConsole() {
   if (session.isLoading) return <div className="admin-loading"><Sparkles />正在验证管理权限…</div>;
   if (!session.data?.admin) return <AdminLogin />;
 
-  const current = configuration.data?.configuration;
+  const isMaas = session.data.modelProviderMode === "maas";
+  const current = configuration.error ? undefined : configuration.data?.configuration;
   const payload = () => ({
     ...form,
     timeoutMs: Number(form.timeoutMs),
@@ -416,7 +396,7 @@ export function AdminConsole() {
     <main className="admin-main">
       <header className="admin-topbar">
         <div><span>{section === "model" ? "MODEL INFRASTRUCTURE" : section === "usage" ? "USAGE & QUOTA" : "SECURITY AUDIT"}</span><h1>{section === "model" ? "模型控制台" : section === "usage" ? "调用与配额" : "安全审计"}</h1></div>
-        {section === "model" && <div className={`admin-model-power ${current?.enabled ? "on" : "off"}`}>
+        {section === "model" && session.data.modelProviderMode !== "maas" && <div className={`admin-model-power ${current?.enabled ? "on" : "off"}`}>
           <div><i /><span><b>{current?.enabled ? "模型服务运行中" : "模型服务已关闭"}</b><small>{current?.enabled ? "新任务允许调用" : "新任务不会调用模型"}</small></span></div>
           <button type="button" role="switch" aria-checked={Boolean(current?.enabled)}
             aria-label={current?.enabled ? "关闭模型服务" : "开启模型服务"}
@@ -427,25 +407,36 @@ export function AdminConsole() {
         </div>}
       </header>
       <div className="admin-content">
+        {configuration.error && <AdminRequestError error={configuration.error} busy={configuration.isFetching} retry={() => void configuration.refetch()} />}
+        <section className="admin-secret-panel" aria-label="LifeYouMe MaaS 模型管理">
+          <b>统一模型管理 · LifeYouMe MaaS</b>
+          <p>{session.data.modelProviderMode === "maas"
+            ? "MeYou 当前使用 MaaS。模型、供应商凭据和应用权限请在 MaaS 管理；旧配置仅保留用于回滚，旧配置操作已关闭。"
+            : "MeYou 当前仍使用本地模型配置。可先在 MaaS 为 MeYou 配置模型授权与服务 Key；完成验证后再切换服务端调用模式。此入口不代表已经迁移。"}</p>
+          <a className="admin-primary" href="https://maas.lifeyoume.icu/#view=apps">打开 MaaS 应用与凭证</a>
+          {isMaas && <p role="status">当前仅确认服务端选择了 MaaS 模式，尚不能据此判断模型可调用。请在 MaaS Playground 使用应用服务 Key 验证实际推理。</p>}
+          {isMaas && <a className="admin-secondary" href="https://maas.lifeyoume.icu/#view=models">查看 MaaS 模型列表</a>}
+        </section>
+        {configuration.isLoading && <p role="status">正在读取当前生效模型配置…</p>}
         <section className="admin-status-strip">
-          <div><span className="admin-status-icon"><Server /></span><p><small>当前来源</small><b>{current?.source === "database" ? "管理端配置" : "服务器环境变量"}</b></p></div>
-          <div><span className="admin-status-icon"><Bot /></span><p><small>当前模型</small><b>{current?.modelId || "尚未配置"}</b></p></div>
-          <div><span className="admin-status-icon"><KeyRound /></span><p><small>API Key</small><b>{current?.apiKeyMasked || "尚未配置"}</b>
-            {section === "model" && current?.hasApiKey && <button className="admin-secret-trigger" type="button" onClick={() => { setRevealError(""); setRevealConfirm(true); }}>查看已保存密钥</button>}
+          <div><span className="admin-status-icon"><Server /></span><p><small>当前来源</small><b>{!current ? "配置尚未确认" : isMaas ? "MaaS · 服务端配置" : current.source === "database" ? "管理端配置" : "服务器环境变量"}</b></p></div>
+          <div><span className="admin-status-icon"><Bot /></span><p><small>{isMaas ? "逻辑模型 ID" : "当前模型"}</small><b>{current?.modelId || "配置尚未确认"}</b></p></div>
+          <div><span className="admin-status-icon"><KeyRound /></span><p><small>{isMaas ? "应用服务 Key" : "API Key"}</small><b>{!current ? "配置尚未确认" : isMaas ? "仅服务端持有 · 此处不展示" : current.apiKeyMasked || "尚未配置"}</b>
+            {section === "model" && session.data.modelProviderMode !== "maas" && current?.hasApiKey && <button className="admin-secret-trigger" type="button" onClick={() => { setRevealError(""); setRevealConfirm(true); }}>查看已保存密钥</button>}
           </p></div>
           <div><span className="admin-status-icon"><Activity /></span><p><small>最近更新</small><b>{current?.updatedAt ? new Date(current.updatedAt).toLocaleString("zh-CN") : "跟随环境配置"}</b></p></div>
         </section>
-        {section === "model" && revealedKey && <section className="admin-secret-panel" aria-label="已保存的模型密钥">
+        {section === "model" && !isMaas && revealedKey && <section className="admin-secret-panel" aria-label="已保存的模型密钥">
           <header><b>已保存的 API Key</b><button className="admin-secondary" type="button" onClick={clearRevealedKey}><EyeOff />立即隐藏</button></header>
           <code>{revealedKey}</code><p>30 秒后自动隐藏，切换窗口或离开页面也会清除。请勿截图或分享。</p>
         </section>}
-        {section === "model" && revealConfirm && <section className="admin-secret-panel" aria-label="确认查看模型密钥">
+        {section === "model" && !isMaas && revealConfirm && <section className="admin-secret-panel" aria-label="确认查看模型密钥">
           <b>确认查看完整密钥？</b><p>此操作将重新校验你的管理员会话并记录审计。完整密钥可访问模型服务，请确认周围没有旁观者。</p>
           {revealError && <p role="alert">{revealError}</p>}
           <div><button className="admin-secondary" type="button" onClick={clearRevealedKey}>取消</button><button className="admin-primary" type="button" disabled={revealing} onClick={() => void revealSavedKey()}>{revealing ? "正在验证…" : "确认查看，30 秒后隐藏"}</button></div>
         </section>}
 
-        {section === "model" && <section className="admin-workspace">
+        {section === "model" && session.data.modelProviderMode !== "maas" && <section className="admin-workspace">
           <div className="admin-config-card">
             <header><span><SlidersHorizontal /></span><div><h2>模型连接配置</h2><p>配置会加密保存在服务端，新模型任务会立即读取最新生效项。</p></div></header>
             <div className="admin-form-grid">
@@ -492,7 +483,7 @@ export function AdminConsole() {
                 onChange={(event) => setForm({ ...form, thinkingEnabled: event.target.checked })} />
                 <span><b>默认开启深度思考</b><small>任务可按自身需求显式关闭</small></span></label>
             </div>
-            {notice && <div className={`admin-alert ${notice.type}`}>
+            {notice && <div className={`admin-alert ${notice.type}`} role={notice.type === "error" ? "alert" : "status"}>
               {notice.type === "success" ? <Check /> : <CircleAlert />}<span>{notice.text}</span>
             </div>}
             <footer>
@@ -532,6 +523,7 @@ export function AdminConsole() {
         </section>}
 
         {section === "usage" && <section className="admin-data-view">
+          {usage.error && <AdminRequestError error={usage.error} busy={usage.isFetching} retry={() => void usage.refetch()} />}
           {usage.isLoading ? <div className="admin-loading-inline"><RefreshCw className="spin" />正在读取真实调用数据…</div> : usage.data && <>
             <div className="admin-metric-grid">
               <article><Gauge /><span>总调用量</span><b>{usage.data.summary.reduce((sum, item) => sum + item.total, 0)}</b><small>来自 usage_ledger</small></article>
@@ -553,6 +545,7 @@ export function AdminConsole() {
         </section>}
 
         {section === "audit" && <section className="admin-data-view">
+          {audit.error && <AdminRequestError error={audit.error} busy={audit.isFetching} retry={() => void audit.refetch()} />}
           {audit.isLoading ? <div className="admin-loading-inline"><RefreshCw className="spin" />正在读取真实审计记录…</div> : audit.data && <>
             <div className="admin-metric-grid">
               <article><ShieldCheck /><span>审计事件</span><b>{audit.data.events.length}</b><small>最近 80 条</small></article>

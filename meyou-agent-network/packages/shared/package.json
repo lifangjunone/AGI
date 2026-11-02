@@ -6,6 +6,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./plaza-world": {
+      "types": "./dist/plaza-world.d.ts",
+      "import": "./dist/plaza-world.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"

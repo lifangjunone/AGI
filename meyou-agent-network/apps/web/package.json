@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 43181",
     "build": "tsc -b && vite build",
+    "build:admin": "tsc -b && vite build --config vite.admin.config.ts",
     "test": "vitest run",
     "typecheck": "tsc -b --pretty false"
   },

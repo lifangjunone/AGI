@@ -61,11 +61,14 @@ def start_external_task_worker() -> None:
         _thread.start()
 
 
-def stop_external_task_worker() -> None:
+def stop_external_task_worker(timeout: float | None = None) -> bool:
+    """Stop the current worker without allowing an overlapping generation."""
     _stop_event.set()
     with _lifecycle_lock:
         dispatcher, thread = _dispatcher, _thread
     if dispatcher is not None:
-        dispatcher.close()
+        dispatcher.close(wait=timeout is None)
     if thread is not None and thread is not threading.current_thread():
-        thread.join()
+        thread.join(timeout)
+        return not thread.is_alive()
+    return thread is None or not thread.is_alive()

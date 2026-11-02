@@ -590,7 +590,7 @@ def test_tool(
     settings = get_settings()
     result = test_saved_tool(db, registry=get_registry(settings), profile=get_profile(settings),
         tenant_id=request.tenant_id, agent_id=agent_id, user_id=current_user.id,
-        tool_id=tool_id, arguments=request.arguments)
+        tool_id=tool_id, arguments=request.arguments, client_request_id=request.client_request_id)
     name = str(result.extensions.get("tool_name") or tool_id)
     if result.success:
         if isinstance(result.data, dict) and "tool_name" in result.data and "success" in result.data:

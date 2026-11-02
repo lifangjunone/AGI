@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import {initializeIdentityState,upsertIdentity} from "./workspace.js";
+const state=initializeIdentityState({avatars:[{id:"one",mood:"calm"},{id:"two",mood:"sweet"}],activeAvatarId:"one",memories:[{id:1}],personasByAvatar:{one:{mood:"calm",instructions:"one"},two:{mood:"sweet",instructions:"two"}},memorySelectionsByAvatar:{one:[1],two:[]}});
+const original=structuredClone(state.persona);
+assert.equal(upsertIdentity(state,{id:"two",mood:"confident"}),false);
+assert.deepEqual(state.persona,original);
+assert.equal(state.personasByAvatar.two.mood,"confident");
+assert.equal(state.personasByAvatar.two.instructions,"two");
+assert.equal(upsertIdentity(state,{id:"three",mood:"healing"}),true);
+assert.equal(state.activeAvatarId,"three");
+assert.equal(state.persona.mood,"healing");
+assert.deepEqual(state.selectedMemories,[]);
+assert.deepEqual(state.personasByAvatar.one,original);
+console.log("PASS target persona update/new self selection/default independent memory/original preserved");

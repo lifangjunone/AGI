@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#070a0f"><title>Second Me — 数字分身操作系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="grain"></div>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="logo" href="#overview"><span>◇</span><strong>Second Me</strong></a>
+      <nav>
+        <p>工作空间</p>
+        <a data-route="overview" href="#overview"><i>⌂</i>总览</a>
+        <a data-route="avatars" href="#avatars"><i>◫</i>我的分身 <b id="avatarCount">1</b></a>
+        <a data-route="studio" href="#studio"><i>◉</i>实时工作室</a>
+        <p>智能塑造</p>
+        <a data-route="memory" href="#memory"><i>≋</i>记忆库 <b id="memoryCount">3</b></a>
+        <a data-route="content" href="#content"><i>✦</i>内容创作</a>
+        <a data-route="settings" href="#settings"><i>⚙</i>设置</a>
+      </nav>
+      <div class="usage"><div><span id="accessLabel">免费体验</span><b id="usageText">3 次</b></div><em><i id="usageBar"></i></em><small id="accessHint">真实模型对话额度</small></div>
+      <button class="profile"><span id="profileAvatar">游</span><span><b id="profileName">游客</b><small id="profileHint">登录后开通使用权</small></span><i>⌄</i></button>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <button class="menu" id="menuBtn">☰</button>
+        <div class="crumb"><span>Second Me</span><i>/</i><strong id="crumb">总览</strong></div>
+        <div class="top-actions">
+          <button class="locale" id="localeBtn" aria-label="Switch language">EN</button>
+          <button class="search" id="searchBtn">⌕　搜索分身与记忆 <kbd>⌘ K</kbd></button>
+          <button class="icon" id="noticeBtn">♢<i></i></button>
+          <button class="primary small" data-new-avatar>＋ 创建分身</button>
+        </div>
+      </header>
+      <div class="page" id="page"></div>
+    </main>
+    <nav class="mobile-nav" aria-label="主要导航">
+      <a href="#overview" data-route="overview"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/></svg><span>总览</span></a>
+      <a href="#avatars" data-route="avatars"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span>分身</span></a>
+      <a href="#studio" data-route="studio"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4H3v13h5v4l5-4h8Z"/><path d="M7 9h10M7 13h6"/></svg><span>对话</span></a>
+      <a href="#memory" data-route="memory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5C8 2 4 3 3 4v16c3-2 6-2 9 0 3-2 6-2 9 0V4c-3-2-6-2-9 1Zm0 0v15"/></svg><span>记忆</span></a>
+      <a href="#settings" data-route="settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg><span>设置</span></a>
+    </nav>
+  </div>
+  <div class="backdrop hidden" id="backdrop"><section class="modal" role="dialog" aria-modal="true" aria-label="Second Me"><button class="close" id="modalClose" aria-label="关闭">×</button><div id="modalBody"></div></section></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

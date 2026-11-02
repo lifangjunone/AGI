@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { I18nProvider } from '@/i18n';
 import { ENTERPRISE_AGENT_STORAGE_KEY } from '@/lib/agent-scope-storage';
-import type { ChatSession } from '@/types';
+import type { AgentProfileRead, ChatSession } from '@/types';
 
 import { useChatSession } from './useChatSession';
 
@@ -31,12 +31,25 @@ const employeeSession: ChatSession = {
   updated_at: '2026-08-01T00:00:00Z',
 };
 
+const employee: AgentProfileRead = {
+  id: 'agent-1',
+  tenant_id: 'tenant_demo',
+  name: '小艾',
+  is_overall: false,
+  status: 'active',
+  metadata: {},
+  resources: [],
+  created_at: '2026-08-01T00:00:00Z',
+  updated_at: '2026-08-01T00:00:00Z',
+};
+
 function jsonResponse(body: unknown): Response {
   return {
     ok: true,
     status: 200,
     statusText: 'OK',
     text: async () => JSON.stringify(body ?? {}),
+    json: async () => body,
   } as Response;
 }
 
@@ -63,6 +76,7 @@ function renderChatSession(
       <MemoryRouter initialEntries={[initialPath]}>
         <Routes>
           <Route path="/workspace/chat/:sessionId" element={<>{children}</>} />
+          <Route path="/workspace/chat/draft/:draftAgentId" element={<>{children}</>} />
           <Route path="/workspace/chat" element={<>{children}</>} />
         </Routes>
       </MemoryRouter>
@@ -180,5 +194,189 @@ describe('useChatSession team scope', () => {
       await vi.advanceTimersByTimeAsync(2_100);
     });
     expect(messageRequestCount()).toBeGreaterThan(1);
+  });
+
+  it('restores a first-message draft when the server session was never confirmed', async () => {
+    const fetchMock = stubChatFetch([]);
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/chat/agents')) return jsonResponse([employee]);
+      if (url.includes('/model-configs')) return jsonResponse([
+        {
+          id: 'model-1',
+          tenant_id: 'tenant_demo',
+          enabled: true,
+          is_default: true,
+          model: 'test',
+        },
+      ]);
+      if (url.includes('/api/chat/stream')) throw new TypeError('network disconnected');
+      if (url.includes('/api/chat/sessions?')) return jsonResponse([]);
+      if (url.includes('/api/chat/')) return jsonResponse([]);
+      if (url.includes('/api/enterprise/')) return jsonResponse([]);
+      return jsonResponse({});
+    });
+    const { result } = renderChatSession('/workspace/chat/draft/agent-1');
+
+    await waitFor(() => {
+      expect(result.current.sessionsLoading).toBe(false);
+      expect(result.current.modelConfigsLoading).toBe(false);
+      expect(result.current.displayedAgent?.id).toBe('agent-1');
+    });
+
+    act(() => result.current.setInput('请帮我整理这份需求'));
+    await act(async () => result.current.send());
+
+    expect(result.current.input).toBe('请帮我整理这份需求');
+    expect(result.current.displayedMessages).toEqual([]);
+    expect(result.current.currentSessionRunning).toBe(false);
+    expect(fetchMock.mock.calls.filter(([url]) => (
+      String(url).includes('/api/chat/stream')
+    ))).toHaveLength(1);
+  });
+
+  it('restores ready attachments and scheduled intent with an unconfirmed first message', async () => {
+    const fetchMock = stubChatFetch([]);
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/chat/agents')) return jsonResponse([employee]);
+      if (url.includes('/model-configs')) return jsonResponse([
+        {
+          id: 'model-1',
+          tenant_id: 'tenant_demo',
+          enabled: true,
+          is_default: true,
+          model: 'test',
+        },
+      ]);
+      if (url.includes('/api/chat/attachments')) return jsonResponse([{
+        id: 'attachment-1',
+        filename: 'brief.txt',
+        content_type: 'text/plain',
+        size: 12,
+        kind: 'text',
+        text: 'project brief',
+        sha256: 'attachment-sha',
+      }]);
+      if (url.includes('/api/chat/stream')) throw new TypeError('network disconnected');
+      if (url.includes('/api/chat/sessions?')) return jsonResponse([]);
+      if (url.includes('/api/chat/')) return jsonResponse([]);
+      if (url.includes('/api/enterprise/')) return jsonResponse([]);
+      return jsonResponse({});
+    });
+    const { result } = renderChatSession('/workspace/chat/draft/agent-1');
+
+    await waitFor(() => {
+      expect(result.current.modelConfigsLoading).toBe(false);
+      expect(result.current.displayedAgent?.id).toBe('agent-1');
+    });
+    act(() => result.current.uploadComposerFiles([
+      new File(['project brief'], 'brief.txt', { type: 'text/plain' }),
+    ]));
+    await waitFor(() => expect(result.current.readyComposerAttachments).toHaveLength(1));
+    act(() => result.current.setInput('明天早上整理需求'));
+    await act(async () => result.current.send('scheduled_task'));
+
+    expect(result.current.input).toBe('明天早上整理需求');
+    expect(result.current.readyComposerAttachments).toEqual([
+      expect.objectContaining({
+        id: 'attachment-1',
+        filename: 'brief.txt',
+        uploadStatus: 'ready',
+      }),
+    ]);
+    expect(result.current.composerIntent).toBe('scheduled_task');
+    expect(result.current.displayedMessages).toEqual([]);
+    expect(fetchMock.mock.calls.filter(([url]) => (
+      String(url).includes('/api/chat/stream')
+    ))).toHaveLength(1);
+  });
+
+  it('preserves text typed during a failed first-message request', async () => {
+    let rejectStream!: (error: unknown) => void;
+    const fetchMock = stubChatFetch([]);
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/chat/agents')) return jsonResponse([employee]);
+      if (url.includes('/model-configs')) return jsonResponse([
+        {
+          id: 'model-1',
+          tenant_id: 'tenant_demo',
+          enabled: true,
+          is_default: true,
+          model: 'test',
+        },
+      ]);
+      if (url.includes('/api/chat/stream')) {
+        return new Promise<Response>((_resolve, reject) => {
+          rejectStream = reject;
+        });
+      }
+      if (url.includes('/api/chat/sessions?')) return jsonResponse([]);
+      if (url.includes('/api/chat/')) return jsonResponse([]);
+      if (url.includes('/api/enterprise/')) return jsonResponse([]);
+      return jsonResponse({});
+    });
+    const { result } = renderChatSession('/workspace/chat/draft/agent-1');
+
+    await waitFor(() => {
+      expect(result.current.modelConfigsLoading).toBe(false);
+      expect(result.current.displayedAgent?.id).toBe('agent-1');
+    });
+    act(() => result.current.setInput('第一条没有发出去的内容'));
+    let sendPromise!: Promise<void>;
+    act(() => {
+      sendPromise = result.current.send();
+    });
+    await waitFor(() => expect(rejectStream).toBeDefined());
+    expect(result.current.input).toBe('');
+    act(() => result.current.setInput('网络等待时补充的新内容'));
+    await act(async () => {
+      rejectStream(new TypeError('network disconnected'));
+      await sendPromise;
+    });
+
+    expect(result.current.input).toBe(
+      '第一条没有发出去的内容\n\n网络等待时补充的新内容',
+    );
+    expect(fetchMock.mock.calls.filter(([url]) => (
+      String(url).includes('/api/chat/stream')
+    ))).toHaveLength(1);
+  });
+
+  it('does not restore a regular session turn whose server outcome is uncertain', async () => {
+    const fetchMock = stubChatFetch([employeeSession]);
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/chat/agents')) return jsonResponse([employee]);
+      if (url.includes('/model-configs')) return jsonResponse([
+        {
+          id: 'model-1',
+          tenant_id: 'tenant_demo',
+          enabled: true,
+          is_default: true,
+          model: 'test',
+        },
+      ]);
+      if (url.includes('/api/chat/stream')) throw new TypeError('stream disconnected');
+      if (url.includes('/api/chat/sessions/session-emp-1?')) return jsonResponse(employeeSession);
+      if (url.includes('/api/chat/sessions?')) return jsonResponse([employeeSession]);
+      if (url.includes('/api/chat/')) return jsonResponse([]);
+      if (url.includes('/api/enterprise/')) return jsonResponse([]);
+      return jsonResponse({});
+    });
+    const { result } = renderChatSession('/workspace/chat/session-emp-1');
+
+    await waitFor(() => {
+      expect(result.current.sessionsLoading).toBe(false);
+      expect(result.current.modelConfigsLoading).toBe(false);
+    });
+    act(() => result.current.setInput('不要造成重复提交'));
+    await act(async () => result.current.send());
+
+    expect(result.current.input).toBe('');
+    expect(fetchMock.mock.calls.filter(([url]) => (
+      String(url).includes('/api/chat/stream')
+    ))).toHaveLength(1);
   });
 });

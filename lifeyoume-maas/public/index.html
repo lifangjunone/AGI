@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f7fb">
+  <title>LifeYouMe MaaS · 模型控制塔</title>
+  <link rel="stylesheet" href="/styles.css?v=202610301200">
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <div class="shell">
+    <aside class="sidebar" id="main-navigation" aria-label="主导航">
+      <button class="icon-button navigation-close" id="close-navigation" aria-label="关闭导航"><svg aria-hidden="true"><use href="#icon-close"/></svg></button>
+      <a class="brand" href="/" aria-label="LifeYouMe MaaS 首页">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span><strong>LifeYouMe</strong><small>MaaS CONTROL</small></span>
+      </a>
+      <nav id="nav">
+        <span class="nav-label">CONTROL PLANE</span>
+        <button class="nav-item active" data-view="overview"><svg aria-hidden="true"><use href="#icon-grid"/></svg>总览</button>
+        <button class="nav-item" data-view="models"><svg aria-hidden="true"><use href="#icon-route"/></svg>模型与路由</button>
+        <button class="nav-item" data-view="apps"><svg aria-hidden="true"><use href="#icon-box"/></svg>应用</button>
+        <button class="nav-item" data-view="playground"><svg aria-hidden="true"><use href="#icon-play"/></svg>Playground</button>
+        <span class="nav-label">OPERATIONS</span>
+        <button class="nav-item" data-view="usage"><svg aria-hidden="true"><use href="#icon-chart"/></svg>用量与成本</button>
+        <button class="nav-item" data-view="audit"><svg aria-hidden="true"><use href="#icon-shield"/></svg>安全审计</button>
+      </nav>
+      <div class="sidebar-foot">
+        <span class="pulse" aria-hidden="true"></span>
+        <p><strong id="system-state">正在连接</strong><small>Gateway · Tencent</small></p>
+      </div>
+    </aside>
+    <button class="navigation-backdrop" id="navigation-backdrop" aria-label="关闭导航遮罩" tabindex="-1" hidden></button>
+    <div class="workspace">
+      <header class="topbar">
+        <button class="mobile-menu" id="menu-button" aria-label="打开导航" aria-controls="main-navigation" aria-expanded="false"><span></span><span></span></button>
+        <div>
+          <span class="eyebrow" id="view-eyebrow">MODEL TRAFFIC CONTROL</span>
+          <h1 id="view-title">模型交通控制塔</h1>
+        </div>
+        <div class="top-actions">
+          <span class="admin-pill"><i></i><span><small>平台管理员</small><b id="actor">验证中</b></span></span>
+          <button class="icon-button" id="refresh" aria-label="刷新控制台"><svg aria-hidden="true"><use href="#icon-refresh"/></svg></button>
+        </div>
+      </header>
+      <main id="main" tabindex="-1">
+        <div id="notice" class="notice" role="status" aria-live="polite"></div>
+        <section id="content" aria-busy="true">
+          <div class="loading-grid"><i></i><i></i><i></i><i></i></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <dialog id="key-dialog" aria-labelledby="key-dialog-title">
+    <div class="dialog-card">
+      <header><div><span class="eyebrow">SERVICE CREDENTIAL</span><h2 id="key-dialog-title">新的应用密钥</h2></div><button class="icon-button" id="close-created-key" aria-label="关闭"><svg aria-hidden="true"><use href="#icon-close"/></svg></button></header>
+      <p id="key-context"></p>
+      <p>密钥只显示这一次。请立即保存到服务端 Secret，MaaS 只保留不可逆哈希。</p>
+      <code id="created-key"></code>
+      <button type="button" class="primary-button" id="copy-key">复制密钥</button>
+      <p id="key-copy-status" role="status" aria-live="polite"></p>
+      <label class="key-saved-confirm"><input type="checkbox" id="key-saved">我已将密钥保存到安全位置</label>
+      <button type="button" class="secondary-button" id="finish-key">完成并关闭</button>
+    </div>
+  </dialog>
+  <dialog id="model-dialog" class="model-dialog" aria-label="模型管理">
+    <div class="dialog-card" id="model-dialog-content"></div>
+  </dialog>
+  <svg class="svg-defs" aria-hidden="true">
+    <symbol id="icon-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
+    <symbol id="icon-route" viewBox="0 0 24 24"><path d="M5 6h5M14 6h5M10 6l4 6-4 6M14 12h5M14 18h5"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="19" cy="18" r="2"/></symbol>
+    <symbol id="icon-box" viewBox="0 0 24 24"><path d="m4 7 8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><path d="m9 6 9 6-9 6z"/></symbol>
+    <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M5 19V9M12 19V5M19 19v-7"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6zM9 12l2 2 4-5"/></symbol>
+    <symbol id="icon-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6.2 8A7 7 0 0 1 18 7l2 5M18 16a7 7 0 0 1-11.8 1L4 12"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  </svg>
+  <script type="module" src="/app.js?v=202610301200"></script>
+</body>
+</html>

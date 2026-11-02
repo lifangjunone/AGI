@@ -1,0 +1,25 @@
+[Unit]
+Description=MeYou reverse tunnel to Aliyun edge
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStart=/usr/bin/ssh -NT \
+    -i /home/ubuntu/.ssh/id_ed25519_aliyun_staffdeck \
+    -o BatchMode=yes \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=15 \
+    -o ServerAliveCountMax=3 \
+    -o UserKnownHostsFile=/home/ubuntu/.ssh/known_hosts \
+    -R 127.0.0.1:43180:127.0.0.1:43180 \
+    root@101.200.39.84
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

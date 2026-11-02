@@ -1,5 +1,22 @@
 # LifeYouMe · 数字团队
 
+生产地址：`https://lifeyoume.icu/ai-team/`
+
+发行准备脚本使用 `STAFFDECK_PUBLIC_BASE=/ai-team/`；直接运行前端构建则必须使用
+`VITE_PUBLIC_BASE=/ai-team/`。该前缀同时隔离前端路由、静态资源、浏览器存储和
+API 请求；反向代理需要将 `/ai-team/` 前缀剥离后转发给 StaffDeck。
+
+生产前端必须使用以下命令，它会强制注入 `/ai-team/` 并在构建完成后校验
+`index.html` 中的全部本地资源 URL：
+
+```bash
+npm --prefix frontend-enterprise run build:production
+```
+
+禁止把普通 `npm run build` 生成的默认根路径版本直接发布到生产。发布前还可单独
+运行 `npm --prefix frontend-enterprise run verify:production`；发现 `/assets/`
+等缺少 `/ai-team/` 前缀的地址时必须终止发布。
+
 这是 LifeYouMe 基于 [OpenBMB StaffDeck](https://github.com/OpenBMB/StaffDeck)
 构建的数字员工子产品。它把个人和团队的经验、知识、SOP 与工具组合成可持续
 执行、可追踪、可复盘的 AI 工作团队。
@@ -58,6 +75,38 @@ python3 scripts/sync_meyou_model.py
 上新增本产品专属 `location /digital-team/`，并严格遵守工作区根目录
 `AGENTS.md` 中的共享 Nginx 安全规则：备份、清点既有路由、检测并发变更、
 `nginx -t`、仅 reload、验证其他产品无 404。
+
+腾讯云当前静态文件位于：
+
+`/data/app/lifeyoume-staffdeck/current/usr/lib/staffdeck/_internal/frontend-enterprise/dist`
+
+发布前端时先追加带哈希的 `assets/`，最后原子切换 `index.html`，不需要重启
+StaffDeck、SSO bridge 或隧道服务。本服务的完整部署清单、验证命令和回滚点记录在
+工作区顶层 `deployments/services/staffdeck.md`。
+
+日常仅更新前端时，禁止手工复制入口文件。先生成受门禁保护的生产构建，再将
+`dist` 上传到腾讯云暂存目录，最后在服务器使用专用发布器：
+
+```bash
+npm --prefix frontend-enterprise run build:production
+
+sudo /data/app/lifeyoume-staffdeck/deploy/release_frontend.py \
+  --source-dist /path/to/uploaded/dist \
+  --check-only
+
+sudo /data/app/lifeyoume-staffdeck/deploy/release_frontend.py \
+  --source-dist /path/to/uploaded/dist
+```
+
+发布器会在任何写入前验证基路径、引用资产、三个 systemd 服务和公网产品矩阵；
+随后追加资产并通过真实公网逐个验证候选 JS/CSS/图标；JS 和 CSS 还必须返回正确
+MIME。只有全部资源通过后才原子切换 `index.html`。同名资产内容冲突时终止，
+切换后的健康或回归探针失败时自动恢复旧入口并复查旧入口资源。该工具不会执行
+`systemctl restart` 或任何 Nginx 命令。
+
+公开首页与登录页使用轻量入口，认证后工作台通过动态模块加载。不要把后台
+`AppHeader`、弹窗或工作台页面重新静态引入 `App.tsx` 或公开页面，否则会让匿名
+访问重新下载完整后台包。
 
 ## 开源与署名
 

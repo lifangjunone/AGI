@@ -1,8 +1,11 @@
 import importlib.util
+import http.client
 import json
 import sys
 import tempfile
+import threading
 import unittest
+import urllib.parse
 from pathlib import Path
 from unittest import mock
 
@@ -67,6 +70,39 @@ class PlatformTests(unittest.TestCase):
                 app.verify_session(token, now=1_000 + app.SESSION_TTL_SECONDS + 1)
             )
             self.assertIsNone(app.verify_session(token[:-2] + "AA", now=1_001))
+
+    def test_admin_session_subject_contains_credential_revision(self):
+        with mock.patch.object(app, "SESSION_SECRET", "test-secret"):
+            token = app.issue_admin_session("operator", 3, now=1_000)
+            self.assertEqual(
+                "platform-admin:operator:3",
+                app.verify_session(token, now=1_001),
+            )
+
+    def test_admin_user_rejects_a_stale_credential_revision(self):
+        class Request:
+            def __init__(self, token):
+                self.token = token
+
+            def cookie_value(self, name):
+                return self.token if name == app.ADMIN_COOKIE else ""
+
+        with (
+            mock.patch.object(app, "SESSION_SECRET", "test-secret"),
+            mock.patch.object(app, "OPS_ADMIN_USER", "operator"),
+            mock.patch.object(
+                app,
+                "admin_credential",
+                return_value={"username": "operator", "revision": 4},
+            ),
+        ):
+            current = app.issue_admin_session("operator", 4, now=1_000)
+            stale = app.issue_admin_session("operator", 3, now=1_000)
+            with mock.patch("time.time", return_value=1_001):
+                self.assertEqual(
+                    "operator", app.Handler.admin_user(Request(current))
+                )
+                self.assertIsNone(app.Handler.admin_user(Request(stale)))
 
     def test_reserved_product_is_not_health_checked(self):
         product = app.Product(
@@ -251,6 +287,23 @@ class PlatformTests(unittest.TestCase):
         self.assertIn('data-admin-view="overview"', document)
         self.assertIn('data-admin-view="products" hidden', document)
         self.assertIn('data-admin-view="heat" hidden', document)
+        self.assertIn('data-admin-view="security" hidden', document)
+        self.assertIn('action="/admin/security/password"', document)
+        self.assertIn('name="current_password"', document)
+        self.assertIn('name="new_password"', document)
+        self.assertIn('name="confirm_password"', document)
+        self.assertIn('aria-controls="admin-current-password"', document)
+        self.assertIn('aria-controls="admin-new-password"', document)
+        self.assertIn('aria-controls="admin-confirm-password"', document)
+        self.assertEqual(3, document.count('aria-pressed="false"'))
+        self.assertIn('aria-errormessage="admin-current-password-error"', document)
+        self.assertIn('aria-errormessage="admin-new-password-error"', document)
+        self.assertIn('aria-errormessage="admin-confirm-password-error"', document)
+        self.assertEqual(3, document.count('class="field-error"'))
+        self.assertIn('id="admin-password-feedback"', document)
+        self.assertIn('aria-live="assertive"', document)
+        self.assertIn('/assets/portal.css?v=9', document)
+        self.assertIn('/assets/portal.js?v=11', document)
         self.assertIn('data-admin-table="heat" data-page-size="8"', document)
         self.assertIn('data-admin-table="products" data-page-size="7"', document)
         self.assertIn('data-admin-search="products"', document)
@@ -295,6 +348,246 @@ class PlatformTests(unittest.TestCase):
         expired = app.Handler.admin_session_cookie("", max_age=0)
         self.assertIn("Max-Age=0", expired)
         self.assertIn("Expires=Thu, 01 Jan 1970 00:00:00 GMT", expired)
+
+    def test_admin_can_change_own_password_and_old_session_is_revoked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = app.AuthStore(Path(directory) / "auth.db")
+            store.initialize()
+            store.ensure_admin_credential(
+                "operator",
+                app.password_hash("initial administrator password"),
+                now=1_000,
+            )
+            server = app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            with (
+                mock.patch.object(app, "ROLE", "ops"),
+                mock.patch.object(app, "SESSION_SECRET", "test-session-secret"),
+                mock.patch.object(app, "OPS_ADMIN_USER", "operator"),
+                mock.patch.object(app, "AUTH_STORE", store),
+                mock.patch.object(app.Handler, "log_message"),
+            ):
+                thread.start()
+                connection = http.client.HTTPConnection(*server.server_address)
+                try:
+                    connection.request("GET", "/admin/")
+                    login_page = connection.getresponse()
+                    csrf_cookie = login_page.getheader("Set-Cookie").split(";", 1)[0]
+                    login_page.read()
+                    csrf_token = csrf_cookie.split("=", 1)[1]
+
+                    login_body = urllib.parse.urlencode(
+                        {
+                            "csrf_token": csrf_token,
+                            "username": "operator",
+                            "password": "initial administrator password",
+                        }
+                    )
+                    connection.request(
+                        "POST",
+                        "/admin/login",
+                        body=login_body,
+                        headers={
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Cookie": csrf_cookie,
+                        },
+                    )
+                    login = connection.getresponse()
+                    self.assertEqual(303, login.status)
+                    admin_cookie = login.getheader("Set-Cookie").split(";", 1)[0]
+                    login.read()
+
+                    change_body = urllib.parse.urlencode(
+                        {
+                            "csrf_token": csrf_token,
+                            "current_password": "initial administrator password",
+                            "new_password": "replacement administrator password",
+                            "confirm_password": "replacement administrator password",
+                        }
+                    )
+                    connection.request(
+                        "POST",
+                        "/admin/security/password",
+                        body=change_body,
+                        headers={
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Cookie": f"{csrf_cookie}; {admin_cookie}",
+                        },
+                    )
+                    changed = connection.getresponse()
+                    self.assertEqual(303, changed.status)
+                    self.assertEqual(
+                        "/admin/login?changed=1", changed.getheader("Location")
+                    )
+                    self.assertIn("Max-Age=0", changed.getheader("Set-Cookie"))
+                    changed.read()
+
+                    connection.request(
+                        "GET", "/admin/", headers={"Cookie": admin_cookie}
+                    )
+                    stale_session = connection.getresponse()
+                    stale_body = stale_session.read().decode("utf-8")
+                    self.assertEqual(200, stale_session.status)
+                    self.assertIn("进入管理后台", stale_body)
+                    self.assertNotIn("安全设置", stale_body)
+
+                    old_login_body = urllib.parse.urlencode(
+                        {
+                            "csrf_token": csrf_token,
+                            "username": "operator",
+                            "password": "initial administrator password",
+                        }
+                    )
+                    connection.request(
+                        "POST",
+                        "/admin/login",
+                        body=old_login_body,
+                        headers={
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Cookie": csrf_cookie,
+                        },
+                    )
+                    old_login = connection.getresponse()
+                    self.assertEqual(401, old_login.status)
+                    old_login.read()
+
+                    new_login_body = urllib.parse.urlencode(
+                        {
+                            "csrf_token": csrf_token,
+                            "username": "operator",
+                            "password": "replacement administrator password",
+                        }
+                    )
+                    connection.request(
+                        "POST",
+                        "/admin/login",
+                        body=new_login_body,
+                        headers={
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Cookie": csrf_cookie,
+                        },
+                    )
+                    new_login = connection.getresponse()
+                    self.assertEqual(303, new_login.status)
+                    new_login.read()
+                finally:
+                    connection.close()
+                    server.shutdown()
+                    thread.join()
+                    server.server_close()
+
+    def test_user_can_change_password_and_must_sign_in_again(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = app.AuthStore(Path(directory) / "auth.db")
+            store.initialize()
+            user = store.create_user(
+                "member@example.com",
+                "Member",
+                app.password_hash("initial member password"),
+                now=1_000,
+            )
+            session = store.create_session(user.id, 3_600)
+            server = app.ThreadingHTTPServer(("127.0.0.1", 0), app.Handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            with (
+                mock.patch.object(app, "ROLE", "auth"),
+                mock.patch.object(app, "AUTH_STORE", store),
+                mock.patch.object(app.Handler, "log_message"),
+            ):
+                thread.start()
+                connection = http.client.HTTPConnection(*server.server_address)
+                try:
+                    session_cookie = f"{app.SSO_COOKIE}={session}"
+                    connection.request(
+                        "GET", "/account", headers={"Cookie": session_cookie}
+                    )
+                    account = connection.getresponse()
+                    self.assertEqual(200, account.status)
+                    csrf_cookie = account.getheader("Set-Cookie").split(";", 1)[0]
+                    csrf_token = csrf_cookie.split("=", 1)[1]
+                    account_body = account.read().decode("utf-8")
+                    self.assertIn('action="/account/password"', account_body)
+                    self.assertIn('autocomplete="current-password"', account_body)
+                    self.assertEqual(
+                        3, account_body.count("data-account-password-toggle")
+                    )
+
+                    wrong_body = urllib.parse.urlencode(
+                        {
+                            "csrf_token": csrf_token,
+                            "current_password": "wrong member password",
+                            "new_password": "replacement member password",
+                            "confirm_password": "replacement member password",
+                        }
+                    )
+                    connection.request(
+                        "POST",
+                        "/account/password",
+                        body=wrong_body,
+                        headers={
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Cookie": f"{session_cookie}; {csrf_cookie}",
+                        },
+                    )
+                    wrong = connection.getresponse()
+                    self.assertEqual(401, wrong.status)
+                    wrong_document = wrong.read().decode("utf-8")
+                    self.assertIn("当前密码不正确", wrong_document)
+                    self.assertIn('id="account-current-password"', wrong_document)
+                    self.assertIn('autocomplete="current-password"', wrong_document)
+                    self.assertIn('aria-invalid="true"', wrong_document)
+                    self.assertIn('autofocus', wrong_document)
+
+                    change_body = urllib.parse.urlencode(
+                        {
+                            "csrf_token": csrf_token,
+                            "current_password": "initial member password",
+                            "new_password": "replacement member password",
+                            "confirm_password": "replacement member password",
+                        }
+                    )
+                    connection.request(
+                        "POST",
+                        "/account/password",
+                        body=change_body,
+                        headers={
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Cookie": f"{session_cookie}; {csrf_cookie}",
+                        },
+                    )
+                    changed = connection.getresponse()
+                    self.assertEqual(303, changed.status)
+                    self.assertEqual("/login?changed=1", changed.getheader("Location"))
+                    self.assertIn("Max-Age=0", changed.getheader("Set-Cookie"))
+                    changed.read()
+
+                    connection.request(
+                        "GET", "/account", headers={"Cookie": session_cookie}
+                    )
+                    stale = connection.getresponse()
+                    self.assertEqual(303, stale.status)
+                    stale.read()
+
+                    self.assertIsNone(
+                        store.authenticate(
+                            "member@example.com",
+                            "initial member password",
+                            app.verify_password,
+                        )
+                    )
+                    self.assertEqual(
+                        user.id,
+                        store.authenticate(
+                            "member@example.com",
+                            "replacement member password",
+                            app.verify_password,
+                        ).id,
+                    )
+                finally:
+                    connection.close()
+                    server.shutdown()
+                    thread.join()
+                    server.server_close()
 
 
 if __name__ == "__main__":

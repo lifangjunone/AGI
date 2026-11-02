@@ -1,0 +1,19 @@
+[Unit]
+Description=MapProof diagram QA
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStartPre=-/usr/bin/docker rm -f mapproof
+ExecStart=/usr/bin/docker run --name mapproof --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --security-opt no-new-privileges:true --cap-drop ALL -p 127.0.0.1:45210:45210 mapproof:20261102
+ExecStop=/usr/bin/docker stop -t 10 mapproof
+ExecStopPost=-/usr/bin/docker rm -f mapproof
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

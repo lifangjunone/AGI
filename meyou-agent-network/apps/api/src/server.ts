@@ -32,9 +32,31 @@ import {
 import {
   completeWithConfiguration, guardAgentReply, resolveModelConfiguration
 } from "./model.js";
+import { maasConfiguration } from "./maas-config.js";
 import { scheduleMission, schedulePlazaConversation } from "./queue.js";
+import { listPlazaHistory, listPlazaTopics, plazaHistoryQuery, plazaTopicQuery } from "./plaza-history.js";
+import { createWorldAction } from "./plaza-world.js";
+import { settleAgentReply } from "./conversation-delivery.js";
+import { eventAudience } from "./event-audience.js";
+import { customerReceptionReadiness, customerUpdateSchema, getCustomerThread, updateCustomerThread } from "./customer-desk.js";
+import { runDueCustomerAgents } from "./customer-agent.js";
+import { recordCustomerWorkerHeartbeat } from "./customer-worker-health.js";
+import { getOrganizationReception, organizationReceptionSchema, setOrganizationReception } from "./organization-reception.js";
+import { knowledgeQuestionSchema, testKnowledgeAnswer } from "./knowledge-answer.js";
+import { companyInquirySchema, createCompanyInquiry, getPublicCompany } from "./company-reception.js";
+import { customerDirectorySchema, customerHistorySchema, customerMessageSchema, listCustomerChats, readCustomerChat, sendCustomerChat } from "./customer-chat.js";
 import {
-  addMessage, createMission, createOrGetConversation, ensureUser, getConversation,
+  checkKnowledgeSources, getOrganizationKnowledgeDocument, knowledgeCreateSchema, knowledgeListSchema,
+  knowledgeSourceCheckSchema,
+  knowledgeUpdateSchema, listOrganizationKnowledge, mutateOrganizationKnowledge
+} from "./organization-knowledge.js";
+import { plazaPlaceDestination } from "@meyou/shared/plaza-world";
+import {
+  deleteAgentMemory, listAgentMemories, memoryListQuery,
+  memoryUpdateSchema, updateAgentMemory
+} from "./agent-memory.js";
+import {
+  addMessage, audit, createMission, createOrGetConversation, ensureUser, getConversation,
   blockConversationPeer, decideReplyDraft, escalateConversation,
   ensureDatingMission, enterPlaza, getDashboard, getMe, getPlazaSnapshot, leavePlaza, createCommunityWithCircle,
   getPlazaRuntimeSettings,
@@ -114,12 +136,25 @@ export function buildServer() {
       ]
     }
   });
-  const eventSockets = new Set<{ readyState: number; send: (value: string) => void }>();
+  const eventSockets = new Set<{
+    readyState: number; send: (value: string) => void; close: (code: number) => void;
+    userId: string; identityId: string; request: Parameters<typeof resolveUser>[0];
+  }>();
   const broadcastEvent = (event: Record<string, unknown>) => {
-    const payload = JSON.stringify({ ...event, cursor: Date.now() });
-    for (const socket of eventSockets) {
-      if (socket.readyState === 1) socket.send(payload);
-    }
+    void (async () => {
+      const audience = await eventAudience(event);
+      const payload = JSON.stringify({ ...event, cursor: Date.now() });
+      await Promise.all([...eventSockets].map(async socket => {
+        if (socket.readyState !== 1 || (audience && !audience.has(socket.userId))) return;
+        const identity = await resolveUser(socket.request);
+        if (!identity || identity.id !== socket.identityId) {
+          socket.close(1008);
+          eventSockets.delete(socket);
+          return;
+        }
+        socket.send(payload);
+      }));
+    })().catch(() => app.log.warn({ type: event.type }, "event_delivery_unavailable"));
   };
   app.register(cors, { origin: process.env.WEB_ORIGIN ?? true, credentials: true });
   app.register(rateLimit, { max: 120, timeWindow: "1 minute" });
@@ -197,6 +232,7 @@ export function buildServer() {
     admin: await resolveAdmin(request),
     configured: platformAdminConfigured(),
     provider: "lifeyoume-platform",
+    modelProviderMode: process.env.MODEL_PROVIDER_MODE === "maas" ? "maas" : "legacy",
     localFallbackEnabled: adminCredentialsConfigured()
   }));
 
@@ -338,8 +374,37 @@ export function buildServer() {
   });
 
   app.get("/api/v1/admin/model-config", async (request, reply) => {
+    reply.header("Cache-Control", "no-store, private");
+    reply.header("Pragma", "no-cache");
     const admin = await resolveAdmin(request);
     if (!admin) return reply.code(401).send({ error: "admin_authentication_required" });
+    if (process.env.MODEL_PROVIDER_MODE === "maas") {
+      let configuration;
+      try { configuration = maasConfiguration(process.env); }
+      catch {
+        return reply.code(503).send({ error: "maas_not_configured",
+          consoleUrl: "https://maas.lifeyoume.icu/#view=apps" });
+      }
+      if (!configuration) return reply.code(503).send({ error: "maas_not_configured" });
+      return {
+        configuration: {
+          provider: "maas",
+          baseUrl: configuration.baseUrl,
+          modelId: configuration.modelId,
+          apiKeyMasked: "服务端应用凭据（不可查看）",
+          hasApiKey: true,
+          thinkingEnabled: configuration.thinkingEnabled,
+          timeoutMs: configuration.timeoutMs,
+          temperature: configuration.temperature,
+          enabled: true,
+          source: "environment",
+          managedBy: "maas",
+          inferenceVerified: false,
+          updatedBy: "server environment",
+          updatedAt: null
+        }
+      };
+    }
     const [configured] = await db.select().from(modelConfigurations)
       .orderBy(desc(modelConfigurations.updatedAt)).limit(1);
     if (configured) {
@@ -383,6 +448,9 @@ export function buildServer() {
   app.put("/api/v1/admin/model-config", async (request, reply) => {
     const admin = await resolveAdmin(request);
     if (!admin) return reply.code(401).send({ error: "admin_authentication_required" });
+    if (process.env.MODEL_PROVIDER_MODE === "maas") {
+      return reply.code(409).send({ error: "model_managed_by_maas", consoleUrl: "https://maas.lifeyoume.icu/#view=apps" });
+    }
     const parsed = adminModelSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: "invalid_model_configuration", issues: parsed.error.issues });
@@ -441,6 +509,9 @@ export function buildServer() {
     reply.header("Pragma", "no-cache");
     const admin = await resolveAdmin(request);
     if (!admin) return reply.code(401).send({ error: "admin_authentication_required" });
+    if (process.env.MODEL_PROVIDER_MODE === "maas") {
+      return reply.code(409).send({ error: "model_managed_by_maas" });
+    }
     const origin = request.headers.origin;
     const allowedOrigins = [
       process.env.WEB_ORIGIN,
@@ -472,6 +543,9 @@ export function buildServer() {
   app.patch("/api/v1/admin/model-config/status", async (request, reply) => {
     const admin = await resolveAdmin(request);
     if (!admin) return reply.code(401).send({ error: "admin_authentication_required" });
+    if (process.env.MODEL_PROVIDER_MODE === "maas") {
+      return reply.code(409).send({ error: "model_managed_by_maas" });
+    }
     const parsed = adminModelStatusSchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_model_status" });
     const [existing] = await db.select().from(modelConfigurations)
@@ -504,6 +578,9 @@ export function buildServer() {
   }, async (request, reply) => {
     const admin = await resolveAdmin(request);
     if (!admin) return reply.code(401).send({ error: "admin_authentication_required" });
+    if (process.env.MODEL_PROVIDER_MODE === "maas") {
+      return reply.code(409).send({ error: "model_managed_by_maas" });
+    }
     const parsed = adminModelSchema.safeParse(request.body);
     if (!parsed.success) return reply.code(400).send({ error: "invalid_model_configuration" });
     const [existing] = await db.select().from(modelConfigurations)
@@ -548,6 +625,9 @@ export function buildServer() {
     if (!validModelSyncToken(configuredToken, suppliedToken)) {
       return reply.code(404).send({ error: "not_found" });
     }
+    if (process.env.MODEL_PROVIDER_MODE === "maas") {
+      return reply.code(410).send({ error: "use_independent_maas_application_key" });
+    }
     const configuration = await resolveModelConfiguration();
     if (!configuration.apiKey || !configuration.modelId) {
       return reply.code(409).send({ error: "model_not_configured" });
@@ -579,6 +659,25 @@ export function buildServer() {
       const message = error instanceof Error ? error.message : "mission_failed";
       return reply.code(message === "mission_unavailable" ? 409 : 502).send({ error: message });
     }
+  });
+
+  app.post("/internal/jobs/customer-agent-heartbeat", async (request, reply) => {
+    const configuredToken = process.env.WORKER_INTERNAL_TOKEN;
+    const suppliedToken = request.headers["x-meyou-worker-token"];
+    if (!configuredToken || typeof suppliedToken !== "string" || suppliedToken !== configuredToken) {
+      return reply.code(404).send({ error: "not_found" });
+    }
+    await recordCustomerWorkerHeartbeat();
+    return { ok: true };
+  });
+
+  app.post("/internal/jobs/customer-agents", async (request, reply) => {
+    const configuredToken = process.env.WORKER_INTERNAL_TOKEN;
+    const suppliedToken = request.headers["x-meyou-worker-token"];
+    if (!configuredToken || typeof suppliedToken !== "string" || suppliedToken !== configuredToken) {
+      return reply.code(404).send({ error: "not_found" });
+    }
+    return runDueCustomerAgents();
   });
 
   app.post("/internal/jobs/discovery-due", async (request, reply) => {
@@ -628,7 +727,8 @@ export function buildServer() {
     const result = await generatePlazaReply(body.circleId, body.initiatorId, body.sourceEventId, {
       threadRootId: body.threadRootId,
       round,
-      maxRounds
+      maxRounds,
+      onChange: (circleId, eventId) => broadcastEvent({ type: eventId ? "plaza.event" : "plaza.presence", circleId, eventId })
     });
     if (result.status === "sent") {
       await db.update(plazaDiscussions).set({
@@ -675,6 +775,26 @@ export function buildServer() {
         escalationReason: result.endReason
       });
     }
+    if (!result.shouldContinue) {
+      const { plazaPresence, plazaCircles } = await import("./db/schema.js");
+      const participants = await db.select().from(plazaPresence)
+        .where(sql`${plazaPresence.worldAction}->>'discussionId' = ${result.threadRootId}`);
+      for (const presence of participants) {
+        if (!presence.circleId) continue;
+        const circle = await db.query.plazaCircles.findFirst({ where: eq(plazaCircles.id, presence.circleId) });
+        if (!circle) continue;
+        await db.update(plazaPresence).set({
+          worldAction: createWorldAction({
+            kind: "observe", goal: "讨论结束，回到灵感看板",
+            from: presence, previous: presence.worldAction,
+            target: plazaPlaceDestination(circle, "observe", presence.userId), durationMs: 15_000, circle
+          }),
+          activity: "looking", updatedAt: new Date()
+        }).where(and(eq(plazaPresence.userId, presence.userId),
+          sql`date_trunc('milliseconds', ${plazaPresence.updatedAt}) = ${presence.updatedAt}`));
+      }
+    }
+    broadcastEvent({ type: "plaza.presence", circleId: body.circleId });
     return result;
   });
 
@@ -740,6 +860,88 @@ export function buildServer() {
   app.get("/api/v1/public/profiles/:handle", async (request, reply) => {
     const { handle } = request.params as { handle: string };
     return await publicProfile(handle) ?? reply.code(404).send({ error: "profile_not_found" });
+  });
+
+  app.get("/api/v1/public/companies/:handle", async (request, reply) => {
+    const { handle } = request.params as { handle: string };
+    const company = await getPublicCompany(handle);
+    if (!company) return reply.code(404).send({ error: "company_not_found" });
+    return { company };
+  });
+
+  app.get("/api/v1/company-chats", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const query = customerDirectorySchema.safeParse(request.query);
+    if (!query.success) return reply.code(400).send({ error: "invalid_company_handle" });
+    reply.header("cache-control", "no-store");
+    try { return await listCustomerChats(auth.user.id, query.data.handle, query.data); }
+    catch (error) {
+      if (error instanceof Error && error.message === "invalid_customer_cursor")
+        return reply.code(400).send({ error: "invalid_customer_cursor" });
+      throw error;
+    }
+  });
+
+  for (const audience of ["customer", "owner"] as const) {
+    const prefix = audience === "customer" ? "/api/v1/company-chats" : "/api/v1/customers";
+    app.get(`${prefix}/:id/messages`, async (request, reply) => {
+      const auth = await requireUser(request);
+      if (!auth) return reply.code(401).send({ error: "authentication_required" });
+      const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+      if (!id.success) return reply.code(400).send({ error: "invalid_customer_id" });
+      const query = customerHistorySchema.safeParse(request.query);
+      if (!query.success) return reply.code(400).send({ error: "invalid_customer_history" });
+      let result;
+      try { result = await readCustomerChat(auth.user.id, id.data, audience, query.data); }
+      catch (error) {
+        if (error instanceof Error && error.message === "invalid_customer_cursor") {
+          return reply.code(400).send({ error: "invalid_customer_cursor" });
+        }
+        throw error;
+      }
+      if (!result) return reply.code(404).send({ error: "customer_not_found" });
+      reply.header("cache-control", "no-store");
+      return result;
+    });
+    app.post(`${prefix}/:id/messages`, async (request, reply) => {
+      const auth = await requireUser(request);
+      if (!auth) return reply.code(401).send({ error: "authentication_required" });
+      const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+      const body = customerMessageSchema.safeParse(request.body);
+      if (!id.success || !body.success) return reply.code(400).send({ error: "invalid_customer_message" });
+      try {
+        const result = await sendCustomerChat(auth.user.id, id.data, audience, body.data);
+        if (!result) return reply.code(404).send({ error: "customer_not_found" });
+        return reply.code(result.duplicate ? 200 : 201).send(result);
+      } catch (error) {
+        if (error instanceof Error && [
+          "message_request_conflict", "customer_thread_resolved", "customer_reply_channel_unavailable"
+        ].includes(error.message)) return reply.code(409).send({ error: error.message });
+        throw error;
+      }
+    });
+  }
+
+  app.post("/api/v1/public/companies/:handle/inquiries", {
+    config: { rateLimit: { max: 8, timeWindow: "1 day" } }
+  }, async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const body = companyInquirySchema.safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: "invalid_company_inquiry" });
+    const { handle } = request.params as { handle: string };
+    let inquiry;
+    try {
+      inquiry = await createCompanyInquiry(auth.user.id, handle, body.data.content, body.data.requestId);
+    } catch (error) {
+      if (error instanceof Error && error.message === "inquiry_request_conflict") {
+        return reply.code(409).send({ error: "inquiry_request_conflict" });
+      }
+      throw error;
+    }
+    if (!inquiry) return reply.code(404).send({ error: "company_not_found" });
+    return reply.code(201).send({ inquiry });
   });
 
   app.post("/api/v1/public/profiles/:handle/inquiries", {
@@ -809,7 +1011,46 @@ export function buildServer() {
     if (mode !== "auto" && mode !== "confirm" && mode !== "paused") {
       return reply.code(400).send({ error: "invalid_agent_mode" });
     }
-    return { agent: await setAllAgentModes(auth.user.id, mode), saved: true };
+    const agent = await setAllAgentModes(auth.user.id, mode);
+    broadcastEvent({ type: "plaza.presence", userId: auth.user.id });
+    return { agent, saved: true };
+  });
+
+  app.get("/api/v1/agents/me/memories", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const parsed = memoryListQuery.safeParse(request.query);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_memory_query" });
+    try {
+      return await listAgentMemories(auth.user.id, parsed.data);
+    } catch (error) {
+      if (error instanceof Error && error.message === "invalid_memory_cursor") {
+        return reply.code(400).send({ error: error.message });
+      }
+      throw error;
+    }
+  });
+
+  app.patch("/api/v1/agents/me/memories/:id", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    const body = memoryUpdateSchema.safeParse(request.body);
+    if (!id.success || !body.success) return reply.code(400).send({ error: "invalid_memory_update" });
+    const memory = await updateAgentMemory(auth.user.id, id.data, body.data);
+    if (!memory) return reply.code(404).send({ error: "memory_not_found" });
+    return { memory };
+  });
+
+  app.delete("/api/v1/agents/me/memories/:id", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    if (!id.success) return reply.code(400).send({ error: "invalid_memory_id" });
+    if (!await deleteAgentMemory(auth.user.id, id.data)) {
+      return reply.code(404).send({ error: "memory_not_found" });
+    }
+    return reply.code(204).send();
   });
 
   app.get("/api/v1/discover/missions", async (request, reply) => {
@@ -975,15 +1216,21 @@ export function buildServer() {
       content: body.content.trim()
     });
     const recipientId = peerId;
+    broadcastEvent({ type: "conversation.message", conversationId: id, recipientId, messageId: message?.id });
     const guard = guardAgentReply(body.content);
-    const agent = !recipientId
+    const agent = await settleAgentReply(async () => !recipientId
       ? { status: "no_recipient" }
       : guard.escalate
         ? (await escalateConversation(recipientId, id, guard.reason ?? "涉及高风险事项，需要真人处理"),
           { status: "waiting_human", reason: guard.reason })
-        : await generateAgentReply(id, recipientId);
-    broadcastEvent({ type: "conversation.message", conversationId: id, recipientId, messageId: message?.id });
-    return reply.code(201).send({ message, agent });
+        : await generateAgentReply(id, recipientId), async reason => {
+      await audit(auth.user.id, "conversation.agent_reply_unavailable", "真人消息已送达，Agent 回复未完成", {
+        policyRefs: [`conversation:${id}`, `message:${message?.id}`],
+        escalationReason: reason
+      });
+    });
+    broadcastEvent({ type: "conversation.message", conversationId: id, recipientId, agentStatus: agent.status });
+    return reply.code(201).send({ message, delivery: "delivered", agent });
   });
 
   app.post("/api/v1/conversations/:id/takeover", async (request, reply) => {
@@ -1014,6 +1261,7 @@ export function buildServer() {
     try {
       const result = await decideReplyDraft(
         auth.user.id,
+        id,
         draftId,
         body.approve,
         typeof body.content === "string" ? body.content : undefined
@@ -1031,7 +1279,13 @@ export function buildServer() {
         });
       }
       return result;
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.message === "contact_blocked") {
+        return reply.code(403).send({ error: "contact_blocked" });
+      }
+      if (error instanceof Error && error.message === "invalid_draft_content") {
+        return reply.code(400).send({ error: "invalid_draft_content" });
+      }
       return reply.code(404).send({ error: "draft_not_found" });
     }
   });
@@ -1127,6 +1381,36 @@ export function buildServer() {
       bounds,
       cursor: params.cursor
     });
+  });
+
+  app.get("/api/v1/plaza/history", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const parsed = plazaHistoryQuery.safeParse(request.query);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_history_query" });
+    try {
+      return await listPlazaHistory(auth.user.id, parsed.data);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "";
+      if (reason === "circle_access_denied") return reply.code(403).send({ error: reason });
+      if (reason === "invalid_history_cursor") return reply.code(400).send({ error: reason });
+      throw error;
+    }
+  });
+
+  app.get("/api/v1/plaza/topics", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const parsed = plazaTopicQuery.safeParse(request.query);
+    if (!parsed.success) return reply.code(400).send({ error: "invalid_topic_query" });
+    try {
+      return await listPlazaTopics(auth.user.id, parsed.data);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "";
+      if (reason === "circle_access_denied") return reply.code(403).send({ error: reason });
+      if (reason === "invalid_history_cursor") return reply.code(400).send({ error: reason });
+      throw error;
+    }
   });
 
   app.get("/api/v1/plaza/runtime", async (request, reply) => {
@@ -1276,7 +1560,7 @@ export function buildServer() {
     if (!parsed.success) return reply.code(400).send({ error: "invalid_plaza_action" });
     try {
       const event = await enterPlaza(auth.user.id, parsed.data.circleId, parsed.data.activity, parsed.data.content);
-      if (event) {
+      if (event && parsed.data.content.trim()) {
         const runtime = await getPlazaRuntimeSettings(auth.user.id);
         await db.insert(plazaDiscussions).values({
           rootEventId: event.id,
@@ -1393,6 +1677,72 @@ export function buildServer() {
     return { organizations: await db.select().from(organizations).where(eq(organizations.ownerId, auth.user.id)) };
   });
 
+  app.get("/api/v1/organizations/:id/reception", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    if (!id.success) return reply.code(400).send({ error: "invalid_organization_id" });
+    const result = await getOrganizationReception(auth.user.id, id.data);
+    if (!result) return reply.code(404).send({ error: "organization_not_found" });
+    reply.header("cache-control", "no-store");
+    return result;
+  });
+
+  app.put("/api/v1/organizations/:id/reception", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    const body = organizationReceptionSchema.safeParse(request.body);
+    if (!id.success || !body.success) return reply.code(400).send({ error: "invalid_reception_configuration" });
+    const result = await setOrganizationReception(auth.user.id, id.data, body.data.mode);
+    if (!result) return reply.code(404).send({ error: "organization_not_found" });
+    return result;
+  });
+
+  app.get("/api/v1/customers/:id", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    if (!id.success) return reply.code(400).send({ error: "invalid_customer_id" });
+    const thread = await getCustomerThread(auth.user.id, id.data);
+    if (!thread) return reply.code(404).send({ error: "customer_not_found" });
+    return { thread };
+  });
+
+  app.get("/api/v1/customers/:id/reception-readiness", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    if (!id.success) return reply.code(400).send({ error: "invalid_customer_id" });
+    reply.header("cache-control", "no-store");
+    const readiness = await customerReceptionReadiness(auth.user.id, id.data);
+    if (!readiness) return reply.code(404).send({ error: "customer_not_found" });
+    return readiness;
+  });
+
+  app.patch("/api/v1/customers/:id", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    const body = customerUpdateSchema.safeParse(request.body);
+    if (!id.success || !body.success) return reply.code(400).send({ error: "invalid_customer_update" });
+    if (body.data.action === "resume_agent") {
+      const readiness = await customerReceptionReadiness(auth.user.id, id.data);
+      if (!readiness) return reply.code(404).send({ error: "customer_not_found" });
+      if (!readiness.ready) return reply.code(409).send({ error: "customer_agent_not_ready", readiness });
+    }
+    let result;
+    try { result = await updateCustomerThread(auth.user.id, id.data, body.data); }
+    catch (error) {
+      if (error instanceof Error && ["customer_agent_not_ready", "model_not_configured"].includes(error.message)) {
+        return reply.code(409).send({ error: "customer_agent_not_ready" });
+      }
+      throw error;
+    }
+    if (!result) return reply.code(404).send({ error: "customer_not_found" });
+    return result;
+  });
+
   app.post("/api/v1/organizations", async (request, reply) => {
     const auth = await requireUser(request);
     if (!auth) return reply.code(401).send({ error: "authentication_required" });
@@ -1405,7 +1755,118 @@ export function buildServer() {
     return reply.code(201).send({ organization });
   });
 
-  app.get("/api/v1/events", { websocket: true }, (connection) => {
+  app.get("/api/v1/organizations/:id/knowledge", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    if (!id.success) return reply.code(400).send({ error: "invalid_organization_id" });
+    const query = knowledgeListSchema.safeParse(request.query);
+    if (!query.success) return reply.code(400).send({ error: "invalid_knowledge_query" });
+    let result;
+    try { result = await listOrganizationKnowledge(auth.user.id, id.data, query.data); }
+    catch (error) {
+      if (error instanceof Error && error.message === "invalid_knowledge_cursor") {
+        return reply.code(400).send({ error: "invalid_knowledge_cursor" });
+      }
+      throw error;
+    }
+    if (!result) return reply.code(404).send({ error: "organization_not_found" });
+    reply.header("cache-control", "no-store");
+    return result;
+  });
+
+  app.post("/api/v1/organizations/:id/knowledge-test", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    const body = knowledgeQuestionSchema.safeParse(request.body);
+    if (!id.success || !body.success) return reply.code(400).send({ error: "invalid_knowledge_question" });
+    reply.header("cache-control", "no-store");
+    const result = await testKnowledgeAnswer(auth.user.id, id.data, body.data);
+    if (!result) return reply.code(404).send({ error: "organization_not_found" });
+    return result;
+  });
+
+  app.post("/api/v1/organizations/:id/knowledge-source-check", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const id = z.string().uuid().safeParse((request.params as { id: string }).id);
+    const body = knowledgeSourceCheckSchema.safeParse(request.body);
+    if (!id.success || !body.success) return reply.code(400).send({ error: "invalid_source_check" });
+    reply.header("cache-control", "no-store");
+    const result = await checkKnowledgeSources(auth.user.id, id.data, body.data.sources);
+    if (!result) return reply.code(404).send({ error: "organization_not_found" });
+    return result;
+  });
+
+  app.get("/api/v1/organizations/:id/knowledge/:documentId", async (request, reply) => {
+    const auth = await requireUser(request);
+    if (!auth) return reply.code(401).send({ error: "authentication_required" });
+    const params = z.object({ id: z.string().uuid(), documentId: z.string().uuid() }).safeParse(request.params);
+    if (!params.success) return reply.code(400).send({ error: "invalid_knowledge_id" });
+    const document = await getOrganizationKnowledgeDocument(auth.user.id, params.data.id, params.data.documentId);
+    if (!document) return reply.code(404).send({ error: "knowledge_not_found" });
+    reply.header("cache-control", "no-store");
+    return { document };
+  });
+
+  for (const method of ["POST", "PATCH", "DELETE"] as const) {
+    app.route({
+      method,
+      url: method === "POST" ? "/api/v1/organizations/:id/knowledge"
+        : "/api/v1/organizations/:id/knowledge/:documentId",
+      handler: async (request, reply) => {
+        const auth = await requireUser(request);
+        if (!auth) return reply.code(401).send({ error: "authentication_required" });
+        const params = z.object({
+          id: z.string().uuid(), documentId: z.string().uuid().optional()
+        }).safeParse(request.params);
+        if (!params.success) return reply.code(400).send({ error: "invalid_knowledge_id" });
+        const body = (method === "POST" ? knowledgeCreateSchema : method === "PATCH" ? knowledgeUpdateSchema
+          : z.object({ revision: z.string().datetime() }).strict()).safeParse(request.body);
+        if (!body.success) return reply.code(400).send({ error: "invalid_knowledge_document" });
+        try {
+          const operation = method === "POST"
+            ? { kind: "create" as const, input: knowledgeCreateSchema.parse(body.data) }
+            : method === "PATCH"
+              ? { kind: "update" as const, id: params.data.documentId!, input: knowledgeUpdateSchema.parse(body.data) }
+              : { kind: "delete" as const, id: params.data.documentId!, revision: (body.data as { revision: string }).revision };
+          const result = await mutateOrganizationKnowledge(auth.user.id, params.data.id, operation);
+          if (!result) return reply.code(404).send({ error: "organization_not_found" });
+          return reply.code(method === "POST" ? 201 : 200).send(result);
+        } catch (error) {
+          if (error instanceof Error && error.message === "knowledge_conflict") {
+            return reply.code(409).send({ error: "knowledge_conflict" });
+          }
+          if (error instanceof Error && error.message === "knowledge_not_found") {
+            return reply.code(404).send({ error: "knowledge_not_found" });
+          }
+          throw error;
+        }
+      }
+    });
+  }
+
+  const socketIdentities = new WeakMap<object, NonNullable<Awaited<ReturnType<typeof requireUser>>>>();
+  app.register(async eventsApp => {
+  eventsApp.get("/api/v1/events", {
+    websocket: true,
+    preValidation: async (request, reply) => {
+      const origin = request.headers.origin;
+      if (origin) {
+        let allowed = false;
+        try {
+          allowed = new URL(origin).host === request.headers.host || origin === process.env.WEB_ORIGIN;
+        } catch { /* Invalid origins are denied. */ }
+        if (!allowed) return reply.code(403).send({ error: "origin_not_allowed" });
+      }
+      const auth = await requireUser(request);
+      if (!auth) return reply.code(401).send({ error: "authentication_required" });
+      socketIdentities.set(request, auth);
+    }
+  }, (connection, request) => {
+    const auth = socketIdentities.get(request);
+    if (!auth) return;
     const candidate = connection as unknown as {
       socket?: { readyState: number; send: (value: string) => void; on: (event: string, listener: () => void) => void };
       readyState?: number;
@@ -1414,11 +1875,15 @@ export function buildServer() {
     };
     const socket = candidate.socket ?? candidate;
     if (typeof socket.send !== "function" || typeof socket.on !== "function") return;
-    const liveSocket = socket as { readyState: number; send: (value: string) => void };
+    const liveSocket = socket as unknown as typeof eventSockets extends Set<infer T> ? T : never;
+    liveSocket.userId = auth.user.id;
+    liveSocket.identityId = auth.identity.id;
+    liveSocket.request = request;
     eventSockets.add(liveSocket);
     liveSocket.send(JSON.stringify({ type: "connected", cursor: Date.now() }));
     socket.on("close", () => eventSockets.delete(liveSocket));
     socket.on("error", () => eventSockets.delete(liveSocket));
+  });
   });
   if (existsSync(webRoot)) {
     app.register(fastifyStatic, {
@@ -1436,6 +1901,11 @@ export function buildServer() {
     });
     app.setNotFoundHandler((request, reply) => {
       if (request.method === "GET" && !request.url.startsWith("/api/") && !request.url.startsWith("/internal/")) {
+        const pathname = request.url.split("?")[0] ?? "/";
+        if (["/admin", "/admin/", "/admin/login"].includes(pathname)
+          && existsSync(resolve(webRoot, "admin-entry.html"))) {
+          return reply.type("text/html").sendFile("admin-entry.html");
+        }
         return reply.type("text/html").sendFile("index.html");
       }
       return reply.code(404).send({ error: "not_found" });

@@ -4,32 +4,10 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  ENTERPRISE_AUTH_STORAGE_KEY,
-  type EnterpriseAuthSession,
-} from '../auth';
+import { type EnterpriseAuthSession } from '../auth';
 import { I18nProvider } from '../i18n';
 
 import LoginPage from './LoginPage';
-
-const session: EnterpriseAuthSession = {
-  token: 'token-1',
-  user: {
-    id: 'user-1',
-    tenant_id: 'tenant_demo',
-    username: 'admin',
-    role: 'admin',
-  },
-};
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    statusText: status === 200 ? 'OK' : 'Unauthorized',
-    text: async () => JSON.stringify(body),
-  } as Response;
-}
 
 function renderLogin(onLogin = vi.fn()) {
   render(
@@ -40,16 +18,6 @@ function renderLogin(onLogin = vi.fn()) {
   return onLogin;
 }
 
-async function showFormAndEnterCredentials(
-  user: ReturnType<typeof userEvent.setup>,
-  username = 'admin',
-  password = 'secret',
-) {
-  await user.click(screen.getByRole('button', { name: '进入数字团队' }));
-  await user.type(screen.getByLabelText('账号'), username);
-  await user.type(screen.getByLabelText('密码'), password);
-}
-
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -57,63 +25,37 @@ afterEach(() => {
 });
 
 describe('LoginPage', () => {
-  it('shows the original landing hero before revealing credentials', async () => {
-    const user = userEvent.setup();
+  it('shows the product preview and sends the entry action to a dedicated auth page', () => {
     renderLogin();
 
-    expect(screen.getByText('LifeYouMe AI 工程产品')).toBeTruthy();
+    expect(screen.queryByText('LifeYouMe AI 工程产品')).toBeNull();
+    expect(screen.queryByText('把你的经验，变成一支随时上岗的 AI 团队')).toBeNull();
+    expect(screen.queryByText('创建、培养和管理数字员工，让知识、流程与工具成为可复用、可追踪的工作能力。')).toBeNull();
+    expect(screen.getByRole('heading', { level: 1, name: 'LifeYouMe 数字团队' })).toBeTruthy();
     expect(screen.getByAltText('LifeYouMe · 数字团队产品界面预览')).toBeTruthy();
     expect(screen.queryByLabelText('账号')).toBeNull();
-
-    await user.click(screen.getByRole('button', { name: '进入数字团队' }));
-
-    expect(screen.getByLabelText('账号')).toBeTruthy();
-    expect(screen.getByLabelText('密码')).toBeTruthy();
+    expect(screen.getByRole('link', { name: '进入数字团队' }).getAttribute('href'))
+      .toBe('/auth/login');
+    expect(screen.getByRole('link', { name: '返回产品目录' }).getAttribute('href'))
+      .toBe('https://lifeyoume.icu/#products');
+    expect(screen.getByRole('button', { name: '切换语言' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'OpenBMB StaffDeck' }).className)
+      .toContain('min-h-[44px]');
   });
 
-  it('toggles the password between hidden and visible text', async () => {
+  it('lets a signed-out visitor switch the public experience to English', async () => {
     const user = userEvent.setup();
     renderLogin();
-    await user.click(screen.getByRole('button', { name: '进入数字团队' }));
-    const password = screen.getByLabelText('密码');
 
-    expect(password.getAttribute('type')).toBe('password');
-    await user.click(screen.getByRole('button', { name: '显示密码' }));
-    expect(password.getAttribute('type')).toBe('text');
-    await user.click(screen.getByRole('button', { name: '隐藏密码' }));
-    expect(password.getAttribute('type')).toBe('password');
-  });
+    await user.click(screen.getByRole('button', { name: '切换语言' }));
+    await user.click(screen.getByRole('menuitem', { name: /English/ }));
 
-  it('posts trimmed credentials with the configured tenant', async () => {
-    const user = userEvent.setup();
-    const fetchMock = vi.fn(async () => jsonResponse(session));
-    vi.stubGlobal('fetch', fetchMock);
-    renderLogin();
-
-    await showFormAndEnterCredentials(user, '  admin  ', '  secret  ');
-    await user.click(screen.getByRole('button', { name: '登录' }));
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    expect(fetchMock).toHaveBeenCalledWith('/api/auth/login', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({
-        tenant_id: 'tenant_demo',
-        username: 'admin',
-        password: 'secret',
-      }),
-    }));
-  });
-
-  it('stores the session and notifies the caller after a successful login', async () => {
-    const user = userEvent.setup();
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(session)));
-    const onLogin = renderLogin();
-
-    await showFormAndEnterCredentials(user);
-    await user.click(screen.getByRole('button', { name: '登录' }));
-
-    await waitFor(() => expect(onLogin).toHaveBeenCalledWith(session));
-    expect(JSON.parse(window.localStorage.getItem(ENTERPRISE_AUTH_STORAGE_KEY) || 'null'))
-      .toEqual(session);
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Enter Digital Team' })).toBeTruthy();
+      expect(screen.getByRole('heading', { level: 1, name: 'LifeYouMe Digital Team' })).toBeTruthy();
+      expect(document.documentElement.lang).toBe('en-US');
+    });
+    expect(window.localStorage.getItem('staffdeck_locale')).toBe('en-US');
+    expect(screen.getByRole('button', { name: 'Switch language' })).toBeTruthy();
   });
 });

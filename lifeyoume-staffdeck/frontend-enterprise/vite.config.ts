@@ -7,6 +7,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const publicBase = env.VITE_PUBLIC_BASE || '/';
   return {
     plugins: [react(), tailwindcss(), svgr()],
     resolve: {
@@ -14,7 +15,7 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
-    base: '/',
+    base: publicBase,
     test: {
       setupFiles: ['./src/test/setup.ts'],
       environmentOptions: {

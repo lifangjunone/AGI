@@ -1,0 +1,70 @@
+{
+  "name": "sherpa-vits-zh-ll",
+  "sid": 4,
+  "threads": 2,
+  "speed": 1.0,
+  "load_seconds": 0.6855,
+  "peak_rss_mib": 262.32,
+  "results": [
+    {
+      "test": "warmup",
+      "text": "你好，我是你的数字伙伴。",
+      "generation_seconds": 0.5294,
+      "audio_seconds": 1.495,
+      "rtf": 0.3541,
+      "sample_rate": 16000,
+      "bytes": 47884,
+      "path": "out/sherpa-vits-zh-ll/voice-4/warmup.wav"
+    },
+    {
+      "test": "dialog",
+      "text": "晚上好呀！今天过得怎么样？如果你愿意，我想听你讲讲今天最开心的一件事。",
+      "generation_seconds": 1.6871,
+      "audio_seconds": 4.766,
+      "rtf": 0.354,
+      "sample_rate": 16000,
+      "bytes": 152556,
+      "path": "out/sherpa-vits-zh-ll/voice-4/dialog.wav"
+    },
+    {
+      "test": "numbers",
+      "text": "今天是二零二六年十月二十九日，订单金额是一千二百三十四元五角，请拨打一三八零零一三八零零零。",
+      "generation_seconds": 1.9544,
+      "audio_seconds": 6.8135,
+      "rtf": 0.2868,
+      "sample_rate": 16000,
+      "bytes": 218076,
+      "path": "out/sherpa-vits-zh-ll/voice-4/numbers.wav"
+    },
+    {
+      "test": "mixed",
+      "text": "LifeYouMe MaaS 已经完成 CPU benchmark，现在测试 API、Second Me 和 TTS 的中英文混读效果。",
+      "generation_seconds": 1.0312,
+      "audio_seconds": 3.2219,
+      "rtf": 0.3201,
+      "sample_rate": 16000,
+      "bytes": 103144,
+      "path": "out/sherpa-vits-zh-ll/voice-4/mixed.wav"
+    },
+    {
+      "test": "long",
+      "text": "当夜幕慢慢降临，城市的灯光一盏一盏亮起，我想起了你今天说过的话。别担心，事情可以一件一件解决；累的时候就停下来休息一下，明天依然值得期待。",
+      "generation_seconds": 2.9429,
+      "audio_seconds": 9.8687,
+      "rtf": 0.2982,
+      "sample_rate": 16000,
+      "bytes": 315842,
+      "path": "out/sherpa-vits-zh-ll/voice-4/long.wav"
+    },
+    {
+      "test": "emotion",
+      "text": "太好了！我们终于完成了第一步。虽然过程有点辛苦，但我真的很开心，也很期待接下来和你一起继续前进！",
+      "generation_seconds": 2.2257,
+      "audio_seconds": 6.9631,
+      "rtf": 0.3196,
+      "sample_rate": 16000,
+      "bytes": 222862,
+      "path": "out/sherpa-vits-zh-ll/voice-4/emotion.wav"
+    }
+  ]
+}

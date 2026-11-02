@@ -244,6 +244,14 @@ def verify_session(token: str, now: int | None = None) -> str | None:
         return None
 
 
+def admin_credential() -> dict[str, object] | None:
+    return AUTH_STORE.admin_credential(OPS_ADMIN_USER)
+
+
+def issue_admin_session(username: str, revision: int, now: int | None = None) -> str:
+    return issue_session(f"platform-admin:{username}:{revision}", now)
+
+
 def esc(value: Any) -> str:
     return html.escape(str(value), quote=True)
 
@@ -289,14 +297,14 @@ def page(
 <title>{esc(title)} · LifeYouMe</title>
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="shortcut icon" href="/favicon.ico">
-<link rel="stylesheet" href="/assets/portal.css?v=7">
+<link rel="stylesheet" href="/assets/portal.css?v=9">
 <link rel="stylesheet" href="/assets/discovery.css?v=1">
 {'<link rel="stylesheet" href="/assets/showroom.css?v=1">' if showroom else ''}
 </head><body class="{body_class}">
 <a class="skip-link" href="#main-content">跳到主要内容</a>
 {header}
 {content}
-{'<script src="/assets/portal.js?v=9" defer></script>' if portal else ''}
+{'<script src="/assets/portal.js?v=11" defer></script>' if portal else ''}
 </body></html>"""
     return document.encode("utf-8")
 
@@ -664,7 +672,9 @@ def login_page(error: str = "") -> bytes:
     return page("运营端登录", body)
 
 
-def admin_login_page(csrf_token: str, error: str = "") -> bytes:
+def admin_login_page(
+    csrf_token: str, error: str = "", success: str = ""
+) -> bytes:
     body = f"""<main class="admin-login-main">
 <section class="auth-copy"><p class="eyebrow">PLATFORM ADMINISTRATION</p>
 <h1>底座管理后台</h1>
@@ -677,6 +687,7 @@ def admin_login_page(csrf_token: str, error: str = "") -> bytes:
 <label for="password">管理员密码</label>
 <input id="password" name="password" type="password" autocomplete="current-password" required>
 <button class="button primary auth-submit" type="submit">进入管理后台</button>
+{f'<p class="success" role="status">{esc(success)}</p>' if success else ''}
 {f'<p class="error" role="alert">{esc(error)}</p>' if error else ''}
 </form></section></main>"""
     return page("底座管理后台", body, portal=True)
@@ -880,6 +891,7 @@ def admin_dashboard(
     <a href="#products" data-admin-target="products"><b>03</b><span>产品访问</span><em>{enabled_count}/{len(products)}</em></a>
     <a href="#heat" data-admin-target="heat"><b>04</b><span>运营看板</span><em>{pinned_count}</em></a>
     <a href="#audit" data-admin-target="audit"><b>05</b><span>操作审计</span></a>
+    <a href="#security" data-admin-target="security"><b>06</b><span>安全设置</span></a>
   </nav>
   <div class="admin-rail-footer">
     <div><span>当前管理员</span><strong>{esc(username)}</strong></div>
@@ -991,6 +1003,65 @@ def admin_dashboard(
         <div class="admin-pager"><span data-admin-result></span><div><button type="button" data-admin-prev>上一页</button><span data-admin-page></span><button type="button" data-admin-next>下一页</button></div></div>
       </div>
     </section>
+    <section class="admin-view" data-admin-view="security" hidden>
+      <div class="admin-view-head">
+        <div><p class="eyebrow">ADMIN SECURITY</p><h2>安全设置</h2>
+        <p>修改当前平台管理员密码。保存后所有管理员登录状态都会失效。</p></div>
+      </div>
+      <div class="admin-security-layout">
+        <section class="admin-security-card">
+          <div class="admin-security-card-head">
+            <span>登录凭据</span><strong>{esc(username)}</strong>
+          </div>
+          <form class="admin-password-form" method="post"
+            action="/admin/security/password" data-admin-password-form>
+            <input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+            <label for="admin-current-password"><span>当前密码</span>
+              <span class="password-input"><input id="admin-current-password"
+                name="current_password" type="password" maxlength="200"
+                autocomplete="current-password"
+                aria-errormessage="admin-current-password-error" required>
+                <button type="button" data-password-toggle data-password-label="当前密码"
+                  aria-controls="admin-current-password" aria-pressed="false"
+                  aria-label="显示当前密码">显示</button></span>
+              <span id="admin-current-password-error" class="field-error"
+                role="alert" aria-live="assertive"></span>
+            </label>
+            <label for="admin-new-password"><span>新密码</span>
+              <span class="password-input"><input id="admin-new-password"
+                name="new_password" type="password" minlength="12" maxlength="200"
+                autocomplete="new-password" aria-describedby="admin-password-help"
+                aria-errormessage="admin-new-password-error" required>
+                <button type="button" data-password-toggle data-password-label="新密码"
+                  aria-controls="admin-new-password" aria-pressed="false"
+                  aria-label="显示新密码">显示</button></span>
+              <span id="admin-new-password-error" class="field-error"
+                role="alert" aria-live="assertive"></span>
+            </label>
+            <label for="admin-confirm-password"><span>确认新密码</span>
+              <span class="password-input"><input id="admin-confirm-password"
+                name="confirm_password" type="password" minlength="12" maxlength="200"
+                autocomplete="new-password"
+                aria-errormessage="admin-confirm-password-error" required>
+                <button type="button" data-password-toggle data-password-label="确认新密码"
+                  aria-controls="admin-confirm-password" aria-pressed="false"
+                  aria-label="显示确认新密码">显示</button></span>
+              <span id="admin-confirm-password-error" class="field-error"
+                role="alert" aria-live="assertive"></span>
+            </label>
+            <p id="admin-password-help" class="admin-security-help">至少 12 位；请勿复用其他服务密码。</p>
+            <p id="admin-password-feedback" class="form-feedback"
+              role="alert" aria-live="assertive"></p>
+            <button class="button primary" type="submit">更新管理员密码</button>
+          </form>
+        </section>
+        <aside class="admin-security-note">
+          <span>修改后的影响</span>
+          <ol><li>当前页面会退出登录</li><li>其他设备上的管理员会话同时失效</li>
+          <li>MeYou 等子产品后台需使用新密码重新登录</li></ol>
+        </aside>
+      </div>
+    </section>
   </div>
 </section>
 </main>"""
@@ -1061,7 +1132,11 @@ def sso_login_url(return_to: str) -> str:
 
 
 def auth_form_page(
-    mode: str, csrf_token: str, return_to: str, error: str = ""
+    mode: str,
+    csrf_token: str,
+    return_to: str,
+    error: str = "",
+    success: str = "",
 ) -> bytes:
     registering = mode == "register"
     title = "创建 LifeYouMe 账号" if registering else "登录 LifeYouMe"
@@ -1098,6 +1173,7 @@ def auth_form_page(
 <input id="password" name="password" type="password" minlength="12"
  autocomplete="{'new-password' if registering else 'current-password'}" required>
 <button class="button primary auth-submit" type="submit">{'创建账号' if registering else '登录'}</button>
+{f'<p class="success" role="status">{esc(success)}</p>' if success else ''}
 {f'<p class="error" role="alert">{esc(error)}</p>' if error else ''}
 </form>
 <div class="auth-alternate">{alternate}</div>
@@ -1105,7 +1181,14 @@ def auth_form_page(
     return page(title, body, portal=True)
 
 
-def account_page(user: AuthUser) -> bytes:
+def account_page(
+    user: AuthUser,
+    csrf_token: str,
+    error: str = "",
+    invalid_field: str = "",
+) -> bytes:
+    current_invalid = invalid_field == "current_password"
+    new_invalid = invalid_field == "new_password"
     body = f"""<main class="auth-main account-main"><section class="auth-copy">
 <p class="eyebrow">LIFEYOUME ACCOUNT</p><h1>{esc(user.display_name)}</h1>
 <p>{esc(user.email)}</p>
@@ -1115,6 +1198,49 @@ def account_page(user: AuthUser) -> bytes:
 <h2>统一账号已连接</h2>
 <p>当前会话适用于 `lifeyoume.icu` 及其产品子域。产品业务数据仍由各产品独立管理。</p>
 <a class="button" href="https://lifeyoume.icu/products">进入产品目录</a>
+<section class="account-security" aria-labelledby="account-security-title">
+<h2 id="account-security-title">账号与安全</h2>
+<p>修改密码后，所有 Web 会话和已授权设备都会退出，需要使用新密码重新登录。</p>
+<form method="post" action="/account/password" data-account-password-form>
+<input type="hidden" name="csrf_token" value="{esc(csrf_token)}">
+<label for="account-current-password">当前密码</label>
+<span class="password-input"><input id="account-current-password"
+ name="current_password" type="password" maxlength="200"
+ autocomplete="current-password"
+ {'aria-invalid="true"' if current_invalid else ''}
+ {'autofocus' if current_invalid else ''}
+ aria-errormessage="account-current-password-error" required>
+<button type="button" data-account-password-toggle data-password-label="当前密码"
+ aria-controls="account-current-password" aria-pressed="false"
+ aria-label="显示当前密码">显示</button></span>
+<span id="account-current-password-error" class="field-error" role="alert">{
+esc(error) if current_invalid else ""
+}</span>
+<label for="account-new-password">新密码</label>
+<span class="password-input"><input id="account-new-password"
+ name="new_password" type="password" minlength="12" maxlength="200"
+ autocomplete="new-password" aria-describedby="account-password-help"
+ {'aria-invalid="true"' if new_invalid else ''}
+ {'autofocus' if new_invalid else ''}
+ aria-errormessage="account-new-password-error" required>
+<button type="button" data-account-password-toggle data-password-label="新密码"
+ aria-controls="account-new-password" aria-pressed="false"
+ aria-label="显示新密码">显示</button></span>
+<span id="account-new-password-error" class="field-error" role="alert">{
+esc(error) if new_invalid else ""
+}</span>
+<label for="account-confirm-password">确认新密码</label>
+<span class="password-input"><input id="account-confirm-password"
+ name="confirm_password" type="password" minlength="12" maxlength="200"
+ autocomplete="new-password" aria-describedby="account-password-help" required>
+<button type="button" data-account-password-toggle data-password-label="确认新密码"
+ aria-controls="account-confirm-password" aria-pressed="false"
+ aria-label="显示确认新密码">显示</button></span>
+<p id="account-password-help" class="account-security-help">至少 12 位，且不能与当前密码相同。可以使用密码管理器生成并填入。</p>
+{f'<p class="error" role="alert" tabindex="-1">{esc(error)}</p>' if error and not invalid_field else ''}
+<button class="button primary auth-submit" type="submit">更新密码并退出全部设备</button>
+</form>
+</section>
 <form method="post" action="/logout"><button class="nav-link danger" type="submit">退出所有 Web 产品</button></form>
 </section></main>"""
     return page("账号", body, portal=True)
@@ -1293,8 +1419,25 @@ class Handler(BaseHTTPRequestHandler):
         return verify_session(token.value) if token else None
 
     def admin_user(self) -> str | None:
-        username = verify_session(self.cookie_value(ADMIN_COOKIE))
-        return username if username == OPS_ADMIN_USER else None
+        subject = verify_session(self.cookie_value(ADMIN_COOKIE))
+        if not subject:
+            return None
+        prefix = "platform-admin:"
+        if not subject.startswith(prefix):
+            return None
+        try:
+            username, revision_text = subject.removeprefix(prefix).rsplit(":", 1)
+            revision = int(revision_text)
+        except ValueError:
+            return None
+        credential = admin_credential()
+        if (
+            username != OPS_ADMIN_USER
+            or credential is None
+            or revision != int(credential["revision"])
+        ):
+            return None
+        return username
 
     def admin_csrf_valid(self, form: dict[str, str]) -> bool:
         submitted = form.get("csrf_token", "")
@@ -1442,7 +1585,16 @@ class Handler(BaseHTTPRequestHandler):
             csrf_token = secrets.token_urlsafe(24)
             self.send_with_headers(
                 200,
-                auth_form_page(path.removeprefix("/"), csrf_token, return_to),
+                auth_form_page(
+                    path.removeprefix("/"),
+                    csrf_token,
+                    return_to,
+                    success=(
+                        "密码已更新，请使用新密码重新登录。"
+                        if query.get("changed", [""])[0] == "1"
+                        else ""
+                    ),
+                ),
                 {"Set-Cookie": self.csrf_cookie(csrf_token)},
             )
             return
@@ -1451,7 +1603,12 @@ class Handler(BaseHTTPRequestHandler):
             if not user:
                 self.redirect(sso_login_url("https://auth.lifeyoume.icu/account"))
                 return
-            self.send_body(200, account_page(user))
+            csrf_token = secrets.token_urlsafe(24)
+            self.send_with_headers(
+                200,
+                account_page(user, csrf_token),
+                {"Set-Cookie": self.csrf_cookie(csrf_token)},
+            )
             return
         if ROLE == "auth" and path == "/device":
             user_code = query.get("user_code", [""])[0].strip().upper()[:9]
@@ -1474,7 +1631,9 @@ class Handler(BaseHTTPRequestHandler):
             headers = {}
             if username:
                 headers["Set-Cookie"] = self.admin_session_cookie(
-                    issue_session(username)
+                    issue_admin_session(
+                        username, int(admin_credential()["revision"])
+                    )
                 )
             elif not self.cookie_value(ADMIN_CSRF_COOKIE):
                 headers["Set-Cookie"] = self.admin_csrf_cookie(csrf_token)
@@ -1486,7 +1645,14 @@ class Handler(BaseHTTPRequestHandler):
                     query.get("ok", [""])[0],
                 )
             else:
-                body = admin_login_page(csrf_token)
+                body = admin_login_page(
+                    csrf_token,
+                    success=(
+                        "管理员密码已更新，请使用新密码重新登录。"
+                        if query.get("changed", [""])[0] == "1"
+                        else ""
+                    ),
+                )
             self.send_with_headers(200, body, headers)
             return
         if path == "/api/v1/products" and ROLE in {"portal", "ops"}:
@@ -1592,10 +1758,11 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 username = form.get("username", "")[:128]
                 password = form.get("password", "")[:200]
+                credential = admin_credential()
                 valid = (
-                    bool(OPS_ADMIN_PASSWORD_HASH)
+                    credential is not None
                     and hmac.compare_digest(username, OPS_ADMIN_USER)
-                    and verify_password(password, OPS_ADMIN_PASSWORD_HASH)
+                    and verify_password(password, str(credential["password_hash"]))
                 )
                 if not valid:
                     self.record_failed_attempt()
@@ -1607,7 +1774,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.clear_failed_attempts()
                 self.redirect(
                     "/admin/",
-                    {"Set-Cookie": self.admin_session_cookie(issue_session(username))},
+                    {
+                        "Set-Cookie": self.admin_session_cookie(
+                            issue_admin_session(
+                                username, int(credential["revision"])
+                            )
+                        )
+                    },
                 )
                 return
 
@@ -1624,6 +1797,40 @@ class Handler(BaseHTTPRequestHandler):
                         '<a href="/admin/">返回管理后台</a></main>',
                         portal=True,
                     ),
+                )
+                return
+            if path == "/admin/security/password":
+                current_password = form.get("current_password", "")[:200]
+                new_password = form.get("new_password", "")[:200]
+                confirm_password = form.get("confirm_password", "")[:200]
+                credential = admin_credential()
+                if self.rate_limited():
+                    self.send_json(429, {"error": "too_many_attempts"})
+                    return
+                if (
+                    len(new_password) < 12
+                    or len(new_password) > 200
+                    or new_password != confirm_password
+                    or current_password == new_password
+                ):
+                    self.send_json(400, {"error": "invalid_password"})
+                    return
+                if (
+                    credential is None
+                    or not verify_password(
+                        current_password, str(credential["password_hash"])
+                    )
+                ):
+                    self.record_failed_attempt()
+                    self.send_json(401, {"error": "current_password_incorrect"})
+                    return
+                AUTH_STORE.change_admin_password(
+                    username, password_hash(new_password), username
+                )
+                self.clear_failed_attempts()
+                self.redirect(
+                    "/admin/login?changed=1",
+                    {"Set-Cookie": self.admin_session_cookie("", max_age=0)},
                 )
                 return
             if path == "/admin/users/status":
@@ -1756,6 +1963,74 @@ class Handler(BaseHTTPRequestHandler):
                 AUTH_STORE.revoke_session(self.cookie_value(SSO_COOKIE))
                 self.redirect(
                     "https://lifeyoume.icu/",
+                    {"Set-Cookie": self.sso_cookie("", max_age=0)},
+                )
+                return
+            if path == "/account/password":
+                user = self.sso_user()
+                if not user:
+                    self.redirect(sso_login_url("https://auth.lifeyoume.icu/account"))
+                    return
+                csrf_token = self.cookie_value(CSRF_COOKIE)
+                if not self.csrf_valid(form):
+                    self.send_body(
+                        403,
+                        account_page(
+                            user,
+                            csrf_token,
+                            "安全页面已过期，请刷新后重试。",
+                        ),
+                    )
+                    return
+                if self.rate_limited():
+                    self.send_body(
+                        429,
+                        account_page(
+                            user,
+                            csrf_token,
+                            "尝试次数过多，请稍后再试。",
+                        ),
+                    )
+                    return
+                current_password = form.get("current_password", "")[:200]
+                new_password = form.get("new_password", "")[:200]
+                confirm_password = form.get("confirm_password", "")[:200]
+                if (
+                    len(new_password) < 12
+                    or len(new_password) > 200
+                    or new_password != confirm_password
+                    or current_password == new_password
+                ):
+                    self.send_body(
+                        400,
+                        account_page(
+                            user,
+                            csrf_token,
+                            "新密码至少需要 12 位、两次输入一致，且不能与当前密码相同。",
+                            "new_password",
+                        ),
+                    )
+                    return
+                if not AUTH_STORE.change_user_password(
+                    user.id,
+                    current_password,
+                    password_hash(new_password),
+                    verify_password,
+                ):
+                    self.record_failed_attempt()
+                    self.send_body(
+                        401,
+                        account_page(
+                            user,
+                            csrf_token,
+                            "当前密码不正确，请重新输入。",
+                            "current_password",
+                        ),
+                    )
+                    return
+                self.clear_failed_attempts()
+                self.redirect(
+                    "/login?changed=1",
                     {"Set-Cookie": self.sso_cookie("", max_age=0)},
                 )
                 return
@@ -1930,6 +2205,10 @@ def main() -> None:
         raise SystemExit("Ops requires SESSION_SECRET and OPS_ADMIN_PASSWORD_HASH")
     if ROLE in {"portal", "auth", "ops"}:
         AUTH_STORE.initialize()
+    if ROLE in {"auth", "ops"}:
+        AUTH_STORE.ensure_admin_credential(
+            OPS_ADMIN_USER, OPS_ADMIN_PASSWORD_HASH
+        )
     server = ThreadingHTTPServer((HOST, PORT), Handler)
     print(json.dumps({"service": ROLE, "listen": f"{HOST}:{PORT}"}), flush=True)
     server.serve_forever()

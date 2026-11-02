@@ -69,6 +69,38 @@ def initialize():
           token TEXT PRIMARY KEY, account_id TEXT NOT NULL, created_at TEXT NOT NULL,
           FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
         );
+        CREATE TABLE IF NOT EXISTS organizations(
+          id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS memberships(
+          organization_id TEXT NOT NULL, account_id TEXT NOT NULL, role TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          PRIMARY KEY(organization_id,account_id),
+          FOREIGN KEY(organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS workspace_invites(
+          id TEXT PRIMARY KEY, organization_id TEXT NOT NULL,
+          email TEXT NOT NULL, role TEXT NOT NULL, token_hash TEXT NOT NULL UNIQUE,
+          status TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL,
+          expires_at TEXT NOT NULL, accepted_by TEXT, accepted_at TEXT,
+          FOREIGN KEY(organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS product_objects(
+          organization_id TEXT NOT NULL, kind TEXT NOT NULL, id TEXT NOT NULL,
+          data TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+          PRIMARY KEY(organization_id,kind,id),
+          FOREIGN KEY(organization_id) REFERENCES organizations(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS product_objects_org_kind
+          ON product_objects(organization_id,kind,updated_at);
+        CREATE TABLE IF NOT EXISTS product_audit(
+          seq INTEGER PRIMARY KEY AUTOINCREMENT, organization_id TEXT NOT NULL,
+          account_id TEXT NOT NULL, action TEXT NOT NULL, object_kind TEXT,
+          object_id TEXT, detail TEXT NOT NULL, created_at TEXT NOT NULL,
+          FOREIGN KEY(organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+          FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
+        );
         """)
 
 
@@ -148,3 +180,81 @@ def account_by_session(db, token):
 
 def all_accounts(db):
     return [account_view(row) for row in db.execute("SELECT * FROM accounts ORDER BY created_at DESC")]
+
+
+def organizations_for(db, account_id):
+    return [dict(row) for row in db.execute(
+        """SELECT o.*,m.role FROM organizations o
+           JOIN memberships m ON m.organization_id=o.id
+           WHERE m.account_id=? ORDER BY o.created_at""", (account_id,))]
+
+
+def organization_members(db, organization_id):
+    return [dict(row) for row in db.execute(
+        """SELECT a.id,a.name,a.email,m.role,m.created_at
+           FROM memberships m JOIN accounts a ON a.id=m.account_id
+           WHERE m.organization_id=?
+           ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1
+           WHEN 'reviewer' THEN 2 ELSE 3 END,m.created_at""",
+        (organization_id,))]
+
+
+def add_organization_member(db, organization_id, account_id, role):
+    db.execute(
+        """INSERT INTO memberships(organization_id,account_id,role,created_at)
+           VALUES(?,?,?,?)
+           ON CONFLICT(organization_id,account_id)
+           DO UPDATE SET role=excluded.role""",
+        (organization_id, account_id, role, now()))
+
+
+def create_organization(db, account_id, name):
+    organization = {"id": uid("ORG"), "name": name, "created_at": now()}
+    db.execute("INSERT INTO organizations(id,name,created_at) VALUES(?,?,?)",
+               (organization["id"], organization["name"], organization["created_at"]))
+    db.execute("INSERT INTO memberships(organization_id,account_id,role,created_at) VALUES(?,?,?,?)",
+               (organization["id"], account_id, "owner", now()))
+    return organization
+
+
+def product_get(db, organization_id, kind, identifier):
+    row = db.execute(
+        "SELECT data FROM product_objects WHERE organization_id=? AND kind=? AND id=?",
+        (organization_id, kind, identifier)).fetchone()
+    return json.loads(row["data"]) if row else None
+
+
+def product_all(db, organization_id, kind):
+    return [json.loads(row["data"]) for row in db.execute(
+        """SELECT data FROM product_objects
+           WHERE organization_id=? AND kind=? ORDER BY created_at""",
+        (organization_id, kind))]
+
+
+def product_all_organizations(db, kind):
+    return [
+        (row["organization_id"], json.loads(row["data"]))
+        for row in db.execute(
+            """SELECT organization_id,data FROM product_objects
+               WHERE kind=? ORDER BY updated_at""", (kind,))
+    ]
+
+
+def product_save(db, organization_id, kind, obj):
+    timestamp = now()
+    db.execute(
+        """INSERT INTO product_objects(organization_id,kind,id,data,created_at,updated_at)
+           VALUES(?,?,?,?,?,?)
+           ON CONFLICT(organization_id,kind,id)
+           DO UPDATE SET data=excluded.data,updated_at=excluded.updated_at""",
+        (organization_id, kind, obj["id"], json.dumps(obj, ensure_ascii=False),
+         obj.get("created_at", timestamp), timestamp))
+
+
+def product_audit(db, organization_id, account_id, action, kind=None, identifier=None, detail=None):
+    db.execute(
+        """INSERT INTO product_audit(
+             organization_id,account_id,action,object_kind,object_id,detail,created_at
+           ) VALUES(?,?,?,?,?,?,?)""",
+        (organization_id, account_id, action, kind, identifier,
+         json.dumps(detail or {}, ensure_ascii=False), now()))

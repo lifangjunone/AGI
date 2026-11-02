@@ -1,7 +1,8 @@
-import { type CSSProperties } from 'react';
+import { lazy, Suspense, type CSSProperties } from 'react';
 
 import AppSidebar from '@/components/AppSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 import { CHAT_MAIN_CLASS } from './chatPageStyles';
@@ -10,14 +11,23 @@ import { useChatSession } from './useChatSession';
 import ChatHeader from './components/ChatHeader';
 import MessageList from './components/MessageList';
 import Composer from './components/Composer';
-import ChatDialogs from './components/ChatDialogs';
+
+const ChatDialogs = lazy(() => import('./components/ChatDialogs'));
 
 export default function ChatPage() {
   const chat = useChatSession();
+  const isMobile = useIsMobile();
+  const dialogsOpen = Boolean(
+    chat.showHandoffInbox
+    || chat.activeCitation
+    || chat.renameSession
+    || chat.pendingDelete
+    || chat.modelSetupOpen,
+  );
 
   return (
     <SidebarProvider
-      open={!chat.sidebarCollapsed}
+      open={!chat.sidebarCollapsed && !isMobile}
       onOpenChange={(open) => {
         if (open === chat.sidebarCollapsed) chat.toggleSidebar();
       }}
@@ -27,7 +37,7 @@ export default function ChatPage() {
           '--sidebar-width-icon': '72px',
         } as CSSProperties
       }
-      className="h-screen min-h-0 bg-[#fcfcfc] text-[#18181a]"
+      className="chat-workspace-shell h-screen min-h-0 overflow-x-clip bg-[#fcfcfc] text-[#18181a]"
     >
       <AppSidebar
         variant="chat"
@@ -60,7 +70,11 @@ export default function ChatPage() {
         <MessageList chat={chat} />
         <Composer chat={chat} />
       </main>
-      <ChatDialogs chat={chat} />
+      {dialogsOpen && (
+        <Suspense fallback={null}>
+          <ChatDialogs chat={chat} />
+        </Suspense>
+      )}
     </SidebarProvider>
   );
 }

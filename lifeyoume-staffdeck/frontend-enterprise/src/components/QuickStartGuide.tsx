@@ -11,12 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { XIcon } from "lucide-react";
 import { EnterpriseRoute } from "@/enums/routes";
-import { OPEN_QUICK_START_EVENT } from "./OnboardingGuide";
-
-const ONBOARDING_SEEN_KEY = "staffdeck_onboarding_guide_seen";
-export const QUICK_START_SEEN_KEY = "staffdeck_quick_start_guide_seen";
-export const QUICK_START_COMPLETED_EVENT = "staffdeck-quick-start-completed";
-export const OPEN_MODEL_CREATE_EVENT = "staffdeck-open-model-create";
+import {
+  ONBOARDING_SEEN_KEY,
+  OPEN_MODEL_CREATE_EVENT,
+  OPEN_QUICK_START_EVENT,
+  QUICK_START_COMPLETED_EVENT,
+  QUICK_START_SEEN_KEY,
+} from "@/lib/guide-events";
 
 type QuickStartStep = {
   title: string;
@@ -117,7 +118,13 @@ function findStepTarget(step: QuickStartStep) {
   return findVisibleTarget(step.target) || (step.fallbackTarget ? findVisibleTarget(step.fallbackTarget) : undefined);
 }
 
-export default function QuickStartGuide({ isAdmin }: { isAdmin: boolean }) {
+export default function QuickStartGuide({
+  isAdmin,
+  openRequest = 0,
+}: {
+  isAdmin: boolean;
+  openRequest?: number;
+}) {
   const navigate = useNavigate();
   const location = useLocation();
   const steps = useMemo(() => (isAdmin ? STEPS : STEPS.slice(1)), [isAdmin]);
@@ -141,6 +148,12 @@ export default function QuickStartGuide({ isAdmin }: { isAdmin: boolean }) {
     window.addEventListener(OPEN_QUICK_START_EVENT, reopen);
     return () => window.removeEventListener(OPEN_QUICK_START_EVENT, reopen);
   }, []);
+
+  useEffect(() => {
+    if (openRequest <= 0 || window.localStorage.getItem(QUICK_START_SEEN_KEY)) return;
+    setStep(0);
+    setOpen(true);
+  }, [openRequest]);
 
   function finish() {
     window.localStorage.setItem(QUICK_START_SEEN_KEY, "1");

@@ -108,6 +108,26 @@ export interface PlazaMomentState {
   expiresAt: string;
 }
 
+export interface PlazaWorldAction {
+  kind: "observe" | "rest" | "move" | "discuss";
+  goal: string;
+  sourceEventId: string | null;
+  discussionId: string | null;
+  fromX: number;
+  fromY: number;
+  targetX: number;
+  targetY: number;
+  startedAt: string;
+  arrivesAt: string;
+  endsAt: string;
+  /** Authoritative route along public walkways. Older actions remain straight-line. */
+  route?: Array<{ x: number; y: number }>;
+  awaitingModel?: boolean;
+}
+
+/** Shared server timeline; no browser-local random destinations or frame-dependent movement. */
+export { plazaActionPosition, plazaActionPhase, plazaPlaces, plazaPlaceDestination, plazaCircleProjection } from "./plaza-world.js";
+
 export const plazaActionSchema = z.object({
   circleId: z.string().uuid(),
   activity: z.enum(plazaActivities),
@@ -220,6 +240,7 @@ export interface PlazaSnapshot {
     activity: PlazaActivity;
     statusText: string;
     momentState?: PlazaMomentState | null;
+    worldAction?: PlazaWorldAction | null;
     x: number;
     y: number;
     lastSeenAt: string;

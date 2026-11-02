@@ -2,20 +2,19 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
 
-import englishCatalog from './en.json';
-
 export type AppLocale = 'zh-CN' | 'en-US';
 
 type I18nContextValue = {
   locale: AppLocale;
-  setLocale: (locale: AppLocale) => void;
-  toggleLocale: () => void;
+  setLocale: (locale: AppLocale) => Promise<void>;
+  toggleLocale: () => Promise<void>;
   t: (source: string, values?: Record<string | number, string | number>) => string;
 };
 
@@ -26,7 +25,6 @@ type CompiledTemplate = {
 };
 
 const STORAGE_KEY = 'staffdeck_locale';
-const CATALOG = englishCatalog as Record<string, string>;
 const SAFE_ATTRIBUTES = ['placeholder', 'aria-label', 'title', 'alt', 'data-placeholder'] as const;
 const TEMPLATE_TOKEN = /\{(\d+)\}/g;
 const textOriginals = new WeakMap<Text, string>();
@@ -55,32 +53,52 @@ function escapePattern(value: string): string {
 
 const exactCatalog = new Map<string, string>();
 const compiledTemplates: CompiledTemplate[] = [];
+let englishCatalogLoaded = false;
+let englishCatalogPromise: Promise<void> | null = null;
 
-for (const [rawSource, target] of Object.entries(CATALOG)) {
-  const sources = new Set([rawSource, decodeSourceEntities(rawSource)]);
-  for (const source of sources) {
-    if (!source) continue;
-    exactCatalog.set(source, target);
-    if (!TEMPLATE_TOKEN.test(source)) {
+function installEnglishCatalog(catalog: Record<string, string>): void {
+  exactCatalog.clear();
+  compiledTemplates.length = 0;
+  translationCache.clear();
+  for (const [rawSource, target] of Object.entries(catalog)) {
+    const sources = new Set([rawSource, decodeSourceEntities(rawSource)]);
+    for (const source of sources) {
+      if (!source) continue;
+      exactCatalog.set(source, target);
+      if (!TEMPLATE_TOKEN.test(source)) {
+        TEMPLATE_TOKEN.lastIndex = 0;
+        continue;
+      }
       TEMPLATE_TOKEN.lastIndex = 0;
-      continue;
+      const placeholderOrder: number[] = [];
+      let cursor = 0;
+      let pattern = '^';
+      for (const match of source.matchAll(TEMPLATE_TOKEN)) {
+        pattern += escapePattern(source.slice(cursor, match.index));
+        pattern += '([\\s\\S]*?)';
+        placeholderOrder.push(Number(match[1]));
+        cursor = (match.index || 0) + match[0].length;
+      }
+      pattern += `${escapePattern(source.slice(cursor))}$`;
+      compiledTemplates.push({ pattern: new RegExp(pattern), placeholderOrder, target });
     }
-    TEMPLATE_TOKEN.lastIndex = 0;
-    const placeholderOrder: number[] = [];
-    let cursor = 0;
-    let pattern = '^';
-    for (const match of source.matchAll(TEMPLATE_TOKEN)) {
-      pattern += escapePattern(source.slice(cursor, match.index));
-      pattern += '([\\s\\S]*?)';
-      placeholderOrder.push(Number(match[1]));
-      cursor = (match.index || 0) + match[0].length;
-    }
-    pattern += `${escapePattern(source.slice(cursor))}$`;
-    compiledTemplates.push({ pattern: new RegExp(pattern), placeholderOrder, target });
   }
+  compiledTemplates.sort((left, right) => right.pattern.source.length - left.pattern.source.length);
+  englishCatalogLoaded = true;
 }
 
-compiledTemplates.sort((left, right) => right.pattern.source.length - left.pattern.source.length);
+function loadEnglishCatalog(): Promise<void> {
+  if (englishCatalogLoaded) return Promise.resolve();
+  if (!englishCatalogPromise) {
+    englishCatalogPromise = import('./en.json')
+      .then((module) => installEnglishCatalog(module.default as Record<string, string>))
+      .catch((error) => {
+        englishCatalogPromise = null;
+        throw error;
+      });
+  }
+  return englishCatalogPromise;
+}
 
 function interpolate(target: string, values: Record<string | number, string | number>): string {
   return target.replace(TEMPLATE_TOKEN, (_, key: string) => String(values[key] ?? `{${key}}`));
@@ -223,24 +241,52 @@ export function getDateLocale(): string {
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<AppLocale>(initialLocale);
+  const [catalogRevision, setCatalogRevision] = useState(
+    () => Number(englishCatalogLoaded),
+  );
 
-  const setLocale = useCallback((nextLocale: AppLocale) => {
+  const setLocale = useCallback(async (nextLocale: AppLocale) => {
+    if (nextLocale === 'en-US') {
+      try {
+        await loadEnglishCatalog();
+      } catch {
+        return;
+      }
+      setCatalogRevision((revision) => revision + 1);
+    }
     currentLocale = nextLocale;
     window.localStorage.setItem(STORAGE_KEY, nextLocale);
     document.documentElement.lang = nextLocale;
     setLocaleState(nextLocale);
   }, []);
 
-  const toggleLocale = useCallback(() => {
-    setLocale(locale === 'zh-CN' ? 'en-US' : 'zh-CN');
+  const toggleLocale = useCallback(async () => {
+    await setLocale(locale === 'zh-CN' ? 'en-US' : 'zh-CN');
   }, [locale, setLocale]);
+
+  useEffect(() => {
+    if (locale !== 'en-US' || englishCatalogLoaded) return;
+    let active = true;
+    void loadEnglishCatalog().then(() => {
+      if (active) setCatalogRevision((revision) => revision + 1);
+    }).catch(() => {
+      if (!active) return;
+      currentLocale = 'zh-CN';
+      window.localStorage.setItem(STORAGE_KEY, 'zh-CN');
+      document.documentElement.lang = 'zh-CN';
+      setLocaleState('zh-CN');
+    });
+    return () => {
+      active = false;
+    };
+  }, [locale]);
 
   const t = useCallback(
     (source: string, values: Record<string | number, string | number> = {}) => {
       if (locale === 'zh-CN') return interpolate(source, values);
       return interpolate(translateCore(source) || source, values);
     },
-    [locale],
+    [catalogRevision, locale],
   );
 
   useLayoutEffect(() => {
@@ -283,7 +329,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       observer.disconnect();
       pending.clear();
     };
-  }, [locale]);
+  }, [catalogRevision, locale]);
 
   const value = useMemo<I18nContextValue>(
     () => ({ locale, setLocale, toggleLocale, t }),

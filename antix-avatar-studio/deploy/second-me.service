@@ -1,0 +1,28 @@
+[Unit]
+Description=Second Me static web service
+After=network.target
+
+[Service]
+Type=simple
+User=second-me
+Group=second-me
+WorkingDirectory=/data/app/second-me/current
+EnvironmentFile=/etc/second-me/model.env
+Environment=SECOND_ME_HOST=127.0.0.1
+Environment=SECOND_ME_PORT=4395
+Environment=SECOND_ME_DB=/data/app/second-me/data/second-me.db
+Environment=SECOND_ME_PAYMENT_MODE=manual-mobile
+Environment=SECOND_ME_MANUAL_PAY_QR=/etc/second-me/manual-pay-qr.png
+Environment=ALIPAY_SANDBOX_CONFIG=/etc/second-me/alipay-sandbox.json
+ExecStart=/data/app/second-me/venv/bin/python /data/app/second-me/current/server.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadOnlyPaths=/data/app/second-me
+ReadWritePaths=/data/app/second-me/data
+
+[Install]
+WantedBy=multi-user.target

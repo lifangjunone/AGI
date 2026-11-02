@@ -235,6 +235,23 @@ class ToolExecutor:
             if invocation_id
             else None
         )
+        # A resumed loop can issue a fresh invocation id for the same logical
+        # frame action. The existing pending receipt remains authoritative.
+        if session_id and task_frame_id:
+            existing = self.db.exec(
+                select(ExternalBusinessTask).where(
+                    ExternalBusinessTask.tenant_id == tool.tenant_id,
+                    ExternalBusinessTask.user_id == user_id,
+                    ExternalBusinessTask.tool_id == tool.id,
+                    ExternalBusinessTask.session_id == session_id,
+                    ExternalBusinessTask.task_frame_id == task_frame_id,
+                    ExternalBusinessTask.status.in_(
+                        ["queued", "submitting", "accepted", "working"]
+                    ),
+                )
+            ).first()
+            if existing is not None and existing.request_json == arguments:
+                return self._detached_acceptance_result(tool, existing)
         if idempotency_key:
             existing = self.db.exec(
                 select(ExternalBusinessTask).where(

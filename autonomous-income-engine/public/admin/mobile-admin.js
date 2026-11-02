@@ -7,6 +7,7 @@
   let refreshTimer = null;
   let loginCompleted = false;
   let activeTab = 'orders';
+  let activeProductFilter = 'all';
 
   async function api(path, options = {}) {
     const response = await fetch(path, {
@@ -26,16 +27,65 @@
       : '';
   }
 
+  function orderProductKey(order) {
+    return order.productKey || order.source || order.experimentId || 'unknown';
+  }
+
+  function orderProductLabel(order) {
+    return order.productLabel || order.sourceLabel || order.productTitle || order.experimentId || '未分类产品';
+  }
+
+  function summarizeOrders(orders) {
+    return {
+      pending: orders.filter((order) => order.status === 'pending').length,
+      paid: orders.filter((order) => order.status === 'paid').length,
+      revenue: orders.filter((order) => order.status === 'paid').reduce((sum, order) => sum + Number(order.amount || 0), 0)
+    };
+  }
+
+  function renderProductFilter(orders) {
+    const container = $('[data-product-filter]');
+    const groups = new Map();
+    for (const order of orders) {
+      const key = orderProductKey(order);
+      if (!groups.has(key)) groups.set(key, { key, label: orderProductLabel(order), count: 0, pending: 0 });
+      const group = groups.get(key);
+      group.count += 1;
+      if (order.status === 'pending') group.pending += 1;
+    }
+    const filters = [
+      { key: 'all', label: '全部产品', count: orders.length, pending: orders.filter((order) => order.status === 'pending').length },
+      ...[...groups.values()].sort((left, right) => right.pending - left.pending || right.count - left.count || left.label.localeCompare(right.label, 'zh-CN'))
+    ];
+    if (!filters.some((item) => item.key === activeProductFilter)) activeProductFilter = 'all';
+    container.replaceChildren(...filters.map((item) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'filter-chip' + (item.key === activeProductFilter ? ' active' : '');
+      button.dataset.productFilter = item.key;
+      button.innerHTML = `<span>${item.label}</span><strong>${item.pending ? item.pending + ' 待确认' : item.count + ' 单'}</strong>`;
+      button.addEventListener('click', () => {
+        activeProductFilter = item.key;
+        renderOrders({ orders, remoteError: '' });
+      });
+      return button;
+    }));
+  }
+
   function renderOrders(payload) {
-    $('[data-pending]').textContent = payload.summary.pending;
-    $('[data-paid]').textContent = payload.summary.paid;
-    $('[data-revenue]').textContent = '¥' + payload.summary.revenue.toFixed(2);
-    const visible = payload.orders.filter((order) => ['pending', 'paid'].includes(order.status));
+    if (payload.remoteError) appMessage.textContent = payload.remoteError;
+    const allVisible = payload.orders.filter((order) => ['pending', 'paid'].includes(order.status));
+    renderProductFilter(allVisible);
+    const visible = allVisible.filter((order) => activeProductFilter === 'all' || orderProductKey(order) === activeProductFilter);
+    const summary = summarizeOrders(visible);
+    $('[data-pending]').textContent = summary.pending;
+    $('[data-paid]').textContent = summary.paid;
+    $('[data-revenue]').textContent = '¥' + summary.revenue.toFixed(2);
     $('[data-orders]').replaceChildren(...(visible.length ? visible : [{ empty: true }]).map((order) => {
       if (order.empty) {
         const empty = document.createElement('div');
         empty.className = 'empty';
-        empty.textContent = '暂时没有订单';
+        empty.textContent = activeProductFilter === 'all' ? '暂时没有订单' : '这个产品暂时没有订单';
         return empty;
       }
       const card = document.createElement('article');
@@ -43,26 +93,28 @@
       const pending = order.status === 'pending';
       card.innerHTML = `
         <div class="order-top">
-          <span class="amount">¥${Number(order.amount).toFixed(2)}</span>
+          <div><span class="source">${order.sourceLabel || 'LIFEYOUME'}</span><span class="amount">¥${Number(order.amount).toFixed(2)}</span></div>
           <span class="status ${pending ? '' : 'paid'}">${pending ? '待核对' : '已确认'}</span>
         </div>
         <strong>${order.productTitle || order.experimentId || '产品订单'}</strong>
-        <div class="order-meta">${timeLabel(order.createdAt)} · ${pending ? Math.max(0, Math.ceil(order.expiresInSeconds / 60)) + ' 分钟后过期' : '确认于 ' + timeLabel(order.paidAt)}</div>
-        ${pending ? '<button class="confirm" type="button">我已核对微信到账，确认交付</button>' : ''}
+        ${order.note ? `<p class="order-note">${order.note}</p>` : ''}
+        ${order.buyerLabel ? `<div class="order-meta">账号：${order.buyerLabel}</div>` : ''}
+        <div class="order-meta">${timeLabel(order.createdAt)} · ${pending ? (order.expiresInSeconds ? Math.max(0, Math.ceil(order.expiresInSeconds / 60)) + ' 分钟后过期' : '等待你手机确认到账') : '确认于 ' + timeLabel(order.paidAt)}</div>
+        ${pending ? `<button class="confirm" type="button">${order.confirmLabel || '确认到账并交付'}</button>` : ''}
       `;
       const button = card.querySelector('.confirm');
       button?.addEventListener('click', async () => {
-        if (!confirm(`确认微信已收到 ¥${Number(order.amount).toFixed(2)}？确认后买家将立即获得下载。`)) return;
+        if (!confirm(`确认微信已收到 ¥${Number(order.amount).toFixed(2)}？确认后将立即交付对应权益。`)) return;
         button.disabled = true;
         button.textContent = '正在确认…';
         try {
           await api(`../api/admin-mobile/orders/${encodeURIComponent(order.id)}/confirm`, { method: 'POST', body: '{}' });
-          appMessage.textContent = `¥${Number(order.amount).toFixed(2)} 已确认，买家页面会自动解锁。`;
+          appMessage.textContent = `¥${Number(order.amount).toFixed(2)} 已确认，${order.successMessage || '买家页面会自动解锁。'}`;
           await loadOrders();
         } catch (error) {
           appMessage.textContent = error.message;
           button.disabled = false;
-          button.textContent = '我已核对微信到账，确认交付';
+          button.textContent = order.confirmLabel || '确认到账并交付';
         }
       });
       return card;

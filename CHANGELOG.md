@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-02
+
+### feat
+
+- Added `mapproof`, a LifeYouMe subproject for publish-time Mermaid and AI-diagram QA, including branch-label, cycle, hub-density, isolated-node and cognitive-load checks, critical-path extraction, local rendering, and Markdown acceptance reports.
+- Deployed MapProof to Tencent Cloud as a read-only non-root container on `127.0.0.1:45210`, with an Aliyun reverse SSH tunnel and append-only `/mapproof/` shared Nginx route.
+- Reworked `agent-workforce-lab` around an open-source-first MyContext foundation, with separate employee and operations flows, evidence-backed learning, trial work, collaboration, review, and recovery coverage.
+- Expanded `meyou-agent-network` with organization reception, customer-agent authority, memory, knowledge answers, message delivery, worker health, public company pages, and matching API/web tests.
+- Added production-grade authentication, callback routing, agent creation, gallery sessions, tool-test handling, packaging checks, and deployment evidence to `lifeyoume-staffdeck`.
+- Added shared production topology documentation and runbooks for the Aliyun edge and Tencent application hosts without storing credentials.
+- Enhanced Trend Forum with Horizon scoring, cross-source deduplication, deep insights, stable detail URLs, scheduled refresh, and stale-data fallback.
+- Improved the LifeYouMe portal account flow, Duix local workspace, and Autonomous Income Engine administration and recovery paths.
+- Added the `antix-avatar-studio` and `lifeyoume-maas` workspaces with their own project documentation and verification assets.
+
+### verify
+
+- Passed 4 analyzer tests, JavaScript syntax checks, desktop/mobile local and production browser checks, zero-console-error validation, and issue-example scoring.
+- Preserved the shared Nginx inode, passed candidate and live `nginx -t`, reloaded without recreating the proxy container, and confirmed MapProof plus eight representative existing products returned HTTP 200.
+
 ## 2026-10-28
 
 ### feat

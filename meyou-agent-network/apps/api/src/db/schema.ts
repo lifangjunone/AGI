@@ -21,6 +21,11 @@ const timestamps = {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 };
 
+export const serviceHeartbeats = pgTable("service_heartbeats", {
+  service: text("service").primaryKey(),
+  seenAt: timestamp("seen_at", { withTimezone: true }).defaultNow().notNull()
+});
+
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   lifeYouMeId: text("lifeyoume_id").notNull().unique(),
@@ -265,6 +270,7 @@ export const plazaPresence = pgTable("plaza_presence", {
   circleId: uuid("circle_id").references(() => plazaCircles.id, { onDelete: "set null" }),
   activity: text("activity").default("idle").notNull(),
   statusText: text("status_text").default("正在看看周围").notNull(),
+  worldAction: jsonb("world_action").$type<import("@meyou/shared").PlazaWorldAction>(),
   momentState: jsonb("moment_state").$type<{
     label: string;
     mood: string;
@@ -428,20 +434,55 @@ export const organizations = pgTable("organizations", {
   description: text("description").notNull(),
   businessHours: text("business_hours").default("09:00-18:00").notNull(),
   escalationRules: jsonb("escalation_rules").$type<string[]>().default([]).notNull(),
+  receptionMode: text("reception_mode").$type<"human" | "agent">().default("human").notNull(),
   ...timestamps
 });
 
 export const customerThreads = pgTable("customer_threads", {
   id: uuid("id").defaultRandom().primaryKey(),
+  inquiryRequestId: uuid("inquiry_request_id"),
   organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "cascade" }).notNull(),
   customerId: uuid("customer_id").references(() => users.id),
   guestName: text("guest_name"),
   subject: text("subject").notNull(),
   status: text("status").default("agent").notNull(),
+  agentMode: text("agent_mode").$type<"auto" | "paused">().default("paused").notNull(),
+  agentRevision: integer("agent_revision").default(0).notNull(),
   priority: text("priority").default("normal").notNull(),
   assigneeId: uuid("assignee_id").references(() => users.id),
   internalNotes: jsonb("internal_notes").$type<string[]>().default([]).notNull(),
   ...timestamps
+});
+
+export const customerMessages = pgTable("customer_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  threadId: uuid("thread_id").references(() => customerThreads.id, { onDelete: "cascade" }).notNull(),
+  senderId: uuid("sender_id").references(() => users.id).notNull(),
+  actor: text("actor").$type<"customer" | "human" | "agent">().notNull(),
+  content: text("content").notNull(),
+  requestId: uuid("request_id").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+}, table => [uniqueIndex("customer_messages_request").on(table.threadId, table.senderId, table.requestId)]);
+
+export const customerAgentTasks = pgTable("customer_agent_tasks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  threadId: uuid("thread_id").references(() => customerThreads.id, { onDelete: "cascade" }).notNull(),
+  sourceId: uuid("source_id").notNull(),
+  authorityRevision: integer("authority_revision").notNull(),
+  state: text("state").default("pending").notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }),
+  leaseToken: uuid("lease_token"),
+  ...timestamps
+}, table => [uniqueIndex("customer_agent_task_source").on(table.threadId, table.sourceId, table.authorityRevision)]);
+
+export const customerAgentOutputs = pgTable("customer_agent_outputs", {
+  taskId: uuid("task_id").references(() => customerAgentTasks.id, { onDelete: "cascade" }).primaryKey(),
+  messageId: uuid("message_id").references(() => customerMessages.id, { onDelete: "cascade" }).unique(),
+  outcome: text("outcome").notNull(),
+  sources: jsonb("sources").default([]).notNull(),
+  model: jsonb("model"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
 });
 
 export const publicInquiries = pgTable("public_inquiries", {

@@ -1,33 +1,72 @@
-# Agent Workforce Lab · 本地系统 v0.1
+# Agent Workforce Lab
 
-基于 v4 可操作数字校园的第一版系统。旧原型与文档保留在 `design/` 和 `docs/`，不修改其他项目或共享部署。
+> **2026-11-02 产品转向：**旧 FastAPI/React 界面不再作为产品主入口继续扩展。
+> 当前产品以开源 [MyContext](https://github.com/openTrinity/mycontext) 作为本地工作
+> 上下文底座，优先复用其飞书连接器、增量采集、SQLite、证据检索、蒸馏和桌面端。
+> 本项目只在其上建设“工作案例重建、能力证据、逐级放权和任务协作”的差异化能力。
+> 详细决策见
+> [产品转向文档](docs/research/16-open-source-first-product-pivot.md) 和
+> [开源底座说明](open-source/README.md)。
 
-## 启动
+新的底座启动方式（要求 Node 22）：
 
-已构建的系统：
+```bash
+cd /Users/bytedance/Desktop/agi/agent-workforce-lab
+./scripts/run-context-foundation.sh
+```
+
+下方内容记录旧系统及历史验证，仅作为案例和领域逻辑参考，不代表新的产品入口。
+
+**把真实员工的经验，变成会工作的数字员工。**
+
+产品目标不是聊天机器人或固定案例 Demo。当前重写版仍未完成产品主线，下面是建设目标，不是已实现能力清单：
+
+```text
+真实员工经验
+→ 数字员工学习并主动澄清
+→ 场景试岗与能力印记
+→ 专门运营人员发布任务
+→ 数字员工自评并独立接单
+→ 执行中求助和动态邀请
+→ 第三人加入自动成立任务组
+→ 成果提交
+→ 真人验收或退回
+→ 交付证据回流能力档案
+```
+
+## 当前产品
+
+员工端与运营端分开。目标中的三个核心动作分别是：
+
+1. 培养数字员工：从已经发生的工作开始，只向真人询问缺失的边界；
+2. 发布任务：数字员工基于已验证能力判断能否独立接单；
+3. 查看进度与成果：观察独立执行、求助、成员加入、任务组成形和验收。
+
+运行中的业务边界：
+
+- 未通过试岗的能力不能用于独立接单；
+- 执行中发现能力缺口，可以邀请其他数字员工；
+- 第二人加入是协作，第三人加入自动建立关联原任务的任务组；
+- 执行者不能自行验收成果；
+- 退回后保留原任务继续修改；
+- 重复验收不会重复累计能力证据；
+- 所有业务对象按组织隔离并持久化到 SQLite。
+
+## 本地启动
 
 ```bash
 cd /Users/bytedance/Desktop/agi/agent-workforce-lab
 python3 run.py
 ```
 
-打开 [数字员工校园](http://127.0.0.1:43222/)，[API 文档](http://127.0.0.1:43222/docs)。
+打开：
 
-## 本地工作旁听采集器
+- 双入口选择：[http://127.0.0.1:43222/](http://127.0.0.1:43222/)
+- 我的数字分身：[http://127.0.0.1:43222/me](http://127.0.0.1:43222/me)
+- 数字员工运营台：[http://127.0.0.1:43222/ops](http://127.0.0.1:43222/ops)
+- API：[http://127.0.0.1:43222/docs](http://127.0.0.1:43222/docs)
 
-如果想先试「工作旁听 → 经验信号 → 方法卡」的实际操作手感，可以运行独立原型：
-
-```bash
-cd /Users/bytedance/Desktop/agi/agent-workforce-lab/work-shadow-recorder
-python3 recorder.py --demo
-python3 recorder.py
-```
-
-打开 [Work Shadow Recorder](http://127.0.0.1:43233/)。
-
-它是零依赖本地工具，不录屏、不监听键盘、不扫描电脑；只保存你主动提交的任务材料，数据在 `runtime/work-shadow-recorder.json`。
-
-新环境安装与构建：
+首次安装：
 
 ```bash
 python3.11 -m venv .venv
@@ -39,82 +78,65 @@ cd ..
 python3 run.py
 ```
 
-前端开发：
+## 新系统边界
 
-```bash
-cd frontend
-npm run dev
-```
+- 新后端入口：[backend/app.py](backend/app.py)，领域逻辑在
+  [backend/studio.py](backend/studio.py)；
+- 新前端入口：[frontend/src/Studio.tsx](frontend/src/Studio.tsx)；
+- `run.py` 只加载新 `app:app`，不会加载旧业务路由；
+- 旧文件暂时保留为历史研究材料，不进入新运行路径；
+- 未删除旧数据库，v2 对象使用独立的 `v2_*` 类型保存。
 
-Vite 使用 43221，通过代理请求本地后端 43222。后端绑定回环地址，不做公网部署。
+技术栈为 React 19 + TypeScript + FastAPI + SQLite。当前学习理解与试岗使用透明的
+确定性规则，不声称发生了模型微调，也不会在模型调用失败时伪造成功。
 
-## 可运行主线
+当前运行路径尚未接入持续飞书采集、Semantica 检索、真实模型学习／考试／执行、
+独立评审或积分奖励。教学与成果仍需人工输入，不能称为已经降低真人工作量。
+完整现状及历史记录适用范围见 [产品化状态](docs/14-productization-status.md)。
 
-1. 创建晓禾，选择首项技能「知识写作」。
-2. 持续教经验，或导入 UTF-8 TXT/Markdown、文本 PDF、DOCX（5MB、30000 字上限）。
-3. 查看理解与疑问，编辑方法和适用条件，真人确认；来源、贡献者、版本和受众独立记录。
-4. 运行场景考试，查看实际生成答卷与服务端规则检查；运行试岗，真人反馈后授予对应技能资格。
-5. 发布自己的任务目标、成果要求、脱敏输入、完成时间和所需能力；可单人或多能力任务。
-6. 后端按资格、知识授权和当前负载认领。第二人是双人协作，第三位执行成员加入建立关联原任务的任务组。
-7. 自动推进或逐步观察，支持暂停恢复；关闭浏览器不会停止后端运行。
-8. 打开各成员不同的职责成果，检查引用；退回保留旧版本，修订产生新版本，重新独立评审、真人验收。
-9. 验收与积分账本在一个事务内完成，总计 100 不可兑现积分，重复验收不重复奖励。
-10. 经验作为待确认候选回到教学室，不自动成为事实或资格。
+最新隔离 UI 设计在 `design/review/learning-workspace/`，尚未获用户选择，
+不会自动替换正式界面。
 
-按钮「加入两位演示同事」创建知远、青岚脱敏夹具，带演示资格，明确不是由当前真人教学所得；不能用于真实模型模式。也可以自己创建、教学和考核其他员工。
+## 验证
 
-## 技术
-
-- React 19 + TypeScript + Vite，组件化校园、教学、任务与成果面板。
-- Python 3.11 + FastAPI，单进程有界运行引擎。
-- SQLite 保存员工、来源与授权、考核、资格、任务、成员、成果版本、评审、奖励与事件。
-- **实际 Semantica 0.7.0**：`ContextGraph.add_node/add_edge/to_dict/from_dict`，授权子图映射到 `ContextRetriever.retrieve(mode="local")` 的真实实体关系契约。
-- 无 embedding、无自动模型下载；中文字符/关键词匹配与一跳关系上下文，不宣称向量语义检索。
-- 图在请求时从 SQLite 有效授权知识重建，不把 SDK 图内存当唯一持久化。
-
-## 演示与真实模型
-
-默认演示模式无需任何密钥，使用确定性教学反馈、答卷和任务模板，真实落库与状态门禁；**这不是模型真的学习**。
-
-可选：将 `backend/.env.example` 的内容复制到项目内 `backend/.env`，填写自己的服务端配置：
-
-```dotenv
-AWL_MODEL_KEY=...
-AWL_MODEL_NAME=...
-AWL_MODEL_BASE_URL=https://your-compatible-provider/v1
-```
-
-重新启动后选择「真实模型」。适配 OpenAI-compatible Chat Completions JSON 输出；供应商须支持 `response_format=json_object`。调用用于教学理解、考试答卷、试岗和职责成果；凭据不发送到前端。
-
-模型超时、格式错误或无有效引用会记录失败，不静默转成演示成功。接单与组队仍是服务端确定性资格/负载规则，不声称完全自由的模型自治。真实模型资格与演示资格分开。
-
-本次未使用用户密钥做真实供应商调用；失败与迟到返回路径使用测试模拟验证。
-
-## 数据与安全边界
-
-- 数据：`runtime/workforce.sqlite3`，重启保留；SQLite schema 当前为记录存储、事件表、命令幂等表和独立奖励账本。
-- 页面草稿保存在该站点 localStorage，业务状态以服务端为准。
-- 文件只做受控解析，不保留原始二进制、不跟随资料链接、不自动扫描目录。
-- 授权撤回停止后续检索，资格失效，在途任务阻塞，历史成果标记受影响；已导出的内容或外部模型已处理数据无法自动收回。
-- **本地单工作空间，无生产身份认证。**教学者、评审者与验收者路径为本地使用约定，不代表多用户安全隔离。勿放真实敏感员工资料。
-- 不开放 Shell、自动邮件/外发、真实资金、AS 或共享 Nginx 部署。
-- 独立评审是服务端结构/引用/目标规则检查，不等于真实业务质量认证；最终必须真人验收。
-
-## 测试
+新领域测试：
 
 ```bash
 cd backend
-../.venv/bin/python -m pytest test_system.py -q
+../.venv/bin/python -m pytest -q test_studio_v2.py
 ```
 
-启动系统后，使用本机已有 Playwright skill：
+前端生产构建：
 
 ```bash
-node /Users/bytedance/.codex/skills/playwright-skill/run.js /Users/bytedance/Desktop/agi/agent-workforce-lab/tests/browser.cjs
+cd frontend
+npm run build
 ```
 
-测试数据库与浏览器证据都在项目 `runtime/` 内。浏览器测试会新增脱敏员工与任务，不清空用户已有数据。
+真实浏览器验收：
 
-## 后续优化
+```bash
+PW_ARTIFACT_DIR=design/review/product-v2/round-2 \
+TARGET_URL=http://127.0.0.1:43222 \
+node /Users/bytedance/.codex/skills/playwright-skill/run.js tests/studio-v2.cjs
+```
 
-首版先验证闭环。后续适合优化教学/成长面板密度、更自由的技能与计划提案、真实模型评分、任务输入授权细粒度、用户认证、审计查看和回收任务负载。
+浏览器证据在：
+
+```text
+design/review/product-v2/round-1/
+design/review/product-v2/round-2/
+```
+
+覆盖注册、组织初始化、学习提问、试岗、独立接单、执行中求助、两人协作、
+第三人成组、成果验收、桌面端、375px 移动端、横向溢出和控制台错误。
+
+## 下一阶段
+
+当前版本已经把产品主线、前后端状态流和可操作界面放到同一套新系统中。后续产品化重点是：
+
+- 把日常工作来源接入学习空间，减少真人主动录入；
+- 将透明规则升级为可配置模型适配器，同时保留来源与边界证据；
+- 增加任务运行时、真实工具调用与暂停恢复；
+- 完善授权撤回、能力降级、审计和更细粒度角色权限；
+- 继续以真实业务案例验证，不回到固定脚本 Demo。

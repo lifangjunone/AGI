@@ -14,10 +14,17 @@ from pydantic import BaseModel, Field
 import store as st
 from model import generate, configuration
 from knowledge import Knowledge
+from product import (
+    router as product_router,
+    due_automated_connectors,
+    execute_connector_sync,
+    recover_connector_syncs,
+)
 
 SKILLS = {"writing": "知识写作", "analysis": "问题分类", "risk": "例外核对"}
 knowledge = Knowledge()
 worker_task = None
+connector_worker_task = None
 
 
 def require(db, kind, identifier):
@@ -65,7 +72,7 @@ def view_task(db, task):
 
 @asynccontextmanager
 async def lifespan(app):
-    global worker_task
+    global worker_task, connector_worker_task
     st.initialize()
     knowledge.smoke()
     # Interrupted calls are not treated as successes. Retry requires explicit recovery.
@@ -77,16 +84,21 @@ async def lifespan(app):
                 task.update(status="error", error="进程重启中断模型调用；请重试", lease=None)
                 st.save(db, "task", task)
                 st.event(db, "interrupted", {"message": task["error"]}, task["id"])
+    recover_connector_syncs(all_leases=True)
     worker_task = asyncio.create_task(worker())
+    connector_worker_task = asyncio.create_task(connector_worker())
     yield
-    worker_task.cancel()
-    try:
-        await worker_task
-    except asyncio.CancelledError:
-        pass
+    for task in (worker_task, connector_worker_task):
+        task.cancel()
+    for task in (worker_task, connector_worker_task):
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(title="Agent Workforce Lab", version="0.1.0", lifespan=lifespan)
+app.include_router(product_router)
 
 
 class EmployeeInput(BaseModel):
@@ -715,6 +727,21 @@ async def worker():
                         st.event(db, "engine_error", {"message": current["error"]}, task["id"])
 
 
+async def connector_worker():
+    while True:
+        await asyncio.sleep(10)
+        for organization_id, connector_id in due_automated_connectors()[:4]:
+            try:
+                await asyncio.to_thread(
+                    execute_connector_sync, organization_id, connector_id,
+                    None, False, "scheduled")
+            except HTTPException:
+                pass
+            except Exception:
+                # The sync executor persists its own recoverable error state.
+                pass
+
+
 @app.post("/api/demo/colleagues")
 def demo_colleagues():
     """Explicit, idempotent test fixtures, never represented as real employee learning."""
@@ -772,6 +799,16 @@ if DIST.exists():
 
 @app.get("/")
 def web():
+    if not DIST.exists():
+        return {"message": "请在 frontend 运行 npm install && npm run build，或使用 Vite 开发服务器"}
+    return FileResponse(DIST / "index.html")
+
+
+@app.get("/{workspace_view}")
+def web_workspace(workspace_view: str):
+    if workspace_view not in {
+            "overview", "learning", "workers", "trials", "tasks", "governance"}:
+        raise HTTPException(404, "页面不存在")
     if not DIST.exists():
         return {"message": "请在 frontend 运行 npm install && npm run build，或使用 Vite 开发服务器"}
     return FileResponse(DIST / "index.html")

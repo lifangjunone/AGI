@@ -1,5 +1,6 @@
 import { useEffect, useRef, type Dispatch, type PointerEvent, type SetStateAction, type WheelEvent } from "react";
 import type { PlazaActivity, PlazaSnapshot } from "@meyou/shared";
+import { plazaActionPosition, plazaActionPhase, plazaCircleProjection, plazaPlaces } from "@meyou/shared/plaza-world";
 
 export interface PlazaCamera {
   x: number;
@@ -17,6 +18,7 @@ interface PlazaWorldProps {
   onMoveAgent?: (circleId: string, x: number, y: number) => Promise<void>;
   moveMode?: boolean;
   detailOpen?: boolean;
+  locale?: string;
 }
 
 const colors: Record<string, { roof: string; wall: string; accent: string }> = {
@@ -33,7 +35,7 @@ const DISCUSSION_LINGER_MS = 8_000;
 export interface DiscussionScene {
   rootEventId: string;
   participantIds: string[];
-  speakerId: string;
+  speakerId: string | null;
   active: boolean;
 }
 
@@ -52,24 +54,39 @@ export function getDiscussionScene(
   circleId: string,
   now = Date.now()
 ): DiscussionScene | null {
-  const discussion = data.discussions
+  return getDiscussionScenes(data, circleId, now)[0] ?? null;
+}
+
+export function getDiscussionScenes(data: PlazaSnapshot, circleId: string, now = Date.now()): DiscussionScene[] {
+  const assigned = new Set<string>();
+  return data.discussions
     .filter((item) => item.circleId === circleId)
     .filter((item) => item.status === "active" || now - Date.parse(item.updatedAt) < DISCUSSION_LINGER_MS)
-    .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0];
-  if (!discussion) return null;
+    .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))
+    .flatMap(discussion => {
   const threadEvents = data.events
     .filter((event) => event.circleId === circleId)
     .filter((event) => event.id === discussion.rootEventId || event.metadata?.threadRootId === discussion.rootEventId)
     .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt));
-  const participantIds = [...new Set(threadEvents.map((event) => event.userId))];
-  const speakerId = threadEvents.at(-1)?.userId;
-  if (participantIds.length < 2 || !speakerId) return null;
-  return {
+  const eligibleIds = [...new Set([
+    ...data.agents.filter(agent => agent.worldAction?.discussionId === discussion.rootEventId
+      && Date.parse(agent.worldAction.endsAt) > now).map(agent => agent.userId),
+    ...threadEvents.map(event => event.userId)
+  ])];
+  const participantIds = eligibleIds.filter(id => !assigned.has(id)
+    && !data.agents.some(agent => agent.userId === id && agent.worldAction
+      && agent.worldAction.discussionId !== discussion.rootEventId));
+  const latest = threadEvents.at(-1);
+  const speakerId = latest && now - Date.parse(latest.createdAt) < 8_000 ? latest.userId : null;
+  if (participantIds.length < 2) return [];
+  participantIds.forEach(id => assigned.add(id));
+  return [{
     rootEventId: discussion.rootEventId,
     participantIds,
     speakerId,
     active: discussion.status === "active"
-  };
+  }];
+  });
 }
 
 export function getDiscussionSlot(index: number, count: number, centerX: number, centerY: number) {
@@ -174,8 +191,8 @@ function drawNpc(
   const shirt = agent.npcColor ?? (agent.mine ? "#e86751" : peopleColors[seed % peopleColors.length]!);
   const skin = ["#f2c9a8", "#e5b58d", "#f5d2b5", "#c98f68", "#9f684d"][seed % 5]!;
   const hair = ["#30231f", "#5f4437", "#211d1c", "#8a5a35"][seed % 4]!;
-  const social = socialPose.role !== "none";
-  const walking = !social && (moving || agent.activity === "walking");
+  const walking = moving;
+  const social = !walking && socialPose.role !== "none";
   const moment = agent.momentState;
   const momentEnergy = moment?.energy ?? 0;
   const momentValence = moment?.valence ?? 0;
@@ -187,6 +204,7 @@ function drawNpc(
       * (walking ? 2.5 : 1 + Math.max(0, momentEnergy) * .9);
   context.save();
   context.translate(x, y + bob);
+  context.scale(1.35, 1.35);
   context.fillStyle = "rgba(24,50,67,.16)";
   context.beginPath();
   context.ellipse(0, 12, 15, 5, 0, 0, Math.PI * 2);
@@ -294,7 +312,7 @@ function drawListeningCue(
   reducedMotion: boolean,
   reactionIndex: number
 ) {
-  const reactions = ["···", "嗯", "✓"];
+  const reactions = ["···", "···", "···"];
   const label = reactions[reactionIndex % reactions.length]!;
   const lift = reducedMotion ? 0 : Math.sin(time * .0035 + reactionIndex * 1.7) * 1.2;
   context.save();
@@ -349,6 +367,11 @@ function drawMineGlow(context: CanvasRenderingContext2D, x: number, y: number, t
 }
 
 function activityBubble(agent: PlazaSnapshot["agents"][number]) {
+  const phase = plazaActionPhase(agent.worldAction);
+  if (phase === "moving") return "前往中";
+  if (phase === "thinking") return "思考回复";
+  if (phase === "observing") return "观察中";
+  if (phase === "resting") return "休息中";
   if (agent.momentState?.label) return agent.momentState.label;
   if (agent.activity === "idle") return "?";
   if (agent.activity === "looking") return "找人";
@@ -384,11 +407,11 @@ function drawRuntimeBadge(
   const continuous = agent.runtimeMode === "continuous";
   const label = continuous ? "持续自治" : "受控自治";
   context.save();
-  context.font = '800 9px "Noto Sans SC", sans-serif';
+  context.font = '700 12px "Noto Sans SC", sans-serif';
   const width = context.measureText(label).width + 16;
   const bx = x - width / 2;
-  const by = y - 57;
-  roundedRect(context, bx, by, width, 19, 9);
+  const by = y - 79;
+  roundedRect(context, bx, by, width, 23, 9);
   context.fillStyle = continuous ? "rgba(255,239,233,.97)" : "rgba(238,243,240,.97)";
   context.strokeStyle = continuous ? "rgba(232,103,81,.32)" : "rgba(49,92,74,.24)";
   context.lineWidth = 1;
@@ -400,7 +423,7 @@ function drawRuntimeBadge(
   context.fill();
   context.fillStyle = continuous ? "#a84939" : "#315c4a";
   context.textAlign = "center";
-  context.fillText(label, bx + width / 2 + 3, by + 13);
+  context.fillText(label, bx + width / 2 + 3, by + 16);
   context.restore();
 }
 
@@ -423,7 +446,7 @@ function drawStatusBubble(
   const width = Math.min(176, Math.max(isSpeech ? 108 : 34, measuredWidth + (isSpeech ? 26 : 18)));
   const height = isSpeech ? 46 : 24;
   const bx = isSpeech ? x - width / 2 : x + 14;
-  const by = y - (isSpeech ? 119 : 91) + pulse;
+  const by = y - (isSpeech ? 139 : 113) + pulse;
   context.fillStyle = isSpeech ? "rgba(255,253,249,.97)" : "rgba(255,250,241,.9)";
   context.strokeStyle = isSpeech ? "rgba(232,103,81,.35)" : "rgba(24,50,67,.12)";
   context.lineWidth = 1;
@@ -450,62 +473,14 @@ function drawStatusBubble(
 }
 
 export function PlazaWorld({
-  data, view, camera, setCamera, onEnterCircle, onSelectAgent, onMoveAgent, moveMode = false, detailOpen = true
+  data, view, camera, setCamera, onEnterCircle, onSelectAgent, onMoveAgent, moveMode = false, locale = "zh-CN"
 }: PlazaWorldProps) {
-  type AmbientWalk = {
-    x: number;
-    y: number;
-    targetX: number;
-    targetY: number;
-    moving: boolean;
-    nextMoveAt: number;
-    step: number;
-  };
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const dragRef = useRef<{ id: number; x: number; y: number; originX: number; originY: number; moved: boolean } | null>(null);
   const frameRef = useRef(0);
   const hitRef = useRef<Array<{ id: string; x: number; y: number; radius: number }>>([]);
   const circleHitRef = useRef<Map<string, { x: number; y: number }>>(new Map());
-  const minePositionRef = useRef<{ x: number; y: number; targetX: number; targetY: number; moving: boolean } | null>(null);
-  const ambientWalkRef = useRef<Map<string, AmbientWalk>>(new Map());
-  const discussionRootRef = useRef<string | null>(null);
-  const lastFrameTimeRef = useRef(0);
-  const movingRef = useRef(false);
-  const mine = data.agents.find((agent) => agent.mine);
-
-  useEffect(() => {
-    if (!mine) {
-      minePositionRef.current = null;
-      return;
-    }
-    if (!minePositionRef.current || !movingRef.current) {
-      minePositionRef.current = { x: mine.x, y: mine.y, targetX: mine.x, targetY: mine.y, moving: false };
-    }
-  }, [mine?.userId, mine?.x, mine?.y]);
-
-  useEffect(() => {
-    if (view !== "circle") {
-      ambientWalkRef.current.clear();
-      return;
-    }
-    const now = performance.now();
-    const visibleIds = new Set(data.agents.filter((agent) => !agent.mine).map((agent) => agent.userId));
-    for (const userId of ambientWalkRef.current.keys()) {
-      if (!visibleIds.has(userId)) ambientWalkRef.current.delete(userId);
-    }
-    for (const agent of data.agents) {
-      if (agent.mine || ambientWalkRef.current.has(agent.userId)) continue;
-      ambientWalkRef.current.set(agent.userId, {
-        x: agent.x,
-        y: agent.y,
-        targetX: agent.x,
-        targetY: agent.y,
-        moving: false,
-        nextMoveAt: now + 900 + (hash(agent.userId) % 4_800),
-        step: 0
-      });
-    }
-  }, [data.agents, view]);
+  const mine = data.agents.find(agent => agent.mine);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -516,10 +491,6 @@ export function PlazaWorld({
     let stopped = false;
     const render = (time: number) => {
       if (stopped) return;
-      const frameDelta = lastFrameTimeRef.current
-        ? Math.min(50, Math.max(0, time - lastFrameTimeRef.current))
-        : 16;
-      lastFrameTimeRef.current = time;
       const rect = canvas.getBoundingClientRect();
       const ratio = Math.min(2, window.devicePixelRatio || 1);
       const pixelWidth = Math.max(1, Math.round(rect.width * ratio));
@@ -633,167 +604,162 @@ export function PlazaWorld({
         const circle = data.circles[0];
         const centerX = rect.width * .5;
         const centerY = rect.height * .5;
-        context.fillStyle = "rgba(255,250,241,.82)";
-        context.beginPath();
-        context.ellipse(centerX, centerY + 38, rect.width * .4, rect.height * .34, 0, 0, Math.PI * 2);
+        context.shadowColor = "rgba(24,50,67,.1)";
+        context.shadowBlur = 22;
+        context.shadowOffsetY = 12;
+        context.fillStyle = "#f9f3e6";
+        roundedRect(context, rect.width * .065, rect.height * .16, rect.width * .87, rect.height * .73, 32);
         context.fill();
-        context.strokeStyle = "rgba(49,92,74,.16)";
-        context.lineWidth = 2;
-        context.setLineDash([7, 12]);
+        context.shadowBlur = 0;
+        context.shadowOffsetY = 0;
+        const projection = plazaCircleProjection(rect.width, rect.height);
+        // Permanent places retain their screen position when the detail drawer opens.
+        const places = plazaPlaces.map(place => ({
+          ...place,
+          screenX: projection.left + (.5 + place.x / 2) * projection.width,
+          screenY: projection.top + (.5 + place.y / 2) * projection.height
+        }));
+        const walkwayY = projection.top + .56 * projection.height;
+        context.strokeStyle = "#e4d7c2";
+        context.lineWidth = 30;
+        context.lineCap = "round";
         context.beginPath();
-        context.ellipse(centerX, centerY + 38, rect.width * .31, rect.height * .25, 0, 0, Math.PI * 2);
+        context.moveTo(projection.left + .1 * projection.width, walkwayY);
+        context.lineTo(projection.left + .9 * projection.width, walkwayY);
         context.stroke();
-        context.setLineDash([]);
-        if (circle) {
-          const palette = colors[circle.color] ?? colors.sage!;
-          drawIsoBuilding(context, centerX, centerY - rect.height * .2, 92, palette, circle.heat / 100);
+        for (const place of places) {
+          context.beginPath();
+          context.moveTo(place.screenX, walkwayY);
+          context.lineTo(place.screenX, place.screenY);
+          context.stroke();
         }
-        const treeCount = Math.max(6, Math.min(16, Math.round(rect.width / 90)));
+        for (const place of places) {
+          const x = place.screenX;
+          const y = place.screenY;
+          const placeWidth = projection.width * .31;
+          const placeHeight = projection.height * .32;
+          context.fillStyle = place.id === "rest" ? "#d3e0cf" : place.id === "work" ? "#e6ddce" : "#eee2cc";
+          roundedRect(context, x - placeWidth / 2, y - placeHeight / 2 + 16, placeWidth, placeHeight, 18);
+          context.fill();
+          if (place.id === "work") {
+            for (const offset of [-placeWidth * .31, 0, placeWidth * .31]) {
+              context.fillStyle = "#c6b498";
+              roundedRect(context, x + offset - 32, y - 20, 64, 14, 4);
+              context.fill();
+              context.fillStyle = "#b5a080";
+              context.fillRect(x + offset - 24, y - 6, 4, 19);
+              context.fillRect(x + offset + 20, y - 6, 4, 19);
+              context.fillStyle = "#866d51";
+              roundedRect(context, x + offset - 32, y - 40, 64, 22, 5);
+              context.fill();
+              context.fillStyle = "#183243";
+              roundedRect(context, x + offset - 10, y - 55, 20, 14, 3);
+              context.fill();
+              context.fillStyle = "#a8c4bf";
+              context.fillRect(x + offset - 7, y - 52, 14, 8);
+            }
+          } else if (place.id === "observe") {
+            context.fillStyle = "#866d51";
+            context.fillRect(x - 27, y - 65, 54, 39);
+            context.fillRect(x - 22, y - 26, 4, 18);
+            context.fillRect(x + 18, y - 26, 4, 18);
+            context.fillStyle = "#fffaf1";
+            context.fillRect(x - 23, y - 61, 46, 31);
+            for (const offset of [-14, 0, 14]) {
+              context.fillStyle = offset === 0 ? "#e86751" : "#b8cbbc";
+              context.fillRect(x + offset - 5, y - 56, 10, 15);
+            }
+          } else if (place.id === "rest") {
+            drawTree(context, x + 45, y - 15, 38);
+            context.fillStyle = "#93795c";
+            roundedRect(context, x - 32, y - 30, 64, 10, 3);
+            context.fill();
+            context.fillRect(x - 25, y - 20, 4, 13);
+            context.fillRect(x + 21, y - 20, 4, 13);
+          } else {
+            context.fillStyle = "#c9b694";
+            context.beginPath();
+            context.ellipse(x + 10, y - 25, 42, 17, 0, 0, Math.PI * 2);
+            context.fill();
+            context.fillStyle = "#f4ecdc";
+            context.beginPath();
+            context.ellipse(x + 10, y - 28, 40, 15, 0, 0, Math.PI * 2);
+            context.fill();
+            for (const offset of [-55, 65]) {
+              context.fillStyle = "#8fa68e";
+              roundedRect(context, x + offset - 11, y - 16, 22, 16, 5);
+              context.fill();
+            }
+          }
+          context.font = '600 12px "Noto Sans SC", sans-serif';
+          context.textAlign = "center";
+          const label = locale.startsWith("en") ? place.labelEn : place.label;
+          const labelWidth = context.measureText(label).width + 20;
+          const labelY = y - placeHeight / 2 - 21;
+          context.fillStyle = "rgba(255,250,241,.94)";
+          roundedRect(context, x - labelWidth / 2, labelY, labelWidth, 26, 8);
+          context.fill();
+          context.fillStyle = "#526672";
+          context.fillText(label, x, labelY + 17);
+        }
+        const treeCount = 6;
         for (let index = 0; index < treeCount; index += 1) {
-          const angle = (index / treeCount) * Math.PI * 2;
-          drawTree(context, centerX + Math.cos(angle) * rect.width * .37, centerY + 40 + Math.sin(angle) * rect.height * .29, 25);
+          drawTree(context, rect.width * (.1 + index * .16), rect.height * .88, 25);
         }
-        const discussion = circle ? getDiscussionScene(data, circle.id) : null;
-        const participantIndex = new Map(discussion?.participantIds.map((userId, index) => [userId, index]) ?? []);
-        const latestThreadEvent = discussion
-          ? data.events
-            .filter((event) => event.circleId === circle?.id)
-            .filter((event) => event.id === discussion.rootEventId || event.metadata?.threadRootId === discussion.rootEventId)
-            .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))[0]
-          : undefined;
-        const drawerSafeWidth = detailOpen
-          ? (rect.width >= 760 ? rect.width * .62 : rect.width * .47)
-          : rect.width * .84;
-        if (!discussion && discussionRootRef.current && minePositionRef.current && mine) {
-          minePositionRef.current.targetX = mine.x;
-          minePositionRef.current.targetY = mine.y;
-          minePositionRef.current.moving = !reducedMotion;
-          movingRef.current = !reducedMotion;
-        }
-        discussionRootRef.current = discussion?.rootEventId ?? null;
+        const scenes = circle ? getDiscussionScenes(data, circle.id) : [];
+        const drawerSafeWidth = projection.width;
         const renderedAgents = data.agents
           .map((agent) => {
             const radius = Math.max(8, circle?.radius ?? 18);
             let worldX = agent.x;
             let worldY = agent.y;
             let moving = false;
-            const socialIndex = participantIndex.get(agent.userId);
-            const discussionCenterAngle = discussion ? (hash(discussion.rootEventId) % 360) * Math.PI / 180 : 0;
-            const discussionCenter = circle && discussion ? {
-              x: circle.x + Math.cos(discussionCenterAngle) * circle.radius * .12,
-              y: circle.y + Math.sin(discussionCenterAngle) * circle.radius * .08
-            } : null;
-            const screenSlot = socialIndex !== undefined && discussionCenter
-              ? getDiscussionSlot(
-                socialIndex,
-                discussion!.participantIds.length,
-                0,
-                0
-              )
-              : null;
-            const discussionTarget = screenSlot && discussionCenter && circle ? {
-              x: discussionCenter.x + screenSlot.x * (radius * 2 / drawerSafeWidth),
-              y: discussionCenter.y + screenSlot.y * (radius * 2 / (rect.height * .5))
-            } : null;
-            if (agent.mine && minePositionRef.current) {
-              const position = minePositionRef.current;
-              if (discussionTarget && !moveMode) {
-                position.targetX = discussionTarget.x;
-                position.targetY = discussionTarget.y;
-                if (Math.hypot(position.targetX - position.x, position.targetY - position.y) > .035) {
-                  position.moving = !reducedMotion;
-                  movingRef.current = !reducedMotion;
-                }
-              }
-              const dx = position.targetX - position.x;
-              const dy = position.targetY - position.y;
-              if (!reducedMotion && Math.hypot(dx, dy) > .035) {
-                position.x += dx * .075;
-                position.y += dy * .075;
-                position.moving = true;
-              } else {
-                position.x = position.targetX;
-                position.y = position.targetY;
-                position.moving = false;
-                movingRef.current = false;
-              }
-              worldX = position.x;
-              worldY = position.y;
-              moving = position.moving;
-            } else if (!agent.mine && circle) {
-              const state = ambientWalkRef.current.get(agent.userId);
-              if (state) {
-                if (discussionTarget) {
-                  state.targetX = discussionTarget.x;
-                  state.targetY = discussionTarget.y;
-                  if (reducedMotion) {
-                    state.x = state.targetX;
-                    state.y = state.targetY;
-                    state.moving = false;
-                  } else {
-                    state.moving = Math.hypot(state.targetX - state.x, state.targetY - state.y) > .035;
-                  }
-                } else if (!reducedMotion && !state.moving && time >= state.nextMoveAt) {
-                  state.step += 1;
-                  const seed = hash(`${agent.userId}:${state.step}`);
-                  const angle = ((seed % 360) / 180) * Math.PI;
-                  const distance = circle.radius * (.18 + ((seed >>> 8) % 54) / 100);
-                  state.targetX = circle.x + Math.cos(angle) * distance;
-                  state.targetY = circle.y + Math.sin(angle) * distance * .82;
-                  state.moving = true;
-                }
-                if (!reducedMotion && state.moving) {
-                  const dx = state.targetX - state.x;
-                  const dy = state.targetY - state.y;
-                  const remaining = Math.hypot(dx, dy);
-                  const speed = (.00055 + (hash(agent.userId) % 5) * .00008) * frameDelta;
-                  if (remaining <= Math.max(.04, speed)) {
-                    state.x = state.targetX;
-                    state.y = state.targetY;
-                    state.moving = false;
-                    state.nextMoveAt = time + 2_400 + (hash(`${agent.userId}:wait:${state.step}`) % 7_600);
-                  } else {
-                    state.x += (dx / remaining) * speed;
-                    state.y += (dy / remaining) * speed;
-                  }
-                }
-                worldX = state.x;
-                worldY = state.y;
-                moving = state.moving;
-              }
-            }
+            const agentDiscussion = scenes.find(scene => scene.participantIds.includes(agent.userId));
+            const socialIndex = agentDiscussion?.participantIds.indexOf(agent.userId);
+            // Only the shared server timeline controls destinations. Legacy clients
+            // without an action remain at their persisted location.
+            const position = agent.worldAction
+              ? plazaActionPosition(agent.worldAction, reducedMotion ? Date.parse(agent.worldAction.arrivesAt) : Date.now())
+              : { x: agent.x, y: agent.y, moving: false };
+            worldX = position.x;
+            worldY = position.y;
+            moving = position.moving;
             const localX = Math.max(0, Math.min(1, .5 + (worldX - (circle?.x ?? 50)) / (radius * 2)));
             const localY = Math.max(0, Math.min(1, .5 + (worldY - (circle?.y ?? 50)) / (radius * 2)));
             return {
               agent,
-              x: rect.width * .08 + localX * drawerSafeWidth,
-              y: rect.height * .25 + localY * rect.height * .5,
+              x: projection.left + localX * drawerSafeWidth,
+              y: projection.top + localY * projection.height,
               moving,
               socialIndex
             };
           });
         circleHitRef.current = new Map(renderedAgents.map(({ agent, x, y }) => [agent.userId, { x, y }]));
-        const socialAgents = renderedAgents.filter((item) => item.socialIndex !== undefined);
-        if (discussion && socialAgents.length >= 2) {
-          const centerX = socialAgents.reduce((sum, item) => sum + item.x, 0) / socialAgents.length;
-          const centerY = socialAgents.reduce((sum, item) => sum + item.y, 0) / socialAgents.length;
-          drawDiscussionLinks(context, socialAgents, centerX, centerY, reducedMotion ? 0 : time, reducedMotion);
+        for (const scene of scenes) {
+          const group = renderedAgents.filter(item => !item.moving && scene.participantIds.includes(item.agent.userId));
+          if (group.length < 2) continue;
+          const centerX = group.reduce((sum, item) => sum + item.x, 0) / group.length;
+          const centerY = group.reduce((sum, item) => sum + item.y, 0) / group.length;
+          drawDiscussionLinks(context, group, centerX, centerY, reducedMotion ? 0 : time, reducedMotion);
         }
+        const placedLabels: Array<{ x: number; y: number; width: number }> = [];
         renderedAgents
           .sort((a, b) => a.y - b.y)
           .forEach(({ agent, x, y, moving, socialIndex }) => {
-            const social = socialIndex !== undefined && discussion;
+            const agentDiscussion = scenes.find(scene => scene.participantIds.includes(agent.userId));
+            const socialAgents = renderedAgents.filter(item => !item.moving && agentDiscussion?.participantIds.includes(item.agent.userId));
+            const social = !moving && !agent.worldAction?.awaitingModel && socialIndex !== undefined && agentDiscussion;
             const socialCenterX = socialAgents.length
               ? socialAgents.reduce((sum, item) => sum + item.x, 0) / socialAgents.length
               : x;
             const socialPose: SocialPose = social ? {
-              role: agent.userId === discussion.speakerId ? "speaker" : "listener",
+              role: agent.userId === agentDiscussion.speakerId ? "speaker" : "listener",
               facing: socialCenterX >= x ? 1 : -1,
               reactionIndex: socialIndex
             } : { role: "none", facing: 1 };
             if (agent.mine) drawMineGlow(context, x, y, time, reducedMotion);
             drawNpc(context, agent, x, y, reducedMotion ? 0 : time, moving, socialPose);
-            drawRuntimeBadge(context, agent, x, y);
+            // Runtime mode belongs in the identity label, not a second floating badge.
             if (socialPose.role === "speaker") {
               drawStatusBubble(
                 context,
@@ -802,22 +768,47 @@ export function PlazaWorld({
                 y,
                 reducedMotion ? 0 : time,
                 reducedMotion,
-                latestThreadEvent?.content
+                [...data.events].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+                  .find(event => event.userId === agent.userId
+                    && (event.id === agentDiscussion?.rootEventId || event.metadata?.threadRootId === agentDiscussion?.rootEventId))?.content
               );
             } else if (socialPose.role === "listener") {
               drawListeningCue(context, x, y, reducedMotion ? 0 : time, reducedMotion, socialPose.reactionIndex ?? 0);
-            } else {
+            } else if (!renderedAgents.some(other => other.agent.userId !== agent.userId
+              && Math.hypot(other.x - x, other.y - y) < 85)) {
               drawStatusBubble(context, agent, x, y, reducedMotion ? 0 : time, reducedMotion);
             }
-            context.font = '700 11px "Noto Sans SC", sans-serif';
-            const label = `${agent.agentName}${agent.mine ? " · 我的" : ""}`;
-            const width = context.measureText(label).width + 14;
-            roundedRect(context, x - width / 2, y + 20, width, 21, 7);
+            context.font = '700 12px "Noto Sans SC", sans-serif';
+            const label = `${agent.ownerName}${agent.mine ? (locale.startsWith("en") ? " · You" : " · 我") : ""}`;
+            const modeLabel = agent.runtimeMode === "continuous"
+              ? (locale.startsWith("en") ? "Continuous" : "持续自治")
+              : (locale.startsWith("en") ? "Controlled" : "受控自治");
+            const width = Math.max(context.measureText(label).width, context.measureText(modeLabel).width) + 14;
+            let labelY = y + 20;
+            while (placedLabels.some(other => Math.abs(other.x - x) < (other.width + width) / 2 + 4
+              && Math.abs(other.y - labelY) < 40)) labelY += 40;
+            while (renderedAgents.some(other => other.agent.userId !== agent.userId
+              && Math.abs(other.x - x) < width / 2 + 20 && other.y - 58 < labelY + 36
+              && other.y + 18 > labelY)) labelY += 40;
+            placedLabels.push({ x, y: labelY, width });
+            if (labelY > y + 20) {
+              context.strokeStyle = "rgba(24,50,67,.25)";
+              context.lineWidth = 1;
+              context.beginPath();
+              context.moveTo(x, y + 16);
+              context.lineTo(x, labelY);
+              context.stroke();
+            }
+            const cardWidth = width;
+            roundedRect(context, x - cardWidth / 2, labelY, cardWidth, 36, 7);
             context.fillStyle = agent.mine ? "rgba(255,242,237,.96)" : "rgba(255,253,249,.9)";
             context.fill();
             context.fillStyle = agent.mine ? "#b45443" : "#183243";
             context.textAlign = "center";
-            context.fillText(label, x, y + 35);
+            context.fillText(label, x, labelY + 15);
+            context.font = '500 12px "Noto Sans SC", sans-serif';
+            context.fillStyle = "#526672";
+            context.fillText(modeLabel, x, labelY + 30);
           });
       }
       if (!reducedMotion || view === "global") frameRef.current = window.requestAnimationFrame(render);
@@ -829,11 +820,10 @@ export function PlazaWorld({
     observer.observe(canvas);
     return () => {
       stopped = true;
-      lastFrameTimeRef.current = 0;
       observer.disconnect();
       window.cancelAnimationFrame(frameRef.current);
     };
-  }, [camera, data, detailOpen, view]);
+  }, [camera, data, locale, view]);
 
   function onPointerDown(event: PointerEvent<HTMLCanvasElement>) {
     if (view !== "global") return;
@@ -856,9 +846,8 @@ export function PlazaWorld({
       const rect = event.currentTarget.getBoundingClientRect();
       const screenX = event.clientX - rect.left;
       const screenY = event.clientY - rect.top;
-      const drawerSafeWidth = detailOpen
-        ? (rect.width >= 760 ? rect.width * .62 : rect.width * .47)
-        : rect.width * .84;
+      const projection = plazaCircleProjection(rect.width, rect.height);
+      const drawerSafeWidth = projection.width;
       const radius = Math.max(8, circle?.radius ?? 18);
       if (!moveMode && circle && onSelectAgent) {
         const hit = data.agents
@@ -877,8 +866,8 @@ export function PlazaWorld({
       if (!moveMode) return;
       const currentMine = data.agents.find((agent) => agent.mine);
       if (!circle || !currentMine || !onMoveAgent) return;
-      const localX = Math.max(.03, Math.min(.97, (screenX - rect.width * .08) / drawerSafeWidth));
-      const localY = Math.max(.03, Math.min(.97, (screenY - rect.height * .25) / (rect.height * .5)));
+      const localX = Math.max(.03, Math.min(.97, (screenX - projection.left) / drawerSafeWidth));
+      const localY = Math.max(.03, Math.min(.97, (screenY - projection.top) / projection.height));
       const rawX = circle.x + (localX - .5) * radius * 2;
       const rawY = circle.y + (localY - .5) * radius * 2;
       const dx = rawX - circle.x;
@@ -887,22 +876,8 @@ export function PlazaWorld({
       const scale = normalizedDistance > .94 ? .94 / normalizedDistance : 1;
       const targetX = circle.x + dx * scale;
       const targetY = circle.y + dy * scale;
-      if (!minePositionRef.current) {
-        minePositionRef.current = {
-          x: currentMine.x, y: currentMine.y, targetX: currentMine.x, targetY: currentMine.y, moving: false
-        };
-      }
-      minePositionRef.current.targetX = targetX;
-      minePositionRef.current.targetY = targetY;
-      minePositionRef.current.moving = true;
-      movingRef.current = true;
-      void onMoveAgent(circle.id, targetX, targetY).catch(() => {
-        if (!minePositionRef.current) return;
-        minePositionRef.current.targetX = currentMine.x;
-        minePositionRef.current.targetY = currentMine.y;
-        minePositionRef.current.moving = true;
-        movingRef.current = true;
-      });
+      // The parent reports mutation failures; do not show uncommitted movement.
+      void onMoveAgent(circle.id, targetX, targetY).catch(() => {});
       return;
     }
     const drag = dragRef.current;

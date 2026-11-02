@@ -81,32 +81,79 @@ fi
 
 echo "==> [3/8] Preparing portable Python 3.11 runtime"
 BUILD_PY="$RUNTIME_DL_ROOT/python/bin/python3"
-if [[ -x "$BUILD_PY" ]] && "$BUILD_PY" -c "import requests, docx, openpyxl" 2>/dev/null; then
+RUNTIME_PYTHON_HOME="$RUNTIME_DL_ROOT/python"
+if [[ -x "$BUILD_PY" ]] && \
+    PYTHONHOME="$RUNTIME_PYTHON_HOME" "$BUILD_PY" \
+      -c "import requests, docx, openpyxl" 2>/dev/null; then
   echo "Reusing verified Python runtime at $BUILD_PY"
 else
   python3 packaging/fetch_runtime_python.py "$RUNTIME_DL_DIR" --expect-arch x86_64
   rm -f "$RUNTIME_DL_ROOT"/*.tar.gz
 fi
+export PYTHONHOME="$RUNTIME_PYTHON_HOME"
 
 echo "==> [4/8] Creating backend build environment"
-rm -rf backend/.venv
-"$BUILD_PY" -m venv backend/.venv
+VENV_DIR="$REPO/backend/.venv"
 VENV_PY="$REPO/backend/.venv/bin/python"
-"$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir -U pip
-DEPS="$(cd backend && "$BUILD_PY" -c "import pathlib,tomllib; print(' '.join(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['dependencies']))")"
-# shellcheck disable=SC2086
-"$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir $DEPS
-"$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir "pyinstaller>=6.6.0" "certifi>=2024.2.2"
+if [[ "${SKIP_BACKEND_ENV:-0}" = "1" ]]; then
+  echo "Reusing existing backend build environment because SKIP_BACKEND_ENV=1"
+  # Python venvs record absolute interpreter paths. Build trees are often moved
+  # from a temporary volume to persistent storage, so repair those paths before
+  # validating the cached environment.
+  test -d "$VENV_DIR" || {
+    echo "Reusable backend environment is missing: $VENV_DIR" >&2
+    exit 5
+  }
+  ln -sfn "$BUILD_PY" "$VENV_DIR/bin/python3"
+  if [[ -f "$VENV_DIR/pyvenv.cfg" ]]; then
+    sed -i \
+      -e "s|^home = .*|home = $RUNTIME_PYTHON_HOME/bin|" \
+      -e "s|^executable = .*|executable = $RUNTIME_PYTHON_HOME/bin/python3.11|" \
+      -e "s|^command = .*|command = $BUILD_PY -m venv $VENV_DIR|" \
+      "$VENV_DIR/pyvenv.cfg"
+  fi
+  test -x "$VENV_PY" || {
+    echo "Reusable backend environment is missing Python: $VENV_PY" >&2
+    exit 6
+  }
+  "$VENV_PY" -c "import PyInstaller, certifi"
+  test -f harness-engine/apps/cli/lib/bin.js || {
+    echo "Reusable Harness v3 CLI is missing apps/cli/lib/bin.js" >&2
+    exit 7
+  }
+else
+  rm -rf "$VENV_DIR"
+  "$BUILD_PY" -m venv "$VENV_DIR"
+  "$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir -U pip
+  DEPS="$(cd backend && "$BUILD_PY" -c "import pathlib,tomllib; print(' '.join(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['dependencies']))")"
+  # shellcheck disable=SC2086
+  "$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir $DEPS
+  "$VENV_PY" -m pip install --disable-pip-version-check --no-cache-dir "pyinstaller>=6.6.0" "certifi>=2024.2.2"
+fi
 
 echo "==> [5/8] Building application with PyInstaller"
-"$VENV_PY" packaging/distribution/install_dependencies.py
-rm -rf packaging/out packaging/build
-(
-  cd backend
-  .venv/bin/pyinstaller ../packaging/ultrarag.spec --noconfirm \
-    --distpath ../packaging/out --workpath ../packaging/build
-)
-python3 packaging/bundle_engine.py packaging/out/staffdeck/harness-engine
+if [[ "${SKIP_PYINSTALL:-0}" = "1" ]]; then
+  echo "Reusing existing PyInstaller output because SKIP_PYINSTALL=1"
+  test -x packaging/out/staffdeck/staffdeck || {
+    echo "Reusable PyInstaller output is missing staffdeck" >&2
+    exit 7
+  }
+  test -x packaging/out/staffdeck/staffdeck-cli || {
+    echo "Reusable PyInstaller output is missing staffdeck-cli" >&2
+    exit 8
+  }
+else
+  if [[ "${SKIP_BACKEND_ENV:-0}" != "1" ]]; then
+    "$VENV_PY" packaging/distribution/install_dependencies.py
+  fi
+  rm -rf packaging/out packaging/build
+  (
+    cd backend
+    "$VENV_PY" -m PyInstaller ../packaging/ultrarag.spec --noconfirm \
+      --distpath ../packaging/out --workpath ../packaging/build
+  )
+fi
+"$BUILD_PY" packaging/bundle_engine.py packaging/out/staffdeck/harness-engine
 packaging/out/staffdeck/staffdeck --packaging-smoke
 packaging/out/staffdeck/staffdeck-cli --version
 packaging/out/staffdeck/staffdeck-cli guide >/dev/null
@@ -114,9 +161,17 @@ rm -rf packaging/out/staffdeck/runtime
 cp -a "$RUNTIME_DL_ROOT/python" packaging/out/staffdeck/runtime
 echo "==> [5b/8] Bundling SRT + Node runtime"
 rm -rf packaging/sandbox_runtime packaging/out/staffdeck/sandbox
-python3 packaging/fetch_sandbox_runtime.py packaging/sandbox_runtime
+if [[ -n "${REUSE_SANDBOX_RUNTIME_DIR:-}" ]]; then
+  test -x "$REUSE_SANDBOX_RUNTIME_DIR/bin/node" || {
+    echo "Reusable sandbox runtime is missing bin/node: $REUSE_SANDBOX_RUNTIME_DIR" >&2
+    exit 4
+  }
+  cp -a "$REUSE_SANDBOX_RUNTIME_DIR" packaging/sandbox_runtime
+else
+  "$BUILD_PY" packaging/fetch_sandbox_runtime.py packaging/sandbox_runtime
+fi
 cp -a packaging/sandbox_runtime packaging/out/staffdeck/sandbox
-python3 packaging/smoke_sandbox_bundle.py packaging/out/staffdeck/sandbox
+"$BUILD_PY" packaging/smoke_sandbox_bundle.py packaging/out/staffdeck/sandbox
 
 echo "==> [6/8] Building Debian package"
 STAGE="packaging/out/deb"
@@ -209,7 +264,7 @@ cp packaging/assets/staffdeck.png "$APPDIR/staffdeck.png"
 
 APPIMAGETOOL="${APPIMAGETOOL:-$TOOLCHAIN/appimagetool-x86_64.AppImage}"
 if [[ ! -x "$APPIMAGETOOL" ]]; then
-  python3 - "$APPIMAGETOOL" <<'PY'
+  "$BUILD_PY" - "$APPIMAGETOOL" <<'PY'
 import sys
 import urllib.request
 

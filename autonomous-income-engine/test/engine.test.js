@@ -7279,6 +7279,94 @@ test("mobile admin confirms a unique-amount WeChat checkout and buyer unlocks au
   }
 });
 
+test("mobile admin includes Second Me manual orders and confirms access", async () => {
+  const restore = snapshotData();
+  const previousSecret = process.env.ADMIN_API_SECRET;
+  const previousMobilePassword = process.env.ADMIN_MOBILE_PASSWORD;
+  const previousSecondMeApi = process.env.SECOND_ME_ADMIN_API;
+  const previousSecondMeToken = process.env.SECOND_ME_ADMIN_TOKEN;
+  process.env.ADMIN_API_SECRET = "second-me-mobile-admin-secret";
+  process.env.ADMIN_MOBILE_PASSWORD = "phone-only-password";
+  process.env.SECOND_ME_ADMIN_TOKEN = "second-me-admin-token";
+  let confirmCalled = false;
+  const secondMe = http.createServer((req, res) => {
+    const url = new URL(req.url, "http://127.0.0.1");
+    if (req.method === "GET" && url.pathname === "/api/admin/manual-payments") {
+      assert.equal(url.searchParams.get("token"), "second-me-admin-token");
+      assert.equal(url.searchParams.get("include_paid"), "1");
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({
+        orders: [{
+          outTradeNo: "SMTESTORDER01",
+          status: "PENDING",
+          amount: "0.90",
+          remark: "ORDER01",
+          createdAt: new Date().toISOString(),
+          paidAt: null,
+          user: { email: "buyer@example.com", displayName: "买家" },
+        }],
+      }));
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/api/admin/manual-payments/confirm") {
+      assert.equal(url.searchParams.get("token"), "second-me-admin-token");
+      const chunks = [];
+      req.on("data", (chunk) => chunks.push(chunk));
+      req.on("end", () => {
+        assert.equal(JSON.parse(Buffer.concat(chunks).toString("utf8")).outTradeNo, "SMTESTORDER01");
+        confirmCalled = true;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, granted: true, order: { outTradeNo: "SMTESTORDER01", status: "PAID" } }));
+      });
+      return;
+    }
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "not_found" }));
+  });
+  await new Promise((resolve) => secondMe.listen(0, "127.0.0.1", resolve));
+  const secondMeAddress = secondMe.address();
+  process.env.SECOND_ME_ADMIN_API = `http://127.0.0.1:${secondMeAddress.port}`;
+  const server = http.createServer(handler);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const login = await request(server, "/api/admin-mobile/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-Proto": "https" },
+      body: JSON.stringify({ password: "phone-only-password" }),
+    });
+    assert.equal(login.status, 200);
+    const cookie = login.headers["set-cookie"][0].split(";")[0];
+
+    const orders = await request(server, "/api/admin-mobile/orders", { headers: { Cookie: cookie } });
+    assert.equal(orders.status, 200);
+    const ordersBody = JSON.parse(orders.body.toString("utf8"));
+    assert.equal(ordersBody.summary.pending, 1);
+    assert.equal(ordersBody.orders[0].id, "second-me:SMTESTORDER01");
+    assert.equal(ordersBody.orders[0].productTitle, "Second Me · 7 天使用权");
+    assert.equal(ordersBody.orders[0].contactReference, "ORDER01");
+
+    const confirmed = await request(server, "/api/admin-mobile/orders/second-me%3ASMTESTORDER01/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookie },
+      body: "{}",
+    });
+    assert.equal(confirmed.status, 200);
+    assert.equal(confirmCalled, true);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+    await new Promise((resolve) => secondMe.close(resolve));
+    if (previousSecret === undefined) delete process.env.ADMIN_API_SECRET;
+    else process.env.ADMIN_API_SECRET = previousSecret;
+    if (previousMobilePassword === undefined) delete process.env.ADMIN_MOBILE_PASSWORD;
+    else process.env.ADMIN_MOBILE_PASSWORD = previousMobilePassword;
+    if (previousSecondMeApi === undefined) delete process.env.SECOND_ME_ADMIN_API;
+    else process.env.SECOND_ME_ADMIN_API = previousSecondMeApi;
+    if (previousSecondMeToken === undefined) delete process.env.SECOND_ME_ADMIN_TOKEN;
+    else process.env.SECOND_ME_ADMIN_TOKEN = previousSecondMeToken;
+    restore();
+  }
+});
+
 test("mobile admin receives a protected Xiaohongshu login QR and confirms owner action", async () => {
   const restore = snapshotData();
   const previousSecret = process.env.ADMIN_API_SECRET;

@@ -194,6 +194,14 @@ function queuedTurnPreview(turn: PreparedChatTurn): ChatMessage {
   };
 }
 
+function restoredComposerAttachments(attachments: ChatAttachmentRead[]): ComposerAttachment[] {
+  return attachments.map((attachment, index) => ({
+    ...attachment,
+    uploadKey: `restored_${attachment.id || index}_${Date.now()}_${index}`,
+    uploadStatus: 'ready',
+  }));
+}
+
 type DraftScheduleType = 'once' | 'daily' | 'weekly' | 'monthly';
 type DraftScheduleFormatter = (schedule: Record<string, unknown>) => string;
 
@@ -311,10 +319,15 @@ export type UseChatSessionOptions = {
   sessionId?: string;
   /** Keep navigation and shared employee scope owned by the embedding page. */
   embedded?: boolean;
+  /**
+   * Gallery only needs directory/sidebar data. Skip chat-runtime catalogs and
+   * use a lower-frequency session refresh until the user enters a conversation.
+   */
+  gallery?: boolean;
 };
 
 export function useChatSession(options: UseChatSessionOptions = {}) {
-  const { anonymous = false, embedded = false } = options;
+  const { anonymous = false, embedded = false, gallery = false } = options;
   const { t } = useI18n();
   const { sessionId: routeSessionId, draftAgentId } = useParams<{ sessionId?: string; draftAgentId?: string }>();
   const sessionId = options.sessionId || routeSessionId;
@@ -332,6 +345,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   const [agents, setAgents] = useState<AgentProfileRead[]>([]);
   const [agentsLoaded, setAgentsLoaded] = useState(false);
   const [teams, setTeams] = useState<TeamRead[]>([]);
+  const [teamsLoadFailed, setTeamsLoadFailed] = useState(false);
   const [teamEmptyStats, setTeamEmptyStats] = useState<{ tasks: number; blackboard: number }>({ tasks: 0, blackboard: 0 });
   const [selectedAgentId, setSelectedAgentId] = useState(() => window.localStorage.getItem(SELECTED_AGENT_STORAGE_KEY) || '');
   const [sessionAgentFilter, setSessionAgentFilter] = useState(() => (
@@ -605,7 +619,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     : t('系统管理员尚未配置可用模型，暂时无法发送消息。请联系管理员完成模型配置。');
 
   useEffect(() => {
-    if (!auth || !displayedAgent?.id) {
+    if (gallery || !auth || !displayedAgent?.id) {
       setSlashCommands([]);
       return;
     }
@@ -623,7 +637,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     return () => {
       cancelled = true;
     };
-  }, [auth, displayedAgent?.id, tenantId]);
+  }, [auth, displayedAgent?.id, gallery, tenantId]);
 
   const changeModelConfig = useCallback((value: string) => {
     setSelectedModelConfigId(value);
@@ -698,21 +712,21 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     void loadAgents();
   }, [loadAgents]);
 
-  // 团队花名册：用于侧栏团队会话行标明 TL 身份
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .get<TeamRead[]>(`/api/enterprise/teams?tenant_id=${tenantId}`)
-      .then((rows) => {
-        if (!cancelled) setTeams(rows);
-      })
-      .catch(() => {
-        if (!cancelled) setTeams([]);
-      });
-    return () => {
-      cancelled = true;
-    };
+  // 团队花名册同时供侧栏和广场团队卡片使用，避免同一入口重复读取。
+  const loadTeams = useCallback(async () => {
+    try {
+      const rows = await api.get<TeamRead[]>(`/api/enterprise/teams?tenant_id=${tenantId}`);
+      setTeams(rows);
+      setTeamsLoadFailed(false);
+    } catch {
+      setTeams([]);
+      setTeamsLoadFailed(true);
+    }
   }, [tenantId]);
+
+  useEffect(() => {
+    void loadTeams();
+  }, [loadTeams]);
 
   // 团队名片统计：任务数 + 黑板条目数，随当前会话 team_id 加载；失败静默为 0
   const displayedTeamId = currentSession?.team_id || '';
@@ -810,6 +824,10 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   }, [currentSession?.team_id, currentSession?.title, embedded, navigate]);
 
   useEffect(() => {
+    if (gallery) {
+      setModelConfigsLoading(false);
+      return undefined;
+    }
     if (!auth) {
       setModelConfigsLoading(false);
       return;
@@ -848,7 +866,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       request.controller.abort();
       if (modelCatalogRequest.current === request) modelCatalogRequest.current = null;
     };
-  }, [auth, redirectToLogin, tenantId, modelConfigsRevision]);
+  }, [auth, gallery, redirectToLogin, tenantId, modelConfigsRevision]);
 
   useEffect(() => {
     const onModelConfigsUpdated = (event: Event) => {
@@ -879,12 +897,13 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   }, [tenantId]);
 
   useEffect(() => {
+    if (gallery) return;
     if (!auth || modelConfigsLoading || modelConfigsLoadError || selectedModelConfig) return;
     const onboardingSeen = window.localStorage.getItem(ONBOARDING_SEEN_KEY);
     const quickStartSeen = window.localStorage.getItem(QUICK_START_SEEN_KEY);
     if (!onboardingSeen || !quickStartSeen) return;
     setModelSetupOpen(true);
-  }, [auth, modelConfigsLoadError, modelConfigsLoading, selectedModelConfig]);
+  }, [auth, gallery, modelConfigsLoadError, modelConfigsLoading, selectedModelConfig]);
 
   const toggleTrace = useCallback((turnId: string, isExpanded = false) => {
     if (isExpanded) {
@@ -1757,9 +1776,9 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
 
   useEffect(() => {
     if (!auth) return;
-    const timer = window.setInterval(loadSessions, 2500);
+    const timer = window.setInterval(loadSessions, gallery ? 15_000 : 2_500);
     return () => window.clearInterval(timer);
-  }, [auth, loadSessions]);
+  }, [auth, gallery, loadSessions]);
 
   useEffect(() => {
     if (!auth) return;
@@ -1771,12 +1790,13 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   }, [auth, loadHandoffs]);
 
   useEffect(() => {
+    if (gallery) return;
     if (!auth) return;
     api
       .get<UIConfigRead>(`/api/chat/ui-config?tenant_id=${tenantId}`)
       .then(setUiConfig)
       .catch(() => undefined);
-  }, [auth, tenantId]);
+  }, [auth, gallery, tenantId]);
 
   useEffect(() => {
     if (sessionId) {
@@ -2975,25 +2995,38 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       }
     };
 
-    const appendInterruptedResponse = (reason: string) => {
-      const activeTurnId = getStreamSlot(liveConversationId).turnId || turnId;
+    const restoreUnconfirmedDraft = () => {
       clearStreamSlot(liveConversationId, true);
-      appendRealtime(liveConversationId, {
-        id: `stream_interrupted_${activeTurnId}_${Date.now()}`,
-        turnId: activeTurnId,
-        role: 'assistant',
-        content: reason,
-        created_at: new Date().toISOString(),
-        isError: true,
+      const slot = getSlot(liveConversationId);
+      slot.realtimeMessages = slot.realtimeMessages.filter((item) => (
+        effectiveMessageTurnId(item) !== turnId
+      ));
+      turnTraceRef.current.delete(turnId);
+      setExpandedTraceIds((current) => current.filter((item) => item !== turnId));
+      setCollapsedTraceIds((current) => current.filter((item) => item !== turnId));
+      setInput((current) => {
+        if (!current.trim()) return userText;
+        if (!userText || current.includes(userText)) return current;
+        return `${userText}\n\n${current}`;
       });
-      finishTrace(activeTurnId, true);
+      setComposerAttachments((current) => {
+        const identities = new Set(current.map((item) => item.sha256 || item.id));
+        const recovered = restoredComposerAttachments(outgoingAttachments)
+          .filter((item) => !identities.has(item.sha256 || item.id));
+        return [...recovered, ...current];
+      });
+      if (resolvedInteractionMode === 'scheduled_task') {
+        setComposerIntent((current) => current || 'scheduled_task');
+      }
       clearRunningTurn(liveConversationId);
+      notifyStore();
       notifyStream();
-      window.setTimeout(() => {
-        loadMessages(liveConversationId);
-        loadTraces(liveConversationId);
-        loadSessions();
-      }, 250);
+      notifyTrace();
+      notify.error(
+        outgoingAttachments.length
+          ? t('连接中断，文字和附件已恢复到输入框。请确认后重试。')
+          : t('连接中断，原内容已恢复到输入框。请确认后重试。'),
+      );
     };
 
     const checkStreamHealth = () => {
@@ -3100,7 +3133,7 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
       }
       const targetSessionId = liveConversationId;
       if (!targetSessionId || isDraftConversationKey(targetSessionId)) {
-        appendInterruptedResponse('本次响应连接中断，未能确认服务端会话。请重试发送。');
+        restoreUnconfirmedDraft();
         return;
       }
       const activeStream = getStreamSlot(targetSessionId);
@@ -3240,10 +3273,12 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     notifyQueue,
     notifyStore,
     notifyStream,
+    notifyTrace,
     persistQueuedTurns,
     pollScheduledSessionEvents,
     redirectToLogin,
     removeQueuedTurnPreview,
+    t,
     tenantId,
     updateStreaming,
     upsertOptimisticSession,
@@ -3403,9 +3438,10 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
   ]);
 
   useEffect(() => {
+    if (gallery) return;
     void queuedTurnsTick;
     drainQueuedTurns();
-  }, [drainQueuedTurns, queuedTurnsTick, streamTick]);
+  }, [drainQueuedTurns, gallery, queuedTurnsTick, streamTick]);
 
   const handleComposerPaste = useCallback((event: ClipboardEvent<HTMLTextAreaElement>) => {
     const clipboardData = event.clipboardData;
@@ -3462,6 +3498,8 @@ export function useChatSession(options: UseChatSessionOptions = {}) {
     visibleSidebarSessions,
     agents,
     teams,
+    teamsLoadFailed,
+    refreshTeams: loadTeams,
     sessionId,
     sessionReadTimes,
     sessionAgentFilter,

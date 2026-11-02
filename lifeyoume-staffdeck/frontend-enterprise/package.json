@@ -9,6 +9,8 @@
     "config:check": "node scripts/check-vite-env.cjs",
     "test": "vitest run",
     "build": "tsc -b && vite build",
+    "build:production": "node scripts/build-production.cjs",
+    "verify:production": "node scripts/verify-production-build.cjs",
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort"
   },
   "dependencies": {

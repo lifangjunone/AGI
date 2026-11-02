@@ -1,4 +1,18 @@
 (() => {
+  document.querySelectorAll('[data-account-password-toggle]').forEach((toggle) => {
+    toggle.addEventListener('click', () => {
+      const inputId = toggle.getAttribute('aria-controls')
+      const input = inputId ? document.getElementById(inputId) : null
+      if (!input) return
+      const reveal = input.type === 'password'
+      const label = toggle.dataset.passwordLabel || '密码'
+      input.type = reveal ? 'text' : 'password'
+      toggle.textContent = reveal ? '隐藏' : '显示'
+      toggle.setAttribute('aria-label', `${reveal ? '隐藏' : '显示'}${label}`)
+      toggle.setAttribute('aria-pressed', String(reveal))
+    })
+  })
+
   const adminApp = document.querySelector('[data-admin-app]')
   if (adminApp) {
     const viewTitles = {
@@ -7,6 +21,7 @@
       products: '产品访问',
       heat: '产品运营看板',
       audit: '操作审计',
+      security: '安全设置',
     }
     const views = [...adminApp.querySelectorAll('[data-admin-view]')]
     const navItems = [...adminApp.querySelectorAll('.admin-nav [data-admin-target]')]
@@ -87,6 +102,39 @@
       render()
     })
 
+    adminApp.querySelectorAll('[data-password-toggle]').forEach((toggle) => {
+      toggle.addEventListener('click', () => {
+        const input = toggle.parentElement?.querySelector('input')
+        if (!input) return
+        const reveal = input.type === 'password'
+        const label = toggle.dataset.passwordLabel || '密码'
+        input.type = reveal ? 'text' : 'password'
+        toggle.textContent = reveal ? '隐藏' : '显示'
+        toggle.setAttribute('aria-label', `${reveal ? '隐藏' : '显示'}${label}`)
+        toggle.setAttribute('aria-pressed', String(reveal))
+      })
+    })
+    adminApp.querySelector('[data-admin-password-form]')?.addEventListener('input', (event) => {
+      const form = event.currentTarget
+      const current = form.elements.current_password
+      const next = form.elements.new_password
+      const confirm = form.elements.confirm_password
+      const feedback = form.querySelector('.form-feedback')
+      event.target.removeAttribute('aria-invalid')
+      const fieldError = event.target.getAttribute('aria-errormessage')
+      if (fieldError) {
+        const message = form.querySelector(`#${fieldError}`)
+        if (message) message.textContent = ''
+      }
+      if (feedback) feedback.textContent = ''
+      next.setCustomValidity(
+        next.value && current.value === next.value ? '新密码不能与当前密码相同。' : ''
+      )
+      confirm.setCustomValidity(
+        confirm.value && next.value !== confirm.value ? '两次输入的新密码不一致。' : ''
+      )
+    })
+
     // Keep the server-rendered, CSRF-protected forms as the source of truth.
     // Failed saves retain the current page and input rather than opening raw JSON.
     adminApp.querySelectorAll('form[action^="/admin/"]').forEach((form) => {
@@ -96,6 +144,12 @@
         event.preventDefault()
         if (form.dataset.saving === 'true') return
         form.dataset.saving = 'true'
+        form.querySelectorAll('[aria-invalid="true"]').forEach((input) => {
+          input.removeAttribute('aria-invalid')
+        })
+        form.querySelectorAll('.field-error').forEach((message) => {
+          message.textContent = ''
+        })
         const button = form.querySelector('button[type="submit"]')
         const original = button?.textContent
         const feedback = form.querySelector('.form-feedback') || document.createElement('p')
@@ -110,23 +164,48 @@
             method: 'POST', body: data, credentials: 'same-origin',
           })
           if (!response.ok) {
+            const passwordForm = form.matches('[data-admin-password-form]')
+            const invalidInput = passwordForm
+              ? '请确认新密码至少 12 位、两次输入一致且不同于当前密码。'
+              : '输入无效，请检查范围与格式后重试。'
             const errors = {
-              400: '输入无效，请检查范围与格式后重试。',
+              400: invalidInput,
+              401: '当前密码不正确，请重新输入。',
               403: '会话或安全凭证已过期，请刷新页面后重试。',
               404: '记录已不存在，请刷新后确认。',
               429: '操作过于频繁，请稍后再试。',
             }
-            throw new Error(errors[response.status] || '保存失败，请稍后重试。')
+            const saveError = new Error(errors[response.status] || '保存失败，请稍后重试。')
+            if (passwordForm) {
+              saveError.field = response.status === 401
+                ? form.elements.current_password
+                : form.elements.new_password
+            }
+            throw saveError
           }
           if (response.redirected && response.url.includes('ok=')) {
             const destination = new URL(response.url)
             destination.hash = form.closest('[data-admin-view]')?.dataset.adminView || 'overview'
             window.location.assign(destination)
+          } else if (response.redirected && response.url.includes('/admin/login?changed=1')) {
+            window.location.assign(response.url)
           } else {
             throw new Error('登录状态可能已过期，请在新标签页重新登录后重试。')
           }
         } catch (error) {
-          feedback.textContent = error.message || '网络连接失败，输入已保留。'
+          if (error.field) {
+            error.field.setAttribute('aria-invalid', 'true')
+            const errorId = error.field.getAttribute('aria-errormessage')
+            const fieldFeedback = errorId && form.querySelector(`#${errorId}`)
+            if (fieldFeedback) {
+              fieldFeedback.textContent = error.message
+            } else {
+              feedback.textContent = error.message
+            }
+            error.field.focus()
+          } else {
+            feedback.textContent = error.message || '网络连接失败，输入已保留。'
+          }
           form.dataset.saving = 'false'
           if (button) { button.disabled = false; button.textContent = original }
         }

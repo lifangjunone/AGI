@@ -142,7 +142,7 @@ describe('App team scope selection', () => {
     window.localStorage.setItem(ENTERPRISE_AGENT_STORAGE_KEY, 'agent-1');
     window.history.pushState({}, '', '/enterprise/agents');
     const view = render(<I18nProvider><App /></I18nProvider>);
-    await screen.findByLabelText('切换当前员工');
+    await screen.findByLabelText('切换当前员工', {}, { timeout: 3000 });
     expect(view.container.querySelector('.persistent-distill')).toBeNull();
     expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/auth/users'))).toBe(false);
   });
@@ -184,5 +184,19 @@ describe('App team scope selection', () => {
       expect(switcher.textContent).toContain('增长团队');
     });
     expect(window.localStorage.getItem(ENTERPRISE_AGENT_STORAGE_KEY)).toBe('team:team-1');
+  });
+});
+
+describe('App public loading seam', () => {
+  it('renders the product landing page without validating an absent session', async () => {
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<I18nProvider><App /></I18nProvider>);
+
+    await screen.findByRole('link', { name: '进入数字团队' });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.queryByText('正在进入数字团队…')).toBeNull();
   });
 });

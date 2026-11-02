@@ -58,8 +58,10 @@ def package_manager(root):
 
 def prepare(*, backend=True, cli_link=True):
     manifest = json.loads((ROOT / 'distribution/manifest.json').read_text(encoding='utf-8'))
+    public_base = os.environ.get('STAFFDECK_PUBLIC_BASE', '/')
     env = dict(os.environ, VITE_TENANT_ID=manifest['installation']['tenant_id'], VITE_API_BASE_URL='',
-               RAYON_NUM_THREADS='2', UV_THREADPOOL_SIZE='2', NODE_OPTIONS='--max-old-space-size=2048')
+               VITE_PUBLIC_BASE=public_base, RAYON_NUM_THREADS='2', UV_THREADPOOL_SIZE='2',
+               NODE_OPTIONS='--max-old-space-size=2048')
     selected_ui = 'frontend-business' if manifest['assembly'].get('ui_variant') == 'business' else 'frontend-enterprise'
     for name in (selected_ui,):
         directory = ROOT / name
@@ -68,11 +70,11 @@ def prepare(*, backend=True, cli_link=True):
         pm = package_manager(directory)
         if pm[-1] == 'npm':
             run([*pm, 'ci', '--ignore-scripts', '--no-audit', '--no-fund'], directory, env)
-            run([*pm, 'run', 'build', '--', '--base=/'], directory, env)
+            run([*pm, 'run', 'build', '--', f'--base={public_base}'], directory, env)
         else:
             run([*pm, 'install', '--frozen-lockfile', '--ignore-scripts'], directory, env)
             run([*pm, 'exec', 'tsc', '-b'], directory, env)
-            run([*pm, 'exec', 'vite', 'build', '--base=/'], directory, env)
+            run([*pm, 'exec', 'vite', 'build', f'--base={public_base}'], directory, env)
     engine = ROOT / 'harness-engine'
     pm = package_manager(engine)
     run([*pm, 'install', '--frozen-lockfile'] if pm[-1] != 'npm' else [*pm, 'ci', '--no-audit'], engine, env)

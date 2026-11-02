@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import secrets
 from datetime import timedelta
 from typing import Any
@@ -35,6 +36,7 @@ PROVIDER_TASK_STRATEGY = "provider_task"
 CALLBACK_URL_HEADER = "X-StaffDeck-Callback-URL"
 CALLBACK_TOKEN_HEADER = "X-StaffDeck-Callback-Token"
 IDEMPOTENCY_HEADER = "Idempotency-Key"
+logger = logging.getLogger(__name__)
 
 
 def new_callback_token() -> str:
@@ -93,6 +95,10 @@ def apply_task_event(
     if task.status in PERSISTED_TERMINAL_STATUSES and task.status != 'outcome_unknown':
         # A duplicate or late callback must not expose unreviewed raw payloads.
         data = {'ignored': True, 'reason': 'task_already_terminal'}
+    elif event_type == "expired":
+        # Expiry is a trusted local lifecycle decision, not provider output.
+        # Preserve its actionable error without invoking output projection.
+        pass
     elif modular and (
             next_status in PERSISTED_TERMINAL_STATUSES or data.get('result') is not None or data.get('error') is not None):
         from staffdeck_harness.runtime.external_tasks import project_external_result
@@ -382,8 +388,16 @@ def poll_due_external_tasks(db: Session, *, dispatch=None) -> int:
     local_count = 0
     for task in queued:
         if dispatch is None:
-            _execute_local_task(db, task)
-            local_count += 1
+            try:
+                _execute_local_task(db, task)
+                local_count += 1
+            except Exception:
+                # One malformed task must not starve every later task in this
+                # scan. Its durable state remains recoverable on the next pass.
+                db.rollback()
+                logger.exception(
+                    "external task submission failed task_id=%s", task.id
+                )
         elif dispatch(db, task.id, 'submit'):
             local_count += 1
     candidates = db.exec(

@@ -64,6 +64,7 @@ input:focus-visible {
 }
 
 .brand {
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 11px;
@@ -100,6 +101,9 @@ input:focus-visible {
 
 .site-header nav a,
 .nav-link {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   padding: 8px 0;
   color: #474c48;
   border: 0;
@@ -1056,6 +1060,65 @@ th {
   font-weight: 700;
 }
 
+.account-security {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.account-security h2 {
+  margin: 0;
+  font: 700 23px/1.2 Georgia, "Songti SC", serif;
+}
+
+.account-security > p {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.account-security form {
+  margin-top: 18px;
+}
+
+.account-security .password-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.account-security .password-input input {
+  border-radius: 3px 0 0 3px;
+}
+
+.account-security .password-input button {
+  min-width: 58px;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-left: 0;
+  border-radius: 0 3px 3px 0;
+  color: var(--forest);
+  background: #f0f2ed;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.account-security-help {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.account-security .field-error {
+  min-height: 0;
+  display: block;
+  margin-top: 6px;
+  color: var(--vermilion);
+  font-size: 11px;
+}
+
 .account-id {
   margin-top: 36px;
   padding: 16px;
@@ -1689,6 +1752,152 @@ th {
   border-radius: 3px;
   background: #faf9f4;
   font-size: 11px;
+}
+
+.admin-security-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(420px, 680px) minmax(240px, 320px);
+  align-items: start;
+  gap: 18px;
+}
+
+.admin-security-card,
+.admin-security-note {
+  border: 1px solid #c7c8c2;
+  background: #f9f9f5;
+}
+
+.admin-security-card {
+  padding: 24px;
+}
+
+.admin-security-card-head {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #d7d8d2;
+}
+
+.admin-security-card-head span,
+.admin-security-note > span {
+  color: #72766f;
+  font: 700 9px "SFMono-Regular", Consolas, monospace;
+  letter-spacing: 0.08em;
+}
+
+.admin-security-card-head strong {
+  font-family: Georgia, "Songti SC", serif;
+}
+
+.admin-password-form {
+  max-width: 520px;
+  display: grid;
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.admin-password-form > label {
+  display: grid;
+  gap: 7px;
+  color: #353a35;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.password-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.password-input input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #bfc1bb;
+  border-right: 0;
+  border-radius: 3px 0 0 3px;
+  color: #191b19;
+  background: #fff;
+  font-size: 12px;
+}
+
+.password-input input:focus {
+  z-index: 1;
+  outline: 2px solid #315544;
+  outline-offset: -1px;
+}
+
+.password-input button {
+  min-width: 58px;
+  min-height: 44px;
+  border: 1px solid #bfc1bb;
+  border-radius: 0 3px 3px 0;
+  color: #315544;
+  background: #f0f2ed;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.password-input button:hover {
+  background: #e4e8e0;
+}
+
+.password-input button:focus-visible {
+  z-index: 1;
+  outline: 2px solid #315544;
+  outline-offset: -1px;
+}
+
+.password-input button[aria-pressed="true"] {
+  color: #fff;
+  border-color: #315544;
+  background: #315544;
+}
+
+.password-input input[aria-invalid="true"] {
+  border-color: #a42f24;
+  outline-color: #a42f24;
+}
+
+.admin-security-help,
+.admin-password-form .field-error,
+.admin-password-form .form-feedback {
+  margin: 0;
+  color: #72766f;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.admin-password-form .field-error:not(:empty),
+.admin-password-form .form-feedback:not(:empty) {
+  color: #a42f24;
+}
+
+.admin-password-form > .button {
+  width: max-content;
+  min-width: 160px;
+  margin-top: 2px;
+}
+
+.admin-password-form > .button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.admin-security-note {
+  padding: 22px;
+}
+
+.admin-security-note ol {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 0;
+  padding: 0 0 0 20px;
+  color: #555b55;
+  font-size: 11px;
+  line-height: 1.6;
 }
 
 .table-button {
@@ -2480,6 +2689,18 @@ th {
 
   .admin-data-panel {
     min-height: 430px;
+  }
+
+  .admin-security-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-security-card {
+    padding: 18px;
+  }
+
+  .admin-security-note {
+    display: none;
   }
 
   .admin-table-wrap {

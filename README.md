@@ -2,6 +2,20 @@
 
 这是一个由多个本地优先 AI 产品、交付工具和学习产品组成的产品工作区。每个子项目都可以独立安装、运行、测试和发布；根目录只负责项目导航、协作关系和统一命名。
 
+## 生产部署
+
+生产环境采用“阿里云统一入口 + 腾讯云应用负载”的跨云架构。部署、迁移、故障
+处理或重启任何线上服务前，先阅读：
+
+- [部署总览与操作入口](deployments/README.md)
+- [服务部署清单](deployments/SERVICE_INVENTORY.md)
+- [服务器职责与连接方式](deployments/HOSTS.md)
+- [迁移与回滚手册](deployments/runbooks/CROSS_CLOUD_MIGRATION.md)
+- [共享 Nginx 安全规则](deployments/runbooks/SHARED_NGINX.md)
+
+部署文档只记录非敏感拓扑、端口、路径、服务名和验证方法。密码、Token、API Key、
+私钥及生产环境文件内容不得写入仓库或聊天。
+
 Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与投标应答审计”Pay Skill；旧网站保留用于历史数据，不再作为主要商业方向。
 
 微信虚拟支付已完成服务端签名、`short_series_goods` 道具直购、订单持久化和回调解析。
@@ -32,6 +46,7 @@ Opportunity Factory 正从 GitHub 审计实验转向“政企 AI POC 验收与�
 | [`novel-video-studio/`](novel-video-studio/README.md) | 长卷制片厂 | 从 23 个已核验来源发现作品，按正文与章节动态规划全书分集，用户选定本季范围后再生产五分钟连续成片 | Node.js、Electron、PWA、火山方舟、FFmpeg |
 | [`model-operations-studio/`](model-operations-studio/README.md) | Model Operations Studio | 本地优先的模型注册、部署、监控、配置与推理控制面 | Electron、React、Node.js、ComfyUI、llama.cpp |
 | [`model-radar/`](model-radar/README.md) | LifeYouMe 模型雷达 | 每小时采集公开 AI 模型信号，按趋势动量、新鲜度和社区采用生成热度榜 | Node.js、原生 Web |
+| [`mapproof/`](mapproof/README.md) | MapProof 图证 | 在发布前检查 Mermaid 与 AI 生成图的分支语义、复杂连线、关键路径和可读性，并导出验收报告 | Node.js、Mermaid、Docker |
 | [`personal-privacy-vault/`](personal-privacy-vault/README.md) | 隐匣 | 使用统一账号进入、业务数据仍无服务端的个人隐私档案，支持本地搜索、自动锁定和加密备份 | React、TypeScript、Web Crypto、IndexedDB |
 | [`daily-focus-widget/`](daily-focus-widget/README.md) | 今日小记 | 菜单栏常驻的轻量每日待办，支持全局呼出、快速隐藏、本地持久化和智能系统提醒 | Electron、原生 HTML/CSS/JS |
 | [`kaidan-page/`](kaidan-page/README.md) | 开单页 Kaidan | 把个人技能商品化为三档报价、收入测算和可独立分享的服务售卖页 | React、TypeScript、Vite、Playwright |
@@ -68,6 +83,7 @@ lifeyoume.icu/
 ├── /resume/                  ResumeForge 求职简历工作台
 ├── /video/                   FRAME/60 / 智助乖乖
 ├── /vault/                   隐匣
+├── /mapproof/                MapProof 图表发布验收台
 └── 历史审计兼容路径          转交 Opportunity Factory
 
 audit.lifeyoume.icu/           Opportunity Factory 审计产品
@@ -89,7 +105,7 @@ PWA、小程序和原生客户端使用设备授权，不允许各产品再保�
 
 ## README 状态
 
-当前 39 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
+当前 40 个顶层产品与平台目录均有独立 `README.md`。每个 README 负责说明自身
 定位、真实运行状态、构建测试方式、数据边界和统一身份接入方式；根 README 只
 维护产品地图、门户架构和跨项目约束。
 
@@ -161,6 +177,7 @@ cd ../short-video-studio && npm install && npm run web
 cd ../novel-video-studio && npm start
 cd ../model-operations-studio && npm install && npm run dev
 cd ../model-radar && npm start
+cd ../mapproof && npm install && npm test && npm start
 cd ../personal-privacy-vault && npm install && npm run dev
 cd ../daily-focus-widget && npm install && npm start
 cd ../kaidan-page && npm install && npm run dev

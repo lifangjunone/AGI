@@ -19,3 +19,18 @@
 This is a permanent workspace rule prompted by actual incidents where `/image/`
 and `/flowframe/` disappeared after another product rewrote the shared Nginx
 configuration.
+
+## Shared production topology memory
+
+- Read `deployments/README.md` and `deployments/SERVICE_INVENTORY.md` before
+  diagnosing, deploying, restarting, or migrating any LifeYouMe production
+  service.
+- Follow the relevant service document under `deployments/services/` and the
+  runbooks under `deployments/runbooks/`.
+- The `deployments/` directory is the workspace-wide, non-secret source of truth
+  shared by all project sessions for the Aliyun edge and Tencent application
+  topology.
+- Keep the inventory and affected service document current after every
+  production migration, port change, image change, or routing change.
+- `PRODUCTION_TOPOLOGY.md` remains only as a compatibility pointer for older
+  sessions and links.

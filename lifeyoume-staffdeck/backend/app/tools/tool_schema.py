@@ -132,6 +132,7 @@ class ToolResult(BaseModel):
 class ToolTestRequest(BaseModel):
     tenant_id: str
     arguments: dict[str, Any] = Field(default_factory=dict)
+    client_request_id: Optional[str] = Field(default=None, min_length=1, max_length=200)
 
 
 class ToolProbeRequest(BaseModel):

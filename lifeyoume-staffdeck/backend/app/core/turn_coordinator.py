@@ -1166,13 +1166,7 @@ class TurnCoordinator:
                 # Resume the same node with its receipt; only SOP supervision
                 # may decide transitions/required slots, not the background worker.
                 resume_step_id = None
-                external_task = self.db.exec(
-                    select(ExternalBusinessTask).where(
-                        ExternalBusinessTask.task_frame_id == row.task_id,
-                        ExternalBusinessTask.session_id == session.id,
-                        ExternalBusinessTask.status.in_(["queued", "accepted", "working"]),
-                    )
-                ).first()
+                external_task = _external_task_for_result(self.db, row, result)
                 if external_task is not None:
                     external_task.resume_step_id = resume_step_id
                     self.db.add(external_task)
@@ -1637,6 +1631,31 @@ def _defer_failed_step_after_completed_checkpoint(
     )
 
 
+
+
+def _external_task_for_result(
+    db: Session,
+    frame: Any,
+    result: Any,
+) -> ExternalBusinessTask | None:
+    """Resolve the exact durable receipt emitted by this task frame."""
+    structured = getattr(result, "structured_result", None)
+    if not isinstance(structured, dict):
+        structured = getattr(result, "data", None)
+    task_id = structured.get("task_id") if isinstance(structured, dict) else None
+    tenant_id = getattr(frame, "tenant_id", None)
+    session_id = getattr(frame, "session_id", None)
+    task_frame_id = getattr(frame, "task_id", None)
+    if not task_id or not all((tenant_id, session_id, task_frame_id)):
+        return None
+    return db.exec(
+        select(ExternalBusinessTask).where(
+            ExternalBusinessTask.id == str(task_id),
+            ExternalBusinessTask.tenant_id == tenant_id,
+            ExternalBusinessTask.session_id == session_id,
+            ExternalBusinessTask.task_frame_id == task_frame_id,
+        )
+    ).first()
 
 
 def _combine_results(

@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "name": "MyContext",
+      "repository": "https://github.com/openTrinity/mycontext.git",
+      "commit": "23c6f609fb1d392f922e19dae7bee174075a2569",
+      "path": "open-source/mycontext",
+      "usage": "runtime-foundation",
+      "license": "Elastic-2.0"
+    },
+    {
+      "name": "digital-twin-skill",
+      "repository": "https://github.com/FredHJC/digital-twin-skill.git",
+      "commit": "85ff9befd02ed556241d43a3e3d2f999aa1a4436",
+      "path": "open-source/digital-twin-skill",
+      "usage": "research-only",
+      "license": "NO-LICENSE-FOUND"
+    }
+  ]
+}

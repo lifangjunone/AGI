@@ -2,43 +2,45 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import LocalWorkspace from "./LocalWorkspace";
+import { useDomI18n, useLocale } from "./i18n";
+import { asset } from "./assets";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const useCases = [
   {
     name: "AI doctor",
-    image: "/assets/doctor.webp",
+    image: asset("doctor.webp"),
     description:
       "Accessible, compassionate, and always on call — your AI doctor offers 24/7 health advice and virtual consultations.",
   },
   {
     name: "AI customer service",
-    image: "/assets/customer-service.webp",
+    image: asset("customer-service.webp"),
     description:
       "Transform how your business supports customers with faster, more personal conversations at any hour.",
   },
   {
     name: "AI interview",
-    image: "/assets/interview.webp",
+    image: asset("interview.webp"),
     description:
       "Real-time interviews. Instant analysis. Smarter hiring, anywhere.",
   },
   {
     name: "AI girlfriend",
-    image: "/assets/girlfriend.webp",
+    image: asset("girlfriend.webp"),
     description:
       "She listens, cares, and remembers — an AI companion built for natural, thoughtful conversation.",
   },
   {
     name: "AI boyfriend",
-    image: "/assets/boyfriend.webp",
+    image: asset("boyfriend.webp"),
     description:
       "Share thoughts, laughter, and comfort with an AI companion designed for emotional presence.",
   },
   {
     name: "School AI",
-    image: "/assets/school.webp",
+    image: asset("school.webp"),
     description:
       "Support educators and captivate students with an AI assistant that brings interactive lessons to life.",
   },
@@ -60,12 +62,12 @@ function ArrowIcon({ direction = "right" }) {
   );
 }
 
-function Header({ menuOpen, setMenuOpen, openPanel }) {
+function Header({ menuOpen, setMenuOpen, openPanel, locale, setLocale }) {
   return (
     <header className="site-header">
       <div className="nav-shell">
         <a className="logo-link" href="#top" aria-label="Duix home">
-          <img src="/assets/logo.svg" alt="Duix" />
+          <img src={asset("logo.svg")} alt="Duix" />
         </a>
         <nav className="desktop-nav" aria-label="Primary navigation">
           <button onClick={() => openPanel("docs")}>Docs</button>
@@ -74,6 +76,13 @@ function Header({ menuOpen, setMenuOpen, openPanel }) {
           <a href="#about">About</a>
         </nav>
         <div className="nav-actions">
+          <button
+            className="language-switch"
+            onClick={() => setLocale(locale === "zh-CN" ? "en-US" : "zh-CN")}
+            aria-label={locale === "zh-CN" ? "Switch to English" : "切换到中文"}
+          >
+            {locale === "zh-CN" ? "EN" : "中文"}
+          </button>
           <button className="button button-small button-outline desktop-action" onClick={() => openPanel("library")}>My avatars</button>
           <button className="button button-small desktop-action" onClick={() => openPanel("create")}>Create locally</button>
           <button
@@ -89,6 +98,7 @@ function Header({ menuOpen, setMenuOpen, openPanel }) {
         </div>
       </div>
       <div id="mobile-menu" className={`mobile-menu ${menuOpen ? "is-open" : ""}`}>
+        <button onClick={() => setLocale(locale === "zh-CN" ? "en-US" : "zh-CN")}>{locale === "zh-CN" ? "English" : "中文"}</button>
         <a href="#use-cases" onClick={() => setMenuOpen(false)}>Use cases</a>
         <a href="#capabilities" onClick={() => setMenuOpen(false)}>Capabilities</a>
         <a href="#developer" onClick={() => setMenuOpen(false)}>Developer</a>
@@ -108,7 +118,9 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [panel, setPanel] = useState(null);
+  const [locale, setLocale] = useLocale();
   const closePanel = useCallback(() => setPanel(null), []);
+  useDomI18n(root, locale);
 
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -191,16 +203,16 @@ function App() {
 
   return (
     <div ref={root} id="top">
-      <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} openPanel={setPanel} />
+      <Header menuOpen={menuOpen} setMenuOpen={setMenuOpen} openPanel={setPanel} locale={locale} setLocale={setLocale} />
       <main>
         <section className="hero section-shell">
           <div className="hero-copy">
-            <div className="headshots-mobile"><img src="/assets/headshots.png" alt="" /></div>
+            <div className="headshots-mobile"><img src={asset("headshots.png")} alt="" /></div>
             <h1>
               #1 Conversational AI
               <br />
               with real face and voice
-              <img className="headshots-inline" src="/assets/headshots.png" alt="" />
+              <img className="headshots-inline" src={asset("headshots.png")} alt="" />
             </h1>
             <p>
               Customize appearance and voice, support multiple languages, seamlessly integrate with knowledge bases, and significantly boost your business revenue.
@@ -212,7 +224,7 @@ function App() {
             <small>No payment required</small>
           </div>
           <div className="hero-media">
-            <video ref={video} src="/assets/hero.mp4" autoPlay muted loop playsInline preload="metadata" />
+            <video ref={video} src={asset("hero.mp4")} autoPlay muted loop playsInline preload="metadata" />
             <button className="video-control" onClick={toggleVideo} aria-label={isPlaying ? "Pause hero video" : "Play hero video"}>
               {isPlaying ? "Pause" : "Play"}
             </button>
@@ -261,7 +273,7 @@ function App() {
             <button className="button button-light button-large" onClick={() => setPanel("create")}>Create your AI avatar</button>
           </div>
           <div className="business-image">
-            <img src="/assets/business.webp" alt="Duix visual AI agent" />
+            <img src={asset("business.webp")} alt="Duix visual AI agent" />
           </div>
         </section>
 
@@ -323,7 +335,7 @@ function App() {
 
       <footer>
         <div className="footer-grid section-shell">
-          <a className="footer-logo" href="#top" aria-label="Back to top"><img src="/assets/logo.svg" alt="Duix" /></a>
+          <a className="footer-logo" href="#top" aria-label="Back to top"><img src={asset("logo.svg")} alt="Duix" /></a>
           <div><h3>Interactive AI avatar</h3>{useCases.map((item) => <a key={item.name} href="#use-cases">{item.name}</a>)}</div>
           <div><h3>Local project</h3><button onClick={() => setPanel("docs")}>Developer guide</button><button onClick={() => setPanel("legal")}>Privacy &amp; licenses</button><button onClick={() => setPanel("library")}>Saved avatars</button></div>
           <div><h3>Workspace</h3><button onClick={() => setPanel("contact")}>Project inquiry</button><p>No external submission</p><p>Built with DUIX.COM</p></div>
@@ -336,6 +348,7 @@ function App() {
         onClose={closePanel}
         previewImage={useCases[activeCase].image}
         initialRole={useCases[activeCase].name}
+        locale={locale}
       />
     </div>
   );

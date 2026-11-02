@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   datingProfileSchema, digitalLearningSchema, missionSchema, plazaActionSchema, plazaMoveSchema,
   plazaRuntimeSettingsSchema, societyDecisionSchema, societyProposalSchema
@@ -10,8 +10,91 @@ import {
   clearAdminCookie, decryptModelSecret, encryptModelSecret, hashAdminPassword, maskSecret, resolveAdmin, verifyAdminCredentials
 } from "./admin.js";
 import type { AgentMode } from "@meyou/shared";
+import { db } from "./db/client.js";
 
 describe("MeYou API contracts", () => {
+  it("MaaS model read returns active alias without reading or decrypting legacy credentials", async () => {
+    vi.stubEnv("MODEL_PROVIDER_MODE", "maas");
+    vi.stubEnv("MEYOU_MAAS_SERVICE_KEY", "private-maas-admin-test-key");
+    vi.stubEnv("MAAS_BASE_URL", "https://gateway.test/v1");
+    vi.stubEnv("MEYOU_MAAS_MODEL_ID", "current-logical-chat");
+    vi.stubEnv("MODEL_TIMEOUT_MS", "120000");
+    const select = vi.spyOn(db, "select").mockImplementation(() => { throw new Error("legacy_database_access"); });
+    const app = buildServer();
+    try {
+      const anonymous = await app.inject({ method: "GET", url: "/api/v1/admin/model-config" });
+      expect(anonymous.statusCode).toBe(401);
+      const response = await app.inject({
+        method: "GET", url: "/api/v1/admin/model-config",
+        headers: { "x-lifeyoume-admin-user": "test@example.invalid" }
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.headers["cache-control"]).toContain("no-store");
+      expect(response.json().configuration).toMatchObject({
+        provider: "maas", modelId: "current-logical-chat", managedBy: "maas", inferenceVerified: false
+      });
+      expect(response.body).not.toContain("private-maas-admin-test-key");
+      expect(response.json().configuration).not.toHaveProperty("apiKey");
+      expect(select).not.toHaveBeenCalled();
+      for (const [method, url] of [
+        ["PUT", "/api/v1/admin/model-config"],
+        ["POST", "/api/v1/admin/model-config/test"],
+        ["PATCH", "/api/v1/admin/model-config/status"],
+        ["POST", "/api/v1/admin/model-config/reveal-key"]
+      ] as const) {
+        const blocked = await app.inject({
+          method, url,
+          headers: { "x-lifeyoume-admin-user": "test@example.invalid" },
+          payload: { confirmation: "reveal-saved-model-key" }
+        });
+        expect(blocked.statusCode).toBe(409);
+        expect(blocked.json().error).toBe("model_managed_by_maas");
+        expect(blocked.body).not.toContain("private-maas-admin-test-key");
+      }
+      expect(select).not.toHaveBeenCalled();
+      vi.stubEnv("MEYOU_MAAS_SERVICE_KEY", "");
+      const unavailable = await app.inject({
+        method: "GET", url: "/api/v1/admin/model-config",
+        headers: { "x-lifeyoume-admin-user": "test@example.invalid" }
+      });
+      expect(unavailable.statusCode).toBe(503);
+      expect(unavailable.json().error).toBe("maas_not_configured");
+      expect(select).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+      select.mockRestore();
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("rejects untrusted customer-worker heartbeat and task execution requests", async () => {
+    vi.stubEnv("WORKER_INTERNAL_TOKEN", "test-only-internal-token");
+    const app = buildServer();
+    try {
+      for (const url of ["/internal/jobs/customer-agent-heartbeat", "/internal/jobs/customer-agents"]) {
+        const response = await app.inject({ method: "POST", url, headers: { "x-meyou-worker-token": "wrong" } });
+        expect(response.statusCode).toBe(404);
+        expect(response.json()).toEqual({ error: "not_found" });
+      }
+    } finally { await app.close(); vi.unstubAllEnvs(); }
+  });
+  it("does not distribute a MaaS service key through legacy configuration sync", async () => {
+    vi.stubEnv("MODEL_PROVIDER_MODE", "maas");
+    vi.stubEnv("MODEL_CONFIG_SYNC_TOKEN", "test-model-sync-token-at-least-32-characters");
+    const app = buildServer();
+    try {
+      const response = await app.inject({
+        method: "GET", url: "/internal/model-config",
+        headers: { "x-lifeyoume-model-sync-token": "test-model-sync-token-at-least-32-characters" }
+      });
+      expect(response.statusCode).toBe(410);
+      expect(response.json()).toEqual({ error: "use_independent_maas_application_key" });
+      expect(response.json()).not.toHaveProperty("apiKey");
+    } finally {
+      await app.close();
+      vi.unstubAllEnvs();
+    }
+  });
   it("hides the service-to-service model configuration endpoint without its sync token", async () => {
     const previousToken = process.env.MODEL_CONFIG_SYNC_TOKEN;
     process.env.MODEL_CONFIG_SYNC_TOKEN = "test-model-sync-token-at-least-32-characters";

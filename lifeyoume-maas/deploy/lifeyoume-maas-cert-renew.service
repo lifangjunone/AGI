@@ -1,0 +1,10 @@
+[Unit]
+Description=Renew LifeYouMe MaaS TLS certificate
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/renew-lifeyoume-maas-cert
+NoNewPrivileges=true

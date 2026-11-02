@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync, 
 import { eq } from "drizzle-orm";
 import { db } from "./db/client.js";
 import { adminSessions } from "./db/schema.js";
+import { platformCookie } from "./platform-cookie.js";
 
 export interface AdminIdentity {
   email: string;
@@ -20,7 +21,9 @@ function hashToken(token: string) {
 function parseCookie(request: FastifyRequest, name: string) {
   const value = request.headers.cookie?.split(";").map((part) => part.trim())
     .find((part) => part.startsWith(`${name}=`));
-  return value ? decodeURIComponent(value.slice(name.length + 1)) : "";
+  if (!value) return "";
+  try { return decodeURIComponent(value.slice(name.length + 1)); }
+  catch { return ""; }
 }
 
 function headerValue(request: FastifyRequest, name: string) {
@@ -71,7 +74,26 @@ export async function createAdminSession(email: string) {
 
 export async function resolveAdmin(request: FastifyRequest): Promise<AdminIdentity | null> {
   const platformAdmin = String(headerValue(request, PLATFORM_ADMIN_HEADER)).trim();
-  if (platformAdmin) return { email: platformAdmin.toLowerCase(), source: "platform" };
+  if (process.env.NODE_ENV === "test" && platformAdmin) {
+    return { email: platformAdmin.toLowerCase(), source: "platform" };
+  }
+  // Do not trust an incoming administrator header, even behind a proxy.
+  const centralCookie = platformCookie(request.headers.cookie, "lym_admin_session");
+  if (centralCookie) {
+    try {
+      const response = await fetch(process.env.AUTH_ADMIN_CHECK_URL
+        ?? "https://auth.lifeyoume.icu/api/v1/admin/access/check", {
+        headers: { cookie: centralCookie }, redirect: "error", signal: AbortSignal.timeout(5000)
+      });
+      if (response.ok) {
+        const value = await response.json() as { allowed?: boolean; admin?: { user?: unknown; role?: unknown } };
+        if (value.allowed === true && value.admin?.role === "platform-admin"
+          && typeof value.admin.user === "string" && value.admin.user.trim()) {
+          return { email: value.admin.user.trim().toLowerCase(), source: "platform" };
+        }
+      }
+    } catch { /* Central authentication failure grants no administrator role. */ }
+  }
   if (!localAdminFallbackEnabled()) return null;
   const token = parseCookie(request, ADMIN_COOKIE);
   if (!token) return null;

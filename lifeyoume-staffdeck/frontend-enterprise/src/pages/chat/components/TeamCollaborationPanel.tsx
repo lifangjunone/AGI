@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { ChevronDown, CircleAlert, LoaderCircle, SendHorizontal } from 'lucide-react';
 
 import { api, TENANT_ID } from '@/api/client';
@@ -25,9 +25,10 @@ import {
   traceSummary,
 } from '../chatHelpers';
 import type { TraceLine, TurnTrace } from '../chatTypes';
-import ExecutionRecord from './ExecutionRecord';
 import HarnessArtifactDownloads from './HarnessArtifactDownloads';
 import KnowledgeCitationList from './KnowledgeCitationList';
+
+const ExecutionRecord = lazy(() => import('./ExecutionRecord'));
 
 function collaborationTrace(rows: TurnTraceRead[]): { turnId: string; trace: TurnTrace } | null {
   const ordered = [...rows].sort(
@@ -438,17 +439,25 @@ export default function TeamCollaborationPanel({
                 <div className="mt-[10px] border-t border-[#eef1f6] pt-[10px]">
                   {traceSnapshot && traceLineSummary && traceLines.length > 0 && (
                     <div className="mb-[10px]">
-                      <ExecutionRecord
-                        traceTurnId={traceSnapshot.turnId}
-                        summary={traceLineSummary}
-                        details={traceLineDetails}
-                        expanded={expandedTraceIds.includes(traceSnapshot.turnId)}
-                        onToggle={(turnId, isExpanded) => setExpandedTraceIds((current) => (
-                          isExpanded
-                            ? current.filter((item) => item !== turnId)
-                            : [...current.filter((item) => item !== turnId), turnId]
-                        ))}
-                      />
+                      <Suspense
+                        fallback={(
+                          <div className="text-[12px] text-[#858b9c]" role="status">
+                            {traceLineSummary.text}
+                          </div>
+                        )}
+                      >
+                        <ExecutionRecord
+                          traceTurnId={traceSnapshot.turnId}
+                          summary={traceLineSummary}
+                          details={traceLineDetails}
+                          expanded={expandedTraceIds.includes(traceSnapshot.turnId)}
+                          onToggle={(turnId, isExpanded) => setExpandedTraceIds((current) => (
+                            isExpanded
+                              ? current.filter((item) => item !== turnId)
+                              : [...current.filter((item) => item !== turnId), turnId]
+                          ))}
+                        />
+                      </Suspense>
                     </div>
                   )}
                   {memberReplies.map((message) => {

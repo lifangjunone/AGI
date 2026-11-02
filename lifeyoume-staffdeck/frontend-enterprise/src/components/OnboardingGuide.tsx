@@ -10,12 +10,11 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import galleryImage from "@/assets/onboarding-gallery.png";
 import profileImage from "@/assets/onboarding-profile.png";
-
-export const ONBOARDING_SEEN_KEY = "staffdeck_onboarding_guide_seen";
-
-/** Custom event that lets any part of the app re-open the onboarding guide. */
-export const OPEN_ONBOARDING_EVENT = "staffdeck-open-onboarding";
-export const OPEN_QUICK_START_EVENT = "staffdeck-open-quick-start";
+import {
+  ONBOARDING_SEEN_KEY,
+  OPEN_ONBOARDING_EVENT,
+  OPEN_QUICK_START_EVENT,
+} from "@/lib/guide-events";
 
 type GuideCard = {
   icon: ReactNode;
@@ -85,7 +84,7 @@ const STEPS: GuideStep[] = [
   },
 ];
 
-export default function OnboardingGuide() {
+export default function OnboardingGuide({ openRequest = 0 }: { openRequest?: number }) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -105,6 +104,12 @@ export default function OnboardingGuide() {
     window.addEventListener(OPEN_ONBOARDING_EVENT, reopen);
     return () => window.removeEventListener(OPEN_ONBOARDING_EVENT, reopen);
   }, []);
+
+  useEffect(() => {
+    if (openRequest <= 0) return;
+    setStep(0);
+    setOpen(true);
+  }, [openRequest]);
 
   function finish() {
     window.localStorage.setItem(ONBOARDING_SEEN_KEY, "1");

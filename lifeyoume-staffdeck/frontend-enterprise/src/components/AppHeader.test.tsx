@@ -56,7 +56,12 @@ describe('AppHeader', () => {
 
     await user.click(screen.getByRole('button', { name: '账户菜单' }));
 
-    expect(await screen.findByText('API 全量密钥')).toBeTruthy();
     expect(screen.getByText('普通成员')).toBeTruthy();
+    expect(screen.getByRole('menuitem', { name: '统一账号与安全' }).getAttribute('href')).toBe(
+      'https://auth.lifeyoume.icu/account',
+    );
+    await user.click(await screen.findByText('API 全量密钥'));
+
+    expect(await screen.findByRole('heading', { name: '账号 API 密钥 · 普通成员' })).toBeTruthy();
   });
 });

@@ -16,7 +16,13 @@ const OPTIONS: Array<{ locale: AppLocale; label: string; shortLabel: string }> =
   { locale: 'en-US', label: 'English', shortLabel: 'EN' },
 ];
 
-export default function LanguageSwitcher({ className }: { className?: string }) {
+export default function LanguageSwitcher({
+  className,
+  touchFriendly = false,
+}: {
+  className?: string;
+  touchFriendly?: boolean;
+}) {
   const { locale, setLocale } = useI18n();
   const active = OPTIONS.find((option) => option.locale === locale) || OPTIONS[0];
 
@@ -26,7 +32,8 @@ export default function LanguageSwitcher({ className }: { className?: string }) 
         data-i18n-ignore
         aria-label={locale === 'zh-CN' ? '切换语言' : 'Switch language'}
         className={cn(
-          'flex h-[32px] w-[74px] shrink-0 items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[8px] text-[12px] font-medium text-[#757f9c] outline-none transition-colors hover:border-[#cbd3e6] hover:text-[#18181a]',
+          'flex h-[32px] w-[74px] shrink-0 items-center justify-center gap-[6px] rounded-[10px] border-[0.5px] border-[#e3e7f1] bg-white px-[8px] text-[12px] font-medium text-[#757f9c] transition-colors hover:border-[#cbd3e6] hover:text-[#18181a]',
+          touchFriendly && 'h-[44px] w-[60px] rounded-full border-black/8 bg-white/70 px-[7px] text-[#464c5e] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#111411]',
           className,
         )}
       >
@@ -43,7 +50,10 @@ export default function LanguageSwitcher({ className }: { className?: string }) 
           <DropdownMenuItem
             key={option.locale}
             onSelect={() => setLocale(option.locale)}
-            className="h-[34px] cursor-pointer justify-between rounded-[8px] px-[10px] text-[13px] text-[#464c5e]"
+            className={cn(
+              'h-[34px] cursor-pointer justify-between rounded-[8px] px-[10px] text-[13px] text-[#464c5e]',
+              touchFriendly && 'min-h-[44px]',
+            )}
           >
             <span>{option.label}</span>
             <Check

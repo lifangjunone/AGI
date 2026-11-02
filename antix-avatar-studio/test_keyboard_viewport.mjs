@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import {keyboardInset} from "./keyboard-viewport.js";
+const base={layoutHeight:812,height:482,editing:true};
+assert.equal(keyboardInset(base),330);
+assert.equal(keyboardInset({...base,offsetTop:50}),280);
+assert.equal(keyboardInset({...base,scale:2}),0);
+assert.equal(keyboardInset({...base,editing:false}),0);
+assert.equal(keyboardInset({...base,height:740}),0);
+assert.equal(keyboardInset({...base,layoutHeight:482}),0);
+console.log("PASS keyboard inset/edit focus/zoom exclusion/browser chrome/resize fallback");

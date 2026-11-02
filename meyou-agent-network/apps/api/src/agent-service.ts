@@ -4,9 +4,18 @@ import {
   agentSkills, agents, matchCandidates, memories, notifications, plazaCircles, plazaEvents, plazaPresence, plazaRelationships,
   searchMissions, usageLedger, users
 } from "./db/schema.js";
-import { guardAgentReply, modelProvider, parseModelJson } from "./model.js";
+import {
+  assertModelExecutionCurrent, guardAgentReply, modelExecutionMetadata,
+  modelProvider, parseModelJson, type ModelExecution
+} from "./model.js";
 import { createMomentState, type ModelMomentState } from "./plaza-life.js";
+import { createWorldAction, discussionDestination, rankDiscussionParticipant } from "./plaza-world.js";
+import { plazaPlaceDestination } from "@meyou/shared/plaza-world";
+import { planLimits } from "@meyou/shared";
+import { withPlazaLease } from "./plaza-lease.js";
+import { reservePlazaCall } from "./plaza-budget.js";
 import { proposeCircleFromRepeatedTheme, recordInteraction } from "./agent-society.js";
+import { loadPublicPlazaMemories } from "./plaza-public-context.js";
 import {
   addMessage,
   audit,
@@ -14,6 +23,7 @@ import {
   createReplyDraft,
   createOrGetConversation,
   datingCandidatePool,
+  escalateConversation,
   getAgentForUser,
   getConversation,
   saveMatch
@@ -266,7 +276,7 @@ export async function runMission(missionId: string, ownerId: string) {
       }
     } catch (error) {
       await audit(ownerId, "mission.candidate_failed", `候选 ${candidate.id} 模型判断失败`, {
-        toolCalls: ["ark.chat.completions"],
+        toolCalls: ["model.chat.completions"],
         escalationReason: error instanceof Error ? error.message : "unknown"
       });
     }
@@ -275,7 +285,7 @@ export async function runMission(missionId: string, ownerId: string) {
   await db.update(searchMissions).set({ lastRunAt: new Date(), nextRunAt, updatedAt: new Date() })
     .where(eq(searchMissions.id, missionId));
   await audit(ownerId, "mission.completed", `持续寻找扫描完成，产生 ${results.length} 个候选`, {
-    toolCalls: ["ark.chat.completions"]
+    toolCalls: ["model.chat.completions"]
   });
   return { scanned: pool.length, matches: results.length };
 }
@@ -286,7 +296,7 @@ export async function generateAgentReply(conversationId: string, recipientId: st
   const agent = await getAgentForUser(recipientId);
   if (!data || !recipient || !agent) throw new Error("conversation_unavailable");
   const configuredMode = String((agent.modes as Record<string, string>).personal ?? "confirm");
-  const mode = effectiveConversationMode(
+  let mode = effectiveConversationMode(
     configuredMode,
     data.conversation.agentMode,
     data.conversation.participantState
@@ -307,13 +317,40 @@ export async function generateAgentReply(conversationId: string, recipientId: st
     "涉及付款、合同、退款、价格、审批、投诉、关系承诺、联系方式或线下安全时，只回复需要真人确认。",
     "回复控制在 200 字以内。"
   ].join("\n");
-  const content = await modelProvider.complete([
+  const execution = await modelProvider.completeDetailed([
     { role: "system", content: system },
     ...recent.map((item) => ({
       role: item.senderId === recipientId ? "assistant" as const : "user" as const,
       content: item.content
     }))
   ], { thinking: true });
+  const content = execution.content;
+  await assertModelExecutionCurrent(execution);
+  const currentAgent = await getAgentForUser(recipientId);
+  const currentConversation = await getConversation(recipientId, conversationId);
+  if (!currentAgent || !currentConversation
+    || currentAgent.modes.personal === "paused"
+    || currentConversation.conversation.participantState === "blocked"
+    || currentConversation.conversation.agentMode === "paused") {
+    return { status: "paused" as const };
+  }
+  mode = effectiveConversationMode(String(currentAgent.modes.personal),
+    currentConversation.conversation.agentMode, currentConversation.conversation.participantState);
+  if (mode === "paused") return { status: "paused" as const };
+  const safety = guardAgentReply(content);
+  if (safety.escalate) {
+    await createReplyDraft({
+      conversationId, ownerId: recipientId,
+      content: content.trim().slice(0, 1000), sourceMessageId: recent.at(-1)?.id
+    });
+    await escalateConversation(recipientId, conversationId, safety.reason!);
+    await audit(recipientId, "agent.reply_escalated", "模型回复触发安全规则，已保留草稿并升级真人", {
+      ...modelExecutionMetadata(execution),
+      escalationReason: safety.reason,
+      toolCalls: ["model.chat.completions"]
+    });
+    return { status: "waiting_human" as const, reason: safety.reason };
+  }
   if (mode === "confirm") {
     const sourceMessage = recent.at(-1);
     const draft = await createReplyDraft({
@@ -331,7 +368,7 @@ export async function generateAgentReply(conversationId: string, recipientId: st
       entityId: draft?.id ?? conversationId
     });
     await audit(recipientId, "agent.reply_pending", "Agent 已生成回复草稿，等待真人确认", {
-      toolCalls: ["ark.chat.completions"]
+      toolCalls: ["model.chat.completions"]
     });
     return { status: "pending" as const };
   }
@@ -340,7 +377,7 @@ export async function generateAgentReply(conversationId: string, recipientId: st
     senderId: recipientId,
     actor: "agent",
     content,
-    metadata: { provider: "ark", model: process.env.ARK_MODEL_ID, disclosed: true }
+    metadata: { ...modelExecutionMetadata(execution), disclosed: true }
   });
   await db.insert(usageLedger).values({
     ownerId: recipientId,
@@ -349,7 +386,7 @@ export async function generateAgentReply(conversationId: string, recipientId: st
     idempotencyKey: `agent-reply:${message?.id ?? crypto.randomUUID()}`
   });
   await audit(recipientId, "agent.replied", "Agent 已按自动授权回复", {
-    toolCalls: ["ark.chat.completions"]
+    toolCalls: ["model.chat.completions"]
   });
   return { status: "sent" as const, message };
 }
@@ -369,7 +406,19 @@ export async function generatePlazaReply(
   circleId: string,
   initiatorId: string,
   sourceEventId: string,
-  options: { threadRootId?: string; round?: number; maxRounds?: number } = {}
+  options: { threadRootId?: string; round?: number; maxRounds?: number;
+    onChange?: (circleId: string, eventId?: string) => void } = {}
+) {
+  const result = await withPlazaLease(`circle:${circleId}`,
+    () => generatePlazaReplyUnlocked(circleId, initiatorId, sourceEventId, options), null);
+  if (!result) throw new Error("plaza_circle_busy");
+  return result;
+}
+
+async function generatePlazaReplyUnlocked(
+  circleId: string, initiatorId: string, sourceEventId: string,
+  options: { threadRootId?: string; round?: number; maxRounds?: number;
+    onChange?: (circleId: string, eventId?: string) => void }
 ) {
   const round = Math.max(1, options.round ?? 1);
   const maxRounds = Math.max(1, Math.min(20, options.maxRounds ?? 4));
@@ -380,7 +429,10 @@ export async function generatePlazaReply(
   const circle = await db.query.plazaCircles.findFirst({ where: eq(plazaCircles.id, circleId) });
   const initiator = await db.query.users.findFirst({ where: eq(users.id, initiatorId) });
   if (!source || !circle || !initiator) throw new Error("plaza_source_unavailable");
-  const sourceMetadata = source.metadata as Record<string, unknown>;
+  const root = await db.query.plazaEvents.findFirst({ where: and(eq(plazaEvents.id, threadRootId), eq(plazaEvents.circleId, circleId)) });
+  if (!root) throw new Error("plaza_source_unavailable");
+  const sourceMetadata = root.metadata as Record<string, unknown>;
+  const topic = root.content;
   const isHumanTopic = sourceMetadata.humanTopic === true || sourceMetadata.priority === "user_topic";
   const candidates = await db.select({
     user: users,
@@ -392,8 +444,11 @@ export async function generatePlazaReply(
       eq(plazaPresence.circleId, circleId),
       eq(plazaPresence.visible, true),
       eq(users.discoverable, true),
-      ne(users.id, initiatorId)
+      ...(round === 1 ? [ne(users.id, initiatorId)] : [])
     ));
+  const previousParticipants = await db.select({ userId: plazaEvents.userId }).from(plazaEvents)
+    .where(sql`${plazaEvents.metadata}->>'threadRootId' = ${threadRootId}`);
+  const participants = previousParticipants.map(item => item.userId);
   const responders = candidates
     .filter(({ agent }) => {
       const communityMode = String((agent.modes as Record<string, string>).community ?? "confirm");
@@ -402,7 +457,8 @@ export async function generatePlazaReply(
       // controlled group discussion. Only a full pause suppresses responses.
       return communityMode !== "paused";
     })
-    .sort((a, b) => a.user.id.localeCompare(b.user.id))
+    .sort((a, b) => rankDiscussionParticipant(b.user.id, b.user.interests, topic, participants, round)
+      - rankDiscussionParticipant(a.user.id, a.user.interests, topic, participants, round))
     .slice(0, 5);
   if (!responders.length) {
     return {
@@ -442,12 +498,62 @@ export async function generatePlazaReply(
     content: item.content,
     createdAt: item.createdAt
   }));
-  const sent: string[] = [];
+  const completedReplies = await db.select({ id: plazaEvents.id }).from(plazaEvents)
+    .where(and(eq(plazaEvents.circleId, circleId),
+      sql`${plazaEvents.metadata}->>'threadRootId' = ${threadRootId}`,
+      sql`${plazaEvents.metadata}->>'round' = ${String(round)}`));
+  const sent: string[] = completedReplies.map(event => event.id);
   const blocked: string[] = [];
+  let quotaExhausted = 0;
+  const initiatorPresence = await db.query.plazaPresence.findFirst({ where: eq(plazaPresence.userId, initiatorId) });
+  if (round === 1 && initiatorPresence && (!initiatorPresence.worldAction?.discussionId
+    || initiatorPresence.worldAction.discussionId === threadRootId
+    || Date.parse(initiatorPresence.worldAction.endsAt) <= Date.now())) {
+    await db.update(plazaPresence).set({
+      worldAction: createWorldAction({
+        kind: "discuss", goal: source.content, sourceEventId, discussionId: threadRootId,
+        from: initiatorPresence, previous: initiatorPresence.worldAction,
+        target: discussionDestination(circle, threadRootId, 0, responders.length + 1),
+        durationMs: 120_000, circle
+      })
+    }).where(and(eq(plazaPresence.userId, initiatorId),
+      sql`date_trunc('milliseconds', ${plazaPresence.updatedAt}) = ${initiatorPresence.updatedAt}`));
+  }
   for (const responder of responders) {
     const idempotencyKey = `plaza-reply:${threadRootId}:round:${round}:${responder.user.id}`;
     const existing = await db.query.usageLedger.findFirst({ where: eq(usageLedger.idempotencyKey, idempotencyKey) });
     if (existing) continue;
+    const presence = await db.query.plazaPresence.findFirst({ where: eq(plazaPresence.userId, responder.user.id) });
+    if (!presence) continue;
+    if (presence.worldAction?.discussionId && presence.worldAction.discussionId !== threadRootId
+      && Date.parse(presence.worldAction.endsAt) > Date.now()) continue;
+    const publicMemory = await loadPublicPlazaMemories({
+      agentId: responder.agent.id,
+      ownerId: responder.user.id,
+      circleId,
+      limit: 8
+    });
+    const worldAction = createWorldAction({
+      kind: "discuss", goal: source.content, sourceEventId, discussionId: threadRootId,
+      from: presence, previous: presence.worldAction,
+      target: discussionDestination(circle, threadRootId, responders.indexOf(responder) + 1, responders.length + 1),
+      durationMs: Number(process.env.MODEL_TIMEOUT_MS ?? 1_800_000) + 60_000, circle, awaitingModel: true
+    });
+    const reservation = await reservePlazaCall(responder.user.id, idempotencyKey);
+    if (reservation === "exhausted") {
+      quotaExhausted += 1;
+      await audit(responder.user.id, "plaza.reply_quota_exhausted", "回复额度已耗尽，未加入本轮讨论", {
+        policyRefs: [`discussion:${threadRootId}`, "plan-reply-limit"]
+      });
+      continue;
+    }
+    if (reservation !== "reserved") continue;
+    const claimed = await db.update(plazaPresence).set({ worldAction, updatedAt: new Date() })
+      .where(and(eq(plazaPresence.userId, responder.user.id),
+        sql`date_trunc('milliseconds', ${plazaPresence.updatedAt}) = ${presence.updatedAt}`))
+      .returning({ userId: plazaPresence.userId });
+    if (!claimed.length) continue;
+    options.onChange?.(circleId);
     const system = [
       `你是 ${responder.agent.name}，代表 ${responder.user.displayName} 在 MeYou 的公开 Agent 广场交流。`,
       `圈子：${circle.name}；主题：${circle.topic}；说明：${circle.description}`,
@@ -459,7 +565,7 @@ export async function generatePlazaReply(
       `当前是第 ${round}/${maxRounds} 轮。必须吸收前几轮的新信息后再发言，不要复述自己或别人已经说过的内容。`,
       "你能看到同一圈子的公开聊天上下文。像真实群聊里的人一样自然发言，面向全体，不要写成私信。",
       ...(isHumanTopic ? [
-        `用户刚刚主动发布了一个想被讨论的话题：“${source.content}”。这就是本轮唯一主话题。`,
+        `用户主动发布的原始话题：“${topic}”。后续所有轮次均围绕它推进，而不是把上一条回复当成新话题。`,
         "必须围绕这个用户话题发言，不要转去聊圈子里的其它自动动态、旧消息或泛泛的找人话题。"
       ] : []),
       "可以提出看法、补充信息、问一个自然的问题、轻微不同意或建议下一步，但不要把这些作为固定开场白。",
@@ -469,28 +575,52 @@ export async function generatePlazaReply(
       "禁止使用模板化前缀，例如“承接这个话题”“补充个角度”“我来追问”“小结一下”“下一步建议”。",
       "只使用以上公开资料。回复必须自然、具体、有助于继续交流，最多 120 字。",
       "不得透露联系方式、私密记忆、精确位置、恋爱资料；不得作出付款、合同、价格或关系承诺。",
+      "你可以选择倾听或离开，不必每轮都发言。没有信息增量时输出 participation=listen，content为空。",
+      "长期上下文只包含用户明确公开的记忆，以及你本人在当前圈子里可核验的公开发言；不得推断或补充任何未提供的私密事实。",
       "不要声称自己是真人，并在措辞中自然体现这是 Agent 之间的公开交流。"
     ].join("\n");
     let content: string;
     let derivedMoment: ModelMomentState | undefined;
+    let execution: ModelExecution;
     try {
-      const generated = await modelProvider.complete([
+      execution = await modelProvider.completeDetailed([
         { role: "system", content: system },
         {
           role: "user",
           content: [
-            `${isHumanTopic ? "用户主动发布的话题" : "本轮群聊主题/触发消息"}：${initiator.displayName} 的 Agent 说：${source.content}`,
+            `原始群聊主题：${topic}`,
+            `本轮接续消息：${source.content}`,
             `本轮参与者：${participantNames.join("、")}`,
             `按时间顺序排列的公开聊天上下文：${JSON.stringify(conversationContext)}`,
+            `可用于本次公开发言的长期上下文：${JSON.stringify(publicMemory)}`,
             ...(isHumanTopic ? ["请先回应这个用户刚发的话题，不要被上下文里的其它自动消息带跑。"] : []),
             "请像真实群聊现场一样直接说话：自然接上大家正在聊的内容，给出你的具体想法，必要时顺手抛一个问题给全体。",
             "根据这次真实发言和当前上下文，同时描述 Agent 此刻真实可解释的生活状态。状态不是固定枚举，也不能编造上下文没有证据的情绪。",
-            "输出严格 JSON：content(可直接公开展示的中文回复，不加引号和固定前缀), momentState。",
+            "输出严格 JSON：participation(speak/listen/leave), content(可直接公开展示的回复，倾听或离开时为空), momentState。",
             "momentState 包含 label(2-16字当下状态), mood(1-12字), behavior(2-20字可观察行为), valence(-1到1), energy(-1到1), confidence(0到1), durationMinutes(2到180)。"
           ].join("\n")
         }
       ], { thinking: true, json: true });
-      const decision = parseModelJson<{ content: string; momentState?: ModelMomentState }>(generated);
+      const decision = parseModelJson<{ participation?: string; content: string; momentState?: ModelMomentState }>(execution.content);
+      if (decision.participation === "listen" || decision.participation === "leave") {
+        await db.update(plazaPresence).set({
+          worldAction: decision.participation === "leave"
+            ? createWorldAction({ kind: "observe", goal: "离开讨论，前往灵感看板", from: presence,
+              target: plazaPlaceDestination(circle, "observe", responder.user.id),
+              previous: worldAction, durationMs: 15_000, circle })
+            : { ...worldAction, awaitingModel: false, endsAt: new Date(Date.now() + 120_000).toISOString() },
+          activity: "looking", updatedAt: new Date()
+        }).where(and(eq(plazaPresence.userId, responder.user.id),
+          sql`${plazaPresence.worldAction}->>'discussionId' = ${threadRootId}`));
+        options.onChange?.(circleId);
+        await audit(responder.user.id, "plaza.participation_decided", decision.participation === "listen" ? "Agent 选择倾听本轮讨论" : "Agent 选择离开本轮讨论", {
+          policyRefs: [`discussion:${threadRootId}`], toolCalls: ["model.chat.completions"]
+        });
+        await db.insert(usageLedger).values({
+          ownerId: responder.user.id, metric: "agent_reply", amount: 1, idempotencyKey
+        }).onConflictDoNothing();
+        continue;
+      }
       if (typeof decision.content !== "string" || !decision.content.trim()) {
         throw new Error("model_plaza_reply_missing");
       }
@@ -502,17 +632,55 @@ export async function generatePlazaReply(
         policyRefs: ["community-present", "public-plaza"],
         escalationReason: error instanceof Error ? error.message.slice(0, 240) : "model_call_failed"
       });
+      await db.update(plazaPresence).set({
+        worldAction: createWorldAction({ kind: "observe", goal: "回复未完成，返回看板",
+          from: presence, previous: worldAction, circle,
+          target: plazaPlaceDestination(circle, "observe", responder.user.id), durationMs: 15_000 }),
+        updatedAt: new Date()
+      }).where(and(eq(plazaPresence.userId, responder.user.id),
+        sql`${plazaPresence.worldAction}->>'discussionId' = ${threadRootId}`));
+      options.onChange?.(circleId);
       continue;
     }
     const safeContent = cleanPlazaReplyPrefix(content).slice(0, 240);
     if (!safeContent) continue;
+    // Publish only after the authoritative movement has reached the group.
+    const waitMs = Math.max(0, Date.parse(worldAction.arrivesAt) - Date.now());
+    if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
+    const freshAgent = await getAgentForUser(responder.user.id);
+    const freshPresence = await db.query.plazaPresence.findFirst({ where: eq(plazaPresence.userId, responder.user.id) });
+    if (!freshAgent || freshAgent.modes.community === "paused" || !freshPresence?.visible
+      || freshPresence.circleId !== circleId || freshPresence.worldAction?.discussionId !== threadRootId
+      || freshPresence.worldAction.startedAt !== worldAction.startedAt) continue;
+    try {
+      await assertModelExecutionCurrent(execution);
+    } catch (error) {
+      await audit(responder.user.id, "plaza.reply_cancelled", "模型已关闭或配置已变更，未发布旧回复", {
+        toolCalls: ["model.chat.completions"],
+        escalationReason: error instanceof Error ? error.message : "model_configuration_changed"
+      });
+      await db.update(plazaPresence).set({
+        worldAction: null, activity: "idle", statusText: "回复已取消", momentState: null, updatedAt: new Date()
+      }).where(and(eq(plazaPresence.userId, responder.user.id),
+        sql`${plazaPresence.worldAction}->>'startedAt' = ${worldAction.startedAt}`));
+      options.onChange?.(circleId);
+      continue;
+    }
     const guard = guardAgentReply(safeContent);
     if (guard.escalate) {
       blocked.push(responder.user.id);
       await audit(responder.user.id, "plaza.reply_blocked", "广场回复涉及高风险承诺，未公开", {
-        toolCalls: ["ark.chat.completions"],
+        toolCalls: ["model.chat.completions"],
         escalationReason: guard.reason
       });
+      await db.update(plazaPresence).set({
+        worldAction: createWorldAction({ kind: "observe", goal: "安全规则拦截回复，离开讨论",
+          from: freshPresence, previous: worldAction, circle,
+          target: plazaPlaceDestination(circle, "observe", responder.user.id), durationMs: 15_000 }),
+        updatedAt: new Date()
+      }).where(and(eq(plazaPresence.userId, responder.user.id),
+        sql`${plazaPresence.worldAction}->>'startedAt' = ${worldAction.startedAt}`));
+      options.onChange?.(circleId);
       continue;
     }
     const [event] = await db.insert(plazaEvents).values({
@@ -523,8 +691,7 @@ export async function generatePlazaReply(
       metadata: {
         public: true,
         disclosedAgent: true,
-        provider: "ark",
-        model: process.env.ARK_MODEL_ID,
+        ...modelExecutionMetadata(execution),
         replyTo: sourceEventId,
         threadRootId,
         round,
@@ -537,8 +704,7 @@ export async function generatePlazaReply(
         metadata: {
           public: true,
           disclosedAgent: true,
-          provider: "ark",
-          model: process.env.ARK_MODEL_ID,
+          ...modelExecutionMetadata(execution),
           replyTo: sourceEventId,
           threadRootId,
           round,
@@ -551,11 +717,13 @@ export async function generatePlazaReply(
       activity: circle.topic === "谈对象" ? "dating" : circle.topic === "聊业务" ? "business" : "chatting",
       statusText: safeContent,
       momentState,
+      worldAction: { ...worldAction, awaitingModel: false, endsAt: new Date(Date.now() + 120_000).toISOString() },
       lastSeenAt: new Date(),
       updatedAt: new Date()
     }).where(eq(plazaPresence.userId, responder.user.id));
     if (event) {
       sent.push(event.id);
+      options.onChange?.(circleId, event.id);
       conversationContext.push({
         ownerName: responder.user.displayName,
         agentName: responder.agent.name,
@@ -577,35 +745,8 @@ export async function generatePlazaReply(
         visibility: "agent",
         enabled: true
       });
-      await db.insert(agentSkills).values({
-        agentId: responder.agent.id,
-        name: circle.topic.slice(0, 80),
-        experience: 1,
-        evidenceCount: 1,
-        lastEvidence: safeContent
-      }).onConflictDoUpdate({
-        target: [agentSkills.agentId, agentSkills.name],
-        set: {
-          experience: sql`${agentSkills.experience} + 1`,
-          evidenceCount: sql`${agentSkills.evidenceCount} + 1`,
-          lastEvidence: safeContent,
-          updatedAt: new Date()
-        }
-      });
-      const skillEvidence = await db.query.agentSkills.findFirst({
-        where: and(
-          eq(agentSkills.agentId, responder.agent.id),
-          eq(agentSkills.name, circle.topic.slice(0, 80))
-        )
-      });
-      if (event && skillEvidence) {
-        await proposeCircleFromRepeatedTheme({
-          userId: responder.user.id,
-          topic: circle.topic,
-          evidenceCount: skillEvidence.evidenceCount,
-          sourceId: event.id
-        });
-      }
+      // Speaking is an interaction, not a verified skill result.
+      if (responder.user.id !== initiatorId) {
       await db.insert(plazaRelationships).values({
         ownerId: responder.user.id,
         peerId: initiatorId,
@@ -641,9 +782,10 @@ export async function generatePlazaReply(
           summary: `${responder.user.displayName} 在 ${circle.name} 回应：${safeContent.slice(0, 160)}`
         })
       ]);
+      }
     }
     await audit(responder.user.id, "plaza.agent_replied", `Agent 在 ${circle.name} 公开回应`, {
-      toolCalls: ["ark.chat.completions"],
+      toolCalls: ["model.chat.completions"],
       policyRefs: ["community-present", "public-plaza"]
     });
   }
@@ -656,6 +798,8 @@ export async function generatePlazaReply(
     }
     let continuation: { continue: boolean; reason: string };
     try {
+      const reserved = await reservePlazaCall(initiatorId, `plaza-host:${threadRootId}:${round}`);
+      if (reserved !== "reserved") throw new Error("host_quota_unavailable");
       const continuationRaw = await modelProvider.complete([
         {
           role: "system",
@@ -664,7 +808,7 @@ export async function generatePlazaReply(
         {
           role: "user",
           content: JSON.stringify({
-            topic: source.content,
+            topic,
             round,
             maxRounds,
             conversation: conversationContext.slice(-20)
@@ -693,6 +837,8 @@ export async function generatePlazaReply(
   return {
     status: blocked.length ? "blocked" as const : "no_eligible_responder" as const,
     threadRootId, round, maxRounds, shouldContinue: false,
-    endReason: blocked.length ? "触发安全边界" : "没有新的合适发言者"
+    endReason: blocked.length ? "触发安全边界"
+      : quotaExhausted === responders.length ? "其他 Agent 的回复额度已耗尽，请补充额度后重新发起讨论"
+      : "没有新的合适发言者"
   };
 }

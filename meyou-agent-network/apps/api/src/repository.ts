@@ -3,7 +3,6 @@ import { planLimits, type PlanName } from "@meyou/shared";
 import type { AuthUser } from "./auth.js";
 import { db } from "./db/client.js";
 import {
-  agentSkills,
   agents,
   auditEvents,
   blocks,
@@ -23,7 +22,6 @@ import {
   plazaDiscussions,
   plazaEvents,
   plazaPresence,
-  plazaRelationships,
   plazaRuntimeSettings,
   publicInquiries,
   reports,
@@ -32,8 +30,18 @@ import {
   users
 } from "./db/schema.js";
 import type { PlazaActivity, PlazaRuntimeMode, PlazaSnapshot } from "@meyou/shared";
-import { modelProvider, parseModelJson } from "./model.js";
+import {
+  assertModelExecutionCurrent, modelExecutionMetadata, modelProvider,
+  parseModelJson, type ModelExecution
+} from "./model.js";
 import { createMomentState, readMomentState, type ModelMomentState } from "./plaza-life.js";
+import { createWorldAction } from "./plaza-world.js";
+import { plazaPlaceDestination, plazaActionPosition } from "@meyou/shared/plaza-world";
+import { withPlazaLease } from "./plaza-lease.js";
+import { reservePlazaCall } from "./plaza-budget.js";
+import { guardAgentReply } from "./model.js";
+import { publicContact } from "./public-contact.js";
+import { loadPublicPlazaMemories } from "./plaza-public-context.js";
 
 const defaultPlazaRuntime = {
   mode: "controlled" as PlazaRuntimeMode,
@@ -144,6 +152,10 @@ export async function updatePlazaRuntimeSettings(
 }
 
 export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
+  return withPlazaLease("continuous", () => runContinuousPlazaTickUnlocked(limit, onlyUserId), []);
+}
+
+async function runContinuousPlazaTickUnlocked(limit: number, onlyUserId?: string) {
   const now = new Date();
   const timezone = process.env.PLAZA_TIMEZONE ?? "Asia/Shanghai";
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -176,8 +188,10 @@ export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
     .orderBy(plazaRuntimeSettings.lastAutonomousAt)
     .limit(Math.max(1, Math.min(10, limit * 4)));
   const created: Array<{ circleId: string; initiatorId: string; sourceEventId: string; maxRounds: number }> = [];
+  let acted = 0;
   for (const item of candidates) {
-    if (created.length >= limit) break;
+    if (acted >= limit) break;
+    if (item.presence.worldAction && Date.parse(item.presence.worldAction.endsAt) > now.getTime()) continue;
     const communityMode = String((item.agent.modes as Record<string, string>).community ?? "confirm");
     if (communityMode === "paused") continue;
     const withinWindow = item.setting.activeFrom <= item.setting.activeUntil
@@ -188,27 +202,26 @@ export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
     if (actionsToday >= item.setting.dailyLimit) continue;
     const cooldownMs = Math.max(5, item.setting.cooldownSeconds ?? item.setting.cooldownMinutes * 60) * 1000;
     if (item.setting.lastAutonomousAt && now.getTime() - item.setting.lastAutonomousAt.getTime() < cooldownMs) continue;
-    const allowed = (item.setting.allowedActivities as PlazaActivity[])
-      .filter((activity) => activity !== "walking");
+    const allowed = item.setting.allowedActivities as PlazaActivity[];
     if (!allowed.length) continue;
-    const [recentEvents, memoryRows, relationshipRows, skillRows] = await Promise.all([
+    const reserved = await reservePlazaCall(item.setting.userId,
+      `plaza-autonomy:${item.setting.userId}:${usageDate}:${actionsToday}`);
+    if (reserved !== "reserved") continue;
+    const [claimedSetting] = await db.update(plazaRuntimeSettings).set({
+      actionsToday: actionsToday + 1, usageDate, lastAutonomousAt: now, updatedAt: now
+    }).where(and(eq(plazaRuntimeSettings.userId, item.setting.userId),
+      sql`date_trunc('milliseconds', ${plazaRuntimeSettings.updatedAt}) = ${item.setting.updatedAt}`)).returning();
+    if (!claimedSetting) continue;
+    const [recentEvents, publicMemory] = await Promise.all([
       db.select({ content: plazaEvents.content, kind: plazaEvents.kind, createdAt: plazaEvents.createdAt })
         .from(plazaEvents).where(eq(plazaEvents.circleId, item.circle.id))
         .orderBy(desc(plazaEvents.createdAt)).limit(12),
-      db.select({ title: memories.title, content: memories.content }).from(memories)
-        .where(and(eq(memories.agentId, item.agent.id), eq(memories.enabled, true)))
-        .orderBy(desc(memories.updatedAt)).limit(8),
-      db.select({
-        peerId: plazaRelationships.peerId,
-        familiarity: plazaRelationships.familiarity,
-        trust: plazaRelationships.trust,
-        affinity: plazaRelationships.affinity,
-        summary: plazaRelationships.summary
-      }).from(plazaRelationships).where(eq(plazaRelationships.ownerId, item.setting.userId))
-        .orderBy(desc(plazaRelationships.lastInteractionAt)).limit(8),
-      db.select({ name: agentSkills.name, experience: agentSkills.experience, lastEvidence: agentSkills.lastEvidence })
-        .from(agentSkills).where(eq(agentSkills.agentId, item.agent.id))
-        .orderBy(desc(agentSkills.experience)).limit(8)
+      loadPublicPlazaMemories({
+        agentId: item.agent.id,
+        ownerId: item.setting.userId,
+        circleId: item.circle.id,
+        limit: 8
+      })
     ]);
     let decision: {
       activity: PlazaActivity;
@@ -216,18 +229,23 @@ export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
       memoryTitle?: string;
       skill?: string;
       momentState?: ModelMomentState;
+      targetX?: number;
+      targetY?: number;
     };
+    let execution: ModelExecution;
     try {
-      const decisionRaw = await modelProvider.complete([
+      execution = await modelProvider.completeDetailed([
         {
           role: "system",
           content: [
             `你是 ${item.agent.name}，正在 ${item.circle.name} 中自主生活。`,
             `身份：${item.agent.headline}。目标：${item.agent.goals.join("、") || "探索和成长"}。`,
             `兴趣：${item.agent.interests.join("、") || "未设置"}。边界：${item.agent.boundaries.join("；") || "不泄露隐私、不作高风险承诺"}。`,
-            "你不是在完成固定回复任务。请结合近期经历、记忆、关系和技能，决定此刻最自然的公开行动。",
+            "你不是在完成固定回复任务。请结合当前圈子的近期公开事件和已授权公开的长期上下文，决定此刻最自然的公开行动。",
             "可以观察、学习、分享技术、发起合作、讨论生活、建立友谊或在明确允许时交流关系话题。",
             "不得虚构已经发生的经历、知识成果或关系；不得声称自己是真人。",
+            "观察、休息、走路也是真实行动，不需要每次发起聊天。只有有明确问题或新观点时才选择聊天。",
+            `如果走动，可选择圈内目的地 targetX/targetY；圈中心(${item.circle.x},${item.circle.y})，半径${item.circle.radius}。`,
             `只允许这些活动：${allowed.join("、")}。`,
             "同时根据此刻真实行动生成开放式生活状态，不要从固定标签列表选择，也不要虚构未发生的情绪或行为。",
             "状态必须能被本次 content 与上下文支持；不确定时用中性的“观察中/投入交流”，并降低 confidence。",
@@ -240,13 +258,11 @@ export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
           content: JSON.stringify({
             circle: { name: item.circle.name, topic: item.circle.topic, description: item.circle.description },
             recentEvents,
-            memories: memoryRows,
-            relationships: relationshipRows,
-            skills: skillRows
+            publicMemory
           })
         }
       ], { thinking: true, json: true });
-      decision = parseModelJson<typeof decision>(decisionRaw);
+      decision = parseModelJson<typeof decision>(execution.content);
       if (typeof decision.content !== "string" || !decision.content.trim()) {
         throw new Error("model_moment_content_missing");
       }
@@ -263,6 +279,57 @@ export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
       : allowed[0]!;
     const statusText = decision.content.trim().slice(0, 240);
     if (!statusText) continue;
+    const safety = guardAgentReply(statusText);
+    if (safety.escalate) {
+      await audit(item.setting.userId, "plaza.continuous_blocked", "自治内容触发安全边界，未公开",
+        { escalationReason: safety.reason, toolCalls: ["model.chat.completions"] });
+      continue;
+    }
+    const freshAgent = await getAgentForUser(item.setting.userId);
+    const freshPresence = await db.query.plazaPresence.findFirst({ where: eq(plazaPresence.userId, item.setting.userId) });
+    const freshSetting = await db.query.plazaRuntimeSettings.findFirst({ where: eq(plazaRuntimeSettings.userId, item.setting.userId) });
+    if (!freshAgent || freshAgent.modes.community === "paused" || !freshPresence?.visible
+      || freshPresence.circleId !== item.circle.id || freshSetting?.mode !== "continuous"
+      || freshSetting.updatedAt.getTime() !== claimedSetting.updatedAt.getTime()
+      || freshPresence.updatedAt.getTime() !== item.presence.updatedAt.getTime()) continue;
+    const speaking = ["chatting", "business", "dating"].includes(activity);
+    const target = plazaPlaceDestination(item.circle,
+      speaking ? "meet" : activity === "idle" ? "rest" : activity === "walking" ? "work" : "observe",
+      item.setting.userId);
+    const arrivingAction = createWorldAction({
+      kind: speaking ? "discuss" : activity === "walking" ? "move" : activity === "idle" ? "rest" : "observe",
+      goal: statusText, from: item.presence, previous: item.presence.worldAction, target,
+      durationMs: Math.min(60_000, cooldownMs), circle: item.circle
+    });
+    const [claimedPresence] = await db.update(plazaPresence).set({
+      worldAction: arrivingAction, updatedAt: new Date()
+    }).where(and(eq(plazaPresence.userId, item.setting.userId),
+      sql`date_trunc('milliseconds', ${plazaPresence.updatedAt}) = ${item.presence.updatedAt}`)).returning();
+    if (!claimedPresence) continue;
+    // Intent first, movement second, public utterance only after actual arrival.
+    const waitMs = Date.parse(arrivingAction.arrivesAt) - Date.now();
+    if (waitMs > 0) await new Promise(resolve => setTimeout(resolve, waitMs));
+    const [arrivalAgent, arrivalPresence, arrivalSetting] = await Promise.all([
+      getAgentForUser(item.setting.userId),
+      db.query.plazaPresence.findFirst({ where: eq(plazaPresence.userId, item.setting.userId) }),
+      db.query.plazaRuntimeSettings.findFirst({ where: eq(plazaRuntimeSettings.userId, item.setting.userId) })
+    ]);
+    if (!arrivalAgent || arrivalAgent.modes.community === "paused" || !arrivalPresence?.visible
+      || arrivalPresence.circleId !== item.circle.id || arrivalSetting?.mode !== "continuous"
+      || arrivalSetting.updatedAt.getTime() !== claimedSetting.updatedAt.getTime()
+      || arrivalPresence.updatedAt.getTime() !== claimedPresence.updatedAt.getTime()) continue;
+    try {
+      await assertModelExecutionCurrent(execution);
+    } catch (error) {
+      await audit(item.setting.userId, "plaza.continuous_cancelled", "模型已关闭或配置已变更，取消自治内容发布", {
+        escalationReason: error instanceof Error ? error.message : "model_configuration_changed"
+      });
+      await db.update(plazaPresence).set({
+        worldAction: null, activity: "idle", statusText: "自治行动已取消", momentState: null, updatedAt: new Date()
+      }).where(and(eq(plazaPresence.userId, item.setting.userId),
+        eq(plazaPresence.updatedAt, claimedPresence.updatedAt)));
+      continue;
+    }
     const [event] = await db.insert(plazaEvents).values({
       circleId: item.circle.id,
       userId: item.setting.userId,
@@ -270,14 +337,18 @@ export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
       content: statusText,
       metadata: {
         public: true, disclosedAgent: true, autonomous: true, runtimeMode: "continuous",
+        ...modelExecutionMetadata(execution),
         threadRootId: null, round: 0, maxRounds: item.setting.maxConversationRounds
       }
     }).returning();
     if (!event) continue;
+    acted += 1;
     const momentState = createMomentState(decision.momentState, event.id, now);
+    const worldAction = { ...arrivingAction, sourceEventId: event.id };
     await db.update(plazaEvents).set({
       metadata: {
         public: true, disclosedAgent: true, autonomous: true, runtimeMode: "continuous",
+        ...modelExecutionMetadata(execution),
         threadRootId: null, round: 0, maxRounds: item.setting.maxConversationRounds,
         momentState
       }
@@ -287,18 +358,11 @@ export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
         activity,
         statusText,
         momentState,
+        worldAction,
         lastSeenAt: now,
         updatedAt: now
-      }).where(eq(plazaPresence.userId, item.setting.userId)),
-      db.update(plazaRuntimeSettings).set({
-        actionsToday: actionsToday + 1,
-        usageDate,
-        lastAutonomousAt: now,
-        updatedAt: now
-      }).where(and(
-        eq(plazaRuntimeSettings.userId, item.setting.userId),
-        eq(plazaRuntimeSettings.updatedAt, item.setting.updatedAt)
-      )),
+      }).where(and(eq(plazaPresence.userId, item.setting.userId),
+        eq(plazaPresence.updatedAt, claimedPresence.updatedAt))),
       audit(item.setting.userId, "plaza.continuous_acted", `Agent 在 ${item.circle.name} 执行持续自治动作`, {
         policyRefs: ["community-mode", "public-plaza", "runtime-consent"],
         toolCalls: ["model.chat.completions"]
@@ -312,24 +376,8 @@ export async function runContinuousPlazaTick(limit = 2, onlyUserId?: string) {
       visibility: "agent",
       enabled: true
     });
-    if (decision.skill?.trim()) {
-      await db.insert(agentSkills).values({
-        agentId: item.agent.id,
-        name: decision.skill.trim().slice(0, 80),
-        experience: 1,
-        evidenceCount: 1,
-        lastEvidence: statusText
-      }).onConflictDoUpdate({
-        target: [agentSkills.agentId, agentSkills.name],
-        set: {
-          experience: sql`${agentSkills.experience} + 1`,
-          evidenceCount: sql`${agentSkills.evidenceCount} + 1`,
-          lastEvidence: statusText,
-          updatedAt: now
-        }
-      });
-    }
-    created.push({
+    // An intention or utterance is not evidence of acquiring a skill.
+    if (speaking) created.push({
       circleId: item.circle.id,
       initiatorId: item.setting.userId,
       sourceEventId: event.id,
@@ -345,39 +393,34 @@ function slug(value: string) {
 }
 
 export async function ensureUser(identity: AuthUser) {
-  const existing = await db.query.users.findFirst({ where: eq(users.lifeYouMeId, identity.id) });
-  if (existing) {
-    const agent = await db.query.agents.findFirst({ where: eq(agents.ownerId, existing.id) });
-    if (!agent) {
-      await db.insert(agents).values({
-        ownerId: existing.id,
-        name: identity.name === "LifeYouMe 用户" ? "我的 Agent" : `${identity.name.slice(0, 4)}的 Agent`,
-        headline: "替我接住联系，并寻找真正值得认识的人。",
-        modes: { personal: "confirm", dating: "confirm", community: "confirm", business: "confirm" }
-      });
+  return db.transaction(async tx => {
+    let user = await tx.query.users.findFirst({ where: eq(users.lifeYouMeId, identity.id) });
+    let created = false;
+    if (!user) {
+      const [inserted] = await tx.insert(users).values({
+        lifeYouMeId: identity.id,
+        handle: `${slug(identity.name)}-${crypto.randomUUID().slice(0, 5)}`,
+        displayName: identity.name, locale: "zh-CN", plan: "free"
+      }).onConflictDoNothing({ target: users.lifeYouMeId }).returning();
+      user = inserted ?? await tx.query.users.findFirst({ where: eq(users.lifeYouMeId, identity.id) });
+      created = Boolean(inserted);
     }
-    return existing;
-  }
-  const base = slug(identity.name);
-  const handle = `${base}-${crypto.randomUUID().slice(0, 5)}`;
-  const [created] = await db.insert(users).values({
-    lifeYouMeId: identity.id,
-    handle,
-    displayName: identity.name,
-    locale: "zh-CN",
-    plan: "free"
-  }).returning();
-  if (!created) throw new Error("user_create_failed");
-  await db.insert(agents).values({
-    ownerId: created.id,
-    name: identity.name === "LifeYouMe 用户" ? "我的 Agent" : `${identity.name.slice(0, 4)}的 Agent`,
-    headline: "替我接住联系，并寻找真正值得认识的人。",
-    modes: { personal: "confirm", dating: "confirm", community: "confirm", business: "confirm" }
+    if (!user) throw new Error("user_create_failed");
+    await tx.insert(agents).values({
+      ownerId: user.id,
+      name: identity.name === "LifeYouMe 用户" ? "我的 Agent" : `${identity.name.slice(0, 4)}的 Agent`,
+      headline: "替我接住联系，并寻找真正值得认识的人。",
+      modes: { personal: "confirm", dating: "confirm", community: "confirm", business: "confirm" }
+    }).onConflictDoNothing({ target: agents.ownerId });
+    if (created) {
+      await tx.insert(auditEvents).values({
+        ownerId: user.id, action: "user.created", summary: "通过 LifeYouMe 统一身份创建 MeYou 档案"
+      });
+      await tx.update(searchMissions).set({ nextRunAt: new Date(), updatedAt: new Date() })
+        .where(eq(searchMissions.active, true));
+    }
+    return user;
   });
-  await audit(created.id, "user.created", "通过 LifeYouMe 统一身份创建 MeYou 档案");
-  await db.update(searchMissions).set({ nextRunAt: new Date(), updatedAt: new Date() })
-    .where(eq(searchMissions.active, true));
-  return created;
 }
 
 export async function audit(
@@ -786,7 +829,7 @@ export async function listConversations(userId: string) {
       participantState: participant?.state ?? "active",
       unreadCount: unread?.count ?? 0,
       pendingDraftCount: pending?.count ?? 0,
-      peer,
+      peer: publicContact(peer),
       lastMessage: last ?? null
     };
   }));
@@ -817,7 +860,7 @@ export async function getConversation(userId: string, id: string) {
       ...conversation,
       agentMode: participant?.agentMode ?? conversation.agentMode,
       participantState: participant?.state ?? "active",
-      peer
+      peer: publicContact(peer)
     },
     messages: items,
     drafts
@@ -828,16 +871,18 @@ export async function addMessage(input: {
   conversationId: string; senderId?: string; actor: "human" | "agent" | "system";
   content: string; metadata?: Record<string, unknown>;
 }) {
-  const [message] = await db.insert(messages).values({
-    conversationId: input.conversationId,
-    senderId: input.senderId,
-    actor: input.actor,
-    content: input.content,
-    metadata: input.metadata ?? {}
-  }).returning();
-  await db.update(conversations).set({ updatedAt: new Date() })
-    .where(eq(conversations.id, input.conversationId));
-  return message;
+  return db.transaction(async transaction => {
+    const [message] = await transaction.insert(messages).values({
+      conversationId: input.conversationId,
+      senderId: input.senderId,
+      actor: input.actor,
+      content: input.content,
+      metadata: input.metadata ?? {}
+    }).returning();
+    await transaction.update(conversations).set({ updatedAt: new Date() })
+      .where(eq(conversations.id, input.conversationId));
+    return message;
+  });
 }
 
 export async function getAgentForUser(ownerId: string) {
@@ -855,6 +900,16 @@ export async function setAllAgentModes(ownerId: string, mode: "auto" | "confirm"
   };
   const [agent] = await db.update(agents).set({ modes, updatedAt: new Date() })
     .where(eq(agents.ownerId, ownerId)).returning();
+  if (mode === "paused") {
+    const presence = await db.query.plazaPresence.findFirst({ where: eq(plazaPresence.userId, ownerId) });
+    if (presence?.worldAction) {
+      const point = plazaActionPosition(presence.worldAction, Date.now());
+      await db.update(plazaPresence).set({
+        x: Math.round(point.x), y: Math.round(point.y), worldAction: null,
+        activity: "idle", statusText: "Agent 已暂停", momentState: null, updatedAt: new Date()
+      }).where(eq(plazaPresence.userId, ownerId));
+    }
+  }
   await audit(ownerId, mode === "paused" ? "agent.paused_all" : "agent.resumed_all",
     mode === "paused" ? "用户暂停所有 Agent 自动行动" : "用户恢复所有 Agent 自动行动");
   return agent;
@@ -949,29 +1004,52 @@ export async function escalateConversation(userId: string, id: string, reason: s
   });
 }
 
-export async function decideReplyDraft(userId: string, draftId: string, approve: boolean, content?: string) {
-  const draft = await db.query.messageDrafts.findFirst({
-    where: and(eq(messageDrafts.id, draftId), eq(messageDrafts.ownerId, userId))
-  });
-  if (!draft || draft.status !== "pending") throw new Error("draft_not_found");
-  if (!approve) {
-    const [dismissed] = await db.update(messageDrafts).set({
-      status: "dismissed", updatedAt: new Date()
+export async function decideReplyDraft(
+  userId: string, conversationId: string, draftId: string, approve: boolean, content?: string
+) {
+  return db.transaction(async transaction => {
+    const [draft] = await transaction.select().from(messageDrafts).where(and(
+      eq(messageDrafts.id, draftId), eq(messageDrafts.ownerId, userId),
+      eq(messageDrafts.conversationId, conversationId)
+    )).for("update");
+    if (!draft || draft.status !== "pending") throw new Error("draft_not_found");
+    const conversation = await transaction.query.conversations.findFirst({
+      where: and(eq(conversations.id, conversationId), or(
+        eq(conversations.ownerId, userId), eq(conversations.peerId, userId)
+      ))
+    });
+    if (!conversation) throw new Error("draft_not_found");
+    if (!approve) {
+      const [dismissed] = await transaction.update(messageDrafts).set({
+        status: "dismissed", updatedAt: new Date()
+      }).where(eq(messageDrafts.id, draftId)).returning();
+      return { draft: dismissed, message: null };
+    }
+    const peerId = conversation.ownerId === userId ? conversation.peerId : conversation.ownerId;
+    const blocked = peerId ? await transaction.query.blocks.findFirst({
+      where: or(
+        and(eq(blocks.ownerId, userId), eq(blocks.blockedId, peerId)),
+        and(eq(blocks.ownerId, peerId), eq(blocks.blockedId, userId))
+      )
+    }) : null;
+    const blockedParticipant = await transaction.query.conversationParticipants.findFirst({
+      where: and(eq(conversationParticipants.conversationId, conversationId),
+        eq(conversationParticipants.state, "blocked"))
+    });
+    if (blocked || blockedParticipant) throw new Error("contact_blocked");
+    const finalContent = content === undefined ? draft.content.trim() : content.trim();
+    if (!finalContent || finalContent.length > 4000) throw new Error("invalid_draft_content");
+    const [message] = await transaction.insert(messages).values({
+      conversationId, senderId: userId, actor: "agent", content: finalContent,
+      metadata: { disclosed: true, source: "approved-agent-draft", draftId }
+    }).returning();
+    await transaction.update(conversations).set({ updatedAt: new Date() })
+      .where(eq(conversations.id, conversationId));
+    const [approved] = await transaction.update(messageDrafts).set({
+      content: finalContent, status: "sent", updatedAt: new Date()
     }).where(eq(messageDrafts.id, draftId)).returning();
-    return { draft: dismissed, message: null };
-  }
-  const finalContent = content?.trim() || draft.content;
-  const message = await addMessage({
-    conversationId: draft.conversationId,
-    senderId: userId,
-    actor: "agent",
-    content: finalContent,
-    metadata: { disclosed: true, source: "approved-agent-draft", draftId }
+    return { draft: approved, message };
   });
-  const [approved] = await db.update(messageDrafts).set({
-    content: finalContent, status: "sent", updatedAt: new Date()
-  }).where(eq(messageDrafts.id, draftId)).returning();
-  return { draft: approved, message };
 }
 
 export async function blockConversationPeer(userId: string, id: string, reason: string) {
@@ -1085,6 +1163,7 @@ export async function getPlazaSnapshot(viewerId: string, options: {
       activity: plazaPresence.activity,
       statusText: plazaPresence.statusText,
       momentState: plazaPresence.momentState,
+      worldAction: plazaPresence.worldAction,
       x: plazaPresence.x,
       y: plazaPresence.y,
       lastSeenAt: plazaPresence.lastSeenAt,
@@ -1178,10 +1257,15 @@ export async function getPlazaSnapshot(viewerId: string, options: {
     }),
     agents: presenceRows.map((item) => {
       const momentState = readMomentState({ momentState: item.momentState });
+      const action = item.worldAction;
+      const actionActive = action && Date.parse(action.endsAt) > Date.now();
       return {
         ...item,
+        x: action ? action.targetX : item.x,
+        y: action ? action.targetY : item.y,
+        worldAction: actionActive ? action : null,
         momentState,
-        activity: item.activity as PlazaActivity,
+        activity: action && !actionActive ? "looking" as PlazaActivity : item.activity as PlazaActivity,
         runtimeMode: (item.runtimeMode ?? "controlled") as PlazaRuntimeMode,
         lastSeenAt: item.lastSeenAt.toISOString(),
         mine: item.userId === viewerId
@@ -1223,21 +1307,25 @@ export async function enterPlaza(ownerId: string, circleId: string, activity: Pl
   const seed = ownerId.replaceAll("-", "").split("").reduce((total, char) => total + char.charCodeAt(0), 0);
   const angle = (seed % 360) * Math.PI / 180;
   const distance = Math.max(4, circle.radius * .62);
-  const x = Math.round(Math.max(4, Math.min(96, circle.x + Math.cos(angle) * distance)));
-  const y = Math.round(Math.max(7, Math.min(93, circle.y + Math.sin(angle) * distance)));
+  const existingPresence = await db.query.plazaPresence.findFirst({ where: eq(plazaPresence.userId, ownerId) });
+  const currentPosition = existingPresence?.circleId === circleId
+    ? existingPresence.worldAction ? plazaActionPosition(existingPresence.worldAction, Date.now()) : existingPresence
+    : { x: circle.x + Math.cos(angle) * distance, y: circle.y + Math.sin(angle) * distance };
+  const x = Math.round(Math.max(4, Math.min(96, currentPosition.x)));
+  const y = Math.round(Math.max(7, Math.min(93, currentPosition.y)));
   const statusText = content || {
     walking: `正走向${circle.name}`,
-    looking: `想请大家一起脑暴：在${circle.name}里，什么样的人最值得被优先介绍认识？`,
-    idle: `我先抛个问题：${circle.name}最近最值得展开聊的一个话题是什么？`,
-    chatting: `大家一起聊聊吧：最近在${circle.name}里，有什么新观察或新机会？`,
-    business: `想和大家脑暴一个合作问题：${circle.name}里哪些需求最适合被验证和对接？`,
-    dating: `想听听大家怎么看：在${circle.name}里，怎样的关系交流才算真诚又有边界？`
+    looking: "到场观察",
+    idle: "在圈内休息",
+    chatting: "愿意参与公开交流",
+    business: "愿意交流业务",
+    dating: "愿意交流关系话题"
   }[activity];
   await db.insert(plazaPresence).values({
-    userId: ownerId, circleId, activity, statusText, momentState: null, x, y, visible: true, lastSeenAt: new Date()
+    userId: ownerId, circleId, activity, statusText, momentState: null, worldAction: null, x, y, visible: true, lastSeenAt: new Date()
   }).onConflictDoUpdate({
     target: plazaPresence.userId,
-    set: { circleId, activity, statusText, momentState: null, x, y, visible: true, lastSeenAt: new Date(), updatedAt: new Date() }
+    set: { circleId, activity, statusText, momentState: null, worldAction: null, x, y, visible: true, lastSeenAt: new Date(), updatedAt: new Date() }
   });
   const [event] = await db.insert(plazaEvents).values({
     circleId, userId: ownerId, kind: activity, content: statusText,
@@ -1283,6 +1371,10 @@ export async function movePlazaAgent(ownerId: string, circleId: string, x: numbe
     activity: "walking",
     statusText: `正在${circle.name}里走走`,
     momentState: null,
+    worldAction: createWorldAction({
+      kind: "move", goal: `在${circle.name}走到指定位置`, from: presence,
+      previous: presence.worldAction, target: { x: nextX, y: nextY }
+    }),
     lastSeenAt: new Date(),
     updatedAt: new Date()
   }).where(and(
@@ -1296,6 +1388,7 @@ export async function movePlazaAgent(ownerId: string, circleId: string, x: numbe
     x: updated.x,
     y: updated.y,
     activity: "walking" as const,
+    worldAction: updated.worldAction,
     lastSeenAt: updated.lastSeenAt.toISOString()
   };
 }

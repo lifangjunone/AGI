@@ -32,13 +32,21 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .secondary { color: var(--green); background: #eaf3e7; }
 .message { min-height: 24px; margin: 12px 0; font-size: 13px; }
+.product-filter { display: flex; gap: 8px; margin: 2px 0 14px; padding: 2px 0 4px; overflow-x: auto; scrollbar-width: none; }
+.product-filter::-webkit-scrollbar { display: none; }
+.filter-chip { flex: 0 0 auto; display: grid; gap: 2px; min-height: 50px; padding: 8px 13px; border: 1px solid #dce6da; color: var(--muted); background: #f2f7ef; text-align: left; }
+.filter-chip span { font-size: 13px; font-weight: 900; white-space: nowrap; }
+.filter-chip strong { color: inherit; font-size: 11px; font-weight: 750; white-space: nowrap; }
+.filter-chip.active { border-color: #a8d474; color: #173d27; background: #fff; box-shadow: inset 0 -3px var(--lime), 0 5px 16px rgba(28,61,40,.06); }
 .orders { display: grid; gap: 11px; }
 .order { padding: 17px; border: 1px solid #dae4d8; border-radius: 16px; background: #fff; }
 .order-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .amount { font-size: 34px; font-weight: 950; letter-spacing: -.04em; }
+.source { display: block; margin-bottom: 2px; color: var(--green); font-size: 11px; font-weight: 900; letter-spacing: .08em; }
 .status { padding: 6px 9px; border-radius: 999px; color: #7c5100; background: #fff3c7; font-size: 12px; font-weight: 850; }
 .status.paid { color: #1f6b42; background: #e3f5df; }
 .order-meta { margin: 8px 0 14px; color: var(--muted); font-size: 13px; }
+.order-note { margin: 9px 0 4px; padding: 8px 10px; border-radius: 10px; background: #f2f6ee; color: var(--ink); font-size: 13px; font-weight: 800; }
 .confirm { width: 100%; }
 .empty { padding: 34px 18px; border: 1px dashed #cbd7c9; border-radius: 16px; color: var(--muted); text-align: center; }
 .action-task-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin: 18px 0 12px; }

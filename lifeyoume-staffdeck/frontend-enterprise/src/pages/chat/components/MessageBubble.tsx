@@ -1,3 +1,5 @@
+import { lazy, Suspense } from 'react';
+
 import EmployeeAvatar from '@/components/EmployeeAvatar';
 import StaffdeckIcon from '@/components/StaffdeckIcon';
 import IconThumbUp from '@/assets/icons/thumb-up.svg?react';
@@ -50,12 +52,13 @@ import {
 } from '../chatHelpers';
 import type { TraceLine } from '../chatTypes';
 import type { UseChatSession } from '../useChatSession';
-import ExecutionRecord from './ExecutionRecord';
 import HarnessArtifactDownloads from './HarnessArtifactDownloads';
 import KnowledgeCitationList from './KnowledgeCitationList';
 import ScheduledDraftCard from './ScheduledDraftCard';
 import SlashCommandChip from './SlashCommandChip';
 import { slashCommandMessage } from '../slashCommands';
+
+const ExecutionRecord = lazy(() => import('./ExecutionRecord'));
 
 export type MessageRender = {
   traceTurnId: string;
@@ -163,13 +166,21 @@ export default function MessageBubble({ chat, item, render }: MessageBubbleProps
           {statusOnly ? (
             <div className="text-[13px] text-[#858b9c]">{visibleContent}</div>
           ) : showInlineTrace && summary ? (
-            <ExecutionRecord
-              traceTurnId={traceTurnId}
-              summary={summary}
-              details={details}
-              expanded={expanded}
-              onToggle={toggleTrace}
-            />
+            <Suspense
+              fallback={(
+                <div className={CHAT_PLAIN_ANSWER_CLASS} role="status">
+                  {summary.text}
+                </div>
+              )}
+            >
+              <ExecutionRecord
+                traceTurnId={traceTurnId}
+                summary={summary}
+                details={details}
+                expanded={expanded}
+                onToggle={toggleTrace}
+              />
+            </Suspense>
           ) : null}
 
           {!statusOnly && visibleContent ? (

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PlazaSnapshot } from "@meyou/shared";
-import { buildBubbleLines, getDiscussionScene, getDiscussionSlot } from "./PlazaWorld";
+import { buildBubbleLines, getDiscussionScene, getDiscussionScenes, getDiscussionSlot } from "./PlazaWorld";
 
 function snapshot(overrides: Partial<PlazaSnapshot> = {}): PlazaSnapshot {
   return {
@@ -100,9 +100,22 @@ describe("plaza discussion scene", () => {
     expect(scene).toEqual({
       rootEventId: "root-1",
       participantIds: ["user-1", "user-2", "user-3"],
-      speakerId: "user-3",
+      speakerId: null,
       active: true
     });
+  });
+
+  it("renders multiple groups and does not keep old authors permanently speaking", () => {
+    const data = snapshot();
+    data.discussions.push({ ...data.discussions[0]!, rootEventId: "root-2" });
+    data.events.push(
+      { ...data.events[0]!, id: "root-2", userId: "user-4" },
+      { ...data.events[1]!, id: "reply-3", userId: "user-5", metadata: { threadRootId: "root-2" } }
+    );
+    const scenes = getDiscussionScenes(data, "circle-1", Date.parse("2026-10-23T10:00:00Z"));
+    expect(scenes).toHaveLength(2);
+    expect(scenes.every(scene => scene.speakerId === null)).toBe(true);
+    expect(new Set(scenes.flatMap(scene => scene.participantIds)).size).toBe(5);
   });
 
   it("does not create a group for a one-person thread", () => {

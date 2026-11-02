@@ -4,7 +4,7 @@ import {
   Clock3, Coffee, Command, Compass, Heart, Languages, LayoutDashboard, Menu, MessageCircle,
   MoreHorizontal, Network, Pause, Play, Plus, Search, Send, Settings2, ShieldCheck, Sparkles,
   UserCheck, Users, X, Map, Footprints, Eye, Flag, Radio, Volume2, Fullscreen, Minimize2, Globe2, Layers,
-  ZoomIn, ZoomOut, LocateFixed, PanelRightClose
+  ZoomIn, ZoomOut, LocateFixed, PanelRightClose, PanelRightOpen
 } from "lucide-react";
 import { useEffect, useId, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent, type ReactNode, type WheelEvent } from "react";
 import { Link, NavLink, Route, Routes, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -15,7 +15,17 @@ import type {
 import { displayAgentHeadline, displayAgentName, displayKnownContent, t, tr } from "./i18n";
 import { useAppStore } from "./store";
 import { PlazaWorld, type PlazaCamera } from "./PlazaWorld";
+import { PlazaLiveFeed } from "./PlazaLiveFeed";
+import { deliveryFeedback } from "./message-delivery";
+import { CustomerThreadDetail } from "./CustomerThreadDetail";
+import { OrganizationKnowledge } from "./OrganizationKnowledge";
+import { OrganizationReception } from "./OrganizationReception";
+import { PublicCompany } from "./PublicCompany";
+import { api } from "./api-client";
+import { SessionGate, type SessionRecord } from "./SessionGate";
+import { notifySessionChange } from "./session-sync";
 import { AdminConsole, AdminLogin } from "./Admin";
+import { AgentMemoryManager } from "./AgentMemoryManager";
 
 interface DirectoryPerson {
   id: string;
@@ -96,47 +106,10 @@ interface MeRecord {
   };
 }
 
-interface SessionRecord {
-  user: { id: string; name: string; email?: string } | null;
-  authLoginUrl?: string;
-}
-
 async function fetchDashboard(): Promise<DashboardSnapshot> {
   const response = await fetch("/api/v1/dashboard", { credentials: "include" });
   if (!response.ok) throw new Error("dashboard unavailable");
   return response.json();
-}
-
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const headers = new Headers(init?.headers);
-  if (init?.body != null && !headers.has("content-type")) headers.set("content-type", "application/json");
-  const response = await fetch(path, {
-    credentials: "include",
-    ...init,
-    headers
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const messages: Record<string, string> = {
-      service_unavailable: "服务暂时不可用，请稍后重试",
-      authentication_required: "登录状态已失效，请重新登录",
-      invalid_dating_profile: "请补全城市范围，并至少选择一项价值观",
-      invalid_community: "请检查社群名称、地址和介绍是否填写完整",
-      invalid_organization: "请检查企业名称、地址和业务介绍是否填写完整",
-      handle_already_exists: "这个公开地址已经被使用，请换一个",
-      community_invite_required: "这是私密社群，需要通过邀请加入",
-      plan_limit_reached: "当前套餐的持续寻找名额已用完，请先暂停一个现有任务",
-      invalid_plaza_runtime: body.message ?? "自治设置不符合规则：冷却时间至少 5 秒，每日上限为 1–50 次",
-      rate_limit_exceeded: "操作太频繁，请稍后再试",
-      invalid_email: "请输入有效的邮箱地址",
-      weak_password: "密码至少需要 8 位",
-      invalid_name: "名字需要 2–40 个字符",
-      email_already_exists: "这个邮箱已经注册，请直接登录",
-      invalid_credentials: "邮箱或密码不正确"
-    };
-    throw new Error(messages[body.error] ?? (response.status >= 500 ? "服务暂时不可用，请稍后重试" : "请求未完成，请检查填写内容"));
-  }
-  return body as T;
 }
 
 function LoadingState({ label }: { label?: string }) {
@@ -228,6 +201,7 @@ function Logo() {
 }
 
 function Sidebar() {
+  const queryClient = useQueryClient();
   const locale = useAppStore((s) => s.locale);
   const paused = useAppStore((s) => s.agentPaused);
   const setAgentPaused = useAppStore((s) => s.setAgentPaused);
@@ -235,6 +209,8 @@ function Sidebar() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [modeUpdating, setModeUpdating] = useState(false);
   const [modeError, setModeError] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
   const me = useQuery({ queryKey: ["me", "sidebar"], queryFn: () => api<MeRecord>("/api/v1/me") });
   useEffect(() => {
     if (me.data?.agent?.modes) {
@@ -283,10 +259,23 @@ function Sidebar() {
       {accountMenuOpen && <div className="account-menu" role="menu">
         {me.data?.user?.handle && <button role="menuitem" onClick={() => { setAccountMenuOpen(false); navigate(`/@${me.data?.user.handle}`); }}><CircleUserRound size={15} />{t(locale, "viewProfile")}</button>}
         <button role="menuitem" onClick={() => { setAccountMenuOpen(false); navigate("/app/agent"); }}><Settings2 size={15} />{t(locale, "accountSettings")}</button>
-        <button role="menuitem" onClick={async () => {
-          try { await api("/api/v1/auth/logout", { method: "POST" }); } finally { navigate("/login", { replace: true }); }
+        <button role="menuitem" disabled={loggingOut} onClick={async () => {
+          if (loggingOut) return;
+          setLoggingOut(true); setLogoutError("");
+          try {
+            await api("/api/v1/auth/logout", { method: "POST" });
+            notifySessionChange();
+            await queryClient.cancelQueries();
+            queryClient.removeQueries({ predicate: query => query.queryKey[0] !== "session" });
+            queryClient.setQueryData(["session"], { user: null });
+            setAgentPaused(false);
+            navigate("/login", { replace: true });
+          } catch (caught) {
+            setLogoutError(caught instanceof Error ? caught.message : t(locale, "actionFailed"));
+          } finally { setLoggingOut(false); }
         }}><ArrowRight size={15} />{t(locale, "logout")}</button>
       </div>}
+      {logoutError && <p className="sidebar-mode-error" role="alert">{tr(locale, "退出未完成：", "Sign-out did not complete: ")}{logoutError}</p>}
       <button className="agent-toggle" onClick={toggleAgent} disabled={modeUpdating} aria-label={paused ? t(locale, "startAgent") : t(locale, "pauseAgent")}>
         {paused ? <Play size={15} /> : <Pause size={15} />}
         <span>{modeUpdating ? t(locale, "saving") : paused ? t(locale, "startAgent") : t(locale, "pauseAgent")}</span>
@@ -799,15 +788,18 @@ function Messages() {
   }
   async function send() {
     if (!text.trim() || !activeId || sending) return;
+    const sendingId = activeId;
+    const sendingText = text;
     setSending(true); setSendError("");
     try {
-      await api(`/api/v1/conversations/${activeId}/messages`, {
+      const result = await api<{ agent?: { status: string; reason?: string } }>(`/api/v1/conversations/${sendingId}/messages`, {
         method: "POST",
-        body: JSON.stringify({ content: text, actor: "human" })
+        body: JSON.stringify({ content: sendingText, actor: "human" })
       });
-      setText("");
+      setText(current => current === sendingText ? "" : current);
+      setSendError(deliveryFeedback(locale, result.agent));
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["conversation", activeId] }),
+        queryClient.invalidateQueries({ queryKey: ["conversation", sendingId] }),
         queryClient.invalidateQueries({ queryKey: ["conversations"] })
       ]);
     } catch (caught) {
@@ -1181,10 +1173,19 @@ function digitalStageLabel(stage: SocietySnapshot["digitalFamily"][number]["stag
 function AgentPlaza() {
   const locale = useAppStore((s) => s.locale);
   const queryClient = useQueryClient();
-  const [view, setView] = useState<"global" | "circle">("global");
-  const [circleId, setCircleId] = useState("");
-  const [searchDraft, setSearchDraft] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [plazaParams, setPlazaParams] = useSearchParams();
+  const circleId = plazaParams.get("circle") ?? "";
+  const view = circleId ? "circle" : "global";
+  const searchQuery = plazaParams.get("q") ?? "";
+  const [searchDraft, setSearchDraft] = useState(searchQuery);
+  function setSearchQuery(query: string) {
+    setPlazaParams(current => {
+      const next = new URLSearchParams(current);
+      if (query) next.set("q", query); else next.delete("q");
+      return next;
+    });
+  }
+  useEffect(() => { setSearchDraft(searchQuery); }, [searchQuery]);
   const [expanded, setExpanded] = useState(false);
   const [camera, setCamera] = useState<PlazaCamera>({ x: 0, y: 0, scale: 1 });
   const [activity, setActivity] = useState<PlazaActivity>("looking");
@@ -1195,7 +1196,7 @@ function AgentPlaza() {
   const [drawerTab, setDrawerTab] = useState<"presence" | "runtime" | "chat" | "society">("chat");
   const [selectedAgentId, setSelectedAgentId] = useState("");
   const [agentSearch, setAgentSearch] = useState("");
-  const [detailOpen, setDetailOpen] = useState(true);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [moveMode, setMoveMode] = useState(false);
   const [creatingCircle, setCreatingCircle] = useState(false);
   const [circleSubmitting, setCircleSubmitting] = useState(false);
@@ -1228,10 +1229,20 @@ function AgentPlaza() {
   });
   const data = view === "global" ? globalPlaza.data : circlePlaza.data;
   const selectedCircle = view === "circle" ? data?.circles[0] : undefined;
-  const [runtime, setRuntime] = useState<PlazaSnapshot["viewer"]["runtime"] | null>(null);
+  const [runtime, setRuntimeState] = useState<PlazaSnapshot["viewer"]["runtime"] | null>(null);
+  const runtimeDirty = useRef(false);
+  function setRuntime(value: PlazaSnapshot["viewer"]["runtime"] | null) {
+    runtimeDirty.current = true;
+    setRuntimeState(value);
+  }
   useEffect(() => {
-    if (data?.viewer.runtime) setRuntime(data.viewer.runtime);
+    if (data?.viewer.runtime && !runtimeDirty.current) setRuntimeState(data.viewer.runtime);
   }, [data?.viewer.runtime]);
+  useEffect(() => {
+    setSelectedAgentId("");
+    setDetailOpen(false);
+    setMoveMode(false);
+  }, [circleId]);
   useEffect(() => {
     if (!actionState || actionStateError) return;
     const timer = window.setTimeout(() => setActionState(""), 3_200);
@@ -1257,9 +1268,8 @@ function AgentPlaza() {
   }, [queryClient]);
 
   function enterCircle(id: string) {
-    setCircleId(id);
-    setView("circle");
-    setDetailOpen(true);
+    setPlazaParams(current => { const next = new URLSearchParams(current); next.set("circle", id); return next; });
+    setDetailOpen(false);
     setDrawerTab("chat");
     setSelectedAgentId("");
     setAgentSearch("");
@@ -1267,8 +1277,7 @@ function AgentPlaza() {
   }
 
   function leaveCircleView() {
-    setView("global");
-    setCircleId("");
+    setPlazaParams(current => { const next = new URLSearchParams(current); next.delete("circle"); return next; });
     setMoveMode(false);
     setDrawerTab("chat");
     setSelectedAgentId("");
@@ -1347,6 +1356,23 @@ function AgentPlaza() {
     }
   }
 
+  async function publishPlazaTopic(topic: string) {
+    if (!selectedCircle) return false;
+    setBusy(true);
+    setActionStateError(false);
+    try {
+      await api("/api/v1/plaza/actions", {
+        method: "POST", body: JSON.stringify({ circleId: selectedCircle.id, activity: "chatting", content: topic })
+      });
+      await queryClient.invalidateQueries({ queryKey: ["plaza-town"] });
+      return true;
+    } catch (error) {
+      setActionStateError(true);
+      setActionState(error instanceof Error ? error.message : "发布失败");
+      return false;
+    } finally { setBusy(false); }
+  }
+
   async function leave() {
     setBusy(true);
     setActionStateError(false);
@@ -1363,7 +1389,7 @@ function AgentPlaza() {
     setActionState("");
     try {
       const result = await api<{
-        presence: { circleId: string; x: number; y: number; activity: PlazaActivity; lastSeenAt: string };
+        presence: { circleId: string; x: number; y: number; activity: PlazaActivity; lastSeenAt: string; worldAction: PlazaSnapshot["agents"][number]["worldAction"] };
       }>("/api/v1/plaza/presence/position", {
         method: "PATCH",
         body: JSON.stringify({ circleId: targetCircleId, x, y })
@@ -1375,6 +1401,7 @@ function AgentPlaza() {
           x: result.presence.x,
           y: result.presence.y,
           activity: result.presence.activity,
+          worldAction: result.presence.worldAction,
           lastSeenAt: result.presence.lastSeenAt
         } : agent)
       } : current);
@@ -1420,13 +1447,14 @@ function AgentPlaza() {
     setActionStateError(false);
     try {
       await api("/api/v1/plaza/runtime", { method: "PUT", body: JSON.stringify(normalizedRuntime) });
-      setRuntime(normalizedRuntime);
+      runtimeDirty.current = false;
+      setRuntimeState(normalizedRuntime);
       setActionState(normalizedRuntime.mode === "continuous"
         ? normalizedRuntime.cooldownSeconds <= 5
           ? "热恋模式已开启；会尽快触发一次真实交流，之后受 5 秒冷却、额度和安全规则约束。"
           : "持续自治已开启；只会在你设置的时段、额度和话题内运行。"
         : "已切换为受控自治，Agent 不会自行发起公开交流。");
-      setDrawerTab("chat");
+      setDrawerTab("runtime");
       await queryClient.invalidateQueries({ queryKey: ["plaza-town"] });
     } catch (caught) {
       setActionStateError(true);
@@ -1548,23 +1576,24 @@ function AgentPlaza() {
     .filter((discussion) => discussion.circleId === selectedCircle?.id)
     .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))[0];
   const isInSelectedCircle = Boolean(selectedCircle && selectedAgents.some((agent) => agent.mine));
-  const activeMode = runtime?.mode ?? data.viewer.runtime.mode;
+  const activeMode = data.viewer.runtime.mode;
+  const savedRuntime = data.viewer.runtime;
   const runtimeToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(new Date());
-  const actionsUsedToday = runtime?.usageDate === runtimeToday ? runtime.actionsToday : 0;
-  const runtimeQuotaReached = Boolean(runtime && actionsUsedToday >= runtime.dailyLimit);
+  const actionsUsedToday = savedRuntime.usageDate === runtimeToday ? savedRuntime.actionsToday : 0;
+  const runtimeQuotaReached = actionsUsedToday >= savedRuntime.dailyLimit;
   const runtimeClock = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Asia/Shanghai", hour: "2-digit", minute: "2-digit", hour12: false
   }).format(new Date());
-  const runtimeInWindow = Boolean(runtime && (runtime.activeFrom <= runtime.activeUntil
-    ? runtimeClock >= runtime.activeFrom && runtimeClock <= runtime.activeUntil
-    : runtimeClock >= runtime.activeFrom || runtimeClock <= runtime.activeUntil));
-  const runtimeStatus = !runtime || runtime.mode !== "continuous"
+  const runtimeInWindow = savedRuntime.activeFrom <= savedRuntime.activeUntil
+    ? runtimeClock >= savedRuntime.activeFrom && runtimeClock <= savedRuntime.activeUntil
+    : runtimeClock >= savedRuntime.activeFrom || runtimeClock <= savedRuntime.activeUntil;
+  const runtimeStatus = savedRuntime.mode !== "continuous"
     ? null
     : runtimeQuotaReached
-      ? { state: "blocked", title: `今日额度已用完（${actionsUsedToday}/${runtime.dailyLimit}）`, detail: "明天 00:00 自动恢复；也可以提高每日上限后保存。" }
+      ? { state: "blocked", title: `今日额度已用完（${actionsUsedToday}/${savedRuntime.dailyLimit}）`, detail: "明天 00:00 自动恢复；也可以提高每日上限后保存。" }
       : !runtimeInWindow
-        ? { state: "waiting", title: "当前不在授权时段", detail: `Agent 会在 ${runtime.activeFrom}–${runtime.activeUntil} 内恢复自主活动。` }
-        : { state: "ready", title: `自治运行中（${actionsUsedToday}/${runtime.dailyLimit}）`, detail: `Worker 正在检查机会；每次行动至少间隔 ${formatCooldown(cooldownSecondsOf(runtime))}。` };
+        ? { state: "waiting", title: "当前不在授权时段", detail: `Agent 会在 ${savedRuntime.activeFrom}–${savedRuntime.activeUntil} 内恢复自主活动。` }
+        : { state: "ready", title: `已授权持续自治（${actionsUsedToday}/${savedRuntime.dailyLimit}）`, detail: `每次行动至少间隔 ${formatCooldown(cooldownSecondsOf(savedRuntime))}；执行还取决于任务服务、模型、额度与安全检查。` };
 
   return <><Topbar eyebrow="LIVING AGENT TOWN" title={tr(locale, "Agent 广场", "Agent Plaza")} /><div className="page living-plaza-page">
     <section className={`living-town ${expanded ? "expanded" : ""} ${view === "circle" ? "inside-circle" : ""}`}>
@@ -1574,6 +1603,11 @@ function AgentPlaza() {
           {selectedCircle && <><ChevronRight /><span>{selectedCircle.topic}</span><ChevronRight /><b>{selectedCircle.name}</b></>}
         </nav>
         <div className="town-toolbar-actions">
+          {view === "circle" && selectedCircle && <button className="town-panel-toggle"
+            aria-expanded={detailOpen} onClick={() => { setSelectedAgentId(""); setDrawerTab("presence"); setDetailOpen(value => !value); }}
+            aria-label={`展开${selectedCircle.name}详情`}>
+            <PanelRightOpen />{tr(locale, "成员与设置", "Members & settings")}
+          </button>}
           <span className={`runtime-chip ${activeMode}`}><i />{activeMode === "continuous" ? tr(locale, "持续自治", "Continuous") : tr(locale, "受控自治", "Controlled")}</span>
           <small>{new Date(data.generatedAt).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })} {tr(locale, "已同步", "synced")}</small>
           {view === "global" && <button className="town-create-circle" onClick={() => {
@@ -1592,6 +1626,7 @@ function AgentPlaza() {
         </div>
       </header>
 
+      <div className={`town-workspace ${detailOpen && view === "circle" ? "with-panel" : ""}`}>
       <div className="town-stage">
         <PlazaWorld data={data} view={view} camera={camera} setCamera={setCamera}
           onEnterCircle={enterCircle} onMoveAgent={isInSelectedCircle ? moveAgent : undefined}
@@ -1600,11 +1635,26 @@ function AgentPlaza() {
             setDrawerTab("chat");
             setDetailOpen(true);
           }}
-          moveMode={moveMode} detailOpen={detailOpen} />
-        {view === "circle" && isInSelectedCircle && <div className="town-walk-hint">
+          moveMode={moveMode} detailOpen={detailOpen} locale={locale} />
+        {view === "circle" && <div className="town-action-strip">
+          <span><Radio size={14}/>{tr(locale, "真实行动", "Live actions")}</span>
+          <b>{data.discussions.filter(item => item.circleId === selectedCircle?.id && item.status === "active").length} {tr(locale, "组讨论", "discussions")}</b>
+          {selectedAgents.filter(agent => agent.worldAction && Date.parse(agent.worldAction.endsAt) > Date.now()).slice(0, 3).map(agent =>
+            <span key={agent.userId} title={agent.worldAction!.goal}>
+              <strong>{displayAgentName(locale, agent.agentName)}</strong>
+              {tr(locale, { move:"正在前往", observe:"观察中", rest:"休息中", discuss:"参与讨论" }[agent.worldAction!.kind],
+                { move:"Moving", observe:"Observing", rest:"Resting", discuss:"In discussion" }[agent.worldAction!.kind])}
+            </span>)}
+        </div>}
+        {view === "circle" && isInSelectedCircle && moveMode && <div className="town-walk-hint">
           <Footprints /> {moveMode
             ? tr(locale, "移动模式已开启：点击地面，我的 Agent 才会走过去", "Move mode on: click the ground to move my Agent")
             : tr(locale, "默认不会误触移动；点击右侧「移动我的 Agent」后再点地面", "Movement is locked by default; use “Move my Agent” first")}
+        </div>}
+        {view === "circle" && <div className="town-accessible-circles" aria-label={tr(locale, "圈内 Agent 资料", "Agent profiles in this circle")}>
+          {selectedAgents.map(agent => <button key={agent.userId} onClick={() => {
+            setSelectedAgentId(agent.userId); setDetailOpen(true);
+          }}><b>{agent.ownerName}</b><span>{agent.agentName}</span></button>)}
         </div>}
         {view === "global" && <form className="town-search" onSubmit={searchCircles}>
           <Search /><input value={searchDraft} onChange={(event) => setSearchDraft(event.target.value)}
@@ -1619,12 +1669,12 @@ function AgentPlaza() {
           <small>{tr(locale, "拖拽游览 · 滚轮缩放 · 点击建筑进入圈子", "Drag to explore · Scroll to zoom · Click a building to enter")}</small>
         </div>}
 
-        <div className="town-stats" aria-label="广场实时状态">
+        {view === "global" && <div className="town-stats" aria-label="广场实时状态">
           <span><i className="live-dot" /><b>{data.stats.present}</b> {tr(locale, "位 Agent 在场", "Agents present")}</span>
           <span><MessageCircle /><b>{data.stats.talking}</b> {tr(locale, "正在交谈", "talking")}</span>
           <span><Network /><b>{data.stats.circles}</b> {tr(locale, "个开放圈子", "open circles")}</span>
           <span><Radio /><b>{data.stats.eventsToday}</b> {tr(locale, "条今日动态", "events today")}</span>
-        </div>
+        </div>}
         {actionState && <div className={`plaza-action-toast ${actionStateError ? "error" : "success"}`} role="status">
           {actionStateError ? <CircleAlert /> : <Check />}
           <span>{actionState}</span>
@@ -1651,14 +1701,9 @@ function AgentPlaza() {
           <Coffee /><b>这里现在很安静</b><span>这里不会用虚构人物制造热闹。让你的 Agent 成为第一个到场的人。</span>
         </div>}
 
-        {view === "circle" && selectedCircle && !detailOpen && <button className="town-drawer-reopen"
-          onClick={() => setDetailOpen(true)} aria-label={`展开${selectedCircle.name}详情`}>
-          <ChevronRight /><span><small>{selectedCircle.topic}</small><b>{selectedCircle.name}</b></span>
-          <i><span className="live-dot" />{selectedCircle.population} 位</i>
-        </button>}
-
+      </div>
         {view === "circle" && selectedCircle && <aside className={`town-drawer ${detailOpen ? "" : "collapsed"}`}
-          aria-hidden={!detailOpen}>
+          aria-hidden={!detailOpen} inert={!detailOpen} aria-label={tr(locale, "圈子详情与设置", "Circle details and settings")}>
           <header>
             <button onClick={leaveCircleView} aria-label="返回全城"><ArrowLeft /></button>
             <div><small>{selectedCircle.topic}</small><h2>{selectedCircle.name}</h2></div>
@@ -1675,8 +1720,8 @@ function AgentPlaza() {
           </header>
           <p className="town-drawer-summary">{selectedCircle.description}</p>
           {!selectedAgent && <div className="town-drawer-tabs town-drawer-tabs-three" role="tablist" aria-label="圈子内容">
-            <button role="tab" aria-selected={drawerTab === "chat"} className={drawerTab === "chat" ? "active primary" : "primary"}
-              onClick={() => setDrawerTab("chat")}><MessageCircle />群聊动态 <span>{selectedEvents.length}</span></button>
+            <button role="tab" aria-selected={drawerTab === "runtime"} className={drawerTab === "runtime" ? "active primary" : "primary"}
+              onClick={() => setDrawerTab("runtime")}><Settings2 />自治设置</button>
             <button role="tab" aria-selected={drawerTab === "presence"} className={drawerTab === "presence" ? "active" : ""}
               onClick={() => setDrawerTab("presence")}><Users />在场 Agent <span>{selectedAgents.length}</span></button>
             <button role="tab" aria-selected={drawerTab === "society"} className={drawerTab === "society" ? "active" : ""}
@@ -1744,6 +1789,9 @@ function AgentPlaza() {
                   && <div className="town-profile-empty"><CircleUserRound /><b>公开资料还很少</b><span>对方尚未补充更多可公开信息。</span></div>}
               </section>}
               {!selectedAgent && drawerTab === "runtime" && runtime && <div className="runtime-settings">
+                {runtimeDirty.current && <p className="runtime-draft-note" role="status">{tr(locale,
+                  "有未保存的设置，当前实际运行仍使用上次保存的配置。",
+                  "Unsaved changes. Your Agent still uses the last saved settings.")}</p>}
                 <label className="runtime-mode-choice">
                   <input type="radio" checked={runtime.mode === "controlled"} onChange={() => setRuntime({ ...runtime, mode: "controlled" })} />
                   <span><b>受控自治</b><small>只响应你的操作和真实联系事件</small></span>
@@ -1850,6 +1898,10 @@ function AgentPlaza() {
               </section>}
           </div>
         </aside>}
+      {view === "circle" && <PlazaLiveFeed key={circleId} data={data} locale={locale} busy={busy}
+        paused={data.viewer.communityMode === "paused"} joined={isInSelectedCircle}
+        onPublish={publishPlazaTopic} moveMode={moveMode} onMove={() => setMoveMode(value => !value)}
+        onSettings={() => { setSelectedAgentId(""); setDrawerTab("runtime"); setDetailOpen(true); }} />}
       </div>
     </section>
   </div>
@@ -2137,7 +2189,7 @@ function Customers() {
   const [form, setForm] = useState({ name: "", handle: "", description: "" });
   const dashboard = useQuery({ queryKey: ["dashboard"], queryFn: fetchDashboard });
   const items = (dashboard.data?.customers ?? []).filter(c=>filter==="all"||c.status===filter);
-  const selectedCustomer = dashboard.data?.customers.find((item) => item.id === searchParams.get("inquiry")) ?? null;
+  const selectedCustomer = dashboard.data?.customers.find((item) => item.source === "public_inquiry" && item.id === searchParams.get("inquiry")) ?? null;
   const organizations = dashboard.data?.organizations ?? [];
   async function updateInquiry(status: "active" | "resolved") {
     if (!selectedCustomer || selectedCustomer.source !== "public_inquiry" || submitting) return;
@@ -2178,10 +2230,15 @@ function Customers() {
   return <><Topbar eyebrow="CUSTOMER DESK" title={t(locale, "customers")} /><div className="page">
     <div className="customer-toolbar"><div className="filter-tabs">{([["all",tr(locale,"全部","All")],["waiting_human",tr(locale,"待真人","Needs human")],["agent",tr(locale,"Agent 处理中","Agent handling")],["active",tr(locale,"我处理中","My cases")],["resolved",tr(locale,"已解决","Resolved")]] as const).map(([v,n])=><button key={v} onClick={()=>setFilter(v)} className={filter===v?"active":""}>{n}{v==="waiting_human"&&<i>{items.filter(item=>item.status==="waiting_human").length}</i>}</button>)}</div><div><button className="primary-small" onClick={() => { setFormError(""); setFieldErrors({}); setCreating(true); }}><Plus /> {tr(locale,"新建企业空间","New organization")}</button></div></div>
     {organizations.length > 0 && <section className="organization-strip"><span className="kicker">YOUR ORGANIZATIONS</span><div>{organizations.map((organization: { id: string; name: string; handle: string; description: string }) => <article key={organization.id}><BriefcaseBusiness /><span><b>{organization.name}</b><small>@{organization.handle} · {organization.description}</small></span></article>)}</div></section>}
-    <div className="customer-layout"><section className="customer-table"><header><span>{tr(locale,"客户与主题","Customer & topic")}</span><span>{tr(locale,"状态","Status")}</span><span>{tr(locale,"优先级","Priority")}</span><span>{tr(locale,"负责人","Owner")}</span><span>{tr(locale,"更新时间","Updated")}</span></header>{items.length ? items.map((c)=><button type="button" className="customer-row" key={c.id} onClick={() => c.source === "public_inquiry" && setSearchParams({ inquiry: c.id })}><div><div className="avatar-sm">{c.name[0]}</div><span><b>{c.name}</b><small>{c.subject}</small></span></div><span><i className={`status-dot ${c.status}`} />{{waiting_human:tr(locale,"待真人","Needs human"),agent:tr(locale,"Agent 处理中","Agent handling"),unassigned:tr(locale,"未分配","Unassigned"),active:tr(locale,"处理中","In progress"),resolved:tr(locale,"已解决","Resolved")}[c.status]}</span><span className={`priority ${c.priority}`}>{c.priority==="high"?tr(locale,"高","High"):tr(locale,"普通","Normal")}</span><span>{c.assignee??"—"}</span><time>{c.createdAt ? new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(c.createdAt)) : "—"}</time></button>) : <EmptyState title={tr(locale,"还没有客户消息","No customer messages yet")} detail={tr(locale,"公开主页访客的真实咨询和企业客户线程会进入这里。","Real inquiries from public-profile visitors and customer threads appear here.")} />}</section>
+    <div className="customer-layout"><section className="customer-table"><header><span>{tr(locale,"客户与主题","Customer & topic")}</span><span>{tr(locale,"状态","Status")}</span><span>{tr(locale,"优先级","Priority")}</span><span>{tr(locale,"负责人","Owner")}</span><span>{tr(locale,"更新时间","Updated")}</span></header>{items.length ? items.map((c)=><button type="button" className="customer-row" key={c.id} onClick={() => setSearchParams(c.source === "public_inquiry" ? { inquiry: c.id } : { thread: c.id })}><div><div className="avatar-sm">{c.name[0]}</div><span><b>{c.name}</b><small>{c.subject}</small></span></div><span><i className={`status-dot ${c.status}`} />{{waiting_human:tr(locale,"待真人","Needs human"),agent:tr(locale,"Agent 处理中","Agent handling"),unassigned:tr(locale,"未分配","Unassigned"),active:tr(locale,"处理中","In progress"),resolved:tr(locale,"已解决","Resolved")}[c.status]}</span><span className={`priority ${c.priority}`}>{c.priority==="high"?tr(locale,"高","High"):tr(locale,"普通","Normal")}</span><span>{c.assignee??"—"}</span><time>{c.createdAt ? new Intl.DateTimeFormat(locale, { month: "short", day: "numeric" }).format(new Date(c.createdAt)) : "—"}</time></button>) : <EmptyState title={tr(locale,"还没有客户消息","No customer messages yet")} detail={tr(locale,"公开主页访客的真实咨询和企业客户线程会进入这里。","Real inquiries from public-profile visitors and customer threads appear here.")} />}</section>
       <aside className="customer-metrics"><span className="kicker">TODAY</span><h3>{tr(locale,"接待概览","Reception overview")}</h3><div><b>{items.length}</b><small>{tr(locale,"真实线程","real threads")}</small></div><div><b>{items.filter(item=>item.status==="waiting_human").length}</b><small>{tr(locale,"升级真人","human handoffs")}</small></div><div><b>{items.filter(item=>item.status==="resolved").length}</b><small>{tr(locale,"已解决","resolved")}</small></div><hr/><p><ShieldCheck /> {tr(locale,"涉及报价、退款和承诺的问题会自动转交真人。","Questions involving quotes, refunds, or commitments automatically escalate to a person.")}</p></aside>
     </div>
-    <section className="knowledge-strip"><div><Bot /><span><b>{tr(locale,"企业知识库","Organization knowledge base")}</b><small>{organizations.length ? tr(locale,"知识文档编辑尚未开放；当前 Agent 不会在无来源时编造政策。","Knowledge editing is not open yet; the Agent will not invent policy without a source.") : tr(locale,"先创建企业空间；知识文档编辑尚未开放。","Create an organization first; knowledge editing is not open yet.")}</small></span></div><span className="capability-badge">{tr(locale,"规划中","Planned")}</span></section>
+    {organizations.length > 0 && <div className="knowledge-actions">{organizations.map(organization =>
+      <Link key={organization.id} to={`/company/${organization.handle}`}>
+        {tr(locale, "查看企业公开页", "View public organization page")} · {organization.name}<ArrowRight size={14} />
+      </Link>)}</div>}
+    <OrganizationKnowledge organizations={organizations} locale={locale} />
+    {organizations.map(organization => <OrganizationReception key={organization.id} id={organization.id} name={organization.name} locale={locale} />)}
   </div>
   {creating && <Modal eyebrow="NEW ORGANIZATION" title="新建企业接待空间" onClose={() => setCreating(false)}><div className="modal-form">
     <label>企业或品牌名称<input className={fieldErrors.name ? "invalid" : ""} aria-invalid={Boolean(fieldErrors.name)} autoFocus value={form.name} onChange={(event) => { setForm({ ...form, name: event.target.value }); setFieldErrors({ ...fieldErrors, name: "" }); }} placeholder="例如：LifeYouMe 工作室" />{fieldErrors.name && <small className="field-error">{fieldErrors.name}</small>}</label>
@@ -2190,6 +2247,10 @@ function Customers() {
     {formError && <p className="form-error" role="alert">{formError}</p>}
     <footer><button className="ghost-small" onClick={() => setCreating(false)}>取消</button><button className="primary" disabled={submitting} onClick={createOrganization}>{submitting ? "正在创建…" : "创建企业空间"} <ArrowRight /></button></footer>
   </div></Modal>}
+  {searchParams.get("thread") && <Modal eyebrow={tr(locale, "企业接待", "CUSTOMER DESK")} title={tr(locale, "客户线程", "Customer thread")}
+    onClose={() => setSearchParams({}, { replace: true })}>
+    <CustomerThreadDetail key={searchParams.get("thread")!} id={searchParams.get("thread")!} locale={locale} />
+  </Modal>}
   {selectedCustomer && <Modal eyebrow={tr(locale, "公开主页留言", "PUBLIC PROFILE INQUIRY")} title={selectedCustomer.name} onClose={() => setSearchParams({}, { replace: true })}>
     <div className="inquiry-detail">
       <div className="inquiry-meta"><span><Clock3 />{selectedCustomer.createdAt ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(selectedCustomer.createdAt)) : "—"}</span><span className={`inquiry-status ${selectedCustomer.status}`}>{{unassigned:tr(locale,"待处理","Unassigned"),active:tr(locale,"处理中","In progress"),resolved:tr(locale,"已解决","Resolved"),agent:tr(locale,"Agent 处理中","Agent handling"),waiting_human:tr(locale,"待真人","Needs human")}[selectedCustomer.status]}</span></div>
@@ -2302,6 +2363,7 @@ function AgentStudio() {
       <footer className="studio-footer"><span><Check /> {saveState || tr(locale,"读取自真实数据库","Loaded from the live database")}</span><div><button className="ghost-small" disabled={step===0} onClick={()=>setStep(step-1)}>{tr(locale,"上一步","Back")}</button><button className="primary-small" onClick={step===4 ? saveAgent : ()=>setStep(Math.min(4,step+1))}>{step===4?tr(locale,"保存配置","Save configuration"):tr(locale,"下一步","Next")}</button></div></footer></section>
       <aside className="privacy-panel"><ShieldCheck /><h3>{tr(locale,"信息如何被使用","How information is used")}</h3><p>{tr(locale,"每条资料都能设置可见范围。","Every field can have its own visibility level.")}</p><ul><li><i className="public" />{tr(locale,"公开可见","Public")}</li><li><i className="match" />{tr(locale,"仅匹配时使用","Matching only")}</li><li><i className="agent" />{tr(locale,"仅 Agent 可用","Agent only")}</li><li><i className="never" />{tr(locale,"绝不对外分享","Never shared")}</li></ul><div className="capability-note compact"><Check /><span><b>{tr(locale,"审计记录已保存","Audit trail saved")}</b><small>{tr(locale,"完整时间线查看页面规划中","Full timeline viewer is planned")}</small></span></div></aside>
     </div>
+    <AgentMemoryManager locale={locale} />
   </div></>;
 }
 
@@ -2330,7 +2392,11 @@ function Landing() {
 }
 
 function AuthPage() {
+  const queryClient = useQueryClient();
+  const locale = useAppStore(s => s.locale);
+  const setLocale = useAppStore(s => s.setLocale);
   const navigate = useNavigate();
+  const [authParams] = useSearchParams();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -2346,32 +2412,56 @@ function AuthPage() {
         method: "POST",
         body: JSON.stringify({ name, email, password })
       });
-      if (result.user) navigate("/app", { replace: true });
+      const requestedReturn = authParams.get("returnTo") ?? "";
+      const safeReturn = /^\/company\/[a-z0-9_-]{3,32}$/.test(requestedReturn) ? requestedReturn : "/app";
+      if (!result.user) throw new Error(tr(locale, "登录响应无效，请重试", "Invalid sign-in response. Please retry."));
+      notifySessionChange();
+      await queryClient.cancelQueries();
+      queryClient.removeQueries({ predicate: query => query.queryKey[0] !== "session" });
+      useAppStore.getState().setAgentPaused(false);
+      const verifiedSession = await api<SessionRecord>("/api/v1/session");
+      if (!verifiedSession.user?.id) throw new Error(tr(locale, "登录状态未确认，请重试", "Sign-in could not be verified. Please retry."));
+      queryClient.setQueryData(["session"], verifiedSession);
+      navigate(safeReturn, { replace: true });
     } catch (caught) {
-      const messages: Record<string, string> = {
-        invalid_email: "请输入有效的邮箱地址",
-        weak_password: "密码至少需要 8 位",
-        invalid_name: "名字需要 2–40 个字符",
-        email_already_exists: "这个邮箱已经注册，请直接登录",
-        invalid_credentials: "邮箱或密码不正确"
-      };
-      setError(caught instanceof Error ? (messages[caught.message] ?? caught.message) : "操作失败，请稍后重试");
+      setError(caught instanceof Error ? caught.message : tr(locale, "操作失败，请稍后重试", "Could not complete the request. Please retry."));
     } finally {
       setPending(false);
     }
   }
-  return <div className="auth-page"><div className="auth-card"><Logo /><span className="kicker">MEYOU ACCOUNT</span><h1>{mode === "login" ? "登录你的遇见空间" : "创建你的遇见账号"}</h1><p>每个人拥有独立的 Agent、社群、匹配和消息，不与其他用户混用。</p><form onSubmit={submit}>{mode === "register" && <label>你的名字<input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" required minLength={2} placeholder="例如：林澄" /></label>}<label>邮箱<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required placeholder="you@example.com" /></label><label>密码<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={8} placeholder="至少 8 位" /></label>{error && <p className="form-error">{error}</p>}<button className="primary full" disabled={pending}>{pending ? "正在处理…" : mode === "login" ? "登录" : "注册并开始"}</button></form><a className="sso-button" href="https://auth.lifeyoume.icu/login">使用 LifeYouMe 统一账号登录 <ArrowRight size={15} /></a><button className="auth-switch" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>{mode === "login" ? "还没有账号？注册一个" : "已有账号？直接登录"}</button><small className="auth-note">统一账号登录后返回 MeYou，会自动映射到同一个用户身份。</small></div></div>;
+  return <div className="auth-page"><div className="auth-card">
+    <Logo />
+    <button className="locale-switch" aria-label={locale === "en" ? "Switch to Chinese" : "Switch to English"}
+      onClick={() => { setLocale(locale === "en" ? "zh-CN" : "en"); setError(""); }}>
+      <Languages size={16} aria-hidden="true" />{locale === "en" ? "English" : "中文"}
+    </button>
+    <span className="kicker">MEYOU ACCOUNT</span>
+    <h1>{mode === "login" ? tr(locale, "登录你的遇见空间", "Sign in to your MeYou space") : tr(locale, "创建你的遇见账号", "Create your MeYou account")}</h1>
+    <p>{tr(locale, "每个人拥有独立的 Agent、社群、匹配和消息，不与其他用户混用。", "Your Agent, communities, matches and messages belong to your own account.")}</p>
+    <form onSubmit={submit}>
+      {mode === "register" && <label>{tr(locale, "你的名字", "Your name")}<input value={name} onChange={event => setName(event.target.value)}
+        autoComplete="name" required minLength={2} maxLength={40} placeholder={tr(locale, "例如：林澄", "For example: Alex")} />
+        <small>{tr(locale, "2–40 个字符", "2–40 characters")}</small></label>}
+      <label>{tr(locale, "邮箱", "Email")}<input type="email" value={email} onChange={event => setEmail(event.target.value)}
+        autoComplete="email" required placeholder="you@example.com" /></label>
+      <label>{tr(locale, "密码", "Password")}<input type="password" value={password} onChange={event => setPassword(event.target.value)}
+        autoComplete={mode === "login" ? "current-password" : "new-password"} required minLength={8}
+        placeholder={tr(locale, "至少 8 位", "At least 8 characters")} /></label>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <button className="primary full" disabled={pending}>{pending ? tr(locale, "正在处理…", "Processing…")
+        : mode === "login" ? tr(locale, "登录", "Sign in") : tr(locale, "注册并开始", "Register & get started")}</button>
+    </form>
+    <a className="sso-button" href="https://auth.lifeyoume.icu/login">{tr(locale, "使用 LifeYouMe 统一账号登录", "Sign in with LifeYouMe")} <ArrowRight size={15} /></a>
+    <button className="auth-switch" onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}>
+      {mode === "login" ? tr(locale, "还没有账号？注册一个", "New here? Create an account") : tr(locale, "已有账号？直接登录", "Already have an account? Sign in")}
+    </button>
+    <small className="auth-note">{tr(locale, "统一账号登录后返回 MeYou，会自动映射到同一个用户身份。", "Your LifeYouMe account maps to the same identity when you return to MeYou.")}</small>
+  </div></div>;
 }
 
 function ProtectedApp() {
   if (import.meta.env.MODE === "test") return <AppShell />;
-  const session = useQuery({ queryKey: ["session"], queryFn: () => api<SessionRecord>("/api/v1/session") });
-  if (session.isLoading) return <div className="auth-page"><LoadingState label="正在确认登录状态…" /></div>;
-  // Older embedded shells may not expose the session endpoint yet; keep them
-  // usable while the production API explicitly returns `user: null` when
-  // authentication is required.
-  if (session.data && session.data.user === null) return <AuthPage />;
-  return <AppShell />;
+  return <SessionGate login={<AuthPage />}><AppShell /></SessionGate>;
 }
 
 function Scene({ icon: Icon, index, title, text, color }: { icon: typeof Network; index: string; title: string; text: string; color: string }) {
@@ -2471,6 +2561,7 @@ export function App() {
     <Route path="/login" element={<AuthPage />} />
     <Route path="/admin/login" element={<AdminLogin />} />
     <Route path="/admin" element={<AdminConsole />} />
+    <Route path="/company/:handle" element={<PublicCompany />} />
     <Route path="/:handle" element={<PublicProfile />} />
     <Route path="/app/*" element={<ProtectedApp />} />
   </Routes>;

@@ -1,0 +1,17 @@
+{
+  "currentEditionId": null,
+  "currentItemIds": [],
+  "generatedAt": null,
+  "status": "stale",
+  "checkedAt": null,
+  "run": {
+    "horizonCommit": "cdd95f8e881673057e3e201717836da4b8e2e0e7",
+    "candidateCount": 0,
+    "selectedCount": 0,
+    "sourceStatus": {
+      "status": "not_attempted"
+    }
+  },
+  "editions": [],
+  "items": []
+}

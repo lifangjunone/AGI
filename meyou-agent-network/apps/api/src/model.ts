@@ -2,6 +2,9 @@ import { desc } from "drizzle-orm";
 import { decryptModelSecret } from "./admin.js";
 import { db } from "./db/client.js";
 import { modelConfigurations } from "./db/schema.js";
+import { createHash } from "node:crypto";
+import { maasConfiguration } from "./maas-config.js";
+import { modelCompletion } from "./model-transport.js";
 
 export interface ModelMessage {
   role: "system" | "user" | "assistant";
@@ -21,9 +24,36 @@ export interface ResolvedModelConfiguration {
   thinkingEnabled: boolean;
   timeoutMs: number;
   temperature: number;
+  revision?: string;
+}
+
+export interface ModelExecution {
+  content: string;
+  provider: string;
+  model: string;
+  source: ResolvedModelConfiguration["source"];
+  /** Internal opaque configuration identity, never exposed as a credential. */
+  configurationId: string;
+}
+
+function configurationIdentity(configuration: ResolvedModelConfiguration) {
+  return createHash("sha256").update(JSON.stringify(configuration)).digest("hex");
+}
+
+export async function assertModelExecutionCurrent(execution: ModelExecution) {
+  const current = await resolveModelConfiguration();
+  if (configurationIdentity(current) !== execution.configurationId) {
+    throw new Error("model_configuration_changed");
+  }
+}
+
+export function modelExecutionMetadata(execution: ModelExecution) {
+  return { provider: execution.provider, model: execution.model, configurationSource: execution.source };
 }
 
 export async function resolveModelConfiguration(): Promise<ResolvedModelConfiguration> {
+  const maas = maasConfiguration(process.env);
+  if (maas) return maas;
   const [configured] = await db.select().from(modelConfigurations)
     .orderBy(desc(modelConfigurations.updatedAt)).limit(1);
   if (configured) {
@@ -36,7 +66,8 @@ export async function resolveModelConfiguration(): Promise<ResolvedModelConfigur
       apiKey: decryptModelSecret(configured.apiKeyEncrypted),
       thinkingEnabled: configured.thinkingEnabled,
       timeoutMs: configured.timeoutMs,
-      temperature: configured.temperatureMilli / 1000
+      temperature: configured.temperatureMilli / 1000,
+      revision: configured.updatedAt.toISOString()
     };
   }
   const apiKey = process.env.ARK_API_KEY ?? process.env.OPENAI_COMPATIBLE_API_KEY ?? "";
@@ -58,28 +89,25 @@ export async function completeWithConfiguration(
   messages: ModelMessage[],
   options: { thinking?: boolean; json?: boolean } = {}
 ) {
-  if (!configuration.apiKey || !configuration.modelId) throw new Error("model_not_configured");
-  const response = await fetch(`${configuration.baseUrl.replace(/\/$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: { authorization: `Bearer ${configuration.apiKey}`, "content-type": "application/json" },
-    body: JSON.stringify({
-      model: configuration.modelId,
-      messages,
-      temperature: configuration.temperature,
-      thinking: { type: (options.thinking ?? configuration.thinkingEnabled) ? "enabled" : "disabled" },
-      ...(options.json ? { response_format: { type: "json_object" } } : {})
-    }),
-    signal: AbortSignal.timeout(configuration.timeoutMs)
-  });
-  if (!response.ok) throw new Error(`model_provider_error:${response.status}`);
-  const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
-  return body.choices?.[0]?.message?.content ?? "";
+  return modelCompletion(configuration, messages, options);
 }
 
 export class OpenAICompatibleProvider implements ModelProvider {
   async complete(messages: ModelMessage[], options: { thinking?: boolean; json?: boolean } = {}): Promise<string> {
+    return (await this.completeDetailed(messages, options)).content;
+  }
+
+  async completeDetailed(messages: ModelMessage[], options: { thinking?: boolean; json?: boolean } = {}): Promise<ModelExecution> {
     const configuration = await resolveModelConfiguration();
-    return completeWithConfiguration(configuration, messages, options);
+    const content = await completeWithConfiguration(configuration, messages, options);
+    if (!content.trim()) throw new Error("model_empty_response");
+    const execution: ModelExecution = {
+      content, provider: configuration.provider, model: configuration.modelId,
+      source: configuration.source, configurationId: configurationIdentity(configuration)
+    };
+    // The admin may have disabled or replaced a model while the request was in flight.
+    await assertModelExecutionCurrent(execution);
+    return execution;
   }
 }
 

@@ -6,7 +6,8 @@ export const BRAND = {
   description:
     '创建、培养和管理数字员工，让知识、流程与工具成为可复用、可追踪的工作能力。',
   homeUrl: 'https://lifeyoume.icu/',
-  productsUrl: 'https://lifeyoume.icu/products',
+  productsUrl: 'https://lifeyoume.icu/#products',
+  accountUrl: 'https://auth.lifeyoume.icu/account',
   sourceUrl: 'https://github.com/OpenBMB/StaffDeck',
   upstreamName: 'OpenBMB StaffDeck',
 } as const;

@@ -22,13 +22,21 @@ def test_worker_recovers_from_exception_using_fresh_session(monkeypatch):
     stop = threading.Event()
     monkeypatch.setattr(worker, "_stop_event", stop)
     monkeypatch.setattr(
-        worker, "Session", lambda _: sessions.append(object()) or nullcontext(sessions[-1])
-    )
-    monkeypatch.setattr(
         worker, "get_settings", lambda: SimpleNamespace(external_task_poll_seconds=0.01)
     )
 
-    def poll(db):
+    def maintenance_sessions():
+        sessions.append(SimpleNamespace(rollback=lambda: None))
+        with nullcontext(sessions[-1]) as db:
+            yield db
+
+    monkeypatch.setattr(
+        "staffdeck_harness.runtime.services.maintenance_sessions",
+        maintenance_sessions,
+    )
+
+    def poll(db, *, dispatch):
+        assert callable(dispatch)
         calls.append(db)
         if len(calls) == 1:
             raise RuntimeError("simulated transaction failure")
@@ -46,9 +54,18 @@ def test_worker_shutdown_does_not_spawn_overlapping_generation(monkeypatch):
     entered, release = threading.Event(), threading.Event()
     monkeypatch.setattr(worker, "_thread", None)
     monkeypatch.setattr(worker, "_stop_event", threading.Event())
-    monkeypatch.setattr(worker, "Session", lambda _: nullcontext(None))
 
-    def poll(_):
+    def maintenance_sessions():
+        with nullcontext(SimpleNamespace(rollback=lambda: None)) as db:
+            yield db
+
+    monkeypatch.setattr(
+        "staffdeck_harness.runtime.services.maintenance_sessions",
+        maintenance_sessions,
+    )
+
+    def poll(_, *, dispatch):
+        assert callable(dispatch)
         entered.set()
         assert release.wait(3)
 
@@ -163,6 +180,30 @@ def test_resume_query_cannot_submit_pending_task_again():
         )
         assert first.data["task_id"] == again.data["task_id"]
         assert len(db.exec(select(ExternalBusinessTask)).all()) == 1
+
+
+def test_same_frame_can_submit_a_distinct_request():
+    with _session() as db:
+        user, tool = _seed(db)
+        executor = ToolExecutor(db)
+        first = executor.execute(
+            "tenant_demo",
+            ToolCall(name=tool.name, arguments={"item": "a"}),
+            user_id=user.id,
+            session_id="s",
+            task_frame_id="frame",
+            invocation_id="call1",
+        )
+        second = executor.execute(
+            "tenant_demo",
+            ToolCall(name=tool.name, arguments={"item": "b"}),
+            user_id=user.id,
+            session_id="s",
+            task_frame_id="frame",
+            invocation_id="call2",
+        )
+        assert first.data["task_id"] != second.data["task_id"]
+        assert len(db.exec(select(ExternalBusinessTask)).all()) == 2
 
 
 def test_saved_tool_test_retries_use_same_request_id():

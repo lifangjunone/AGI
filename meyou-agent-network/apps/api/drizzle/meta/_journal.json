@@ -92,6 +92,55 @@
       "when": 1792744200000,
       "tag": "0012_product_inbox",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793167200000,
+      "tag": "0013_plaza_world_action",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793307000000,
+      "tag": "0014_customer_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1793308000000,
+      "tag": "0015_company_inquiry_request",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793315000000,
+      "tag": "0016_customer_agent_authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793316000000,
+      "tag": "0017_customer_agent_outputs",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793317000000,
+      "tag": "0018_customer_worker_health",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793318000000,
+      "tag": "0019_organization_reception",
+      "breakpoints": true
     }
   ]
 }
