@@ -19,6 +19,12 @@
 - Passed 4 analyzer tests, JavaScript syntax checks, desktop/mobile local and production browser checks, zero-console-error validation, and issue-example scoring.
 - Preserved the shared Nginx inode, passed candidate and live `nginx -t`, reloaded without recreating the proxy container, and confirmed MapProof plus eight representative existing products returned HTTP 200.
 
+### fix
+
+- Fixed MapProof scoring so diagrams with unresolved feedback loops no longer receive 100 / “可发布”; feedback loops are now shown separately from the main critical path, the default example scores 84 / “需复核”, and the risky example scores 48 / “暂缓发布”.
+- Improved MapProof desktop readability by widening the diagram column and preserving Mermaid source semantics with horizontal scrolling instead of hard-wrapping arrows and labels.
+- Reworked MapProof UI/UX into an “open and work” diagram review bench: compact task brief, source/canvas/quality-sheet navigation, tighter first-screen density, stronger canvas focus, right-side QA sheet hierarchy, mobile 44px touch targets, and three-viewport production validation.
+
 ## 2026-10-28
 
 ### feat

@@ -1,0 +1,47 @@
+flowchart TD
+    U1[访客/客户] --> C1[Web / App / 小程序]
+    U2[本人/创作者] --> C2[分身工作台]
+    U3[运营/管理员] --> C3[Admin Console]
+
+    C1 --> G[Realtime Gateway<br/>WebRTC / WebSocket / SSE]
+    C2 --> API[API Gateway]
+    C3 --> API
+
+    G --> VAD[VAD 语音活动检测]
+    VAD --> ASR[Streaming ASR<br/>Whisper / SenseVoice / OpenAI]
+    ASR --> ORCH[Agent Orchestrator<br/>对话状态 / 路由 / 工具调用]
+
+    API --> ORCH
+
+    ORCH --> SAFETY[Safety & Policy Guard<br/>身份声明 / 越权拦截 / 风险动作确认]
+    SAFETY --> MEM[Memory Router<br/>短期记忆 / 长期记忆 / 用户画像]
+    MEM --> RAG[RAG Retrieval<br/>个人资料 / 推文 / 文章 / 课程 / FAQ]
+    RAG --> LLM[LLM Reasoning<br/>GPT / Claude / Gemini / Qwen / DeepSeek]
+
+    LLM --> TOOL[Tool Calling<br/>日历 / CRM / 邮件 / 支付 / 工单]
+    TOOL --> LLM
+
+    LLM --> STYLE[Persona Style Layer<br/>口吻 / 价值观 / 表达习惯]
+    STYLE --> TTS[Streaming TTS<br/>ElevenLabs / OpenAI / CosyVoice]
+    TTS --> AVATAR[Avatar Renderer<br/>Tavus / HeyGen / D-ID / MuseTalk / LiteAvatar]
+    AVATAR --> G
+
+    STYLE --> TEXT[Text Response]
+    TEXT --> G
+
+    subgraph Storage[数据与训练层]
+        PG[(Postgres<br/>用户/会话/权限/配置)]
+        VDB[(Vector DB<br/>知识向量/记忆)]
+        OBJ[(Object Storage<br/>音频/视频/头像素材)]
+        LOG[(Event Logs<br/>对话/反馈/审计)]
+        EVAL[(Eval Set<br/>本人纠错/测试集)]
+    end
+
+    ORCH --> PG
+    MEM --> VDB
+    ASR --> OBJ
+    TTS --> OBJ
+    AVATAR --> OBJ
+    ORCH --> LOG
+    C2 --> EVAL
+    EVAL --> STYLE

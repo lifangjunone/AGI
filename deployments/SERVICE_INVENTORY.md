@@ -21,13 +21,13 @@
 | MeYou Redis | 无公网端口 | Docker 内网 | Docker Compose | Docker Volume | 腾讯云 |
 | LifeYouMe MaaS | `maas.lifeyoume.icu` | 43280 | Docker Compose | Docker Volume JSON | 腾讯云；Chat/托管TTS在线；完整核验状态筛选、模型测试按Deployment隔离；Embeddings、外部TTS、图像生成与图片理解尚无对应供应商模型，release 20261030120000（2026-10-30） |
 | LifeYouMe TTS Runtime | MaaS Docker 内网 | 43281 | Docker Compose | 只读 ONNX + 缓存卷 | 腾讯云；sherpa-onnx VITS，单并发有限队列 |
-| MapProof | `/mapproof/` | 45210 | systemd + Docker | 无服务端业务数据 | 腾讯云；Mermaid 本地渲染、规则验图、关键路径和 Markdown 报告，release `20261102T162000`（2026-11-02） |
+| MapProof | `/mapproof/` | 45210 | systemd + Docker | 无服务端业务数据 | 腾讯云；Mermaid 本地渲染、规则验图、关键路径、反馈环复核、工具化审稿台 UI 和 Markdown 报告，release `20261102T173358`，UI/UX 工作台重构已上线（2026-11-02） |
 
 ## 仍在阿里云运行
 
 | 服务 | 入口或路径 | 本地端口 | 运行方式 | 建议 |
 | --- | --- | ---: | --- | --- |
-| LifeYouMe Portal | `/` | 8800 | systemd | 保留入口机 |
+| LifeYouMe Portal | `/`、`/products`、`/products/<id>` | 8800 | systemd | 保留入口机；2026-11-10 已补齐缺失 showroom 模块与样式，目录及 23 个可访问详情页恢复 200；生产访问策略关闭的详情保持 404 |
 | LifeYouMe Ops | `/admin/`、`ops.*` | 8801 | systemd | 保留入口机；支持管理员登录后在 `/admin/#security` 自助改密，旧管理员会话随凭据版本更新而失效 |
 | LifeYouMe Auth | `auth.*` | 8802 | systemd | 保留入口机；`/account` 支持普通用户验证当前密码后自助改密，成功后撤销全部 Web 会话、设备 Token 与待兑换设备码 |
 | LifeYouMe Billing | `billing.*` | 8803 | systemd | 保留入口机 |

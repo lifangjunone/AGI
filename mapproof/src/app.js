@@ -65,6 +65,12 @@ function renderAnalysis(result) {
   document.querySelector("#critical-path").innerHTML = result.critical.length
     ? result.critical.map((node, index) => `<span>${escapeHtml(node)}</span>${index < result.critical.length - 1 ? "<b>›</b>" : ""}`).join("")
     : "<em>暂未识别出连续路径</em>";
+  const cycleSection = document.querySelector("#cycle-section");
+  const cycles = result.cycles || [];
+  cycleSection.hidden = !cycles.length;
+  document.querySelector("#cycle-list").innerHTML = cycles.length
+    ? cycles.map((cycle) => `<div>${cycle.map((node, index) => `<span>${escapeHtml(node)}</span>${index < cycle.length - 1 ? "<b>↺</b>" : ""}`).join("")}</div>`).join("")
+    : "";
   document.querySelector("#finding-count").textContent = `${result.findings.length} 项`;
   document.querySelector("#findings").innerHTML = result.findings.length
     ? result.findings.map((item) => `<article class="finding ${item.level}">
@@ -82,7 +88,10 @@ async function review() {
     const id = `mapproof-${Date.now()}`;
     const { svg } = await mermaid.render(id, text);
     canvas.innerHTML = svg;
-    canvas.querySelector("svg")?.setAttribute("aria-label", "Mermaid 图表预览");
+    const svgElement = canvas.querySelector("svg");
+    svgElement?.setAttribute("aria-label", "Mermaid 图表预览");
+    svgElement?.removeAttribute("height");
+    svgElement?.setAttribute("preserveAspectRatio", "xMidYMid meet");
   } catch (error) {
     canvas.innerHTML = "";
     renderError.textContent = `Mermaid 无法渲染：${error.message?.split("\n")[0] || "请检查语法"}`;
@@ -105,6 +114,7 @@ function downloadReport() {
     `- 发布可信度：${latestResult.score}/100`,
     `- 节点 / 连线：${latestResult.metrics.nodes} / ${latestResult.metrics.edges}`,
     `- 关键路径：${latestResult.critical.join(" → ") || "未识别"}`,
+    `- 反馈环：${latestResult.cycles?.map((cycle) => cycle.join(" → ")).join("；") || "未识别"}`,
     "",
     "## 审稿意见",
     ...(latestResult.findings.length ? latestResult.findings.map((item) => `- [${item.level}] ${item.title}：${item.detail}`) : ["- 基础检查通过"]),

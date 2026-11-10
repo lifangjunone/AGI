@@ -36,6 +36,7 @@ node_modules/
 dist/
 build/
 .next/
+.next-stale-*/
 .nuxt/
 .svelte-kit/
 .vite/

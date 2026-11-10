@@ -24,41 +24,56 @@ export function parseDiagram(source) {
   return { nodes: [...nodes.keys()], edges, lines };
 }
 
-function hasCycle(graph) {
+function findCycles(graph) {
   const adjacency = new Map(graph.nodes.map((node) => [node, []]));
-  graph.edges.forEach(({ from, to }) => adjacency.get(from)?.push(to));
-  const visiting = new Set();
+  graph.edges.forEach((edge) => adjacency.get(edge.from)?.push(edge));
+  const stack = [];
+  const stackIndex = new Map();
   const visited = new Set();
+  const cycles = [];
+  const seen = new Set();
+
   function walk(node) {
-    if (visiting.has(node)) return true;
-    if (visited.has(node)) return false;
-    visiting.add(node);
-    for (const next of adjacency.get(node) || []) if (walk(next)) return true;
-    visiting.delete(node);
+    if (stackIndex.has(node)) return;
+    if (visited.has(node)) return;
+    stackIndex.set(node, stack.length);
+    stack.push(node);
+    for (const edge of adjacency.get(node) || []) {
+      if (stackIndex.has(edge.to)) {
+        const cycle = [...stack.slice(stackIndex.get(edge.to)), edge.to];
+        const signature = cycle.join(">");
+        if (!seen.has(signature)) {
+          seen.add(signature);
+          cycles.push({ nodes: cycle, closingEdge: edge });
+        }
+      } else {
+        walk(edge.to);
+      }
+    }
+    stack.pop();
+    stackIndex.delete(node);
     visited.add(node);
-    return false;
   }
-  return graph.nodes.some(walk);
+  graph.nodes.forEach(walk);
+  return cycles;
 }
 
-function longestPath(graph) {
+function longestPath(graph, ignoredEdges = new Set()) {
   const adjacency = new Map(graph.nodes.map((node) => [node, []]));
   const incoming = new Map(graph.nodes.map((node) => [node, 0]));
-  graph.edges.forEach(({ from, to }) => {
+  graph.edges.filter((edge) => !ignoredEdges.has(edge)).forEach(({ from, to }) => {
     adjacency.get(from)?.push(to);
     incoming.set(to, (incoming.get(to) || 0) + 1);
   });
   const queue = graph.nodes.filter((node) => incoming.get(node) === 0).map((node) => [node]);
   let best = [];
-  const seen = new Set();
   while (queue.length) {
     const path = queue.shift();
     const node = path.at(-1);
-    const signature = `${node}:${path.length}`;
-    if (seen.has(signature) || path.length > graph.nodes.length + 1) continue;
-    seen.add(signature);
-    if (path.length > best.length) best = path;
-    for (const next of adjacency.get(node) || []) queue.push([...path, next]);
+    if (adjacency.get(node)?.length === 0 && path.length > best.length) best = path;
+    for (const next of adjacency.get(node) || []) {
+      if (!path.includes(next)) queue.push([...path, next]);
+    }
   }
   return best;
 }
@@ -67,6 +82,7 @@ export function analyzeDiagram(source) {
   const graph = parseDiagram(source);
   const findings = [];
   const nodeSet = new Set(graph.nodes);
+  const cycles = findCycles(graph);
   const degree = new Map(graph.nodes.map((node) => [node, 0]));
   graph.edges.forEach(({ from, to }) => {
     degree.set(from, (degree.get(from) || 0) + 1);
@@ -89,8 +105,12 @@ export function analyzeDiagram(source) {
   if (isolated.length) {
     findings.push({ level: "warn", title: "发现孤立节点", detail: `${isolated.join("、")} 没有任何连接，可能是遗漏连线或无效信息。` });
   }
-  if (hasCycle(graph)) {
-    findings.push({ level: "info", title: "图中包含循环", detail: "循环可能是重试或反馈机制。发布前请确认它不是误连，并为退出条件加标签。" });
+  if (cycles.length) {
+    findings.push({
+      level: "warn",
+      title: "反馈环需要复核",
+      detail: `${cycles.map((cycle) => cycle.nodes.join(" → ")).join("；")}。循环可能是重试或反馈机制，但不能直接按线性主路径发布，请确认退出条件和回到哪一步。`
+    });
   }
   if (graph.nodes.length > 16) {
     findings.push({ level: "warn", title: "单图认知负荷偏高", detail: `当前 ${graph.nodes.length} 个节点。建议主图保留关键链路，把实现细节拆成子图。` });
@@ -99,22 +119,26 @@ export function analyzeDiagram(source) {
     findings.push({ level: "error", title: "没有识别到连接关系", detail: "请粘贴 Mermaid flowchart 源码，或检查箭头语法是否完整。" });
   }
 
-  const critical = longestPath(graph);
-  const errors = findings.filter((item) => item.level === "error").length;
-  const warnings = findings.filter((item) => item.level === "warn").length;
-  const score = Math.max(0, 100 - errors * 22 - warnings * 9 - Math.max(0, graph.nodes.length - 12) * 2);
   const duplicateEdges = graph.edges.length - new Set(graph.edges.map((edge) => `${edge.from}:${edge.to}:${edge.label}`)).size;
   if (duplicateEdges) findings.push({ level: "warn", title: "存在重复连线", detail: `${duplicateEdges} 条连接重复，可能导致视觉重叠或语义重复。` });
+  const ignoredCriticalEdges = new Set(cycles.map((cycle) => cycle.closingEdge));
+  const critical = longestPath(graph, ignoredCriticalEdges);
+  const errors = findings.filter((item) => item.level === "error").length;
+  const warnings = findings.filter((item) => item.level === "warn").length;
+  const rawScore = Math.max(0, 100 - errors * 22 - warnings * 10 - Math.max(0, graph.nodes.length - 12) * 2);
+  const score = cycles.length ? Math.min(rawScore, 84) : rawScore;
+  const verdict = errors > 0 || score < 65 ? "暂缓发布" : score >= 85 ? "可发布" : "需复核";
 
   return {
     score,
-    verdict: score >= 85 ? "可发布" : score >= 65 ? "需复核" : "暂缓发布",
+    verdict,
     metrics: {
       nodes: nodeSet.size,
       edges: graph.edges.length,
       labeled: graph.edges.filter((edge) => edge.label).length,
       criticalLength: critical.length
     },
+    cycles: cycles.map((cycle) => cycle.nodes),
     critical,
     findings
   };

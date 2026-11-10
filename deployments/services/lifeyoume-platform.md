@@ -1,6 +1,6 @@
 # LifeYouMe 平台基座
 
-最后核验：2026-10-30（Asia/Shanghai）
+最后核验：2026-11-10（Asia/Shanghai）
 
 ## 入口与运行位置
 
@@ -112,6 +112,25 @@ a5aefcc504aea9e4b34387b8d899a58a3dede2dbe3288132541725036fdcd35c  platform/auth_
 `/data/backups/lifeyoume-platform/20261030T064200Z-account-password`
 
 ## 发布注意
+
+### 2026-11-10 产品目录与详情页 502 修复
+
+- 原因：线上 `app.py` 延迟导入 `showroom`，发布清单却遗漏
+  `platform/showroom.py` 和 `platform/assets/showroom.css`。请求抛出
+  `ModuleNotFoundError` 并关闭连接，Nginx 返回 502；`/healthz` 仍返回 200。
+- 定向补齐上述两个文件；使用当前线上代码和产品注册表预渲染全部公开详情，
+  未替换 `app.py`、注册表或认证库。
+- 只重启 `lifeyoume-platform@portal.service`；未操作 Ops、Auth、Billing 或共享代理。
+- `/products` 与 23 个可访问详情页返回 200；`decision-studio` 在生产认证库中
+  已关闭，详情按策略返回 404，未更改其访问策略。
+- 回归首页、后台、Resume、Vault、FlowFrame、Image、Video、AI Team、
+  Trends、MeYou、Audit：跟随正常登录/路径跳转后均为 200。
+- 四个平台服务均 active；共享 Nginx SHA-256 在修复前后不变。
+- 故障现场与配置校验记录：
+  `/data/app/backups/lifeyoume-showroom-repair-20261110T081231Z`。
+- 修正工作区发布脚本：显式打包和安装展厅模块，缺模块/样式时提前中止；
+  发布前检查目录与全部公开详情的渲染，服务健康后执行 HTTP 页面烟测。
+  新增部署清单回归测试，避免只验证进程存活。
 
 平台代码更新不需要修改共享 Nginx。单独发布管理员或认证功能时：
 

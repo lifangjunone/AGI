@@ -1,0 +1,1 @@
+event_id,occurred_at,participant_id,expert_id,arm,event_type,question_id,knowledge_version,model_version,reviewer_id,signed_review,response_due_at,response_at,review_minutes,correction_required,harmful_or_out_of_scope,identity_leak,refund_reason,stated_reason,protocol_deviation,notes

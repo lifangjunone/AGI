@@ -14,21 +14,26 @@
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 7.5h22v17H5z"/><path d="M9 20l5-5 3 3 6-7"/><circle cx="23" cy="11" r="1.8"/></svg>
       <span>MapProof</span><b>图证</b>
     </a>
+    <nav class="product-nav" aria-label="页面区块">
+      <a href="#diagram-source">源码</a>
+      <a href="#diagram-canvas">画布</a>
+      <a href="#review-sheet">质检单</a>
+    </nav>
     <div class="privacy-note"><span></span>本地分析，不上传图稿</div>
     <button class="ghost-button" id="download-report" type="button">下载验收报告</button>
   </header>
 
   <main id="main-content">
-    <section class="intro">
-      <div>
-        <p class="kicker">给 AI 生成图加一道发布门</p>
-        <h1>图画得快，<br>也要经得住追问。</h1>
+    <section class="review-brief" aria-label="当前验图任务">
+      <div class="brief-copy">
+        <p class="kicker">图表发布验收台</p>
+        <h1>粘贴 Mermaid，先验路径再发布。</h1>
+        <p>检查关键路径、反馈环、分支条件和孤立节点。适合架构评审、投标方案与交付文档。</p>
       </div>
-      <div class="intro-copy">
-        <p>粘贴 Mermaid，检查分支条件、复杂连线、孤立节点和关键路径。适合架构评审、投标方案与交付文档。</p>
-        <div class="evidence-strip">
-          <span>语义完整</span><span>路径可追</span><span>复杂度可控</span>
-        </div>
+      <div class="brief-stack" aria-label="验收重点">
+        <div><span>01</span><strong>源码</strong><em>只在浏览器处理</em></div>
+        <div><span>02</span><strong>预览</strong><em>确认图形可读</em></div>
+        <div><span>03</span><strong>结论</strong><em>输出可复核报告</em></div>
       </div>
     </section>
 
@@ -58,7 +63,8 @@
         <div id="render-error" role="alert"></div>
       </div>
 
-      <aside class="panel review-panel" aria-label="验收结果">
+      <aside class="panel review-panel" id="review-sheet" aria-label="验收结果">
+        <div class="review-label">质检单</div>
         <div class="score-block">
           <div>
             <span>发布可信度</span>
@@ -71,6 +77,10 @@
           <h2>关键路径</h2>
           <div id="critical-path" class="critical-path"></div>
         </section>
+        <section class="cycle-section" id="cycle-section" hidden>
+          <h2>反馈环</h2>
+          <div id="cycle-list" class="critical-path"></div>
+        </section>
         <section class="findings-section">
           <div class="section-title"><h2>审稿意见</h2><span id="finding-count">0 项</span></div>
           <div id="findings"></div>
@@ -79,6 +89,10 @@
     </section>
 
     <section class="business-case">
+      <header>
+        <p class="kicker">为什么不是再做一个画图工具</p>
+        <h2>MapProof 只负责发布前的最后一关。</h2>
+      </header>
       <div><span class="case-index">01</span><h2>不是再造一个画图工具</h2><p>生成工具解决“从无到有”，MapProof 解决“能不能发布”。两者是天然上下游。</p></div>
       <div><span class="case-index">02</span><h2>卖的是交付确定性</h2><p>为方案架构师、售前与研发负责人留下可复核的图表验收证据。</p></div>
       <div><span class="case-index">03</span><h2>从免费检查切入</h2><p>个人免费本地验图；团队版扩展品牌规则、基线对比和 CI 门禁。</p></div>

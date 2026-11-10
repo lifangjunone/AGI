@@ -5,10 +5,35 @@ APP="/data/app/lifeyoume-platform"
 SOURCE="${1:-/tmp/lifeyoume-platform-release}"
 BACKUP="/data/app/backups/lifeyoume-platform-$(date -u +%Y%m%dT%H%M%SZ)"
 
-if [[ ! -f "$SOURCE/platform/app.py" || ! -f "$SOURCE/platform/auth_store.py" || ! -f "$SOURCE/config/products.json" ]]; then
+if [[ ! -f "$SOURCE/platform/app.py" || ! -f "$SOURCE/platform/auth_store.py" || ! -f "$SOURCE/platform/showroom.py" || ! -f "$SOURCE/platform/assets/showroom.css" || ! -f "$SOURCE/config/products.json" ]]; then
   echo "Release bundle is incomplete: $SOURCE" >&2
   exit 1
 fi
+
+# Validate the complete rendering bundle before changing any installed files.
+python3 - "$SOURCE" <<'PY'
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1])
+sys.path.insert(0, str(source / "platform"))
+import app
+import showroom
+
+products = app.load_products(source / "config" / "products.json")
+app.check_product = lambda product: {"status": product.lifecycle, "latency_ms": None}
+app.visible_products = lambda items: [
+    item for item in items if item.visibility in {"public", "lab"}
+]
+app.ranked_products = lambda items: (
+    items, {}, {}, 1
+)
+showroom.catalog(app, products)
+for product in products:
+    if product.visibility in {"public", "lab"}:
+        showroom.detail(app, product, products)
+print("Release catalog and product rendering verified")
+PY
 
 if id lifeyoume >/dev/null 2>&1; then
   :
@@ -25,6 +50,7 @@ install -d -o lifeyoume -g lifeyoume -m 0750 "$APP"
 install -d -o lifeyoume -g lifeyoume -m 0750 "$APP/platform" "$APP/platform/assets" "$APP/config" "$APP/deploy"
 install -o lifeyoume -g lifeyoume -m 0644 "$SOURCE/platform/app.py" "$APP/platform/app.py"
 install -o lifeyoume -g lifeyoume -m 0644 "$SOURCE/platform/auth_store.py" "$APP/platform/auth_store.py"
+install -o lifeyoume -g lifeyoume -m 0644 "$SOURCE/platform/showroom.py" "$APP/platform/showroom.py"
 rm -rf "$APP/platform/assets"
 cp -a "$SOURCE/platform/assets" "$APP/platform/assets"
 chown -R lifeyoume:lifeyoume "$APP/platform/assets"
@@ -74,3 +100,28 @@ for port in 8800 8801 8802 8803; do
     exit 1
   fi
 done
+
+# Process liveness alone does not catch a missing lazy-imported render module.
+curl --fail --silent --show-error --max-time 30 \
+  "http://127.0.0.1:8800/products" >/dev/null
+python3 - "$APP/config/products.json" <<'PY'
+import json
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+products = json.loads(Path(sys.argv[1]).read_text())["products"]
+for product in products:
+    if product.get("visibility", "public") not in {"public", "lab"}:
+        continue
+    url = "http://127.0.0.1:8800/products/" + product["id"]
+    try:
+        with urllib.request.urlopen(url, timeout=15) as response:
+            response.read()
+    except urllib.error.HTTPError as error:
+        # Disabled products deliberately have no publicly accessible detail.
+        if error.code != 404:
+            raise
+print("Production catalog and product detail smoke checks passed")
+PY

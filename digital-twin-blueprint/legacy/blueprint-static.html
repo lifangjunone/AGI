@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>数字分身产品与架构图册</title>
+  <style>
+    :root {
+      --bg: #151515;
+      --paper: #171717;
+      --ink: #e8e8e8;
+      --muted: #a4a4a4;
+      --rule: #353535;
+      --node-text: #86caff;
+      --cyan: #27b8ff;
+      --blue-soft: #80c4f5;
+      --orange: #ff9a4f;
+      --green: #67d883;
+      --pink: #e681b8;
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 50% -20%, rgba(48, 121, 170, 0.16), transparent 34rem),
+        linear-gradient(180deg, #1a1a1a 0%, var(--bg) 32rem, #111 100%);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    .page {
+      width: min(1280px, calc(100vw - 48px));
+      margin: 0 auto;
+      padding: 42px 0 80px;
+    }
+
+    header {
+      border-bottom: 1px solid var(--rule);
+      padding: 24px 0 38px;
+      margin-bottom: 28px;
+    }
+
+    .kicker {
+      margin: 0 0 18px;
+      color: var(--node-text);
+      font-size: 15px;
+      letter-spacing: 0.02em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 7vw, 86px);
+      line-height: 0.96;
+      letter-spacing: -0.055em;
+      font-weight: 760;
+    }
+
+    .summary {
+      margin: 22px 0 0;
+      color: var(--muted);
+      max-width: 860px;
+      font-size: 18px;
+      line-height: 1.85;
+    }
+
+    .diagram-section {
+      border-top: 1px solid var(--rule);
+      padding: 34px 0 42px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 26px;
+    }
+
+    .section-title .index {
+      color: var(--node-text);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.25;
+      letter-spacing: -0.025em;
+      font-weight: 730;
+    }
+
+    .note {
+      max-width: 880px;
+      margin: -12px 0 24px;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 15px;
+    }
+
+    .canvas {
+      position: relative;
+      background: var(--paper);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: auto;
+      padding: 36px;
+      min-height: 360px;
+    }
+
+    .canvas.flat {
+      box-shadow: none;
+      border-radius: 0;
+      padding: 26px 0;
+      background: transparent;
+    }
+
+    .mermaid {
+      min-width: 1040px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .mermaid svg {
+      max-width: none !important;
+      height: auto !important;
+    }
+
+    .diagram-wide .mermaid {
+      min-width: 1420px;
+    }
+
+    .diagram-tall .mermaid {
+      min-width: 860px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(132px, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .metric {
+      border: 1px solid var(--rule);
+      background: rgba(255, 255, 255, 0.025);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .metric b {
+      display: block;
+      color: var(--node-text);
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .roadmap {
+      min-width: 1080px;
+      padding: 46px 40px 44px;
+    }
+
+    .roadmap-title {
+      margin: 0 0 24px;
+      font-size: 34px;
+      letter-spacing: -0.04em;
+      font-weight: 760;
+    }
+
+    .timeline {
+      position: relative;
+      height: 520px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 154px;
+      height: 4px;
+      background: #d8d8d8;
+    }
+
+    .timeline::after {
+      content: "";
+      position: absolute;
+      right: -2px;
+      top: 144px;
+      border-left: 28px solid #d8d8d8;
+      border-top: 12px solid transparent;
+      border-bottom: 12px solid transparent;
+    }
+
+    .phase {
+      position: absolute;
+      width: 210px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .phase:nth-child(1) { left: 52px; }
+    .phase:nth-child(2) { left: 292px; }
+    .phase:nth-child(3) { left: 532px; }
+    .phase:nth-child(4) { left: 772px; }
+
+    .phase-head {
+      height: 76px;
+      border-radius: 5px 5px 0 0;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 16px;
+      border-bottom: 4px solid var(--cyan);
+    }
+
+    .phase:nth-child(1) .phase-head { background: var(--blue-soft); border-bottom-color: var(--orange); }
+    .phase:nth-child(2) .phase-head { background: var(--orange); border-bottom-color: var(--cyan); }
+    .phase:nth-child(3) .phase-head { background: var(--green); border-bottom-color: var(--pink); }
+    .phase:nth-child(4) .phase-head { background: var(--pink); border-bottom-color: #23e28c; }
+
+    .phase-line {
+      width: 0;
+      height: 132px;
+      border-left: 3px dashed #d8d8d8;
+      margin: 0 auto;
+    }
+
+    .phase-items {
+      display: grid;
+      gap: 10px;
+    }
+
+    .phase-item {
+      height: 58px;
+      display: grid;
+      place-items: center;
+      color: white;
+      border-bottom: 4px solid var(--cyan);
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .phase:nth-child(1) .phase-item { background: #91e2ee; border-bottom-color: var(--orange); }
+    .phase:nth-child(2) .phase-item { background: #ffbc68; border-bottom-color: var(--cyan); }
+    .phase:nth-child(3) .phase-item { background: #7df199; border-bottom-color: var(--pink); }
+    .phase:nth-child(4) .phase-item { background: #f2a0d4; border-bottom-color: #23e28c; }
+
+    .phase-tail {
+      width: 0;
+      height: 48px;
+      border-left: 3px dashed #d8d8d8;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .phase-tail::after {
+      content: "";
+      position: absolute;
+      left: -7px;
+      bottom: -1px;
+      border-top: 12px solid #d8d8d8;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+    }
+
+    .doc-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 26px;
+    }
+
+    .doc-card {
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      padding: 18px;
+      background: rgba(255, 255, 255, 0.025);
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .doc-card strong {
+      color: var(--node-text);
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .doc-card span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .page {
+        width: min(100vw - 28px, 1280px);
+      }
+
+      .canvas {
+        padding: 22px;
+      }
+
+      .metrics,
+      .doc-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <p class="kicker">数字分身 / 架构图册 / Product Blueprint</p>
+      <h1>把数字分身<br />画成可落地的系统</h1>
+      <p class="summary">
+        这版页面以图为主：产品信息架构、创建分身流程、实时对话链路、总体技术架构和路线图都保留为独立大图，风格统一为深色文档、蓝色节点、细灰连线，便于评审、截图和继续迭代。
+      </p>
+    </header>
+
+    <section class="diagram-section">
+      <div class="section-title">
+        <span class="index">1.</span>
+        <h2>产品机制总览</h2>
+      </div>
+      <p class="note">数字分身的核心闭环不是“生成头像”，而是本人资料、人格建模、知识记忆、对话分发和本人纠错之间形成持续学习。</p>
+      <div class="canvas flat">
+        <pre class="mermaid">
+flowchart LR
+    A[本人资料] --> B[人格画像]
+    B --> C[知识记忆]
+    C --> D[数字分身]
+    D --> E[访客对话]
+    E --> F[本人纠错]
+    F --> B
+    F --> C
+    E --> G[线索 / 预约 / 转化]
+        </pre>
+      </div>
+    </section>
+
+    <section class="diagram-section">
+      <div class="section-title">
+        <span class="index">2.</span>
+        <h2>总体技术架构图</h2>
+      </div>
+      <p class="note">这张图作为系统主图：用户入口、实时网关、ASR/VAD、Agent Orchestrator、RAG、LLM、TTS、Avatar 和数据训练层全部在一张图里呈现。</p>
+      <div class="canvas diagram-wide">
+        <pre class="mermaid">
+flowchart TD
+    U3[运营/管理员] --> C3[Admin Console]
+    U2[本人/创作者] --> C2[分身工作台]
+    U1[访客/客户] --> C1[Web / App / 小程序]
+
+    C3 --> API[API Gateway]
+    C2 --> API
+    API --> ORCH[Agent Orchestrator<br/>对话状态 / 路由 / 工具调用]
+
+    ORCH --> SAFETY[Safety & Policy Guard<br/>身份声明 / 越权拦截 / 风险动作确认]
+    SAFETY --> MEM[Memory Router<br/>短期记忆 / 长期记忆 / 用户画像]
+    MEM --> RAG[RAG Retrieval<br/>个人资料 / 推文 / 文章 / 课程 / FAQ]
+    RAG --> LLM[LLM Reasoning<br/>GPT / Claude / Gemini / Qwen / DeepSeek]
+    LLM --> TOOL[Tool Calling<br/>日历 / CRM / 邮件 / 支付 / 工单]
+    TOOL --> LLM
+
+    LLM --> STYLE[Persona Style Layer<br/>口吻 / 价值观 / 表达习惯]
+    STYLE --> TEXT[Text Response]
+    STYLE --> TTS[Streaming TTS<br/>ElevenLabs / OpenAI / CosyVoice]
+    TTS --> AVATAR[Avatar Renderer<br/>Tavus / HeyGen / D-ID / MuseTalk / LiteAvatar]
+
+    C1 --> G[Realtime Gateway<br/>WebRTC / WebSocket / SSE]
+    G --> VAD[VAD 语音活动检测]
+    VAD --> ASR[Streaming ASR<br/>Whisper / SenseVoice / OpenAI]
+    ASR --> ORCH
+    TEXT --> G
+    AVATAR --> G
+    G --> C1
+
+    subgraph Storage[数据与训练层]
+        VDB[(Vector DB<br/>知识向量 / 记忆)]
+        PG[(Postgres<br/>用户 / 会话 / 权限 / 配置)]
+        LOG[(Event Logs<br/>对话 / 反馈 / 审计)]
+        OBJ[(Object Storage<br/>音频 / 视频 / 头像素材)]
+        EVAL[(Eval Set<br/>本人纠错 / 测试集)]
+    end
+
+    MEM --> VDB
+    ORCH --> PG
+    ORCH --> LOG
+    TTS --> OBJ
+    AVATAR --> OBJ
+    C2 --> EVAL
+    EVAL --> STYLE
+        </pre>
+      </div>
+    </section>
+
+    <section class="diagram-section">
+      <div class="section-title">
+        <span class="index">3.</span>
+        <h2>实时对话链路图</h2>
+      </div>
+      <p class="note">这张图用于讨论实时体验：音频流、VAD、检索、LLM 流式回复、TTS、Avatar 视频流，以及中途打断如何回到编排层。</p>
+      <div class="canvas diagram-wide">
+        <pre class="mermaid">
+sequenceDiagram
+    participant User as 访客
+    participant Client as 前端 Web/App
+    participant RT as Realtime Gateway
+    participant ASR as ASR/VAD
+    participant Agent as Agent Orchestrator
+    participant RAG as Memory/RAG
+    participant LLM as LLM
+    participant TTS as TTS
+    participant Avatar as Avatar Engine
+
+    User->>Client: 说话/输入问题
+    Client->>RT: 音频流 / 文本流
+    RT->>ASR: 推送音频 chunk
+    ASR->>ASR: VAD 判断是否说完
+    ASR->>Agent: 转写文本 + 语音状态
+    Agent->>Agent: 判断意图和风险
+    Agent->>RAG: 检索本人资料/历史记忆
+    RAG-->>Agent: 返回相关内容和来源
+    Agent->>LLM: system persona + context + user query
+    LLM-->>Agent: 流式生成回复
+    Agent->>TTS: 流式文本转语音
+    TTS-->>Avatar: 音频 chunk
+    Avatar-->>RT: 视频帧/音频流
+    RT-->>Client: WebRTC 返回
+    Client-->>User: 数字分身回答
+    User->>Client: 中途打断
+    Client->>RT: barge-in 信号
+    RT->>Agent: 停止当前输出
+    Agent->>LLM: 重新组织上下文
+        </pre>
+      </div>
+      <div class="metrics">
+        <div class="metric"><b>&lt; 1s</b><span>首次文字响应</span></div>
+        <div class="metric"><b>&lt; 1.5s</b><span>语音首包</span></div>
+        <div class="metric"><b>&lt; 2.5s</b><span>视频首帧</span></div>
+        <div class="metric"><b>2-4s</b><span>端到端回答</span></div>
+        <div class="metric"><b>&lt; 500ms</b><span>中途打断响应</span></div>
+        <div class="metric"><b>可审计</b><span>关键对话和工具调用</span></div>
+      </div>
+    </section>
+
+    <section class="diagram-section">
+      <div class="section-title">
+        <span class="index">4.</span>
+        <h2>产品信息架构</h2>
+      </div>
+      <p class="note">这张图对应用户如何进入产品，以及分身工作台下的主要功能模块。它应该比普通导航表更适合评审讨论。</p>
+      <div class="canvas diagram-wide">
+        <pre class="mermaid">
+flowchart LR
+    HOME[首页 / 官网] --> DEMO[体验一个数字分身]
+    HOME --> LOGIN[登录 / 注册]
+    LOGIN --> DASH[分身工作台]
+
+    DASH --> CREATE[创建分身]
+    DASH --> KNOW[知识库]
+    DASH --> VOICE[声音与形象]
+    DASH --> PERSONA[人格设定]
+    DASH --> TEST[测试与纠错]
+    DASH --> PUBLISH[发布与嵌入]
+    DASH --> ANALYTICS[数据分析]
+    DASH --> PERMISSION[权限与安全]
+
+    CREATE --> STEP1[身份授权]
+    CREATE --> STEP2[上传资料]
+    CREATE --> STEP3[生成 Persona]
+    CREATE --> STEP4[选择声音 / 形象]
+    CREATE --> STEP5[试聊校准]
+    CREATE --> STEP6[发布]
+
+    PUBLISH --> WEB[官网 Widget]
+    PUBLISH --> LINK[专属链接]
+    PUBLISH --> APP[API / SDK]
+    PUBLISH --> PRIVATE[私域 / 企业微信 / 飞书]
+        </pre>
+      </div>
+    </section>
+
+    <section class="diagram-section">
+      <div class="section-title">
+        <span class="index">5.</span>
+        <h2>创建分身流程</h2>
+      </div>
+      <p class="note">这张图用于解释从创建到发布的产品流程。关键节点是“本人确认像不像”：不像就进入纠错与重训，通过才设置权限并发布。</p>
+      <div class="canvas diagram-tall">
+        <pre class="mermaid">
+flowchart TD
+    A[开始创建] --> B[身份与授权]
+    B --> C[上传本人资料]
+    C --> D[自动生成人格画像]
+    D --> E[训练知识记忆]
+    E --> F[选择声音方案]
+    F --> G[选择形象方案]
+    G --> H[试聊 20 题]
+    H --> I{本人确认像不像}
+    I -- 通过 --> K[设置权限边界]
+    K --> L[发布到渠道]
+    I -- 不像 --> J[纠错与重训]
+    J --> H
+        </pre>
+      </div>
+    </section>
+
+    <section class="diagram-section">
+      <div class="section-title">
+        <span class="index">6.</span>
+        <h2>数字分身产品路线图</h2>
+      </div>
+      <p class="note">路线图改成独立图面，而不是普通卡片：用时间轴表现每个阶段的能力堆叠。</p>
+      <div class="canvas">
+        <div class="roadmap">
+          <h3 class="roadmap-title">数字分身产品路线图</h3>
+          <div class="timeline">
+            <div class="phase">
+              <div class="phase-head">MVP 0-4周</div>
+              <div class="phase-line"></div>
+              <div class="phase-items">
+                <div class="phase-item">文字分身</div>
+                <div class="phase-item">知识库/RAG</div>
+                <div class="phase-item">Persona Builder</div>
+                <div class="phase-item">纠错闭环</div>
+                <div class="phase-item">分享链接/嵌入网站</div>
+              </div>
+              <div class="phase-tail"></div>
+            </div>
+            <div class="phase">
+              <div class="phase-head">V1 1-2个月</div>
+              <div class="phase-line"></div>
+              <div class="phase-items">
+                <div class="phase-item">语音对话</div>
+                <div class="phase-item">声音克隆</div>
+                <div class="phase-item">自动评测</div>
+                <div class="phase-item">数据分析</div>
+                <div class="phase-item">预约/线索收集</div>
+              </div>
+              <div class="phase-tail"></div>
+            </div>
+            <div class="phase">
+              <div class="phase-head">V2 2-4个月</div>
+              <div class="phase-line"></div>
+              <div class="phase-items">
+                <div class="phase-item">实时视频数字人</div>
+                <div class="phase-item">WebRTC</div>
+                <div class="phase-item">多渠道接入</div>
+                <div class="phase-item">工具调用</div>
+                <div class="phase-item">企业权限</div>
+              </div>
+              <div class="phase-tail"></div>
+            </div>
+            <div class="phase">
+              <div class="phase-head">V3 4个月+</div>
+              <div class="phase-line"></div>
+              <div class="phase-items">
+                <div class="phase-item">多分身矩阵</div>
+                <div class="phase-item">长期记忆</div>
+                <div class="phase-item">个人/企业 Agent OS</div>
+                <div class="phase-item">分身市场/API</div>
+              </div>
+              <div class="phase-tail"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="diagram-section">
+      <div class="section-title">
+        <span class="index">7.</span>
+        <h2>配套文档</h2>
+      </div>
+      <div class="doc-grid">
+        <a class="doc-card" href="./docs/product-design.md">
+          <strong>产品设计方案</strong>
+          <span>产品定位、目标用户、核心页面、MVP 范围和差异化设计。</span>
+        </a>
+        <a class="doc-card" href="./docs/technical-architecture.md">
+          <strong>技术架构说明</strong>
+          <span>Agent 编排、实时链路、数据记忆、安全策略和技术选型。</span>
+        </a>
+        <a class="doc-card" href="./docs/roadmap.md">
+          <strong>路线图</strong>
+          <span>从文字分身到语音、视频和 Agent OS 的阶段规划。</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      securityLevel: "loose",
+      themeVariables: {
+        darkMode: true,
+        background: "#171717",
+        primaryColor: "#0e2d49",
+        primaryTextColor: "#86caff",
+        primaryBorderColor: "#235175",
+        lineColor: "#8c8c8c",
+        secondaryColor: "#0e2d49",
+        tertiaryColor: "#171717",
+        clusterBkg: "#202020",
+        clusterBorder: "#333333",
+        edgeLabelBackground: "#171717",
+        nodeBorder: "#235175",
+        mainBkg: "#0e2d49",
+        textColor: "#e8e8e8",
+        fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif",
+        actorBkg: "#0e2d49",
+        actorBorder: "#4f8ec1",
+        actorTextColor: "#e8e8e8",
+        signalColor: "#b7b7b7",
+        signalTextColor: "#e8e8e8",
+        labelBoxBkgColor: "#171717",
+        labelBoxBorderColor: "#333333",
+        labelTextColor: "#e8e8e8",
+        loopTextColor: "#e8e8e8",
+        noteBkgColor: "#202020",
+        noteTextColor: "#e8e8e8",
+        noteBorderColor: "#444444"
+      },
+      flowchart: {
+        curve: "basis",
+        nodeSpacing: 46,
+        rankSpacing: 58,
+        padding: 16
+      },
+      sequence: {
+        mirrorActors: true,
+        actorMargin: 72,
+        messageMargin: 42,
+        boxMargin: 12,
+        bottomMarginAdj: 12,
+        noteMargin: 12
+      }
+    });
+  </script>
+</body>
+</html>
