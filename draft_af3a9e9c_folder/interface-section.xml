@@ -1,0 +1,88 @@
+<h1 seq="auto">接口、数据与代码改造</h1>
+<pre lang="typescript" caption="执行配置与模型角色"><code>type PersonaExecutionProfile = "quality" | "fast"
+
+interface PersonaExecutionConfig {
+  defaultProfile: PersonaExecutionProfile // 默认 quality
+  conversationOverrides: Record&lt;string, PersonaExecutionProfile&gt;
+  modelRoles: {
+    "persona.quality.reasoner": string
+    "persona.quality.writer": string
+    "persona.quality.judge": string
+    "persona.quality.reranker": string
+    "persona.fast.writer": string
+  }
+}</code></pre>
+<p>现有 <code>modelMain</code> 作为兼容回退值。新角色接入 Advanced AI 的 <code>modelRoles</code>；业务逻辑只请求角色，不判断厂商。<code>ReplyProposal.provenance</code> 增加执行模式、实际模型角色、候选数、证据数、检索提供者、裁判结果与阶段耗时。</p>
+
+<h2 seq="auto">新增核心契约</h2>
+<pre lang="typescript" caption="统一画像、偏好与检索契约"><code>interface PersonaContextPack {
+  facts: EvidenceItem[]
+  style: StyleProfile | null
+  preferences: PreferenceRule[]
+  capabilities: CapabilitySkillV01[]
+  conflicts: EvidenceConflict[]
+}
+
+interface PersonaRecallProvider {
+  recall(input: RecallRequest): Promise&lt;EvidenceItem[]&gt;
+}
+
+interface CandidateVerdict {
+  winner: string | null
+  scores: Record&lt;string, number&gt;
+  safetyFailures: string[]
+  revisionInstructions: string[]
+}</code></pre>
+
+<h2 seq="auto">文件级修改清单</h2>
+<table>
+  <colgroup>
+    <col width="325"/>
+    <col width="495"/>
+  </colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>位置</p></th>
+      <th background-color="light-gray"><p>修改内容</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><p><code>weclone.service.ts</code><br/><code>weclone-worker.py</code></p></td>
+      <td><p>将 <code>context()</code> 从纯字符串升级为版本化 PersonaProfile；暴露脱敏 StyleProfile，绑定资料指纹、审核状态和来源。</p></td>
+    </tr>
+    <tr>
+      <td><p><code>persona-compose.ts</code></p></td>
+      <td><p>接收 PersonaContextPack；按执行模式调用质量编排器或现有直连路径；保持统一 ReplyProposal。</p></td>
+    </tr>
+    <tr>
+      <td><p><code>persona-preference.service.ts</code><br/><code>packages/store</code></p></td>
+      <td><p>移植 Open Second Brain 偏好生命周期；新增信号、规则、事件账本和撤回/过期查询。</p></td>
+    </tr>
+    <tr>
+      <td><p><code>persona-evidence-assembler.ts</code><br/><code>packages/retrieval</code></p></td>
+      <td><p>定义统一 RecallProvider；并行 KL、Wiki、FTS、GBrain，执行去重、冲突、时效和来源多样性排序。</p></td>
+    </tr>
+    <tr>
+      <td><p><code>gbrain-index-bridge.ts</code><br/><code>gbrain-recall-adapter.ts</code></p></td>
+      <td><p>管理本地 Sidecar、增量索引、授权失效、健康检查和只读查询；禁止成为业务写入入口。</p></td>
+    </tr>
+    <tr>
+      <td><p><code>persona-candidate-generator.ts</code><br/><code>persona-judge.ts</code></p></td>
+      <td><p>实现三候选、独立裁判、安全硬失败和一次有限修订。</p></td>
+    </tr>
+    <tr>
+      <td><p><code>runtime-config.service.ts</code><br/><code>ipc-contract</code><br/>数字分身页头</p></td>
+      <td><p>增加 quality/fast 配置、模型角色、全局默认与会话覆盖；默认 quality，切换只影响下一轮。</p></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 seq="auto">失败与降级契约</h2>
+<ul>
+  <li><p>GBrain 不可用：质量模式继续使用 KL、Wiki 与 FTS，但 provenance 必须显示缺失提供者，不得静默声称完整检索。</p></li>
+  <li><p>裁判不可用：保留三个候选但不自动选择，交给用户选择；不得悄悄降成第一个候选。</p></li>
+  <li><p>StyleProfile 过期或未审核：只使用现有 forge 风格规则，不读取旧风格产物。</p></li>
+  <li><p>偏好规则冲突：标记 contested 并排除自动应用，等待用户确认。</p></li>
+  <li><p>任何开源增强层失效都不能改变 Policy、SendGuard、权限范围与急停状态。</p></li>
+</ul>

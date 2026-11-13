@@ -1,0 +1,96 @@
+<title>世界模型：让 AI 先想象后行动</title>
+<callout emoji="💡" background-color="light-green" border-color="green">
+  <p><b>一句话理解：</b>大语言模型预测“下一个词”，世界模型预测“采取某个动作后，世界的下一个状态”。它的核心价值，是把现实中的昂贵或危险试错转移到模型内部。</p>
+</callout>
+
+<h1 seq="auto">什么是世界模型</h1>
+<p><b>World Model（世界模型）</b>是 AI 对环境运行规律建立的内部预测模型。它不仅识别当前看到了什么，还尝试理解物体、空间、时间、动作和结果之间的关系。</p>
+<p>例如，机械臂面对桌上的杯子：</p>
+<ul>
+  <li><b>视觉模型：</b>识别“桌上有一个杯子”。</li>
+  <li><b>Large Language Model（LLM，大语言模型）：</b>解释“应该握住杯身”。</li>
+  <li><b>世界模型：</b>模拟不同抓取角度和力度，预测杯子会被拿起、滑落还是打翻，再选择动作。</li>
+</ul>
+
+<h1 seq="auto">它如何工作</h1>
+<p>世界模型学习的基本关系是：</p>
+<pre lang="text" caption="世界状态转移"><code>当前状态 + 候选动作 → 预测的下一个状态</code></pre>
+<ol>
+  <li><b>观察现实：</b>接收视频、图像、传感器和历史动作。</li>
+  <li><b>建立内部状态：</b>压缩出物体、位置、速度、意图和约束等关键变量。</li>
+  <li><b>模拟多个未来：</b>分别预测执行动作 A、B、C 后可能出现的结果。</li>
+  <li><b>选择并执行：</b>根据目标、收益和风险选择动作。</li>
+  <li><b>用现实反馈更新：</b>比较预测与真实结果，继续修正模型。</li>
+</ol>
+<p>关键不在于生成的视频是否漂亮，而在于预测结果能否帮助系统采取更正确的行动。</p>
+
+<h1 seq="auto">为什么成为前沿热点</h1>
+<p>截至 2026 年 11 月，世界模型已经从研究概念进入机器人、自动驾驶和工业仿真平台。</p>
+<ul>
+  <li>Gartner 在 2027 战略技术趋势中，将世界模型描述为“物理优先”的范式：机器可理解空间、时间和因果，在执行前预测行动后果。</li>
+  <li>NVIDIA Cosmos 3 已把世界模型用于视觉推理、环境模拟、动作生成和合成训练数据，并提供面向边缘设备到大型算力平台的模型。</li>
+  <li>产业重心正在从“AI 能否回答问题”转向“AI 能否在现实环境中预测、决策和行动”。</li>
+</ul>
+
+<h1 seq="auto">它创造什么价值</h1>
+<table>
+  <colgroup>
+    <col width="180"/>
+    <col width="280"/>
+    <col width="280"/>
+  </colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>场景</p></th>
+      <th background-color="light-gray"><p>世界模型做什么</p></th>
+      <th background-color="light-gray"><p>业务价值</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><p>机器人</p></td>
+      <td><p>模拟抓取、装配和避障结果</p></td>
+      <td><p>减少真实设备训练成本与事故</p></td>
+    </tr>
+    <tr>
+      <td><p>自动驾驶</p></td>
+      <td><p>预测车辆、行人和道路状态变化</p></td>
+      <td><p>提前评估危险动作后果</p></td>
+    </tr>
+    <tr>
+      <td><p>工业系统</p></td>
+      <td><p>模拟设备故障、工艺调整和异常传播</p></td>
+      <td><p>把停机试错转移到仿真环境</p></td>
+    </tr>
+    <tr>
+      <td><p>视频智能</p></td>
+      <td><p>从描述过去升级为预测后续事件</p></td>
+      <td><p>支持预警、规划和自动决策</p></td>
+    </tr>
+  </tbody>
+</table>
+
+<h1 seq="auto">它与数字孪生的区别</h1>
+<ul>
+  <li><b>数字孪生：</b>复刻某一台具体机器、工厂或城市，重点是真实对象与实时数据映射。</li>
+  <li><b>世界模型：</b>学习更一般的状态变化规律，重点是预测未来与选择动作。</li>
+  <li><b>组合方式：</b>数字孪生提供具体对象和实时状态，世界模型负责模拟未来与评估行动后果。</li>
+</ul>
+
+<h1 seq="auto">当前边界</h1>
+<ol>
+  <li><b>物理幻觉：</b>生成结果看起来合理，但可能违反真实物理规律。</li>
+  <li><b>Simulation-to-Real Gap（仿真到现实差距）：</b>模型中成功的动作，在真实设备上未必成功。</li>
+  <li><b>数据成本高：</b>需要连续视频、动作、传感器和结果数据，而不只是静态文本。</li>
+  <li><b>因果能力有限：</b>预测相关性不等于真正理解因果。</li>
+  <li><b>安全仍需约束：</b>当前不适合在高风险环境中完全脱离人工监督。</li>
+</ol>
+
+<blockquote>记忆方法：大语言模型让 AI 学会“说”，世界模型让 AI 开始学习“先想象，再行动”。</blockquote>
+
+<h1 seq="auto">主要来源</h1>
+<ul>
+  <li><a type="url-preview" href="https://www.gartner.com/en/newsroom/press-releases/2026-10-20-gartner-identifies-the-top-strategic-technology-trends-for-2027">Gartner：2027 战略技术趋势</a></li>
+  <li><a type="url-preview" href="https://www.nvidia.com/en-gb/ai/cosmos/">NVIDIA Cosmos 3：Physical AI 世界模型平台</a></li>
+</ul>
+<p>最后核验：2026-11-09。</p>

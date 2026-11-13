@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="星命矩阵：多维度星座、八字、姻缘与桃花方向测算。" />
+    <title>星命矩阵 · 多维度算命</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="orb orb-a" aria-hidden="true"></div>
+    <div class="orb orb-b" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="星命矩阵首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img">
+            <path d="M24 4l4.8 14.4H44L31.7 27.1 36.5 42 24 32.7 11.5 42l4.8-14.9L4 18.4h15.2L24 4z" />
+          </svg>
+        </span>
+        <span><strong>星命矩阵</strong><small>Astro Fate Matrix</small></span>
+      </a>
+      <nav aria-label="页面导航">
+        <a href="#starmap">星点网</a>
+        <a href="#analysis">开始测算</a>
+        <a href="#dimensions">专业合参</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">星座 · 上升 · 八字 · 紫微 · 奇门</p>
+          <h1 id="hero-title"><span>你的缘分</span><span class="hero-title-accent">藏在那个方向？</span></h1>
+          <p class="lead">输入出生日期、时间和地点，系统会计算太阳星座、近似上升星座、八字生肖、匹配星座/属相、桃花年与桃花方向省份。</p>
+          <div class="hero-actions">
+            <a class="primary-link" href="#analysis">立即测算</a>
+            <span class="model-pill" id="model-pill">检测模型状态中…</span>
+          </div>
+        </div>
+        <aside class="astro-card" aria-label="星盘示意">
+          <div class="dial">
+            <span>白羊</span><span>金牛</span><span>双子</span><span>巨蟹</span>
+            <span>狮子</span><span>处女</span><span>天秤</span><span>天蝎</span>
+            <span>射手</span><span>摩羯</span><span>水瓶</span><span>双鱼</span>
+          </div>
+          <div class="fusion-nodes" aria-hidden="true">
+            <span class="fusion-node node-bazi">八字</span>
+            <span class="fusion-node node-ziwei">紫微</span>
+            <span class="fusion-node node-star">星座</span>
+            <span class="fusion-node node-qimen">奇门</span>
+          </div>
+          <div class="dial-center">
+            <b>四维<br />合参</b>
+            <small>Fate Matrix</small>
+          </div>
+        </aside>
+      </section>
+
+      <section class="starmap-section" id="starmap" aria-labelledby="starmap-title">
+        <div class="section-title">
+          <p class="eyebrow">Live Star Signal</p>
+          <h2 id="starmap-title">星点网：全国缘分正在被点亮</h2>
+          <p>真实测算记录叠加星命热度指数，营造全国正在使用的星点氛围；公开页只展示省份热度和脱敏昵称。</p>
+        </div>
+        <div class="starmap-grid">
+          <div class="china-map" id="china-map" role="img" aria-label="中国省份星点热度图"></div>
+          <aside class="star-panel">
+            <div class="star-total"><small>星命热度指数</small><b id="star-total">0</b><span>人次正在点亮</span></div>
+            <h3>热度最高的地区</h3>
+            <ol class="province-rank" id="province-rank"></ol>
+            <h3>最近点亮</h3>
+            <div class="recent-stars" id="recent-stars"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="dimensions" id="dimensions" aria-label="测算维度">
+        <article>
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.8H22l-6.1 4.3 2.3 6.9-6.2-4.2L5.8 20l2.3-6.9L2 8.8h7.6L12 2z"/></svg></span>
+          <h2>星座气质</h2>
+          <p>根据生日计算太阳星座，并用出生时间和经度近似推导上升星座。</p>
+        </article>
+        <article>
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4zM7 7v10h10V7H7z"/></svg></span>
+          <h2>八字匹配</h2>
+          <p>用年、月、日、时四柱轻量推导五行主气，生成匹配星座和属相。</p>
+        </article>
+        <article>
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.4-9.2-8.4C.9 9.1 3.2 5 7.1 5c2 0 3.5 1 4.9 2.8C13.4 6 14.9 5 16.9 5c3.9 0 6.2 4.1 4.3 7.6C19 16.6 12 21 12 21z"/></svg></span>
+          <h2>姻缘桃花</h2>
+          <p>计算桃花地支、桃花年和关系节奏，给出更容易遇见缘分的窗口。</p>
+        </article>
+        <article>
+          <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2l8 20-8-4-8 4 8-20zm0 6.4L8.5 17l3.5-1.7 3.5 1.7L12 8.4z"/></svg></span>
+          <h2>方位省份</h2>
+          <p>把桃花地支映射到方位与省份，作为旅行、人脉和城市选择的灵感。</p>
+        </article>
+      </section>
+
+      <section class="workspace" id="analysis" aria-labelledby="analysis-title">
+        <form class="panel form-panel" id="fortune-form">
+          <div class="section-title">
+            <p class="eyebrow">Birth Input</p>
+            <h2 id="analysis-title">填写你的出生信息</h2>
+            <p>出生时间越准确，上升星座、时柱和专业排盘越接近。暂时只记得“子时”也可以直接填写。</p>
+          </div>
+
+          <label>昵称
+            <input name="name" maxlength="24" placeholder="例如：小林" autocomplete="name" />
+          </label>
+          <div class="grid-2">
+            <label>出生日期
+              <span class="picker-combo">
+                <input name="birthDate" type="text" inputmode="numeric" placeholder="例如：1995/08/16" autocomplete="bday" required />
+                <button class="picker-button" type="button" id="birth-date-open" aria-label="打开日期选择器">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v3h6V2h2v3h3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3V2zm13 8H4v10h16V10zM4 8h16V7H4v1z"/></svg>
+                </button>
+                <input class="native-picker" id="birth-date-picker" type="date" aria-hidden="true" tabindex="-1" />
+              </span>
+            </label>
+            <label>出生时间
+              <input name="birthTime" type="text" list="birth-time-options" value="12:00" placeholder="例如：12:00 或 子时" autocomplete="off" />
+            </label>
+          </div>
+          <datalist id="birth-time-options">
+            <option value="子时">子时（23:00-00:59）</option>
+            <option value="丑时">丑时（01:00-02:59）</option>
+            <option value="寅时">寅时（03:00-04:59）</option>
+            <option value="卯时">卯时（05:00-06:59）</option>
+            <option value="辰时">辰时（07:00-08:59）</option>
+            <option value="巳时">巳时（09:00-10:59）</option>
+            <option value="午时">午时（11:00-12:59）</option>
+            <option value="未时">未时（13:00-14:59）</option>
+            <option value="申时">申时（15:00-16:59）</option>
+            <option value="酉时">酉时（17:00-18:59）</option>
+            <option value="戌时">戌时（19:00-20:59）</option>
+            <option value="亥时">亥时（21:00-22:59）</option>
+          </datalist>
+          <p class="field-hint">日期可以手动输入，也可以点日历选择；出生时间支持精确时间或传统时辰。</p>
+          <div class="grid-2">
+            <label>出生地
+              <input name="birthPlace" maxlength="60" placeholder="例如：浙江杭州、杭州市西湖区" autocomplete="address-level2" />
+            </label>
+            <label>地点识别
+              <input id="geo-display" value="等待填写出生地" readonly />
+            </label>
+          </div>
+          <div class="geo-status" id="geo-status" role="status">填写完整出生地后，我会自动计算经纬度。</div>
+          <details class="advanced-location">
+            <summary>高级校准：查看或手动修正经纬度</summary>
+            <div class="grid-2">
+              <label>纬度
+                <input name="latitude" type="number" step="0.0001" value="30.2741" />
+              </label>
+              <label>经度
+                <input name="longitude" type="number" step="0.0001" value="120.1551" />
+              </label>
+            </div>
+          </details>
+          <div class="grid-2">
+            <label>性别/身份
+              <select name="gender">
+                <option value="">不限定</option>
+                <option>女生</option>
+                <option>男生</option>
+                <option>非二元/不想定义</option>
+              </select>
+            </label>
+            <label>关系期待
+              <select name="relationshipGoal">
+                <option>寻找长期、稳定且有心动感的关系</option>
+                <option>想知道近期桃花机会</option>
+                <option>更在意精神共鸣</option>
+                <option>更在意现实稳定</option>
+              </select>
+            </label>
+          </div>
+          <button class="submit-button" type="submit">
+            <span>生成星命报告</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 5l7 7-7 7v-4H4v-6h9V5z"/></svg>
+          </button>
+          <p class="quota-note" id="quota-note">每位访客可免费测算 3 次。</p>
+          <p class="fine-print">娱乐测算，不代替现实沟通和专业建议。</p>
+        </form>
+
+        <section class="panel result-panel" aria-live="polite" aria-labelledby="result-title">
+          <div class="section-title result-title-row">
+            <div>
+              <p class="eyebrow">Reading Output</p>
+              <h2 id="result-title">你的报告会出现在这里</h2>
+              <p id="result-subtitle">先填写左侧信息，然后点击生成。</p>
+            </div>
+            <button class="secondary-button regenerate-button" type="button" id="regenerate-button" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.7 6.3A8 8 0 1 0 20 12h-2.2a5.8 5.8 0 1 1-1.7-4.1L13 11h8V3l-3.3 3.3z"/></svg>
+              <span>重新生成</span>
+            </button>
+          </div>
+          <div class="snapshot" id="snapshot" hidden></div>
+          <article class="report" id="report">
+            <div class="empty-state">
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle cx="60" cy="60" r="44"></circle>
+                <path d="M60 20v80M20 60h80M33 33l54 54M87 33L33 87"></path>
+              </svg>
+              <p>等待星图点亮。</p>
+            </div>
+          </article>
+          <div class="paywall" id="paywall" hidden>
+            <h3>免费次数已用完</h3>
+            <p>注册 LifeYouMe 账号后可继续开通完整测算，并保留你的测算记录。</p>
+            <div class="paywall-actions">
+              <a class="primary-link" id="register-link" href="https://auth.lifeyoume.icu/register?return_to=https%3A%2F%2Flifeyoume.icu%2Fastro-fate%2F">注册后继续</a>
+              <a class="secondary-link" id="billing-link" href="https://billing.lifeyoume.icu/">查看开通方式</a>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <footer>
+      <p>娱乐测算，不代替现实沟通和专业建议。</p>
+    </footer>
+
+    <script src="app.js" type="module"></script>
+  </body>
+</html>

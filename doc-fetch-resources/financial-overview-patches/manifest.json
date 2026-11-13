@@ -1,0 +1,66 @@
+[
+  {
+    "start": 1,
+    "end": 2,
+    "start_id": "doxcn3A109gp5AaoVbbZhXXVdUg",
+    "end_id": "doxcn0tST3azk94ziQ0qzjaN6me",
+    "file": "/Users/bytedance/Desktop/agi/doc-fetch-resources/financial-overview-patches/01-position-and-sources.xml",
+    "label": "position-and-sources"
+  },
+  {
+    "start": 4,
+    "end": 6,
+    "start_id": "doxcnKPXQ6I1egu8aEVK8x6NkTe",
+    "end_id": "doxcn6y2uj2IeZMJOlapCJHTafb",
+    "file": "/Users/bytedance/Desktop/agi/doc-fetch-resources/financial-overview-patches/02-risk-and-landscape.xml",
+    "label": "risk-and-landscape"
+  },
+  {
+    "start": 13,
+    "end": 19,
+    "start_id": "doxcnBlkRWg5SoSbOSy085v2Ttd",
+    "end_id": "doxcnn1zYYgVSHhRvy1HULipoGe",
+    "file": "/Users/bytedance/Desktop/agi/doc-fetch-resources/financial-overview-patches/03-architecture-and-nine-steps.xml",
+    "label": "architecture-and-nine-steps"
+  },
+  {
+    "start": 21,
+    "end": 24,
+    "start_id": "doxcnSR7VsayfVW0ETiAgpPAPyh",
+    "end_id": "doxcnTeznRBzNky5fgvj4TX4Qge",
+    "file": "/Users/bytedance/Desktop/agi/doc-fetch-resources/financial-overview-patches/04-compliance.xml",
+    "label": "compliance"
+  },
+  {
+    "start": 26,
+    "end": 29,
+    "start_id": "doxcn9fQY1aDGn7aViCguKo5Nie",
+    "end_id": "doxcnppnwKkW8CNz4O50prz1Pqh",
+    "file": "/Users/bytedance/Desktop/agi/doc-fetch-resources/financial-overview-patches/05-measurement.xml",
+    "label": "measurement"
+  },
+  {
+    "start": 31,
+    "end": 35,
+    "start_id": "doxcn7j2KC0ErWBqLFXJQEkXP1g",
+    "end_id": "doxcnP7RLBGIkH3U2dGFvxZXj9F",
+    "file": "/Users/bytedance/Desktop/agi/doc-fetch-resources/financial-overview-patches/06-scene-links-and-status.xml",
+    "label": "scene-links-and-status"
+  },
+  {
+    "start": 37,
+    "end": 38,
+    "start_id": "doxcnkpRex8ajbuKYDV5L5sJwKc",
+    "end_id": "doxcnqk2MZDIqV0bVbAXx1CllRe",
+    "file": "/Users/bytedance/Desktop/agi/doc-fetch-resources/financial-overview-patches/07-customer-input-and-schedule.xml",
+    "label": "customer-input-and-schedule"
+  },
+  {
+    "start": 43,
+    "end": 56,
+    "start_id": "doxcnfSYjNQTUrgKQypgmq8BdDb",
+    "end_id": "doxcnjzybR2MrdrQOF8xLSUyVqc",
+    "file": "/Users/bytedance/Desktop/agi/doc-fetch-resources/financial-overview-patches/08-illustrated-guide-and-evidence.xml",
+    "label": "illustrated-guide-and-evidence"
+  }
+]

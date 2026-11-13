@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#141327" />
+    <meta name="description" content="牛马嘴替：先砸烂今天的破事，再领一句 AI 嘴替。" />
+    <title>牛马嘴替｜砸了再说</title>
+    <link rel="stylesheet" href="/niuma/styles.css?v=20261113T001500Z" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/niuma/" aria-label="牛马嘴替首页">
+          <span class="brand-mark" aria-hidden="true">牛</span>
+          <span>牛马嘴替</span>
+        </a>
+        <div class="top-actions">
+          <span class="quota-pill" data-quota-label>免费 20 次</span>
+          <button class="quiet-button" type="button" data-custom-toggle>说具体点</button>
+        </div>
+      </header>
+
+      <section class="arena" aria-labelledby="game-title">
+        <div class="arena-copy">
+          <p class="game-prompt" data-level-label>第 1 关 · 加急入侵</p>
+          <h1 id="game-title" data-monster-name>临下班塞活怪</h1>
+          <p class="tiny-status" data-hit-line>选一个，然后把它点碎。</p>
+        </div>
+
+        <div class="game-stage" data-game-stage aria-live="polite">
+          <div class="stage-object" data-stage-object></div>
+          <div class="impact-layer" data-impact-layer aria-hidden="true"></div>
+          <div class="attack-dock" data-attack-dock aria-label="选择解压招式">
+            <button type="button" data-attack="punch">拳套重击 <b>+1</b></button>
+            <button type="button" data-attack="kick">飞踢需求 <b>+2</b></button>
+            <button type="button" data-attack="stamp">红章驳回 <b>+3</b></button>
+          </div>
+          <button class="ultimate-button" type="button" data-ultimate disabled aria-label="怒气大招尚未就绪">
+            <span>怒气大招</span>
+            <i data-ultimate-label>攒满后清场</i>
+          </button>
+          <div class="fury-meter" aria-label="怒气大招充能"><i data-fury-bar></i></div>
+          <p class="stage-instruction" data-stage-instruction>疯狂连击，把加急需求砸成已读。</p>
+          <div class="stage-progress">
+            <span data-progress-name>加急需求</span>
+            <div class="hp-bar" aria-label="本关进度"><i data-hp-bar></i></div>
+            <b data-hp-label>12</b>
+          </div>
+          <p class="release-score" aria-live="polite">已释放 <b data-rage-total>0</b> 点怒气</p>
+        </div>
+
+        <div class="rage-picker" role="group" aria-label="选择关卡">
+          <button type="button" data-preset="0">砸加急</button>
+          <button type="button" data-preset="1">碎需求</button>
+          <button type="button" data-preset="2">戳会议</button>
+          <button type="button" data-preset="3">退黑锅</button>
+          <button type="button" data-preset="4">驱幽灵</button>
+        </div>
+
+        <aside class="session-report" aria-labelledby="session-title">
+          <div>
+            <p class="report-kicker">今晚战报</p>
+            <h2 id="session-title" data-session-title>准点走人预备役</h2>
+            <p data-session-line>先打穿一关，让今天的破事有个交代。</p>
+          </div>
+          <div class="report-stats" aria-label="本局解压统计">
+            <span><b data-session-cleared>0/5</b>已清场</span>
+            <span><b data-session-rage>0</b>怒气释放</span>
+            <span><b data-session-combo>0</b>最高连击</span>
+          </div>
+          <div class="report-meter" aria-label="五关清场进度"><i data-session-bar></i></div>
+          <div class="report-badges" data-session-badges aria-label="已拿下的职场怪"></div>
+        </aside>
+      </section>
+
+      <section class="reward" data-reward hidden aria-live="polite">
+        <p class="reward-kicker" data-clear-label>第 1 关已清空</p>
+        <h2 data-clear-title>怒气，先放下了一点。</h2>
+        <p class="reward-quote" data-clear-copy>下一关还在等你。继续砸，不用解释。</p>
+        <div class="reward-actions">
+          <button type="button" data-next-level>进入下一关</button>
+          <button class="quiet-button" type="button" data-unlock-reward>领本关 AI 嘴替</button>
+        </div>
+        <details class="civilized" data-ai-reward hidden>
+          <summary>如果要真的发出去</summary>
+          <p class="reward-quote" data-roast>加载中…</p>
+          <p data-civilized>加载中…</p>
+          <button class="copy-button" type="button" data-copy="roast">复制这句</button>
+        </details>
+      </section>
+
+      <section class="paywall" data-paywall hidden aria-live="polite">
+        <p class="reward-kicker">免费次数已用完</p>
+        <h2>今天已经骂够 20 次了。</h2>
+        <p>付费开通正在准备。留下这个入口，开通后可以继续砸。</p>
+        <a class="paywall-link" data-billing-link href="https://billing.lifeyoume.icu/">查看开通方式</a>
+      </section>
+
+      <section class="custom-sheet" data-custom-sheet hidden aria-labelledby="custom-title">
+        <div class="sheet-heading">
+          <div>
+            <h2 id="custom-title">也可以说具体点</h2>
+            <p>不留存。别写姓名、公司机密或联系方式。</p>
+          </div>
+          <button class="icon-button" type="button" data-custom-close aria-label="关闭">×</button>
+        </div>
+        <form data-rage-form>
+          <label class="sr-only" for="rage-input">今天的破事</label>
+          <textarea id="rage-input" name="rage" maxlength="220" rows="3" placeholder="比如：6 点 58 分又来了个明早要的小需求。"></textarea>
+          <div class="sheet-actions">
+            <span><b data-char-count>0</b>/220</span>
+            <button type="submit">生成专属怪物</button>
+          </div>
+        </form>
+      </section>
+    </main>
+    <div class="toast" role="status" aria-live="polite" data-toast></div>
+    <script type="module" src="/niuma/app.mjs?v=20261113T001500Z"></script>
+  </body>
+</html>

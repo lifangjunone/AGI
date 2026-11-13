@@ -1,0 +1,86 @@
+<title>另一个我 V2：员工提效与专家能力复制</title>
+<p align="center"><b>从真实工作中学习，把已经验证的任务交给数字员工，把专家能力变成 AgentSphere 的领域专家</b></p>
+<callout emoji="🎯" background-color="light-orange" border-color="orange">
+  <p><b>一句话：</b>员工正常工作，不需要额外写教程；“另一个我”持续学习其技能、判断和工作方法，再把验证过的能力交给数字员工执行。</p>
+</callout>
+
+<h1 seq="auto">背景：企业有两个最直接的问题</h1>
+<ul>
+  <li><b>重复工作太多：</b>Oncall 初筛、客户答疑、进度跟进、固定操作一直消耗真人。</li>
+  <li><b>专家能力带不走：</b>专家会做，但经验藏在每天的沟通、判断和交付里。</li>
+  <li><b>现有 Agent 不会成长：</b>上线时配置一次，之后仍要人工维护知识和提示词。</li>
+</ul>
+<blockquote><p>客户需要的不是再建一个知识库，而是一条“从真实工作学习，再生产数字员工”的能力流水线。</p></blockquote>
+
+<h1 seq="auto">业务价值：两条路线，一眼看懂</h1>
+<table>
+  <colgroup><col width="160"/><col width="320"/><col width="320"/></colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>方向</p></th>
+      <th background-color="light-blue"><p>普通员工：减少重复劳动</p></th>
+      <th background-color="light-green"><p>业务专家：复制专业能力</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><p><b>学习什么</b></p></td><td><p>固定流程、工具使用、标准回复、已确定任务</p></td><td><p>判断方法、领域经验、风险边界、复杂问题处理</p></td></tr>
+    <tr><td><p><b>产出什么</b></p></td><td><p>能替真人完成已验证任务的数字员工</p></td><td><p>每日能力快照和可装载的领域技能点</p></td></tr>
+    <tr><td><p><b>解决什么</b></p></td><td><p>Oncall、客户、运营等场景的重复工作</p></td><td><p>把专家能力装到 AgentSphere，形成领域专家数字员工</p></td></tr>
+    <tr><td><p><b>最终价值</b></p></td><td><p>真人只处理异常、决策和最终验收</p></td><td><p>专家能力可复制、可更新、可调度、可审计</p></td></tr>
+  </tbody>
+</table>
+<callout emoji="📌" background-color="light-blue" border-color="blue">
+  <p><b>关于“40%”：</b>可以把“接管约 40% 人工工作”设为试点目标，但范围只包含已经确定、验证过、可重复的任务。最终比例必须由客户真实试点数据确认。</p>
+</callout>
+
+<h1 seq="auto">业务架构图</h1>
+<whiteboard type="svg" path="@./draft_195fd696_folder/business-architecture.svg"></whiteboard>
+
+<h1 seq="auto">它具体解决哪些实际问题</h1>
+<table>
+  <colgroup><col width="180"/><col width="300"/><col width="320"/></colgroup>
+  <thead>
+    <tr><th background-color="light-gray"><p>场景</p></th><th background-color="light-gray"><p>数字员工先做什么</p></th><th background-color="light-gray"><p>真人保留什么</p></th></tr>
+  </thead>
+  <tbody>
+    <tr><td><p><b>Oncall</b></p></td><td><p>收集证据、执行检查、匹配已验证 SOP、给出初步结论</p></td><td><p>处理高风险异常、未知故障和最终决策</p></td></tr>
+    <tr><td><p><b>客户服务</b></p></td><td><p>回答高频问题、查询进度、补充材料、持续跟进</p></td><td><p>处理承诺、谈判、投诉和关键关系</p></td></tr>
+    <tr><td><p><b>固定业务操作</b></p></td><td><p>按已验证步骤完成查询、核对、录入和通知</p></td><td><p>审批例外和验收结果</p></td></tr>
+    <tr><td><p><b>专家问题处理</b></p></td><td><p>使用每日更新的技能点完成领域分析和建议</p></td><td><p>校准新问题，确认能力边界</p></td></tr>
+  </tbody>
+</table>
+
+<h1 seq="auto">产品已经具备什么</h1>
+<h2 seq="auto">能看见它学到了什么，也能看见它还不会什么</h2>
+<p>成长首页直接展示学习输入、当前能力、能力缺口和人物事项关系。采集过数据不等于已经会做，只有有证据、经过验证的能力才会进入执行。</p>
+<img src="KSFibpg1MoWejmxBnz4cDV4vn1g" width="1000" caption="成长首页：学习结果、能力缺口和关系网络"/>
+
+<h2 seq="auto">能在真实工作现场行动，也能随时让真人接管</h2>
+<p>工作现场连接真实会话，支持草稿审核、自动判断、低风险自动发送和急停。截图中的数字员工已经完成一次客户进度回复。</p>
+<img src="SWHSbLMADoWKOExXDvxciS8qnZg" width="1000" caption="工作现场：真实会话、分级自动化和实际回复"/>
+
+<h1 seq="auto">技术架构图</h1>
+<whiteboard type="svg" path="@./draft_195fd696_folder/technical-architecture.svg"></whiteboard>
+
+<h1 seq="auto">这套方案为什么可信</h1>
+<ul>
+  <li><b>从真实工作学习：</b>学习聊天、文档、任务产物和验收反馈，不只读取静态知识。</li>
+  <li><b>能力必须有证据：</b>每个技能点保留来源、适用条件、版本和约束。</li>
+  <li><b>任务必须先验证：</b>“看过资料”不等于“可以接任务”，先练习、考试或试岗。</li>
+  <li><b>自动化可以分级：</b>低风险任务自动完成，高风险任务必须人工确认。</li>
+  <li><b>全程可以治理：</b>授权范围、版本回退、操作审计和急停贯穿整个链路。</li>
+</ul>
+
+<h1 seq="auto">建议试点：先证明一条业务链</h1>
+<ol>
+  <li>选择一个高频场景：Oncall 或客户服务。</li>
+  <li>圈定 20 至 50 个已经确定、验证过的任务。</li>
+  <li>选择 3 至 5 名普通员工或专家，在授权范围内持续学习。</li>
+  <li>普通员工方向验证任务接管率；专家方向验证每日能力快照和 AgentSphere 装载效果。</li>
+  <li>用真实数据决定是否达到 40% 目标，以及哪些任务可以继续放权。</li>
+</ol>
+<callout emoji="🚀" background-color="light-green" border-color="green">
+  <p><b>最终目标：</b>普通员工少做重复工作，专家能力不再只属于个人，AgentSphere 持续获得真实、最新、验证过的数字员工能力。</p>
+</callout>
+<hr/>
+<p><b>说明：</b>本文中的 40% 是可设定的试点目标，不是未经验证的现状承诺。AgentSphere 装载、技能考试和正式调度需要按客户环境、权限策略和验收标准完成集成。</p>

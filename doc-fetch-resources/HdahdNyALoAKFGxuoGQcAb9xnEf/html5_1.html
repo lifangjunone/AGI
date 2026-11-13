@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="use-iframe" content="true">
+<meta name="html-box-height-mode" content="auto">
+<meta name="description" content="招证放量风险与方正压测经验的资源优化迁移路径三栏映射图">
+<title>招证放量风险 × 方正压测经验：资源优化迁移路径</title>
+</head>
+<body>
+<div style="width:100%;box-sizing:border-box;font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;background:#f5f7fa;padding:16px;color:#1f2937;">
+  <div style="max-width:960px;margin:0 auto;">
+    <div style="background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:12px;">
+      <div style="font-size:17px;font-weight:700;margin-bottom:4px;">招证放量风险 × 方正压测经验：资源优化迁移路径</div>
+      <div style="font-size:13px;color:#6b7280;">招商证券 AI APP 11 月放量约 14 倍压力（55 QPM→500 QPM）｜方正证券 1400 并发 48h 压测达标（错误率 4 个 9/5 个 9）</div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <div style="flex:1;background:#fee2e2;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;text-align:center;color:#991b1b;">招证问题（根因）</div>
+      <div style="width:36px;"></div>
+      <div style="flex:1;background:#dbeafe;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;text-align:center;color:#1e40af;">方正已验证的经验</div>
+      <div style="width:36px;"></div>
+      <div style="flex:1;background:#dcfce7;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;text-align:center;color:#166534;">招证落地建议</div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px;">
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #ef4444;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">① Skill 性能 2~3 倍劣化</div>
+        <div style="color:#4b5563;line-height:1.5;">Skill 内部重复调用模型+实体识别，浪费 3~5s/请求；模型调用无并发预算</div>
+      </div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;">→</div>
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #3b82f6;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">链路裁剪 + Mock 隔离</div>
+        <div style="color:#4b5563;line-height:1.5;">429 限流时去意图识别节点+Mock 模型；codebox 排队→副本上限 200；压测用 Mock 隔离模型层瓶颈</div>
+      </div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;">→</div>
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #22c55e;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">透传上游信息、砍冗余调用</div>
+        <div style="color:#4b5563;line-height:1.5;">实体识别结果透传进 Skill；模型调用做并发预算与限流；Skill 小资源多副本</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px;">
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #ef4444;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">② Redis 集群→哨兵回退</div>
+        <div style="color:#4b5563;line-height:1.5;">3主3从→1主2从，单节点内存上涨、横向扩容受限；生产已发生内存过载险情</div>
+      </div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;">→</div>
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #3b82f6;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">Redis 治理三板斧</div>
+        <div style="color:#4b5563;line-height:1.5;">内存打爆→定时清理脚本+增大内存+min-replicas-to-write=0；chat_stream 大 key 治理</div>
+      </div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;">→</div>
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #22c55e;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">恢复可扩展架构+水位监控</div>
+        <div style="color:#4b5563;line-height:1.5;">恢复集群模式或补容量预算；TTL/大 key 治理+开盘前清理定时化；内存 &gt;75% 关注、&gt;85% 告警</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px;">
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #ef4444;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">③ 知识库查询 &gt;10s、冷数据报错</div>
+        <div style="color:#4b5563;line-height:1.5;">v1.1 升级后劣化（v0.9 同规模稳定一年多）；客户已叫停知识库迁移</div>
+      </div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;">→</div>
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #3b82f6;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">查链路而非加机器</div>
+        <div style="color:#4b5563;line-height:1.5;">记忆检索慢根因是向量检索链路（P95~10s），仅扩 memory-server 无效；OpenSearch 非标 4master+8PVC→磁盘只读、84 分片未分配</div>
+      </div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;">→</div>
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #22c55e;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">规格对齐+磁盘水位管理</div>
+        <div style="color:#4b5563;line-height:1.5;">master 奇数 3 副本、扩 data 不扩 master（方正今日踩坑）；磁盘 &lt;85%、废弃索引定期清理；先定位 &gt;10s 查询链路</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:stretch;margin-bottom:8px;">
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #ef4444;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">④ 意图识别 30→50 陡降</div>
+        <div style="color:#4b5563;line-height:1.5;">全量意图进模型 context（3.28s→12.74s），意图数量不可扩展，无法支撑 C 端多场景</div>
+      </div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;">→</div>
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #3b82f6;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">意图识别属关键路径</div>
+        <div style="color:#4b5563;line-height:1.5;">压测中意图识别是模型调用关键路径，用 Mock 模型隔离测试应用层 vs 模型层瓶颈（方正 429 排查方法）</div>
+      </div>
+      <div style="width:36px;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:18px;">→</div>
+      <div style="flex:1;background:#fff;border-radius:8px;padding:10px 12px;border-left:4px solid #22c55e;font-size:13px;">
+        <div style="font-weight:700;margin-bottom:4px;">top-k 意图召回替代全量</div>
+        <div style="color:#4b5563;line-height:1.5;">向量检索召回 top-k 意图再进 context；意图数量与性能基线绑定，可扩展支撑新场景</div>
+      </div>
+    </div>
+
+    <div style="background:#fff;border-radius:12px;padding:14px 18px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-top:4px solid #f59e0b;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px;">⑤ 容量评估与方法论迁移（招证：100~125 并发即报错、无法线性扩容承接 500 QPM）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:13px;">
+        <div style="flex:1;min-width:200px;background:#fffbeb;border-radius:8px;padding:8px 10px;color:#4b5563;line-height:1.5;"><b style="color:#92400e;">扩容模式</b>：小资源多副本（runtime-server 30 副本）+HPA 阈值调整，替代单大实例（方正核心解法）</div>
+        <div style="flex:1;min-width:200px;background:#fffbeb;border-radius:8px;padding:8px 10px;color:#4b5563;line-height:1.5;"><b style="color:#92400e;">压测口径</b>：目标并发=高峰×70%（方正 1400 并发口径）；招证按 500 QPM 折算并发做分层压测（单组件→全链路→48h 长稳）</div>
+        <div style="flex:1;min-width:200px;background:#fffbeb;border-radius:8px;padding:8px 10px;color:#4b5563;line-height:1.5;"><b style="color:#92400e;">质量管控</b>：每次版本发布跑性能基线回归（招证客诉点名缺失）；HA 48h 达标（错误率 4 个 9/5 个 9）证明组合解法有效</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

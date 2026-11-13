@@ -1,0 +1,1 @@
+{"audience":"MyContext 产品负责人、架构负责人和实现工程师","reader_task":"评审并实施数字分身默认效果最佳、可切换极速模式的优化方案","genre_contract":"workplace.technical_doc:design_rfc","adapter":null,"presentation_mode":"rich","visual_plan":{"reason":"需要用一张分层架构图说明双模式共享安全底座、不同检索与生成路径，以及与现有 e-ctx 模块的接线关系","blocks":[{"type":"whiteboard","min_count":1,"purpose":"展示效果最佳与极速双路径的优化架构、共享输入和统一输出闸门"}]}}

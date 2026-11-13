@@ -1,0 +1,1 @@
+{"audience":"需要在 HiAgent 中搭建意图分流的实施人员与产品演示人员","reader_task":"分别复现对话流与流程编排的意图识别配置，并用真实输入验证分类和分支回复","genre_contract":"router.knowledge","adapter":null,"presentation_mode":"rich","visual_plan":{"reason":"用户明确要求两类搭建过程逐步配图与真实测试截图；使用实拍界面证明输入绑定、分支连线、输出映射和测试结果","blocks":[{"type":"img","min_count":14,"purpose":"两类搭建过程、类型选择与实际测试证据"}]}}

@@ -1,0 +1,394 @@
+{
+  "version": 1,
+  "visitors": {
+    "8f4ca070-91b6-4dd8-b861-55952acb9c55": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T05:22:50.168Z",
+      "lastSeenAt": "2026-11-11T05:22:50.168Z"
+    },
+    "335dca8a-38ab-4d4f-a171-403752e14f51": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T05:23:16.266Z",
+      "lastSeenAt": "2026-11-11T05:23:16.266Z"
+    },
+    "8cd4a48c-61e0-474e-8623-45b84096559c": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T05:23:17.713Z",
+      "lastSeenAt": "2026-11-11T05:23:17.713Z"
+    },
+    "95884a76-2056-4603-b2d1-738e1ceb9bd0": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T05:23:19.131Z",
+      "lastSeenAt": "2026-11-11T05:23:19.131Z"
+    },
+    "92c257f0-faa0-48b0-b09d-cc9d887e5549": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T05:23:23.798Z",
+      "lastSeenAt": "2026-11-11T05:23:23.798Z"
+    },
+    "bd1558c3-0eed-497f-ae22-e1ce10651edc": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T05:23:24.781Z",
+      "lastSeenAt": "2026-11-11T05:23:24.781Z"
+    },
+    "9bad1c9b-55c5-4376-a482-5a261009dd83": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T05:23:30.349Z",
+      "lastSeenAt": "2026-11-11T05:23:30.349Z"
+    },
+    "9713514b-c696-481d-9f58-50c3c6ecb7bc": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T05:29:36.172Z",
+      "lastSeenAt": "2026-11-11T05:29:36.172Z"
+    },
+    "4129626e-1b59-43ec-a377-a0ac9a250152": {
+      "used": 1,
+      "firstSeenAt": "2026-11-11T06:05:48.541Z",
+      "lastSeenAt": "2026-11-11T06:05:48.541Z"
+    }
+  },
+  "records": [
+    {
+      "id": "bde0ff25-7891-4d58-ba50-0d0d22850da2",
+      "createdAt": "2026-11-11T05:22:50.168Z",
+      "visitorId": "8f4ca070-91b6-4dd8-b861-55952acb9c55",
+      "visitorHash": "941a69c2eb93",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "男生",
+        "relationshipGoal": "寻找长期、稳定且有心动感的关系"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    },
+    {
+      "id": "58b490ae-d193-4eaa-816c-2ac37c5df78d",
+      "createdAt": "2026-11-11T05:23:16.266Z",
+      "visitorId": "335dca8a-38ab-4d4f-a171-403752e14f51",
+      "visitorHash": "3528d8b6a5c6",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "男生",
+        "relationshipGoal": "寻找长期、稳定且有心动感的关系"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    },
+    {
+      "id": "a33a269b-5c24-48a9-8030-ab42a9041a4f",
+      "createdAt": "2026-11-11T05:23:17.713Z",
+      "visitorId": "8cd4a48c-61e0-474e-8623-45b84096559c",
+      "visitorHash": "ce60393467ab",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "男生",
+        "relationshipGoal": "寻找长期、稳定且有心动感的关系"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    },
+    {
+      "id": "89c78130-a7df-4b36-84a7-a7f890830c9f",
+      "createdAt": "2026-11-11T05:23:19.131Z",
+      "visitorId": "95884a76-2056-4603-b2d1-738e1ceb9bd0",
+      "visitorHash": "3c0800b0731f",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "男生",
+        "relationshipGoal": "寻找长期、稳定且有心动感的关系"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    },
+    {
+      "id": "4602b9d9-5993-40a7-99d8-916ac2090ceb",
+      "createdAt": "2026-11-11T05:23:23.798Z",
+      "visitorId": "92c257f0-faa0-48b0-b09d-cc9d887e5549",
+      "visitorHash": "64ac2d7ae787",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "男生",
+        "relationshipGoal": "想知道近期桃花机会"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    },
+    {
+      "id": "373e2c30-9281-4daf-824f-880ed68d2f4f",
+      "createdAt": "2026-11-11T05:23:24.781Z",
+      "visitorId": "bd1558c3-0eed-497f-ae22-e1ce10651edc",
+      "visitorHash": "703c2ffb3688",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "男生",
+        "relationshipGoal": "想知道近期桃花机会"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    },
+    {
+      "id": "b0b5982d-acb6-4e46-b09b-bba926a15a29",
+      "createdAt": "2026-11-11T05:23:30.349Z",
+      "visitorId": "9bad1c9b-55c5-4376-a482-5a261009dd83",
+      "visitorHash": "14091be5f6db",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "男生",
+        "relationshipGoal": "想知道近期桃花机会"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    },
+    {
+      "id": "264ad530-3056-4bba-bb39-66db46e213af",
+      "createdAt": "2026-11-11T05:29:36.172Z",
+      "visitorId": "9713514b-c696-481d-9f58-50c3c6ecb7bc",
+      "visitorHash": "eda3cbfcda0d",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "",
+        "relationshipGoal": "寻找长期、稳定且有心动感的关系"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    },
+    {
+      "id": "344a26d6-7d75-425d-9df2-27c179d0a8d3",
+      "createdAt": "2026-11-11T06:05:48.541Z",
+      "visitorId": "4129626e-1b59-43ec-a377-a0ac9a250152",
+      "visitorHash": "4dc298f85be5",
+      "userId": "",
+      "province": "甘肃",
+      "input": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时",
+        "birthTimeInput": "子时",
+        "birthPlace": "甘肃陇南",
+        "latitude": 33.4007,
+        "longitude": 104.9218,
+        "gender": "男生",
+        "relationshipGoal": "更在意精神共鸣"
+      },
+      "summary": {
+        "name": "李芳军",
+        "birthDate": "1995-08-16",
+        "birthTime": "子时（23:00-00:59）",
+        "birthPlace": "甘肃陇南",
+        "sunSign": "狮子座",
+        "ascendant": "天秤座",
+        "zodiac": "猪",
+        "peachDirection": "正北",
+        "peachProvinces": [
+          "北京",
+          "天津",
+          "河北",
+          "内蒙古"
+        ]
+      },
+      "source": "local-rules",
+      "modelUsed": false,
+      "modelId": "lym-chat-quality"
+    }
+  ]
+}

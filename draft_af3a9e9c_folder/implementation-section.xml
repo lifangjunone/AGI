@@ -1,0 +1,61 @@
+<h1 seq="auto">详细实施顺序</h1>
+<ol>
+  <li><p><b>P0 · WeClone 风格闭环。</b>定义 StyleProfile；读取已有风格产物；增加指纹、审核和过期检查；接入 PersonaComposer。验收：开启 clone 后回复能证明使用了风格特征，停用或资料变化后立即停止使用。</p></li>
+  <li><p><b>P0 · 双模式路由。</b>扩展配置、IPC 和页头分段控制；默认 quality；现有直连路径固化为 fast；两条路径共享 ReplyProposal、Policy 与 SendGuard。</p></li>
+  <li><p><b>P0 · Open Second Brain 偏好生命周期。</b>引入 MIT 来源代码并适配 Store；从修改回执建立信号；实现置信提升、衰减、冲突、退役、撤回和审计；先只在待审草稿中启用。</p></li>
+  <li><p><b>P1 · GBrain 只读 Sidecar。</b>完成本地部署、受控导出、增量索引和 RecallAdapter；灰度期只 shadow 查询，不影响正式结果；验证授权撤销、切账号和清库。</p></li>
+  <li><p><b>P1 · 多源证据融合。</b>统一 KL-Graph、工作 Wiki、FTS、本人原话、WeClone、偏好规则与 GBrain；形成带来源、时效、冲突和可披露范围的 ContextPack。</p></li>
+  <li><p><b>P1 · COG 式 Writer / Verifier。</b>质量模式生成三候选；独立裁判执行安全硬检查和质量评分；只允许一次有边界的最终修订。</p></li>
+  <li><p><b>P1 · 真实任务灰度。</b>使用同一批授权任务对比当前基线、fast、quality-without-GBrain、quality-full；记录盲测胜率、采用率、修改率、事实错误、延迟和成本。</p></li>
+  <li><p><b>P2 · 提升默认权重。</b>GBrain 持续胜出后提高融合权重；偏好规则通过试岗后允许进入普通回复；任何安全回归立即关闭对应 feature flag。</p></li>
+</ol>
+
+<h2 seq="auto">建议开发批次</h2>
+<table>
+  <colgroup>
+    <col width="110"/>
+    <col width="270"/>
+    <col width="300"/>
+    <col width="140"/>
+  </colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>批次</p></th>
+      <th background-color="light-gray"><p>交付</p></th>
+      <th background-color="light-gray"><p>退出条件</p></th>
+      <th background-color="light-gray"><p>预计</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><p>A</p></td>
+      <td><p>StyleProfile + 双模式 UI/配置</p></td>
+      <td><p>风格真实生效；quality/fast 可观测且安全行为一致</p></td>
+      <td><p>3–5 天</p></td>
+    </tr>
+    <tr>
+      <td><p>B</p></td>
+      <td><p>偏好生命周期</p></td>
+      <td><p>修改可形成候选规则；撤权、回退、冲突测试通过</p></td>
+      <td><p>4–6 天</p></td>
+    </tr>
+    <tr>
+      <td><p>C</p></td>
+      <td><p>GBrain Sidecar + 证据融合</p></td>
+      <td><p>索引可重建；授权失效无残留；shadow 召回报告可用</p></td>
+      <td><p>6–10 天</p></td>
+    </tr>
+    <tr>
+      <td><p>D</p></td>
+      <td><p>三候选 + 独立裁判</p></td>
+      <td><p>结构化评分、安全硬失败、最终修订与降级测试通过</p></td>
+      <td><p>4–7 天</p></td>
+    </tr>
+    <tr>
+      <td><p>E</p></td>
+      <td><p>20–50 个真实任务灰度</p></td>
+      <td><p>达到文档验收门槛，无权限与泄露回归</p></td>
+      <td><p>1–2 周</p></td>
+    </tr>
+  </tbody>
+</table>

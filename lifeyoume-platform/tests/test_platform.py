@@ -321,6 +321,8 @@ class PlatformTests(unittest.TestCase):
         self.assertNotIn("not used by this render", document)
         self.assertIn("https://meyou.lifeyoume.icu/admin", document)
         self.assertIn("遇见 MeYou · 模型控制台", document)
+        self.assertIn("https://lifeyoume.icu/astro-fate/admin.html", document)
+        self.assertIn("星命矩阵统计 · 测算记录", document)
 
     def test_discovery_filters_include_all_categories_and_distinguish_promotions(self):
         with tempfile.TemporaryDirectory() as directory:

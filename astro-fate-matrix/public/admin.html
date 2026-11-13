@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>星命矩阵 · 管理统计</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="admin-page">
+      <section class="panel">
+        <div class="section-title">
+          <p class="eyebrow">Admin Analytics</p>
+          <h1>星命矩阵管理统计</h1>
+          <p>查看测算次数、地区热度和用户填写记录。请只在受保护的管理入口下使用。</p>
+        </div>
+        <div class="admin-metrics" id="admin-metrics"></div>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>时间</th><th>昵称</th><th>出生信息</th><th>地区</th><th>结果</th><th>访客</th></tr></thead>
+            <tbody id="records-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+    <script src="admin.js" type="module"></script>
+  </body>
+</html>

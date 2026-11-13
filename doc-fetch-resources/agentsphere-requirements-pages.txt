@@ -1,0 +1,224 @@
+PDF P18
+Copyright © 2026 Volcano Engine. All rights reserved.
+既要可控编排（核心链路稳得住）
+也要自主规划（创新场景放得开）
+
+
+PDF P19
+“可控编排” &“自主协同”双模态 Agent 协作体系
+User
+Supervisor Agent
+( 智能路由 )
+Input
+Output
+route
+Agent 1
+route
+Agent 2
+route
+Agent 3
+Supervisor Agent
+ ( 编排器：统筹、调度 )
+Planner
+ 规划
+循环执行
+Execution Loop
+循环直至
+任务完成
+记忆模块
+Memory
+存储任务状态
+存储历史记录
+存储中间结果
+智能体池
+Agent Pool
+Agent A  ( 联网搜索 )
+Agent B  ( 代码分析 )
+Agent C  ( 数据查询 )
+Agent D  ( 文本总结 )
+快速模式（快思考）
+简单直接的意图路由到单独智能体执行
+企业内部核心业务场景
+(按既定逻辑和规则有序调用多种数字员工按预期执行，确保“可控性”和“准确性”)
+创新场景 / 非预期场景
+(自主规划、探索最优解决方案，灵活应对各类型非预设场景)
+预设思维链模式（可控思考）
+引入业务知识，根据特定业务流程，调用多个智能体协同执行
+L1
+L2
+L3
+深度思考规划模式（探索慢思考）
+由智能体自主生成规划，并结合观察
+反思能力动态调整后续步骤，灵活应对非预期场景
+User
+Supervisor Agent
+( 智能路由 )
+Input
+Output
+场景 1 ：生成调研报告
+场景 2
+Web Searvher 2
+网络搜索智能体
+Web Searvher 3
+网络搜索智能体
+Writer
+文案生成智能体
+Critic
+审稿智能体
+Publisher
+发布智能体
+… . .
+User
+读写任务上下文
+选择agent
+返回执行结果
+
+
+PDF P20
+ 可控编排：自定义场景意图-命中策略
+         以意图为核心对象进行配置
+       命中意图后的执行策略
+• 企业可将业务 SOP 配置进入命中意图后的规划
+与执行步骤, 让 LLM 学习行业 knowhow
+• 支持 Skill 与智能体 ( SubAgent ) 的混合编排
+保障企业高稳定性诉求场景表现
+• 场景：企业业务场景（财会、运营、金融）
+• 意图：对应场景下的不同细分意图
+
+
+PDF P21
+
+
+
+方式 1： 路由到单个数字员工
+方式 2：自然语言编排多个数字员工
+方式 3：以 workflow 方式配置多数字员工的执行思维链
+ 可控编排：自定义命中策略，让非技术人员轻松上手
+企业生产环境可用的兜底保障
+
+
+PDF P22
+自主规划执行：探索最优解法，应对创新性场景
+跟随模型能力上限持续提升
+提供模型调优服务助力企业提高模型能力上限
+用户需求
+输入
+建立任务
+上下文
+Action执行
+（历史/文件/环境）
+（选择next Action）
+复杂度分析
+与模式选择
+（Lite/Pro）
+ReAct规划
+循环
+结果与上下文
+回写
+（Tool Call）
+（记忆/状态更新）
+Lite
+Pro
+是否
+  可交付？
+生成最终
+结果并交付
+交付结果
+（唯一终点）
+Skill调用
+委派多个数字
+员工并行执行
+主智能体验
+收合并
+本地工具
+调用
+（读写文件/检索/命令）
+是
+否
+否
+
+
+PDF P23
+总控核心链路
+基础设施
+模型服务
+embedding
+rerank
+LLM
+数据库
+Mysql
+opensearch
+数据服务
+MCP
+Service-A
+Service-B
+Service-N
+数据
+业务API
+业务数据
+…
+意图总控
+Agent Sphere管控端
+术语库
+Query 改写
+FAQ
+有召回
+快思考
+( Query->意图
+有召回
+慢思考
+意图召回
+意图执行+ react
+单意图
+多意图( plan )
+summary
+SubAgent / Skill hub
+HiAgent平台二方智能体/Skill
+AgentSphere一方智能体/Skill
+问答
+写作
+审核
+数据洞察
+联网智能体
+数据分析
+三方智能体/Skill
+企业内部存量智能体
+火山合作伙伴智能体
+安全
+输出拦截
+用户Query
+FAQ兜底回复
+数字员工回复
+Y
+N
+N
+调用
+记忆获取
+长期记忆
+短期记忆
+知识召回
+术语库
+FAQ库
+知识库
+意图召回
+场景(数字员工A)
+意图A
+意图B
+意图C
+场景(数字员工B)
+意图D
+意图E
+意图F
+记忆提取、知识召回
+按场景划分数字员工
+圈定高优意图识别范围
+高准确率，低时延
+FAQ、慢思考、安全防护
+• 时延P99 < 1s
+安全输入拦截
+
+
+PDF P24
+Copyright © 2026 Volcano Engine. All rights reserved.
+  整合企业域传统系统、数据、Agent
+（智能体/Skill/三方Claw)，打破资产孤岛

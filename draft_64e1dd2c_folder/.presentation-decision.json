@@ -1,0 +1,1 @@
+{"audience":"关注动态本体、Agent工作流与可靠数据转换的产品和技术负责人","reader_task":"理解Just-in-Time Ontology方法论、验证闭环及其与统一语义层的差异，并判断对现有项目的借鉴价值","genre_contract":"router.knowledge:explanation","adapter":null,"presentation_mode":"rich","visual_plan":{"reason":"需要用机制图解释决策如何驱动语义生成、验证与沉淀，并用对比表降低理解成本","blocks":[{"type":"whiteboard","min_count":1,"purpose":"展示即时本体围绕具体决策生成、验证与复用的闭环"}]}}

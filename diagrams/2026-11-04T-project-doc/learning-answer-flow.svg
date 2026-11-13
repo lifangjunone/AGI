@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#172033" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#20824B"/>
+    </marker>
+    <marker id="arrowMuted" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#667085"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="680" fill="#FCFBF8"/>
+  <text x="54" y="58" font-family="Noto Sans SC, sans-serif" font-size="31" font-weight="700" fill="#101828">
+    学习与回答链路：全量学习，相关检索，基于证据回答
+  </text>
+  <text x="54" y="91" font-family="Noto Sans SC, sans-serif" font-size="16" fill="#667085">
+    不是只看当前聊天，也不是把所有数据一次性塞给模型
+  </text>
+
+  <!-- Continuous learning lane -->
+  <rect x="54" y="126" width="1092" height="220" rx="24" fill="#FFFFFF" stroke="#D0D5DD" stroke-width="2"/>
+  <rect x="78" y="148" width="126" height="34" rx="17" fill="#EAF8EF"/>
+  <text x="141" y="171" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="15" font-weight="700" fill="#176238">
+    持续学习
+  </text>
+
+  <rect x="92" y="206" width="268" height="104" rx="18" fill="#F7F8FA" stroke="#D0D5DD"/>
+  <text x="226" y="235" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="18" font-weight="700" fill="#344054">全部已授权数据</text>
+  <text x="226" y="264" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">所有会话 · 文档 · 会议</text>
+  <text x="226" y="288" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">了解记录 · 知识图谱 · 任务反馈</text>
+
+  <path d="M360 258 H434" fill="none" stroke="#20824B" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="450" y="206" width="268" height="104" rx="18" fill="#F7F8FA" stroke="#D0D5DD"/>
+  <text x="584" y="235" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="18" font-weight="700" fill="#344054">提取可复用能力</text>
+  <text x="584" y="264" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">知识 · 技能 · 判断 · 偏好</text>
+  <text x="584" y="288" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">适用条件 · 业务边界 · 来源证据</text>
+
+  <path d="M718 258 H792" fill="none" stroke="#20824B" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="808" y="195" width="306" height="126" rx="22" fill="#EAF8EF" stroke="#20824B" stroke-width="3" filter="url(#shadow)"/>
+  <text x="961" y="229" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="20" font-weight="700" fill="#14532D">统一能力记忆</text>
+  <text x="961" y="258" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#39714E">“当前能力” + 个人上下文 + 知识图谱</text>
+  <rect x="844" y="277" width="76" height="25" rx="12.5" fill="#FFFFFF"/>
+  <rect x="927" y="277" width="76" height="25" rx="12.5" fill="#FFFFFF"/>
+  <rect x="1010" y="277" width="76" height="25" rx="12.5" fill="#FFFFFF"/>
+  <text x="882" y="295" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="12" fill="#176238">可追溯</text>
+  <text x="965" y="295" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="12" fill="#176238">可更新</text>
+  <text x="1048" y="295" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="12" fill="#176238">可验证</text>
+
+  <!-- Memory to retrieval -->
+  <path d="M961 321 V394 H706" fill="none" stroke="#20824B" stroke-width="4" marker-end="url(#arrow)"/>
+  <rect x="760" y="366" width="250" height="34" rx="17" fill="#EAF8EF"/>
+  <text x="885" y="389" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" font-weight="700" fill="#176238">
+    按问题检索相关所学
+  </text>
+
+  <!-- Answer lane -->
+  <rect x="54" y="418" width="1092" height="188" rx="24" fill="#FFFFFF" stroke="#20824B" stroke-width="3" filter="url(#shadow)"/>
+  <rect x="78" y="440" width="126" height="34" rx="17" fill="#EAF8EF"/>
+  <text x="141" y="463" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="15" font-weight="700" fill="#176238">
+    收到问题
+  </text>
+
+  <rect x="92" y="492" width="238" height="82" rx="17" fill="#F7F8FA" stroke="#D0D5DD"/>
+  <text x="211" y="523" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="18" font-weight="700" fill="#344054">新消息进入</text>
+  <text x="211" y="551" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">理解问题和当前会话</text>
+
+  <path d="M330 533 H400" fill="none" stroke="#20824B" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="416" y="481" width="330" height="104" rx="20" fill="#EAF8EF" stroke="#20824B" stroke-width="3"/>
+  <text x="581" y="515" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="19" font-weight="700" fill="#14532D">检索证据并组装上下文</text>
+  <text x="581" y="544" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#39714E">相关记忆 + 当前上下文 + 个人风格</text>
+  <text x="581" y="568" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" font-weight="700" fill="#176238">只取与问题相关的可信依据</text>
+
+  <path d="M746 533 H816" fill="none" stroke="#20824B" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="832" y="492" width="282" height="82" rx="17" fill="#F7F8FA" stroke="#D0D5DD"/>
+  <text x="973" y="523" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="18" font-weight="700" fill="#344054">生成并受控发送</text>
+  <text x="973" y="551" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">草稿 / 审批 / 测试白名单直出</text>
+
+  <!-- Feedback -->
+  <path d="M973 574 V640 H226 V606" fill="none" stroke="#667085" stroke-width="3" stroke-dasharray="9 7" marker-end="url(#arrowMuted)"/>
+  <rect x="471" y="619" width="258" height="34" rx="17" fill="#F2F4F7"/>
+  <text x="600" y="642" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" font-weight="700" fill="#475467">
+    结果与人工反馈继续进入学习闭环
+  </text>
+</svg>

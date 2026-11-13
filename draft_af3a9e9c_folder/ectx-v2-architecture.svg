@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2100" height="2420" viewBox="0 0 2100 2420">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#B95724"/></marker>
+  </defs>
+  <rect width="2100" height="2420" rx="28" fill="#F7F3EB"/>
+  <g font-family="Noto Sans SC, sans-serif" fill="#28251F">
+    <text x="80" y="90" font-size="48" font-weight="bold">e-ctx · 质量优先的个人工作架构</text>
+    <text x="80" y="144" font-size="27" fill="#655E53">架构提案，并非全部已实现 · 先交付可信成果，再通过本人纠错持续改进</text>
+    <rect x="1470" y="54" width="150" height="48" rx="24" fill="#E5DED1"/>
+    <text x="1545" y="88" text-anchor="middle" font-size="25" font-weight="bold">已有</text>
+    <rect x="1640" y="54" width="160" height="48" rx="24" fill="#F5DDC8"/>
+    <text x="1720" y="88" text-anchor="middle" font-size="25" fill="#984416" font-weight="bold">待实现</text>
+    <rect x="1820" y="54" width="170" height="48" rx="24" fill="none" stroke="#897D69" stroke-width="2" stroke-dasharray="8 6"/>
+    <text x="1905" y="88" text-anchor="middle" font-size="25">实验</text>
+    <path d="M105 245 V2260" fill="none" stroke="#D7CABA" stroke-width="4"/>
+
+    <circle cx="105" cy="250" r="32" fill="#B95724"/>
+    <text x="105" y="261" text-anchor="middle" font-size="28" fill="#FFFFFF" font-weight="bold">1</text>
+    <text x="165" y="260" font-size="33" font-weight="bold">用户工作闭环</text>
+    <text x="165" y="303" font-size="24" fill="#984416">产品目标</text>
+    <g font-size="31" font-weight="bold">
+      <text x="470" y="253">交任务</text>
+      <text x="785" y="253">查看成果与依据</text>
+      <text x="1270" y="253">本人审阅</text>
+      <text x="1690" y="253">纠错试岗</text>
+    </g>
+    <g fill="none" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)">
+      <path d="M635 242 H742"/><path d="M1075 242 H1220"/><path d="M1460 242 H1640"/>
+    </g>
+    <text x="470" y="317" font-size="27" fill="#655E53">交付：回复草稿 · 项目简报 · 能力工作成果</text>
+    <text x="1270" y="317" font-size="26" fill="#655E53">成果可追溯，行动须经本人确认</text>
+    <path d="M165 365 H2010" stroke="#D7CABA" stroke-width="2"/>
+
+    <circle cx="105" cy="430" r="32" fill="#B95724"/>
+    <text x="105" y="441" text-anchor="middle" font-size="28" fill="#FFFFFF" font-weight="bold">2</text>
+    <text x="165" y="440" font-size="33" font-weight="bold">事实与权限</text>
+    <text x="165" y="483" font-size="24" fill="#655E53">已有底座 + 计划接入</text>
+    <rect x="470" y="396" width="1530" height="138" rx="20" fill="#EEE6D8" stroke="#BDAE99" stroke-width="2"/>
+    <text x="500" y="441" font-size="31" font-weight="bold">已有 · e-ctx Store 是唯一事实与权限真源</text>
+    <text x="500" y="491" font-size="28">身份 + 授权范围 + policyEpoch + 版本化原文 + 审计</text>
+    <path d="M1235 540 V571" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="470" y="617" font-size="29" font-weight="bold">已有派生资产 · 可追溯，不另立真源</text>
+    <text x="470" y="665" font-size="27">Work Wiki：跨来源人物 / 项目综合</text>
+    <text x="1110" y="665" font-size="27">KL-Graph · forge 风格 · 能力快照</text>
+    <text x="470" y="711" font-size="27">WeClone：已有外部进程 + 已审核事实</text>
+    <text x="1110" y="711" font-size="27" fill="#984416">待实现 · 消费 WeClone StyleProfile</text>
+    <text x="470" y="757" font-size="25" fill="#655E53">LLM Wiki 思路已体现在 Work Wiki 中</text>
+    <text x="470" y="811" font-size="27" fill="#984416">待实现 · Open Second Brain 的 fold-preferences 代码移植入 e-ctx Store</text>
+    <text x="470" y="853" font-size="25" fill="#655E53">在 Store 内处理 authority / tombstone / ledger；不新增事实真源</text>
+    <path d="M165 890 H2010" stroke="#D7CABA" stroke-width="2"/>
+
+    <circle cx="105" cy="954" r="32" fill="#B95724"/>
+    <text x="105" y="965" text-anchor="middle" font-size="28" fill="#FFFFFF" font-weight="bold">3</text>
+    <text x="165" y="964" font-size="33" font-weight="bold">共享上下文</text>
+    <text x="165" y="1007" font-size="24" fill="#984416">待实现 · 统一编排</text>
+    <text x="470" y="956" font-size="29" font-weight="bold">TaskEnvelope / ContextPack</text>
+    <path d="M1020 946 H1120" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="1150" y="956" font-size="29" font-weight="bold">证据组装器</text>
+    <text x="470" y="1013" font-size="27">已有 FTS</text>
+    <text x="720" y="1013" font-size="27" fill="#984416">待实现 · 向量 / RRF 接线</text>
+    <text x="470" y="1063" font-size="26">Wiki / KL：按原始来源去重，识别人 / 时间 / 冲突</text>
+    <text x="470" y="1107" font-size="26">回查版本化原文，重新验证有效性与权限</text>
+    <rect x="1450" y="1000" width="550" height="196" rx="18" fill="none" stroke="#897D69" stroke-width="2" stroke-dasharray="9 7"/>
+    <path d="M1260 1050 H1419" fill="none" stroke="#897D69" stroke-width="2" stroke-dasharray="7 6"/>
+    <text x="1480" y="1044" font-size="27" font-weight="bold">实验 · GBrain 可选旁路</text>
+    <text x="1480" y="1085" font-size="24">本地派生索引适配器；先仅影子对比</text>
+    <text x="1480" y="1126" font-size="24">PGlite / Bun 封装尚未验证</text>
+    <text x="1480" y="1167" font-size="24" font-weight="bold">不进入默认主链路</text>
+    <rect x="470" y="1150" width="905" height="64" rx="12" fill="#EEE6D8"/>
+    <text x="495" y="1193" font-size="27" font-weight="bold">本人私有工作区读取范围 ≠ 对外回复披露范围</text>
+    <path d="M165 1250 H2010" stroke="#D7CABA" stroke-width="2"/>
+
+    <circle cx="105" cy="1314" r="32" fill="#B95724"/>
+    <text x="105" y="1325" text-anchor="middle" font-size="28" fill="#FFFFFF" font-weight="bold">4</text>
+    <text x="165" y="1324" font-size="33" font-weight="bold">双模式执行</text>
+    <text x="165" y="1367" font-size="24" fill="#984416">两种体验均待实现</text>
+    <rect x="470" y="1289" width="1530" height="281" rx="22" fill="#F6E5D4" stroke="#B95724" stroke-width="2"/>
+    <text x="500" y="1336" font-size="31" font-weight="bold" fill="#984416">效果最佳 · 默认 · 待实现</text>
+    <g font-size="28" font-weight="bold">
+      <text x="500" y="1401">高质量生成</text>
+      <text x="1020" y="1401">独立核验</text>
+      <text x="1580" y="1401">有界修订 + 复检</text>
+    </g>
+    <g stroke="#B95724" stroke-width="3" fill="none" marker-end="url(#arrow)">
+      <path d="M802 1389 H962"/><path d="M1325 1389 H1522"/>
+    </g>
+    <text x="500" y="1445" font-size="25">经实际任务验证的强模型</text>
+    <text x="1020" y="1445" font-size="25">事实主张 + 任务验收</text>
+    <text x="1580" y="1445" font-size="25">阶段超时 / 重试次数上限</text>
+    <text x="500" y="1502" font-size="27" font-weight="bold">通常 1 个候选；复杂任务仅在实测有收益时扩展到 2–3 个</text>
+    <text x="500" y="1544" font-size="25" fill="#655E53">COG：改编独立核验规范，不作为运行时引擎；Writer 不给自己打分</text>
+    <text x="500" y="1637" font-size="29" font-weight="bold">极速 · 可选 · 待实现</text>
+    <text x="1010" y="1637" font-size="27">确定性预检索 → 单次生成 → 共享硬检查</text>
+    <path d="M500 1670 H1970" stroke="#D7CABA" stroke-width="2"/>
+    <text x="500" y="1716" font-size="26">两模式共同约束：证据不足 → 待本人审阅；不得静默放行</text>
+    <text x="500" y="1760" font-size="26" fill="#984416">待实现 · 阶段队列 / 取消 / 恢复</text>
+    <path d="M165 1800 H2010" stroke="#D7CABA" stroke-width="2"/>
+
+    <circle cx="105" cy="1864" r="32" fill="#B95724"/>
+    <text x="105" y="1875" text-anchor="middle" font-size="28" fill="#FFFFFF" font-weight="bold">5</text>
+    <text x="165" y="1874" font-size="33" font-weight="bold">成果与行动</text>
+    <text x="165" y="1917" font-size="24" fill="#655E53">复用已有安全闸门</text>
+    <text x="470" y="1865" font-size="28" font-weight="bold">ReplyProposal / TaskResult</text>
+    <text x="470" y="1912" font-size="26">引用依据 + 未知项</text>
+    <path d="M1000 1855 H1090" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="1120" y="1865" font-size="28" font-weight="bold">已有 · 确定性 Policy / SendGuard</text>
+    <text x="1120" y="1912" font-size="26">对外披露与发送检查</text>
+    <path d="M1470 1928 V1962 H1010" fill="none" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <rect x="470" y="1940" width="490" height="68" rx="34" fill="#28251F"/>
+    <text x="715" y="1985" text-anchor="middle" font-size="29" fill="#FFFFFF" font-weight="bold">本人确认 · 必须</text>
+    <text x="1120" y="2025" font-size="27" font-weight="bold">真实行动回执：已执行 ≠ 仅建议</text>
+    <path d="M960 1990 H1055 V2015 H1088" fill="none" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <path d="M165 2060 H2010" stroke="#D7CABA" stroke-width="2"/>
+
+    <circle cx="105" cy="2124" r="32" fill="#B95724"/>
+    <text x="105" y="2135" text-anchor="middle" font-size="28" fill="#FFFFFF" font-weight="bold">6</text>
+    <text x="165" y="2134" font-size="33" font-weight="bold">纠错与试岗</text>
+    <text x="165" y="2177" font-size="24" fill="#984416">待实现 · 闭环编排</text>
+    <text x="470" y="2127" font-size="28" font-weight="bold">修改分类</text>
+    <text x="470" y="2174" font-size="25">事实 / 风格 / 方法 / 临时</text>
+    <path d="M818 2117 H892" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="920" y="2127" font-size="28" font-weight="bold">明确确认候选版本</text>
+    <path d="M1200 2117 H1270" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="1300" y="2127" font-size="28" font-weight="bold">留出任务试岗</text>
+    <path d="M1530 2117 H1600" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="1630" y="2127" font-size="28" font-weight="bold">限定适用规则</text>
+    <text x="920" y="2174" font-size="25">不把临时改动自动学成偏好</text>
+    <text x="1300" y="2174" font-size="25">通过后再启用</text>
+    <text x="1630" y="2174" font-size="25">可回滚</text>
+    <text x="470" y="2242" font-size="27" fill="#655E53">已有 · 能力反馈可复用；待实现 · 新规则按任务 / 范围生效，保留版本记录</text>
+    <path d="M1910 2185 V2294 H500" fill="none" stroke="#B95724" stroke-width="3" marker-end="url(#arrow)"/>
+    <text x="820" y="2336" font-size="25" fill="#984416">通过试岗的版本回到 e-ctx，下次任务按适用范围消费</text>
+    <text x="80" y="2390" font-size="23" fill="#655E53">边界：派生索引不改写真源 · 证据不足显式待审 · 所有真实行动须经本人确认</text>
+  </g>
+</svg>

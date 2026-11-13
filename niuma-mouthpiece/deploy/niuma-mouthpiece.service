@@ -1,0 +1,20 @@
+[Unit]
+Description=Niuma Mouthpiece decompression H5
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/niuma-mouthpiece/app.env
+ExecStartPre=-/usr/bin/docker rm -f niuma-mouthpiece
+ExecStart=/usr/bin/docker run --name niuma-mouthpiece --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --mount type=bind,src=/data/app/niuma-mouthpiece/data,dst=/app/data --security-opt no-new-privileges:true --cap-drop ALL --network host --env-file /etc/niuma-mouthpiece/app.env niuma-mouthpiece:current
+ExecStop=/usr/bin/docker stop -t 10 niuma-mouthpiece
+ExecStopPost=-/usr/bin/docker rm -f niuma-mouthpiece
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,1 @@
+{"audience":"金融机构业务负责人、项目经理、实施工程师与运维人员","reader_task":"理解方案价值，并能按步骤完成金融智能体私有化环境搭建、业务配置、联调测试和上线验收","genre_contract":"workplace.execution_plan","adapter":null,"presentation_mode":"rich","visual_plan":{"reason":"业务链路、平台边界和数据依赖较多，需要业务逻辑架构图降低理解和实施成本","blocks":[{"type":"whiteboard","min_count":1,"purpose":"展示从用户入口到意图路由、智能体执行、数据系统和治理观测的完整业务逻辑"}]}}

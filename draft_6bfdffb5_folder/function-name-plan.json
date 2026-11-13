@@ -1,0 +1,205 @@
+[
+  {
+    "block_id": "doxcnSaAhjqruo29QGgJifvl8yh",
+    "before": "源文档：AgentSphere 产品通案。本方案使用 PDF 实际页码 P20/P21/P23，避免与网页预览定位页混淆。",
+    "after": "源文档：AgentSphere 产品通案。来源页码仅用于追溯：PDF第20页为场景意图与命中策略，第21页为单数字员工路由、自然语言编排及工作流执行链，第23页为总控链路与治理能力。正文按具体功能名称组织，读者无需查看原PDF即可理解。",
+    "content": "<p><a href=\"https://bytedance.larkoffice.com/wiki/CkD6wo7CsiRLA0kALCvca4QNnDf\">源文档：AgentSphere 产品通案</a>。来源页码仅用于追溯：PDF第20页为场景意图与命中策略，第21页为单数字员工路由、自然语言编排及工作流执行链，第23页为总控链路与治理能力。正文按具体功能名称组织，读者无需查看原PDF即可理解。</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnjs5wZ42QGrmPMP6KgKonte",
+    "before": "P20／P21／P23 承接矩阵",
+    "after": "场景意图、数字员工编排与总控治理承接矩阵",
+    "content": "<h1 seq=\"auto\">场景意图、数字员工编排与总控治理承接矩阵</h1>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnI3nVTI2XbjlMHm2XKiezJe",
+    "before": "来源与能力",
+    "after": "具体功能",
+    "content": "<p>具体功能</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnAhtAMpm9Lpmh8oWLkaKNfh",
+    "before": "P20 场景与细分意图",
+    "after": "业务场景与细分意图配置",
+    "content": "<p>业务场景与细分意图配置</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnZXE3XFjvFwPbCYo79oJGoe",
+    "before": "P20 命中后 SOP",
+    "after": "意图命中后的业务流程执行（SOP）",
+    "content": "<p>意图命中后的业务流程执行（SOP）</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnXHJzoedRAB8jJruRHJpVJc",
+    "before": "P20 Skill 与 SubAgent 混编",
+    "after": "业务技能与子智能体混合编排（Skill／SubAgent）",
+    "content": "<p>业务技能与子智能体混合编排（Skill／SubAgent）</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnRwvIb3K058Kfa2SqkOzlSh",
+    "before": "P21 方式1：单数字员工路由",
+    "after": "将请求路由到单个数字员工",
+    "content": "<p>将请求路由到单个数字员工</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnoi4zg63SIgWuUQhTXShQWf",
+    "before": "P21 方式2：自然语言多数字员工编排",
+    "after": "用自然语言编排多个数字员工",
+    "content": "<p>用自然语言编排多个数字员工</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcn4x2ij14FLXx4ffppBdcRPo",
+    "before": "P21 方式3：Workflow 执行链",
+    "after": "用工作流配置多个数字员工的执行步骤",
+    "content": "<p>用工作流配置多个数字员工的执行步骤</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcn2DzKrChGc4uSLeoMWRmX8c",
+    "before": "P23 术语库与 Query 改写",
+    "after": "业务术语识别与用户问题改写",
+    "content": "<p>业务术语识别与用户问题改写</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnAKie9OXzMFAlSyaRsrlrpg",
+    "before": "P23 FAQ 快路径与兜底",
+    "after": "常见问答快速回复与未命中兜底（FAQ）",
+    "content": "<p>常见问答快速回复与未命中兜底（FAQ）</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcniuAqeBvO5NKPuaH2Sekz7g",
+    "before": "P23 单／多意图与 ReAct",
+    "after": "单意图执行、多意图任务规划与 ReAct 循环",
+    "content": "<p>单意图执行、多意图任务规划与 ReAct 循环</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnGgXlhetNlzQ2mznh4tSrub",
+    "before": "P23 短期／长期记忆",
+    "after": "短期对话历史与长期记忆",
+    "content": "<p>短期对话历史与长期记忆</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcn2merh5W2uxrR922BSgFFdH",
+    "before": "P23 知识召回",
+    "after": "按用户权限检索业务知识",
+    "content": "<p>按用户权限检索业务知识</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnK9RsUp8lhldHr4OOtYTtme",
+    "before": "P23 SubAgent／Skill Hub",
+    "after": "跨平台子智能体与业务技能统一接入",
+    "content": "<p>跨平台子智能体与业务技能统一接入</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcn2Ztl66iBU4bKKNJvulhFfe",
+    "before": "P23 输入与输出安全",
+    "after": "用户输入与回复内容的安全拦截",
+    "content": "<p>用户输入与回复内容的安全拦截</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnr00PXNnvQvCao2O7HauSne",
+    "before": "P23 总控及运营管控",
+    "after": "总控运行、统一门户与运营治理",
+    "content": "<p>总控运行、统一门户与运营治理</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcn07ENrBbzlAy6Teo2H6LTSg",
+    "before": "P23 P99<1s",
+    "after": "响应时延指标（P99小于1秒）",
+    "content": "<p>响应时延指标（P99小于1秒）</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcncCpHDpmAYgD43hRGm1tr7b",
+    "before": "事项与来源",
+    "after": "具体功能",
+    "content": "<p>具体功能</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnErhKzmW0lIrqqYgP8V04Zd",
+    "before": "真实业务办理／P20 SOP",
+    "after": "真实业务办理与业务流程执行",
+    "content": "<p>真实业务办理与业务流程执行</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnnzSEaFaSWEr5Q08cPnslBb",
+    "before": "单个独立数字员工与 Skill 混编／P20、P21方式1及3",
+    "after": "独立数字员工调用、技能混编与工作流执行链",
+    "content": "<p>独立数字员工调用、技能混编与工作流执行链</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnbKdjSERDZI5XIEMWumS7tR",
+    "before": "自然语言多数字员工规划／P21方式2",
+    "after": "用自然语言规划多个数字员工的任务",
+    "content": "<p>用自然语言规划多个数字员工的任务</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcn7T8bRr3yqnRNEXxTI1774b",
+    "before": "多意图自动执行及 ReAct／P23",
+    "after": "多意图任务自动执行与 ReAct 循环",
+    "content": "<p>多意图任务自动执行与 ReAct 循环</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnjRhZuvvHqI1JcW4GRVzHFd",
+    "before": "统一 SubAgent／Skill Hub 与原资产迁移／P20、P23",
+    "after": "跨平台子智能体与技能统一接入、原有资产迁移",
+    "content": "<p>跨平台子智能体与技能统一接入、原有资产迁移</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnGqvvrHQlcUhA1S3l41M3Rf",
+    "before": "FAQ、术语改写与知识权限／P23",
+    "after": "常见问答、术语改写与知识访问权限",
+    "content": "<p>常见问答、术语改写与知识访问权限</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnlyE46ISLi79hALnL9VHfFe",
+    "before": "短期／长期记忆等价承接／P23",
+    "after": "短期对话历史与长期记忆的等价承接",
+    "content": "<p>短期对话历史与长期记忆的等价承接</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnEGqyzMqhQbQOzdxBr9jPdd",
+    "before": "输入／输出安全及统一管控／P23",
+    "after": "输入与输出安全、统一管控",
+    "content": "<p>输入与输出安全、统一管控</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnb4Uqsr8EmeBOFGfNLqTuhb",
+    "before": "P99<1s与生产稳定性／P23",
+    "after": "响应时延达标与生产稳定性",
+    "content": "<p>响应时延达标与生产稳定性</p>",
+    "done": true
+  },
+  {
+    "block_id": "doxcnVMS7qlGxrAb1y1iTquwDPb",
+    "before": "下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将 P21 方式1 从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不覆盖该实验，也不覆盖生产全量切流。",
+    "after": "下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将“单数字员工路由”从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不覆盖该实验，也不覆盖生产全量切流。",
+    "content": "<p>下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将“单数字员工路由”从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不覆盖该实验，也不覆盖生产全量切流。</p>",
+    "done": true
+  }
+]

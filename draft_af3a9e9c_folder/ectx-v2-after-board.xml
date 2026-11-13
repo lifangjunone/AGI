@@ -1,0 +1,148 @@
+<p><b>图示状态：</b>“已有”表示当前源码具备；“待实现”表示本方案新增；“实验”表示必须先验证增益。图中的统一证据包、双模式执行和反馈归并尚未在本次分析中实施。GBrain 是可选的派生检索分支；e-ctx 的原始记录、身份、授权与审计始终是事实和权限依据。</p>
+<h1 seq="auto">效果最佳默认，极速可选</h1>
+<p>界面保留这两个模式。效果最佳按任务效果选模型与执行方法，不以节省调用费作为选择目标；极速明确缩小处理流程。模式选择不改变授权与发送资格。每轮固定配置快照，切换只影响下一轮。</p>
+<table><thead><tr><th><p>维度</p></th><th><p>效果最佳（默认）</p></th><th><p>极速</p></th></tr></thead><tbody>
+<tr><td><p>证据</p></td><td><p>任务分解、多源召回、重排、上下文展开；先处理身份、时效与冲突，再生成。重要缺口必须补证或明确保留。</p></td><td><p>宿主预取当前会话及适用的已审核背景，使用固定大小证据包；明确说明未覆盖范围。</p></td></tr>
+<tr><td><p>生成与核验</p></td><td><p>使用任务验证过的最强可用写作模型；独立核验关键结论及成果验收项；必要时补证、修订并重新核验。</p></td><td><p>确定性预检索后一次生成，不启用模型工具循环；执行同一格式、来源资格、权限与发送检查。重要结论无法核验时进入待审。</p></td></tr>
+<tr><td><p>候选</p></td><td><p>完整单候选作为对照配置；复杂沟通、存在多种合理方案时实验 2–3 个完整候选。所有候选都必须正确、得体且完成任务，不能分别只追求事实或风格。</p></td><td><p>一个候选。材料不足不能靠编造完成，用户可显式切换效果最佳继续。</p></td></tr>
+<tr><td><p>运行</p></td><td><p>阶段持久化、可取消、故障可恢复。允许更高调用量，但每个阶段有超时和重试上限，不无限循环。耗时目标根据真实任务分层测量。</p></td><td><p>限制输入量与生成预算；单次模型调用仍可能失败或慢，端到端延迟通过实际网络与模型压测确定。</p></td></tr>
+</tbody></table>
+<p><b>纠正原方案的调用次数定义：</b>现有直连使用 <code>completeWithTools</code>，可能包含多轮模型调用，不能原样命名为“严格单次”。要实现极速契约，需要将预检索移到宿主，并使用一次生成调用；本次仅提出改造，没有声称已完成。</p>
+<h2>模型与核验策略</h2>
+<ol>
+<li><b>角色真实接线：</b>分别解析任务规划、写作、核验、嵌入与重排模型。角色名不等于模型已切换，必须记录实际提供方、模型标识、版本及配置。现有 modelMain 用作兼容值，不自动称为“最强”。</li>
+<li><b>以任务选模型：</b>在已获授权、可用的模型中，分别测试中文事实问答、跨来源综合、工具任务和本人风格。默认选择该任务类通过安全与质量验收后效果最好的配置；新模型先旁路评测。</li>
+<li><b>核验独立：</b>核验器读取任务、原始证据和成果，不依赖生成器自评。检查每个关键结论的主体、动作、时间、否定、数量、因果和完成状态；给出支持／冲突／未知，不用模型自报置信度代替正确率。</li>
+<li><b>修订后再核验：</b>修订可能引入新错误，必须对变更结论重新核验。初始实验允许最多 2 轮补证／修订；仍无依据时保留有据部分并明确缺口，进入待审，不能反复采样直到得到想要的结论。</li>
+<li><b>多候选有效性：</b>随机化候选顺序、隐藏模型名称；人工复核同模型裁判偏差。候选数量、同模型／异模型核验分别做消融比较，只有有稳定增益的组合进入默认任务配置。</li>
+</ol>
+<h1 seq="auto">统一知识与个人风格：先解决记得准、用得上</h1>
+<h2>一个原始依据，多个可重建视图</h2>
+<p>渠道原始资料及版本、本人身份、权限范围和人工回执保存在现有 Store。工作 Wiki、图谱、画像、偏好与检索索引是派生视图；它们可帮助定位证据，不能相互引用后把同一条原话变成多份独立证明。</p>
+<ol>
+<li><b>授权取数：</b>宿主签发本轮任务范围与 policyEpoch（授权版本），模型只提出检索问题，不能扩大渠道、身份和披露范围。本人私有任务可综合已授权多来源；对外回复额外绑定受众，不能因为“已经采集”就允许披露。</li>
+<li><b>关联事实：</b>以稳定原生身份区分本人和他人；项目别名须有明确证据或人工确认。分别记录事件时间、记录时间、有效期与撤销状态；“讨论过／准备做／做过／结果已验证”分开。</li>
+<li><b>检索融合：</b>先把已有全文检索、向量近邻和 Reciprocal Rank Fusion（RRF，倒数排名融合，把多路排名合并）接入同一接口，再做查询相关性重排。按原始 sourceVersionId 去重，保留支持与反对证据，不把各引擎命中次数当置信度。</li>
+<li><b>证据展开：</b>命中片段不足以解释否定、指代或上下文时，展开相邻消息／章节；保留说话人和截断标记。无法映射原文的命中只能作为线索，不能成为外显结论依据。</li>
+<li><b>失效传播：</b>撤权、删除、身份切换先停止相关派生材料被读取，再异步清理或重建；生成后和发送前重查依赖版本。重授权必须重新建立有效依赖，不能复活旧缓存。</li>
+</ol>
+<p><b>新资料与撤权分开处理：</b>当前 WeClone 全量语料指纹变化会使画像失效；新增消息也可能触发重建。新增资料应推动增量更新和“待刷新”状态，删除／撤权则立即禁用依赖项。实现前必须建立逐来源依赖，不能简单取消现有指纹保护。</p>
+<h2>风格、事实、方法分别学习</h2>
+<table><thead><tr><th><p>学习对象</p></th><th><p>输入与处理</p></th><th><p>生效条件</p></th></tr></thead><tbody>
+<tr><td><p>事实与经历</p></td><td><p>多来源证据、本人明确确认、事件与结果。推断与原话分别存储；冲突不直接覆盖。</p></td><td><p>可回溯、在当前授权内、结论受到来源支持。事实变化不自动改写表达偏好。</p></td></tr>
+<tr><td><p>风格与偏好</p></td><td><p>本人措辞统计、经审核示例、明确偏好。按对象／任务区分正式、日常等场景；脱敏风格示例不携带无关私人事实。</p></td><td><p>绑定版本、来源依赖和适用范围。显式偏好优先于统计推断；本人撤回后模型不能靠重复命中将其恢复。</p></td></tr>
+<tr><td><p>能力与方法</p></td><td><p>复用已有案例综合、能力快照和纠错队列。明确实际行动及可观察结果，失败案例同样参与适用条件提炼。</p></td><td><p>方法先成为候选，再用未参与学习的案例试岗；资格限定具体版本和场景。新修订重新验证。</p></td></tr>
+<tr><td><p>仅本次修改</p></td><td><p>保留当前任务的审核结果，不自动推广为长期规则。</p></td><td><p>不会因为“发送成功”就推断用户希望以后总是这样说。</p></td></tr>
+</tbody></table>
+<p>反馈入口同时支持回复、简报与能力成果。发送成功只证明动作成功；直接采用只证明本次用户接受；长期方法有效需要后续独立任务证明。规则应用计数是观察记录，不是自动提升真实性的票数。</p>
+<h1 seq="auto">开源采用清单：名称、地址、源码与边界</h1>
+<p>以下明确区分已接入、计划移植、实验接入和仅参考。源码快照来自本次 GitHub 检查；这次没有安装新运行引擎或移植源码。</p>
+<table><thead><tr><th><p>项目与地址</p></th><th><p>e-ctx 的具体采用方式</p></th><th><p>验收与限制</p></th></tr></thead><tbody>
+<tr><td><p><b>WeClone</b><br/><a href="https://github.com/xming521/WeClone">xming521/WeClone</a></p></td><td><p>已有独立 Python 进程和画像事实适配；本期补风格产物读取、StyleProfile 与消费证据。</p></td><td><p>单聊两角色格式不能直接承载群聊身份；风格需验证实际存在并被使用。当前适配器的安装状态不等于本机已完成真实训练或效果达标。</p></td></tr>
+<tr><td><p><b>Open Second Brain</b><br/><a href="https://github.com/itechmeat/open-second-brain">itechmeat/open-second-brain</a></p></td><td><p>计划移植 <code>src/core/store/fold-preferences.ts</code> 及必要依赖的偏好事件归并逻辑，适配现有 Store：人工权威优先、字段级状态、删除标记、幂等和派生计数。</p></td><td><p>将来源归属与撤回测试一起移植。旧事件仍可能留在账本，因此逻辑删除与物理清理必须分开设计；不把上游函数包装成完整学习引擎，不引入第二套 Markdown 真源。</p></td></tr>
+<tr><td><p><b>GBrain</b><br/><a href="https://github.com/garrytan/gbrain">garrytan/gbrain</a></p></td><td><p>明确建设实验适配器。使用混合检索和 <code>src/core/search/evidence-delivery.ts</code> 的窗口／章节证据展开能力，与现有检索同题比较。</p></td><td><p>上游有 PostgreSQL／PGlite 引擎及 Bun 运行要求，并非只读 SDK。优先验证本地 PGlite 派生索引与桌面打包；导入端可写、查询端只读。禁止业务状态写入或独立抓取、绕过模型路由。未通过前不开默认路径。</p></td></tr>
+<tr><td><p><b>COG Second Brain</b><br/><a href="https://github.com/huytieu/COG-second-brain">huytieu/COG-second-brain</a></p></td><td><p>改编 <code>.claude/agents/task-verifier.md</code> 的只读验收规范：逐项证据、失败原因、可修复与需升级处理。</p></td><td><p>它是流程与提示规范，不是可直接调用的多候选评分库。e-ctx 自己实现结构化核验器及测试，不自动安装整套 Agent 目录或继承其工具权限。</p></td></tr>
+<tr><td><p><b>LLM Wiki</b><br/><a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">Karpathy idea file</a></p></td><td><p>知识编译思想参考；现有工作 Wiki 已具备相关基础。本期重点是跨批次综合、来源支持与增量更新。</p></td><td><p>这是构想文件，不是可安装的成品库，不列为运行依赖。</p></td></tr>
+<tr><td><p><b>ai-memory</b><br/><a href="https://github.com/akitaonrails/ai-memory">akitaonrails/ai-memory</a></p></td><td><p>编码 Agent 记忆的补充参考。</p></td><td><p>当前不接入数字分身主链，避免再增一套状态与提示注入入口。</p></td></tr>
+<tr><td><p><b>Agent Second Brain</b><br/><a href="https://github.com/smixs/agent-second-brain">smixs/agent-second-brain</a></p></td><td><p>保留语音采集交互的候选参考。</p></td><td><p>不作为本期核心依赖；本次未对其语音效果做测评。</p></td></tr>
+<tr><td><p><b>Claude Second Brain</b><br/><a href="https://github.com/jessepinkman9900/claude-second-brain">jessepinkman9900/claude-second-brain</a></p></td><td><p>保留研究记录，不引入整套脚手架。</p></td><td><p>与现有知识和任务结构重叠，暂不承担核心能力。</p></td></tr>
+<tr><td><p><b>Baalda</b><br/><a href="https://github.com/naveedharri/baalda">naveedharri/baalda</a></p></td><td><p>团队协作形态的后续参考。</p></td><td><p>不进入当前个人数字分身主链；若后续采用，按具体模块核对许可证。</p></td></tr>
+</tbody></table>
+<p><b>本次核对快照：</b>Open Second Brain <code>233b91d1bdc7cf74c47ea1c1fd72e949887e1fc4</code>；GBrain <code>5ad4345f56a13e275ba5d1ca3e7faabcd890cf13</code>；COG <code>144c7a3a959cc99538b7dfee9c22c4b065a0e156</code>；WeClone <code>c9b346cf2a903a4112ff62bb415083497ba13f1d</code>。这是研究快照，不表示当前 e-ctx 安装或锁定了这些版本。前三者仓库许可证接口本次均返回 MIT；正式移植仍须保留实际文件版权、依赖清单及 THIRD_PARTY_NOTICES。WeClone 继续独立进程适配，发版前按实际安装版本核对分发义务，不能把进程隔离当作许可证豁免。</p>
+<h2>GBrain 实验必须回答的问题</h2>
+<ol>
+<li>在相同授权材料、相同嵌入模型、相同上下文预算下，相比已有全文／向量／图谱／Wiki 融合，是否找回更多必要证据，而不是重复命中相同来源？</li>
+<li>证据展开是否改善跨句否定、人物归属、长会话和日期纠正？结果能否稳定映射 e-ctx 的来源版本并再次验权？</li>
+<li>本地 PGlite 引擎、Bun 及资源文件能否在目标桌面安装包中启动、退出、升级和恢复？冷启动、内存、索引体积与增量延迟分别是多少？</li>
+<li>撤权与身份切换时能否先关闭查询资格；清理失败、旧版本索引、并发导入是否均不会向成果暴露失效来源？</li>
+<li>前述条件通过后，按任务类型纳入最强配置；若无独立质量增益，保留实验结果，移除运行依赖。收益由证据决定。</li>
+</ol>
+<h1 seq="auto">接口与文件级实施方案</h1>
+<p>以下契约是拟新增草案。复用现有 TurnRequest、ReplyProposal、能力协议与任务存储，先增加适配层，再逐步统一；不一次性重写整个 Persona 服务。</p>
+<pre lang="typescript"><code>type ExecutionProfile = "quality" | "fast"
+interface TaskEnvelope {
+  taskId: string
+  kind: "reply" | "brief" | "capability"
+  audience: "owner" | "external"
+  profile: ExecutionProfile
+  scopeRef: string
+  policyEpoch: number
+  inputVersion: string
+  acceptance: string[]
+}
+interface EvidenceItem {
+  id: string
+  sourceVersionId: string
+  parentSourceIds: string[]
+  actorRef: string | null
+  quote: string
+  eventAt: string | null
+  recordedAt: string | null
+  support: "direct" | "inferred" | "disputed"
+  disclosureRef: string
+}
+interface ContextPack {
+  task: TaskEnvelope
+  evidence: EvidenceItem[]
+  styleVersion: string | null
+  capabilitySnapshotId: string | null
+  preferenceRuleIds: string[]
+  conflicts: string[]
+  gaps: string[]
+  sourceVersions: string[]
+}
+interface TaskResult {
+  taskId: string
+  state: "needs_input" | "draft" | "reviewed" | "executed" | "failed"
+  content: string
+  claims: { text: string; evidenceIds: string[]; verdict: "supported" | "conflict" | "unknown" }[]
+  actionReceiptRefs: string[]
+  runManifestRef: string
+}</code></pre>
+<p>完整实现还需 schema 校验、取消信号、来源跨度、保留策略及错误码。scopeRef 与 disclosureRef 引用宿主规则，不能由模型提交任意范围。引用查验与发送资格由确定性逻辑执行；“结论是否被证据支持”需要语义核验和评测，不能声称字符串匹配就足够。</p>
+<table><thead><tr><th><p>位置</p></th><th><p>修改与验收</p></th></tr></thead><tbody>
+<tr><td><p><code>persona-compose.ts</code><br/><code>persona.service.ts</code></p></td><td><p>提取共享提示材料构建器；Agent 与直连均消费同一 ContextPack；覆盖正常、主动直连、Agent 故障、图像和长期纠错场景。降级保留材料，记录实际执行路径。</p></td></tr>
+<tr><td><p><code>persona-knowledge.ts</code><br/><code>persona-memory.ts</code><br/><code>packages/retrieval</code></p></td><td><p>增加受宿主范围约束的 EvidenceAssembler；复用向量、全文、RRF；保留完整来源映射与无结果原因，替换正则作为唯一经历入口的做法。</p></td></tr>
+<tr><td><p><code>work-wiki-compiler.service.ts</code><br/><code>work-wiki-subjects.ts</code><br/><code>packages/store</code></p></td><td><p>跨批次综合后回溯原始证据；增加结论支持性、矛盾与时间状态；复用现有任务租约、断点、publish 前依赖校验。来源更新触发受影响页面重编。</p></td></tr>
+<tr><td><p><code>weclone.service.ts</code><br/><code>weclone-worker.py</code><br/><code>ipc-contract/src/weclone.ts</code></p></td><td><p>输出真实 StyleProfile 状态与版本；保留 forge 风格回退；新增资料可刷新与权限撤销失效分离，前提是来源依赖准确。测试关闭、过期、缺产物与实际消费。</p></td></tr>
+<tr><td><p><code>capability-feedback.service.ts</code><br/><code>capability-learning.ts</code><br/>拟新增偏好事件归并模块</p></td><td><p>复用现有队列与快照；移植 Open Second Brain 的事件归并；区分事实／表达／方法／临时修改。核验重复事件、乱序、人工撤回、旧模型事件及新版本资格重置。</p></td></tr>
+<tr><td><p>拟新增 <code>persona-execution.ts</code><br/><code>persona-verifier.ts</code><br/>运行配置与任务账本</p></td><td><p>两模式编排、模型角色解析、验收项核验、补证修订、候选实验开关、取消恢复。每轮记录真实模型、证据版本、降级、耗时和成果状态；默认不记录隐含思考或完整私聊副本。</p></td></tr>
+<tr><td><p>拟新增 <code>gbrain-index-bridge.ts</code><br/><code>gbrain-recall-adapter.ts</code></p></td><td><p>固定版本实验依赖、受控导入、只读查询面、索引代际和健康状态；先旁路比较，满足验收再按任务路由。e-ctx 控制模型调用与所有数据入口。</p></td></tr>
+<tr><td><p><code>digital-twin-module.tsx</code><br/>会话、能力及成果视图<br/><code>ipc-contract</code></p></td><td><p>任务输入、两模式、成果与依据、反馈分类、学习变化与试岗记录；配置后置。支持桌面及 390px 无横向溢出，键盘可操作，刷新后任务状态可恢复。</p></td></tr>
+</tbody></table>
+<h2>失败、取消与并发的明确行为</h2>
+<ol>
+<li>关键来源撤权或版本改变：相关成果标记需重新核验；在完成前阻止基于失效资料发送。独立且仍有效的材料可重新生成新草稿。</li>
+<li>核验器不可用：显示“核验未完成”，保留待审成果，不声称效果最佳流程已完成；用户可以查看已有内容或重试。</li>
+<li>GBrain 或图谱不可用：列明未覆盖的检索来源。若缺失会影响验收，则需要补证；不能把“不报错”当作证据完整。</li>
+<li>用户取消、应用退出或任务恢复：按任务与阶段幂等保存；外部动作恢复前先查回执，不能重复发送。文档／消息发送与其他外部变更继续遵守现有明确授权。</li>
+<li>多个反馈并发：以快照版本比对后发布；人工明确撤回优先于后来到达的模型建议。草稿学习、任务资格、真实执行分别计数。</li>
+</ol>
+<h1 seq="auto">实施批次：每批交付一个可用结果</h1>
+<p>时间为单个熟悉代码的工程师连续投入的初步估算，按每天 8 小时计；是排期输入，不是交付承诺。完成第一批后再按实际运行与模型评测收敛后续工作量。</p>
+<table><thead><tr><th><p>批次</p></th><th><p>交付</p></th><th><p>退出条件</p></th><th><p>估算</p></th></tr></thead><tbody>
+<tr><td><p>1／P0</p></td><td><p>共享材料构建、风格实际消费、现状测评基线</p></td><td><p>两条路径不丢能力材料与规则；风格有消费证据；建立含失败案例的任务基线。</p></td><td><p>24–40 小时</p></td></tr>
+<tr><td><p>2／P0</p></td><td><p>“进展回复＋项目简报”纵向闭环，统一证据与独立核验，两模式配置</p></td><td><p>真实授权项目可交付、核对、修改；材料不足有明确状态；修订后复核，确认前不执行外部动作。</p></td><td><p>48–80 小时</p></td></tr>
+<tr><td><p>3／P1</p></td><td><p>Open Second Brain 偏好归并移植、成果反馈、能力试岗闭环</p></td><td><p>本次修改和长期偏好分开；撤回及并发正确；未参与学习的任务验证改进。</p></td><td><p>32–56 小时</p></td></tr>
+<tr><td><p>4／P1</p></td><td><p>GBrain 实验适配、多候选及模型组合消融</p></td><td><p>给出独立收益与桌面兼容报告；有效组合进入任务配置，无增益组合不进入默认依赖。</p></td><td><p>40–72 小时</p></td></tr>
+<tr><td><p>5／发布</p></td><td><p>锁定评测、真实使用观察、默认效果最佳发布</p></td><td><p>质量和安全门槛通过，按任务类型确认默认路由；可回滚，不改变已有权限。</p></td><td><p>工程 24–40 小时；使用观察 1–2 周</p></td></tr>
+</tbody></table>
+<p>从第一批开始就交付可检查成果，GBrain 和多候选实验不阻塞主流程修复。新执行器只有通过验收后才对用户默认启用；开发期间不把尚未接通的“效果最佳”标签展示成已可用功能。</p>
+<h1 seq="auto">效果验收：证明更强，而不是宣称最强</h1>
+<h2>数据与对照设计</h2>
+<p>先整理 60 个开发诊断任务发现问题，再建设与开发隔离的至少 200 个锁定任务，建议五类各 40 个：会话回复、跨来源综合、本人经历与风格、能力执行、缺证／冲突／撤权。数字为首轮设计目标，不是已采集数量。仅使用用户授权材料；学习与评测按项目／对话／时间切分，避免同一案例换个说法同时出现在训练和测试中。</p>
+<p>对照配置：A 当前工作树基线；B 仅修复路径与风格；C B 加统一证据与独立核验；D C 加 GBrain；E C 加多候选；F D 加多候选；另测极速。固定任务、材料、模型和预算比较组件增益，再分别比较模型配置。这样能区分改善来自接线、检索、核验还是更强模型。</p>
+<p>核验测试至少覆盖 1,000 个带人工标注的可核查结论，并单独报告每类任务的结果。候选匿名且顺序随机；两位评审独立打分，分歧复核。本人风格由本人评判；专业事实由能核对证据的评审判定。报告平局、失败和超时，不只统计成功生成的样本。</p>
+<table><thead><tr><th><p>指标</p></th><th><p>定义与首轮发布门槛建议</p></th></tr></thead><tbody>
+<tr><td><p>主要产品指标</p></td><td><p>每周经用户确认可用的成果数，并报告每项成果的人工处理时间。目标是用户能完成更多真实工作；任务启动数、token 消耗和知识页数量仅作诊断。</p></td></tr>
+<tr><td><p>盲评效果</p></td><td><p>效果最佳相对基线的胜率，平局计 0.5，报告 95% 置信区间；整体下界高于 50%，关键任务类别无明显退化。多候选与 GBrain 还要分别对 C 证明增益，不能只对弱基线比较。</p></td></tr>
+<tr><td><p>事实与覆盖</p></td><td><p>关键事实正确且证据支持率目标 ≥95%；无依据结论率目标 ≤1%，同时报告结论数与置信区间。伪造完成状态、混淆本人和他人等严重错误必须逐例修复并回归；小样本零错误不等于生产零错误。</p></td></tr>
+<tr><td><p>可用性与本人风格</p></td><td><p>直接采用、轻改、重写、放弃分别统计；“轻改”按是否改变事实／结构定义，不能只看字符差异。风格盲评在事实正确的样本上比较，并报告完整样本中事实达标比例。</p></td></tr>
+<tr><td><p>学习是否有效</p></td><td><p>学习前后在留出任务上比较相同错误复发率、正确规则应用率与错误推广率。明确撤回后不得再应用；事实纠正不误转成措辞规则。</p></td></tr>
+<tr><td><p>可靠性与速度</p></td><td><p>分别记录冷／热启动、证据召回、首个可用内容、完整成果的中位数与第 95 百分位。原“极速 5 秒”仅可作为待测目标，未实测前不承诺；效果最佳须阶段可见、可取消、可恢复，无无界重试。</p></td></tr>
+<tr><td><p>安全与执行</p></td><td><p>跨身份、撤权、过期草稿、提示注入、未经确认发送、重复执行、来源删除后的缓存读取作为阻断回归项；失败即停止发布。合成测试通过不等于已证明所有生产场景安全。</p></td></tr>
+</tbody></table>
+<p><b>真实使用验证：</b>锁定集通过后，进行 1–2 周本人实际工作观察，按任务统计采用、修改、放弃与节省的人工时间。真实反馈不能倒灌锁定测试集；后续版本更换测试集时保留旧集回归。</p>
+<h1 seq="auto">交付范围与最终决定</h1>
+<callout emoji="💡" background-color="light-orange" border-color="orange"><p><b>优先交付“可用成果＋可查依据＋可验证改进”。</b>保留 e-ctx 的现有数据与治理底座；修复材料与风格消费；移植 Open Second Brain 的具体偏好归并代码；采用 COG 的独立验收规范；实际建设 GBrain 对照适配器，并以独立收益决定默认接入范围。默认效果最佳、极速可选，执行配置服从任务质量证据。</p></callout>
+<p>本次交付为源码分析、原方案重构和优化架构图，未实施上述新代码、未安装新开源依赖、未运行真实模型盲测。已验证的 53 项测试属于现有机制验证；新功能的效果、桌面打包兼容及生产可靠性必须按上述批次分别验收。</p>

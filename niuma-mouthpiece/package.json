@@ -1,0 +1,15 @@
+{
+  "name": "niuma-mouthpiece",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "牛马嘴替：面向中文打工人的 AI-ready 发疯解压 H5。",
+  "scripts": {
+    "dev": "PORT=45410 node --watch server.mjs",
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

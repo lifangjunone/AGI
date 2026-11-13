@@ -1,0 +1,33 @@
+You are the isolated lark-whiteboard subagent required by the active lark-doc workflow. Complete the authorized existing board revision end to end now, including remote write and remote visual verification. Do not just propose work.
+
+SCOPE AND AUTHORIZATION
+Only remote write allowed: whiteboard AMIfwDzkAhGtB7bTrFScWX2Tngg. Preserve board token. Parent doc Rp6IdjynDoCZYyxjdlictdg6n2V, block doxcnmqmcG83mDCdObBO6PSemKg. Never write document prose, new doc/board, repo code, settings, or deployment files. Local artifacts only in /Users/bytedance/Desktop/agi/draft_af3a9e9c_folder named ectx-v2-architecture.*.
+User explicitly requested finishing the previously authorized revision, including optimization and new architecture, no new permission for intended revision. This is authorized structural replacement, not append. Parent has explained the SVG node/binding rebuild and unchanged board token. Do not ask for redundant authorization for the intended replacement. Retain old exports.
+
+REQUIRED WORKFLOW
+Read /Users/bytedance/.trae-cn/plugins/trae-remote-official/lark/1.0.7/skills/lark-whiteboard/SKILL.md, lark-shared/SKILL.md, whiteboard references/lark-whiteboard-workflow.md, routes/svg-edit.md and routes/svg.md, export/update references as needed. Follow required SVG rendering and geometry check before writing, dry-run before overwrite, use stable idempotent token. Model family GPT, SVG route.
+Parent has run lark-cli --version (1.0.98) and npx -y @larksuite/whiteboard-cli@^0.2.13 -v (0.2.13).
+Parent verified remote right now: docs +fetch range returns exact authorized block and board token, doc revision 13. whiteboard source export returns no code blocks. New raw export ectx-v2-architecture.remote-before.json contains 87 nodes, structurally identical after sorting ids to original ectx-v2-architecture.before.json. Old .before.svg and .before.jpg also inspected. Check original JPG yourself to understand replacement.
+Use apply_patch for manual file edits. Use relative CLI --source/--output paths in artifact cwd. No secrets in logs. lark CLI --as user. If actual auth failure, report it to parent, do not run auth/config commands. Do not modify other remote assets.
+Render local SVG with whiteboard-cli and visually inspect. Run --check and resolve real text overflow/overlap. Prior to write, re-export remote raw and compare with remote-before to guard against concurrency; halt if changed. Update using SVG overwrite at same board token, stable idempotent token ectx-v2-20261110-quality-architecture. Export final remote raw, SVG and preview; VISUALLY INSPECT final remote preview, not just local output. If remote preview initially stale, retry export after a short wait. Return exact successful write response, token, local final preview/source paths, and honest limitations.
+
+DESIGN
+Readable Chinese e-ctx quality-first product architecture. Warm paper background, dark text, orange accent. Six spacious readable flow layers, not dense tables. Large readable type and generous line spacing; reasonably compact canvas aspect ratio to avoid tiny final preview. Distinguish status explicitly: 已有 / 待实现 / 实验. Header must state 架构提案，并非全部已实现. Status facts are supplied below; do not turn planned features into existing functionality.
+Use Chinese for diagram, English code/project names intact. Main visual should be a six-layer architecture with arrows and a prominent default quality path, a smaller speed path, and very small dashed GBrain branch, not six equal text tables.
+
+REQUIRED CONTENT (all)
+1 Product loop: 交任务 -> 查看成果与依据 -> 本人审阅 -> 纠错试岗. Outcomes: 回复草稿 / 项目简报 / 能力工作成果.
+2 e-ctx only source of truth: identity + authorized scope + policyEpoch + versioned originals + audit (身份、授权范围、policyEpoch、版本化原文、审计). Existing derived assets: Work Wiki (cross-source people/project synthesis; 跨来源人物/项目综合), KL-Graph, approved WeClone facts, forge style, capability snapshots. WeClone is an existing EXTERNAL PROCESS; consuming its StyleProfile is PLANNED, not done. LLM Wiki idea already reflected in Work Wiki.
+3 PLANNED shared TaskEnvelope / ContextPack -> evidence assembler. FTS exists; vector/RRF wiring planned. Wiki/KL source deduplication, actor/time/conflict handling + original revalidation. Owner-private workspace scope distinctly different from external-reply disclosure (本人私有工作区读取范围 != 对外回复披露范围).
+4 Two PLANNED UX modes: 效果最佳 DEFAULT -> strong task-validated Writer -> independent claims/acceptance verification -> bounded revise and recheck. Normally 1 candidate; conditional 2-3 for complex tasks ONLY based on measured benefit, not fixed three. 极速 optional: deterministic pre-retrieval -> single generation -> shared hard checks. Missing evidence means pending review. Stage queue, cancel/resume planned. COG: adapted verifier specification, NOT a runtime engine.
+5 ReplyProposal / TaskResult with citations + unknowns -> existing deterministic policy/send guard -> REQUIRED owner confirmation -> real action receipts (distinguish 已执行 vs 仅建议). No silent sending.
+6 feedback edit classification: facts/style/method/temporary (事实/风格/方法/临时) -> explicitly confirmed candidate version -> held-out trial (留出任务试岗) -> scoped applicable rule + rollback. Reuse existing capability feedback. This closed-loop orchestration is planned where not existing.
+
+OPEN SOURCE PLACEMENTS
+- WeClone: existing external process, approved facts existing; StyleProfile link pending.
+- Open Second Brain: PLANNED fold-preferences CODE PORT into e-ctx Store; authority/tombstone/ledger, no new source of truth.
+- GBrain: EXPERIMENTAL local derived index adapter, shadow comparison ONLY first. PGlite/Bun packaging unverified, NOT main default. Small optional dashed branch connected to evidence layer.
+- COG verifier specification adapted, not runtime engine, associated with independent verifier.
+- LLM Wiki idea already reflected in Work Wiki.
+
+Old incorrect fixed3 candidates and defaultGBrain assertions must disappear. Do not label everything implemented. Do not add unsupported implementation claims.

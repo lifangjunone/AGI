@@ -1,0 +1,125 @@
+<title>NVIDIA Auto Ontology：企业数据的可信语义层</title>
+<callout emoji="💡" background-color="light-green" border-color="green">
+  <p><b>一句话结论：</b>NVIDIA Auto Ontology 不是普通知识图谱工具，而是一套位于企业数据库与 AI Agent 之间的语义中间层。它把表、列、连接关系和历史 SQL 编译成经过认证的业务术语、指标公式与关系网络，让 Agent 能更可靠地生成 SQL，并返回可核验的答案来源。</p>
+</callout>
+<p>适合读者：正在建设企业数据问答、Text-to-SQL、指标治理、数据目录或 Agent 数据分析平台的产品与技术负责人。</p>
+<img href="https://raw.githubusercontent.com/NVIDIA/auto-ontology/main/docs/assets/arch.png" width="760" caption="NVIDIA Auto Ontology 官方系统架构图"/>
+
+<h1 seq="auto">它解决什么问题</h1>
+<p>企业数据库保存的是技术结构，例如 <b>sales.invoicelines.extendedprice</b>；业务人员使用的却是“收入”“客户”“产品”等概念。大模型如果直接面对表和字段，往往会猜错指标口径、连接路径或过滤条件。</p>
+<p>Auto Ontology 在两者之间增加一层可治理的业务语义：</p>
+<table>
+  <colgroup><col width="170"/><col width="260"/><col width="300"/></colgroup>
+  <thead><tr><th background-color="light-gray"><p>语义资产</p></th><th background-color="light-gray"><p>作用</p></th><th background-color="light-gray"><p>示例</p></th></tr></thead>
+  <tbody>
+    <tr><td><p><b>Term</b> 业务术语</p></td><td><p>定义业务对象并映射到真实字段</p></td><td><p>Customer、Invoice Line、State Province</p></td></tr>
+    <tr><td><p><b>SQL Attribute</b> 指标公式</p></td><td><p>保存经过审核的 SQL 表达式</p></td><td><p>收入、毛利、滚动总额</p></td></tr>
+    <tr><td><p><b>Relationship</b> 业务关系</p></td><td><p>描述表之间如何连接</p></td><td><p>发票行 → 发票 → 客户 → 城市 → 州</p></td></tr>
+  </tbody>
+</table>
+
+<h1 seq="auto">业务架构</h1>
+<whiteboard type="mermaid">
+flowchart LR
+    A[企业数据源<br/>Schema · 样本 · 历史 SQL] --> B[数据摄取与画像<br/>字段分析 · 样本探测]
+    B --> C[语义编译器<br/>术语抽取 · 关系推断 · 指标生成]
+    C --> D[(Postgres + pgvector<br/>目录 · 本体 · 向量)]
+    E[业务专家<br/>修订 · 测试 · 认证] --> D
+    D --> E
+    F[用户或外部 Agent<br/>Web · REST API · MCP] --> G[Text-to-SQL Agent<br/>召回 · 生成 · 校验 · 修复]
+    D --> G
+    G --> A
+    G --> F
+</whiteboard>
+<p>图中的主线分为两个阶段：先建设并认证语义层，再由查询 Agent 使用语义层回答问题。自动生成只是草稿，人工认证决定它能否成为可信的生产资产。</p>
+
+<h1 seq="auto">语义建设闭环</h1>
+<ol>
+  <li><b>读取数据源：</b>连接 PostgreSQL、MySQL、Snowflake、Databricks、ClickHouse 等关系型引擎，提取 Schema、字段、主外键、样本值和历史 SQL。</li>
+  <li><b>生成术语：</b>按表分析业务含义，把列分配给一个或多个业务 Term，并生成描述、同义词和显示名称。</li>
+  <li><b>解析关系：</b>综合声明式外键、字段名称、样本值和模型判断，推断语义外键、桥接表及默认连接路径。</li>
+  <li><b>生成指标：</b>从历史查询中识别可复用的 SQL Attribute，避免每次提问重新发明“收入”“毛利”等口径。</li>
+  <li><b>向量化检索：</b>把表、列、术语和指标写入 pgvector，使问题可以通过语义相似度召回相关候选。</li>
+  <li><b>人工认证：</b>业务专家通过真实问题测试、修改定义和公式，并对正确资产进行认证。</li>
+</ol>
+
+<h1 seq="auto">Agent 如何回答一个问题</h1>
+<p>当用户询问“2015 年 6 月宾州寿司卷 U 盘的收入是多少”时，系统不是直接让大模型猜 SQL，而是执行一条受约束的工作流：</p>
+<ol>
+  <li>识别问题意图并抽取产品、时间、地域和指标实体。</li>
+  <li>从语义层召回相关 Term、字段、指标公式与表关系。</li>
+  <li>根据候选语义生成 SQL。</li>
+  <li>校验 SQL 语法、过滤值、JSON 路径和连接路径。</li>
+  <li>校验失败时进行重构和修复；无法构造时明确拒答。</li>
+  <li>执行查询，返回答案、SQL、结果行与处理步骤。</li>
+</ol>
+<callout emoji="✅" background-color="light-blue" border-color="blue">
+  <p><b>关键价值：</b>系统不仅追求“能生成 SQL”，还会先判断问题是否可回答。如果数据中没有广告费用，它应明确说明无法计算广告投入回报率，而不是补造数据。</p>
+</callout>
+
+<h1 seq="auto">技术组成</h1>
+<table>
+  <colgroup><col width="160"/><col width="250"/><col width="320"/></colgroup>
+  <thead><tr><th background-color="light-gray"><p>组件</p></th><th background-color="light-gray"><p>技术</p></th><th background-color="light-gray"><p>职责</p></th></tr></thead>
+  <tbody>
+    <tr><td><p>Web 前端</p></td><td><p>Next.js 16、React 19</p></td><td><p>聊天、数据目录、本体图谱、认证与设置</p></td></tr>
+    <tr><td><p>查询后端</p></td><td><p>FastAPI、LangGraph</p></td><td><p>意图识别、Text-to-SQL、校验、修复与执行</p></td></tr>
+    <tr><td><p>摄取服务</p></td><td><p>Python、FastAPI</p></td><td><p>数据画像与语义编译，默认每 24 小时运行</p></td></tr>
+    <tr><td><p>语义存储</p></td><td><p>PostgreSQL 17、pgvector</p></td><td><p>保存目录、本体、向量和应用元数据</p></td></tr>
+    <tr><td><p>模型层</p></td><td><p>NVIDIA NIM 或兼容 OpenAI API 的端点</p></td><td><p>推理、实体抽取、Embedding 与 Rerank</p></td></tr>
+    <tr><td><p>集成层</p></td><td><p>REST API、CLI、MCP</p></td><td><p>向外部应用和 Agent 暴露只读语义能力</p></td></tr>
+  </tbody>
+</table>
+<p><b>NIM（NVIDIA Inference Microservice，英伟达推理微服务）</b>是标准化部署模型推理能力的服务接口。<b>MCP（Model Context Protocol，模型上下文协议）</b>让 Claude、Cursor 等 Agent 能直接调用术语搜索、可回答性检查和问答工具。</p>
+
+<h1 seq="auto">适用场景与边界</h1>
+<grid>
+  <column width-ratio="0.5">
+    <h2 seq="auto">适合</h2>
+    <ul>
+      <li>企业自然语言查数与 Text-to-SQL</li>
+      <li>统一业务术语和指标口径</li>
+      <li>数据目录与数据发现</li>
+      <li>为多个 Agent 提供共享语义层</li>
+      <li>对查询结果提供 SQL 和来源解释</li>
+    </ul>
+  </column>
+  <column width-ratio="0.5">
+    <h2 seq="auto">不直接适合</h2>
+    <ul>
+      <li>从合同、视频或聊天中抽取开放知识图谱</li>
+      <li>构建人物、事件、主张、证据等复杂本体</li>
+      <li>替代 Neo4j 等通用图数据库</li>
+      <li>无需人工治理的全自动生产本体</li>
+      <li>非结构化内容理解与多模态推理</li>
+    </ul>
+  </column>
+</grid>
+
+<h1 seq="auto">风险与落地判断</h1>
+<ul>
+  <li><b>可信度：</b>“Auto”代表自动生成第一版，不代表生成结果天然正确；生产使用必须保留业务认证环节。</li>
+  <li><b>凭证安全：</b>不配置 Vault 时，UI 管理的数据库连接对象可能以未加密 JSON 存入 PostgreSQL。</li>
+  <li><b>网络边界：</b>FastAPI 3001 与 Ingestion 3002 信任内部调用，应保持在私有网络，只对外暴露认证后的 3000 网关。</li>
+  <li><b>成本与时延：</b>语义编译涉及数据采样和多次模型调用，大型数仓必须评估调用成本、编译时长和采样压力。</li>
+  <li><b>项目治理：</b>项目使用 Apache License 2.0，可商用，但官方当前不接受外部代码贡献。</li>
+</ul>
+
+<h1 seq="auto">对现有 Ontology 项目的借鉴</h1>
+<p>对于视频 Ontology v2，Auto Ontology 不能直接替代 Entity、Event、Claim、Evidence、Community 图谱，因为它的核心数据模型围绕表、列和 SQL。但以下机制值得复用：</p>
+<ul>
+  <li>把自动抽取结果视为“待认证资产”，而不是直接发布。</li>
+  <li>为能力、指标和关系保存来源、公式、适用条件与认证状态。</li>
+  <li>回答前先执行“可回答性检查”，证据不足时明确拒答。</li>
+  <li>把检索、生成、验证、修复与执行拆成可观察的 Agent 节点。</li>
+  <li>每次回答同时返回结果、推理步骤和证据来源。</li>
+</ul>
+
+<h1 seq="auto">参考资料</h1>
+<ul>
+  <li><a type="url-preview" href="https://github.com/NVIDIA/auto-ontology">NVIDIA Auto Ontology 项目主页</a></li>
+  <li><a type="url-preview" href="https://github.com/NVIDIA/auto-ontology/blob/main/auto_ontology/semantic/compile.py">语义编译流程</a></li>
+  <li><a type="url-preview" href="https://github.com/NVIDIA/auto-ontology/blob/main/auto_ontology/retrieval/text_to_sql/text_to_sql_graph.py">Text-to-SQL Agent 工作流</a></li>
+  <li><a type="url-preview" href="https://github.com/NVIDIA/auto-ontology/blob/main/docs/connections.md">数据库连接与凭证边界</a></li>
+</ul>
+<p><em>核验时间：2026-11-05。项目版本与实现可能继续变化。</em></p>

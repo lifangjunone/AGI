@@ -1,0 +1,77 @@
+<h1 seq="auto">开源项目采用方案：明确引入，不是只参考</h1>
+<callout emoji="✅" background-color="light-green" border-color="green">
+  <p><b>采用结论：</b>WeClone 与 GBrain 进入运行架构；Open Second Brain 的偏好生命周期代码移植进 e-ctx；COG 的 Writer / Verifier 分离模式实现为质量流水线。e-ctx 继续作为唯一事实、权限与审计真源。</p>
+</callout>
+<table>
+  <colgroup>
+    <col width="150"/>
+    <col width="150"/>
+    <col width="260"/>
+    <col width="260"/>
+  </colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>项目</p></th>
+      <th background-color="light-gray"><p>采用方式</p></th>
+      <th background-color="light-gray"><p>进入 e-ctx 的能力</p></th>
+      <th background-color="light-gray"><p>边界与真源</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><p>WeClone</p></td>
+      <td background-color="light-green"><p><b>正式运行依赖</b></p></td>
+      <td><p>画像事实、语言风格抽取、加密产物；补齐 StyleProfile 到回复生成的消费链路。</p></td>
+      <td><p>保持独立外部进程；未经审核的事实和原始私聊不得直接用于对外回复。</p></td>
+    </tr>
+    <tr>
+      <td><p>Open Second Brain</p></td>
+      <td background-color="light-blue"><p><b>MIT 代码移植</b></p></td>
+      <td><p>偏好信号、置信度、重复纠正归纳、规则退役、修正传播、写入账本与 hygiene 扫描。</p></td>
+      <td><p>代码落入现有 Store 与不可变快照体系；不建立第二套 Markdown 真源。</p></td>
+    </tr>
+    <tr>
+      <td><p>GBrain</p></td>
+      <td background-color="light-purple"><p><b>本地只读 Sidecar</b></p></td>
+      <td><p>质量模式的来源可追溯混合检索、事实修正/撤回感知、图谱与文本联合召回。</p></td>
+      <td><p>索引由 e-ctx 授权数据重建；禁止业务直接写 GBrain；撤权、切身份和清库立即失效并重建。</p></td>
+    </tr>
+    <tr>
+      <td><p>COG Second Brain</p></td>
+      <td background-color="light-yellow"><p><b>验证模式移植</b></p></td>
+      <td><p>Writer 生成候选、Verifier 独立评分、失败后有限修订；生成器不自评。</p></td>
+      <td><p>不安装整套技能目录；只实现与 Persona 输出契约兼容的候选和裁判服务。</p></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 seq="auto">Open Second Brain：偏好学习落地</h2>
+<p>新增 <code>PersonaPreferenceService</code>，将普通回复与能力草稿中的人工修改统一转换为偏好信号。信号必须绑定来源、任务、会话范围、资料指纹和审核回执。</p>
+<ul>
+  <li><p><b>写入位置：</b>在 <code>packages/store</code> 增加下一可用迁移，建立 <code>persona_preference_signals</code>、<code>persona_preference_rules</code>、<code>persona_preference_events</code>。</p></li>
+  <li><p><b>运行位置：</b>新增 <code>apps/desktop/src/main/services/persona-preference.service.ts</code>，由发送成功回执和明确反馈驱动。</p></li>
+  <li><p><b>确定性 dream：</b>重复纠正达到阈值才提升为规则；使用次数强化，长期未命中衰减；冲突规则进入 contested，不自动覆盖。</p></li>
+  <li><p><b>撤回语义：</b>来源撤权、用户删除、规则回退或资料指纹变化时，规则停止进入提示词，并记录原因。</p></li>
+  <li><p><b>接入位置：</b><code>PersonaComposer.compose()</code> 只读取当前适用且有效的规则；规则不能改变权限、发送方式或工具许可。</p></li>
+</ul>
+
+<h2 seq="auto">GBrain：质量模式检索增强</h2>
+<p>GBrain 以本地只读 Sidecar 运行，定位是“可重建检索索引”，不是第二数据库。e-ctx 通过受控导出器提供已授权材料和稳定 source ID。</p>
+<ol>
+  <li><p>新增 <code>GbrainIndexBridge</code>：监听 e-ctx 增量账本，将允许进入质量检索的事实、Wiki 页面和来源引用写入索引。</p></li>
+  <li><p>新增 <code>GbrainRecallAdapter</code>，实现统一 <code>PersonaRecallProvider</code>；返回内容、source ID、时间、来源类型、分数和修正状态。</p></li>
+  <li><p>质量模式并行查询 KL-Graph、工作 Wiki、FTS 与 GBrain；使用融合排序，不让单一引擎独占结果。</p></li>
+  <li><p>来源撤权、切换账号、清库和采集范围变化时先关闭该索引的查询资格，再执行删除或重建；失败时明确标记 GBrain 不可用。</p></li>
+  <li><p>灰度期同时记录 GBrain 命中与现有检索命中；只有真实任务盲评持续胜出才提升权重。</p></li>
+</ol>
+
+<h2 seq="auto">COG：独立裁判落地</h2>
+<p>新增 <code>PersonaCandidateGenerator</code> 与 <code>PersonaJudge</code>。质量模式并行生成事实严格、关系得体、语言相似三个候选；裁判只读取任务、证据契约、风格契约和候选，不读取生成器的思考过程。</p>
+<p>裁判输出结构化分数：事实支持、问题覆盖、关系适配、风格相似、隐私泄露、越权承诺、可直接采用。任一安全项失败直接拒绝，不允许靠总分抵消。最终修订只能使用已有证据，不能增加新事实。</p>
+
+<h2 seq="auto">许可证与升级策略</h2>
+<ul>
+  <li><p>Open Second Brain、GBrain、COG 的 MIT 代码或改编必须保留许可证与来源说明，并建立 <code>THIRD_PARTY_NOTICES</code> 记录具体 commit。</p></li>
+  <li><p>WeClone 保持仓库外独立安装与进程边界，不复制其源码进入 e-ctx；继续遵守现有许可证隔离。</p></li>
+  <li><p>所有移植代码必须由 e-ctx 测试覆盖，不跟随上游自动更新；升级先在隔离分支做数据迁移、权限和效果回归。</p></li>
+</ul>

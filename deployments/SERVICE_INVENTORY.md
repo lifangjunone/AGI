@@ -1,6 +1,6 @@
 # 生产服务部署清单
 
-最后核验：2026-11-02（Asia/Shanghai）
+最后核验：2026-11-11（Asia/Shanghai）
 
 状态说明：
 
@@ -22,13 +22,15 @@
 | LifeYouMe MaaS | `maas.lifeyoume.icu` | 43280 | Docker Compose | Docker Volume JSON | 腾讯云；Chat/托管TTS在线；完整核验状态筛选、模型测试按Deployment隔离；Embeddings、外部TTS、图像生成与图片理解尚无对应供应商模型，release 20261030120000（2026-10-30） |
 | LifeYouMe TTS Runtime | MaaS Docker 内网 | 43281 | Docker Compose | 只读 ONNX + 缓存卷 | 腾讯云；sherpa-onnx VITS，单并发有限队列 |
 | MapProof | `/mapproof/` | 45210 | systemd + Docker | 无服务端业务数据 | 腾讯云；Mermaid 本地渲染、规则验图、关键路径、反馈环复核、工具化审稿台 UI 和 Markdown 报告，release `20261102T173358`，UI/UX 工作台重构已上线（2026-11-02） |
+| Astro Fate Matrix | `/astro-fate/` | 45330 | systemd + Docker | LifeYouMe MaaS、JSON 测算记录、Numerologist 术数引擎 | 腾讯云；多维度星座/八字/姻缘/桃花方位 Web 产品，MaaS 应用 `astro-fate` 授权 `lym-chat-quality`，已上线星点网省份热度、后台测算记录统计、游客 3 次免费额度与 LifeYouMe 注册/Billing 引导；已融合自有 `Numerologist_skills` 紫微斗数/奇门遁甲专业引擎；首页已升级缘分方向引导、四维合参星盘融合、真实中国国界 SVG 点亮版星点网、营销热度指数和折叠排行；公网 `/astro-fate/api/analyze` 已确认 `source=maas` 且 `professional.label=四维合参`（2026-11-11） |
+| 牛马嘴替 | `/niuma/` | 45410 | systemd + Docker | LifeYouMe MaaS、匿名使用统计 JSON | 腾讯云；中文打工人发疯解压 H5，已接入 MaaS 应用 `niuma-mouthpiece` 授权 `lym-chat-quality`；当前为五种不同输入方式的办公室解压关卡（18:00 下班冲刺、碎需求、戳会议、退黑锅、长按驱幽灵），包含非血腥卡通攻击手感、连击与“怒气蓄力—全场清退”大招。第 1 关是 18 秒三跑道电梯逃生：躲开临时会议、老板@你等随机障碍，赶在电梯关门前逃离。MaaS 嘴替是每关可选战利品，领取才计入匿名访客前 20 次免费额度，第 21 次返回 402；统计不保存原文。Billing 当前未启用真实 checkout，额度耗尽页准确标注“付费开通正在准备”。release `20261112T134606Z` 公网完整通关、响应式和代表性既有入口回归通过（2026-11-12） |
 
 ## 仍在阿里云运行
 
 | 服务 | 入口或路径 | 本地端口 | 运行方式 | 建议 |
 | --- | --- | ---: | --- | --- |
 | LifeYouMe Portal | `/`、`/products`、`/products/<id>` | 8800 | systemd | 保留入口机；2026-11-10 已补齐缺失 showroom 模块与样式，目录及 23 个可访问详情页恢复 200；生产访问策略关闭的详情保持 404 |
-| LifeYouMe Ops | `/admin/`、`ops.*` | 8801 | systemd | 保留入口机；支持管理员登录后在 `/admin/#security` 自助改密，旧管理员会话随凭据版本更新而失效 |
+| LifeYouMe Ops | `/admin/`、`ops.*` | 8801 | systemd | 保留入口机；支持管理员登录后在 `/admin/#security` 自助改密，旧管理员会话随凭据版本更新而失效；底座后台已接入星命矩阵统计入口（2026-11-11） |
 | LifeYouMe Auth | `auth.*` | 8802 | systemd | 保留入口机；`/account` 支持普通用户验证当前密码后自助改密，成功后撤销全部 Web 会话、设备 Token 与待兑换设备码 |
 | LifeYouMe Billing | `billing.*` | 8803 | systemd | 保留入口机 |
 | Opportunity Factory / Audit | `audit.*` | 8787 | systemd | 后续单独迁移 |

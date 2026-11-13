@@ -1,0 +1,62 @@
+<h2 seq="auto">开源项目名称与地址</h2>
+<table>
+  <colgroup>
+    <col width="220"/>
+    <col width="360"/>
+    <col width="220"/>
+  </colgroup>
+  <thead>
+    <tr>
+      <th background-color="light-gray"><p>项目</p></th>
+      <th background-color="light-gray"><p>开源地址</p></th>
+      <th background-color="light-gray"><p>在 e-ctx 中的结论</p></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><p><b>WeClone</b><br/>xming521/WeClone</p></td>
+      <td><p><a type="url-preview" href="https://github.com/xming521/WeClone">https://github.com/xming521/WeClone</a></p></td>
+      <td background-color="light-green"><p>正式运行依赖</p></td>
+    </tr>
+    <tr>
+      <td><p><b>Open Second Brain</b><br/>itechmeat/open-second-brain</p></td>
+      <td><p><a type="url-preview" href="https://github.com/itechmeat/open-second-brain">https://github.com/itechmeat/open-second-brain</a></p></td>
+      <td background-color="light-blue"><p>MIT 代码移植</p></td>
+    </tr>
+    <tr>
+      <td><p><b>GBrain</b><br/>garrytan/gbrain</p></td>
+      <td><p><a type="url-preview" href="https://github.com/garrytan/gbrain">https://github.com/garrytan/gbrain</a></p></td>
+      <td background-color="light-purple"><p>本地只读 Sidecar</p></td>
+    </tr>
+    <tr>
+      <td><p><b>COG Second Brain</b><br/>huytieu/COG-second-brain</p></td>
+      <td><p><a type="url-preview" href="https://github.com/huytieu/COG-second-brain">https://github.com/huytieu/COG-second-brain</a></p></td>
+      <td background-color="light-yellow"><p>移植 Writer / Verifier 模式</p></td>
+    </tr>
+    <tr>
+      <td><p><b>LLM Wiki</b><br/>Karpathy idea file</p></td>
+      <td><p><a type="url-preview" href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f</a></p></td>
+      <td><p>知识编译方法参考，不是可安装仓库</p></td>
+    </tr>
+    <tr>
+      <td><p><b>ai-memory</b><br/>akitaonrails/ai-memory</p></td>
+      <td><p><a type="url-preview" href="https://github.com/akitaonrails/ai-memory">https://github.com/akitaonrails/ai-memory</a></p></td>
+      <td><p>编码 Agent 记忆，当前不接入数字分身主链</p></td>
+    </tr>
+    <tr>
+      <td><p><b>Agent Second Brain</b><br/>smixs/agent-second-brain</p></td>
+      <td><p><a type="url-preview" href="https://github.com/smixs/agent-second-brain">https://github.com/smixs/agent-second-brain</a></p></td>
+      <td><p>语音采集交互参考，不作为核心依赖</p></td>
+    </tr>
+    <tr>
+      <td><p><b>Claude Second Brain</b><br/>jessepinkman9900/claude-second-brain</p></td>
+      <td><p><a type="url-preview" href="https://github.com/jessepinkman9900/claude-second-brain">https://github.com/jessepinkman9900/claude-second-brain</a></p></td>
+      <td><p>脚手架能力重叠，不接入</p></td>
+    </tr>
+    <tr>
+      <td><p><b>Baalda</b><br/>naveedharri/baalda</p></td>
+      <td><p><a type="url-preview" href="https://github.com/naveedharri/baalda">https://github.com/naveedharri/baalda</a></p></td>
+      <td><p>团队协作场景参考，当前不接入</p></td>
+    </tr>
+  </tbody>
+</table>

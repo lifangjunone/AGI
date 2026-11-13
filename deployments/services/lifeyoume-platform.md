@@ -1,6 +1,6 @@
 # LifeYouMe 平台基座
 
-最后核验：2026-11-10（Asia/Shanghai）
+最后核验：2026-11-11（Asia/Shanghai）
 
 ## 入口与运行位置
 
@@ -112,6 +112,20 @@ a5aefcc504aea9e4b34387b8d899a58a3dede2dbe3288132541725036fdcd35c  platform/auth_
 `/data/backups/lifeyoume-platform/20261030T064200Z-account-password`
 
 ## 发布注意
+
+### 2026-11-11 星命矩阵统计入口接入底座后台
+
+- 在 `https://lifeyoume.icu/admin/` 登录后的后台顶部外部入口区，新增
+  “星命矩阵统计 · 测算记录”链接，指向
+  `https://lifeyoume.icu/astro-fate/admin.html`。
+- 本次只更新 `platform/app.py` 并重启 `lifeyoume-platform@ops.service`；
+  未修改共享 Nginx、Portal、Auth、Billing 或认证数据库。
+- 发布前备份线上 `app.py` 到
+  `/data/app/backups/lifeyoume-platform-20261111T141122Z-astro-admin-link/app.py`。
+- 本地平台 `36/36` 自动测试、Python 编译和部署脚本语法检查通过。
+- 发布后四个平台服务均为 `active`，Ops `NRestarts=0`；
+  `/admin/` 返回 200，`/astro-fate/admin.html` 匿名访问保持 302 受保护跳转；
+  Astro Fate、Image、FlowFrame、Resume、Vault、Trends 代表性入口回归正常。
 
 ### 2026-11-10 产品目录与详情页 502 修复
 

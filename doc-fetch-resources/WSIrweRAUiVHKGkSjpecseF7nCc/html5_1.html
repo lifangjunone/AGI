@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="use-iframe" content="true">
+  <meta name="html-box-height-mode" content="auto">
+  <meta name="description" content="世界模型从观察现实、模拟未来、执行动作到反馈更新的动态机制图">
+  <title>世界模型动态机制图</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f7f6;
+      --panel: #ffffff;
+      --panel-soft: #e7f5ee;
+      --text: #17211c;
+      --muted: #64716a;
+      --line: #a9b5ae;
+      --border: #d7e0db;
+      --green: #23a56d;
+      --green-strong: #157a50;
+      --blue: #6687df;
+      --blue-soft: #e7edfc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .card {
+      width: 100%;
+      max-width: 100%;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+    .head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 26px;
+    }
+    .tag {
+      flex: 0 0 auto;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--panel-soft);
+      color: var(--green-strong);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      background: var(--bg);
+    }
+    .node {
+      fill: var(--panel);
+      stroke: var(--border);
+      stroke-width: 2;
+    }
+    .world {
+      fill: var(--panel-soft);
+      stroke: var(--green);
+      stroke-width: 4;
+    }
+    .action {
+      fill: var(--blue-soft);
+      stroke: var(--blue);
+      stroke-width: 3;
+    }
+    .title {
+      fill: var(--text);
+      font-size: 21px;
+      font-weight: 700;
+      text-anchor: middle;
+    }
+    .meta {
+      fill: var(--muted);
+      font-size: 14px;
+      text-anchor: middle;
+    }
+    .step { fill: var(--green); }
+    .step-blue { fill: var(--blue); }
+    .step-text {
+      fill: #ffffff;
+      font-size: 15px;
+      font-weight: 800;
+      text-anchor: middle;
+      dominant-baseline: central;
+    }
+    .flow {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 3;
+      stroke-linecap: round;
+      marker-end: url(#arrow);
+    }
+    .flow-main {
+      stroke: var(--green);
+      stroke-width: 4;
+    }
+    .feedback {
+      stroke: var(--blue);
+      stroke-width: 4;
+      stroke-dasharray: 10 10;
+    }
+    .candidate {
+      fill: var(--panel);
+      stroke: var(--border);
+      stroke-width: 2;
+    }
+    .candidate-best {
+      stroke: var(--green);
+      stroke-width: 3;
+    }
+    .candidate-text {
+      fill: var(--text);
+      font-size: 16px;
+      text-anchor: middle;
+    }
+    .caption {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .caption div {
+      padding: 8px 10px;
+      border-left: 3px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 18px;
+    }
+    .caption strong {
+      display: block;
+      color: var(--text);
+    }
+    @keyframes dash {
+      to { stroke-dashoffset: -40; }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.72; }
+      50% { opacity: 1; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .feedback { animation: dash 1.8s linear infinite; }
+      .candidate-best { animation: pulse 1.3s ease-in-out infinite; }
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #19211d;
+        --panel: #121814;
+        --panel-soft: #153d2b;
+        --text: #edf3ef;
+        --muted: #aab7b0;
+        --line: #8c9992;
+        --border: #35423b;
+        --green: #35bd82;
+        --green-strong: #55d99e;
+        --blue: #7898ea;
+        --blue-soft: #233253;
+      }
+    }
+    @media (max-width: 560px) {
+      .card { padding: 12px; }
+      .head { align-items: flex-start; }
+      h1 { font-size: 16px; line-height: 23px; }
+      .caption { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <div class="head">
+      <h1>世界模型：先在内部试演，再在现实行动</h1>
+      <span class="tag">预测下一状态</span>
+    </div>
+    <svg viewBox="0 0 900 430" role="img" aria-label="世界模型动态机制：观察现实、模拟未来、执行最佳动作，并用现实结果反馈更新">
+      <defs>
+        <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+          <path d="M1 1 L7 4 L1 7 Z" fill="context-stroke"/>
+        </marker>
+      </defs>
+
+      <path class="flow" d="M245 164 C275 164 285 164 315 164"/>
+      <path class="flow flow-main" d="M585 164 C615 164 625 164 655 164"/>
+      <path class="flow feedback" d="M765 240 C760 365 137 365 135 240"/>
+
+      <rect class="node" x="45" y="95" width="200" height="145" rx="18"/>
+      <circle class="step" cx="78" cy="128" r="18"/>
+      <text class="step-text" x="78" y="128">1</text>
+      <text class="title" x="145" y="160">观察现实</text>
+      <text class="meta" x="145" y="195">视频 · 传感器 · 动作</text>
+
+      <rect class="world" x="315" y="65" width="270" height="205" rx="20"/>
+      <circle class="step" cx="350" cy="100" r="18"/>
+      <text class="step-text" x="350" y="100">2</text>
+      <text class="title" x="450" y="132">内部世界状态</text>
+      <text class="meta" x="450" y="164">物体 · 空间 · 因果 · 时间</text>
+      <rect class="candidate" x="350" y="193" width="58" height="42" rx="9"/>
+      <rect class="candidate candidate-best" x="421" y="193" width="58" height="42" rx="9"/>
+      <rect class="candidate" x="492" y="193" width="58" height="42" rx="9"/>
+      <text class="candidate-text" x="379" y="220">A?</text>
+      <text class="candidate-text" x="450" y="220">B✓</text>
+      <text class="candidate-text" x="521" y="220">C</text>
+
+      <rect class="action" x="655" y="95" width="200" height="145" rx="18"/>
+      <circle class="step-blue" cx="688" cy="128" r="18"/>
+      <text class="step-text" x="688" y="128">3</text>
+      <text class="title" x="755" y="160">执行最佳动作</text>
+      <text class="meta" x="755" y="195">机器人 · 汽车 · 智能体</text>
+
+      <text class="meta" x="450" y="324">在模型里模拟多个未来</text>
+      <text class="meta" x="450" y="397">现实结果反向更新世界模型</text>
+    </svg>
+    <div class="caption">
+      <div><strong>语言模型</strong>预测下一个词</div>
+      <div><strong>世界模型</strong>预测下一个世界状态</div>
+      <div><strong>最终价值</strong>行动前低成本试错</div>
+    </div>
+  </section>
+</body>
+</html>

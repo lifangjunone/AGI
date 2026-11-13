@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#faf9f5"/>
+      <stop offset="1" stop-color="#eef3f1"/>
+    </linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#000000" flood-opacity="0.11"/></filter>
+  </defs>
+  <rect x="8" y="8" width="1264" height="744" rx="30" fill="url(#bg)" stroke="#d8ddd9"/>
+  <text x="640" y="58" text-anchor="middle" font-size="30" font-weight="700" fill="#181918">技术架构：从真实工作证据到可运行数字员工</text>
+  <text x="640" y="91" text-anchor="middle" font-size="17" fill="#626763">数据不直接变成自动化，必须经过提炼、快照、验证和授权</text>
+
+  <text x="74" y="140" font-size="15" font-weight="700" fill="#6b6e69">工作现场</text>
+  <rect x="58" y="160" width="154" height="76" rx="20" fill="#ffffff" stroke="#b9bfba" filter="url(#shadow)"/>
+  <circle cx="91" cy="198" r="17" fill="#2878d0"/>
+  <text x="91" y="204" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">聊</text>
+  <text x="121" y="190" font-size="17" font-weight="700" fill="#222522">飞书沟通</text>
+  <text x="121" y="214" font-size="14" fill="#697069">客户 · Oncall</text>
+  <rect x="58" y="252" width="154" height="76" rx="20" fill="#ffffff" stroke="#b9bfba" filter="url(#shadow)"/>
+  <circle cx="91" cy="290" r="17" fill="#e58a24"/>
+  <text x="91" y="296" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">档</text>
+  <text x="121" y="282" font-size="17" font-weight="700" fill="#222522">文档产物</text>
+  <text x="121" y="306" font-size="14" fill="#697069">方案 · SOP</text>
+  <rect x="58" y="344" width="154" height="76" rx="20" fill="#ffffff" stroke="#b9bfba" filter="url(#shadow)"/>
+  <circle cx="91" cy="382" r="17" fill="#7c63c6"/>
+  <text x="91" y="388" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">验</text>
+  <text x="121" y="374" font-size="17" font-weight="700" fill="#222522">任务结果</text>
+  <text x="121" y="398" font-size="14" fill="#697069">修改 · 验收</text>
+
+  <polyline points="212,290 252,290" fill="none" stroke="#555b57" stroke-width="4"/>
+  <polygon points="252,282 270,290 252,298" fill="#555b57"/>
+
+  <rect x="270" y="152" width="168" height="276" rx="24" fill="#fff4df" stroke="#dfa948" stroke-width="2" filter="url(#shadow)"/>
+  <text x="354" y="190" text-anchor="middle" font-size="20" font-weight="700" fill="#5e4214">授权采集层</text>
+  <line x1="300" y1="210" x2="408" y2="210" stroke="#e4c68d"/>
+  <text x="354" y="242" text-anchor="middle" font-size="16" fill="#6b542b">学习范围</text>
+  <text x="354" y="276" text-anchor="middle" font-size="16" fill="#6b542b">身份与权限</text>
+  <text x="354" y="310" text-anchor="middle" font-size="16" fill="#6b542b">增量水位</text>
+  <text x="354" y="344" text-anchor="middle" font-size="16" fill="#6b542b">原始证据</text>
+  <rect x="294" y="372" width="120" height="34" rx="17" fill="#f2d7a3"/>
+  <text x="354" y="395" text-anchor="middle" font-size="14" font-weight="700" fill="#694a16">不做无边界监控</text>
+
+  <polyline points="438,290 478,290" fill="none" stroke="#555b57" stroke-width="4"/>
+  <polygon points="478,282 496,290 478,298" fill="#555b57"/>
+
+  <rect x="496" y="132" width="246" height="316" rx="26" fill="#edf5ff" stroke="#7eafe1" stroke-width="2" filter="url(#shadow)"/>
+  <text x="619" y="174" text-anchor="middle" font-size="21" font-weight="700" fill="#1e4d7a">能力提炼引擎</text>
+  <rect x="526" y="202" width="86" height="54" rx="15" fill="#ffffff" stroke="#a9c7e4"/>
+  <text x="569" y="235" text-anchor="middle" font-size="16" font-weight="700" fill="#265a8c">知识</text>
+  <rect x="626" y="202" width="86" height="54" rx="15" fill="#ffffff" stroke="#a9c7e4"/>
+  <text x="669" y="235" text-anchor="middle" font-size="16" font-weight="700" fill="#265a8c">判断</text>
+  <rect x="526" y="272" width="86" height="54" rx="15" fill="#ffffff" stroke="#a9c7e4"/>
+  <text x="569" y="305" text-anchor="middle" font-size="16" font-weight="700" fill="#265a8c">技能</text>
+  <rect x="626" y="272" width="86" height="54" rx="15" fill="#ffffff" stroke="#a9c7e4"/>
+  <text x="669" y="305" text-anchor="middle" font-size="16" font-weight="700" fill="#265a8c">边界</text>
+  <rect x="526" y="344" width="186" height="72" rx="18" fill="#2878d0"/>
+  <text x="619" y="374" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">能力快照</text>
+  <text x="619" y="399" text-anchor="middle" font-size="14" fill="#e9f4ff">来源 · 版本 · 证据 · 适用条件</text>
+
+  <polyline points="742,290 782,290" fill="none" stroke="#555b57" stroke-width="4"/>
+  <polygon points="782,282 800,290 782,298" fill="#555b57"/>
+
+  <rect x="800" y="152" width="178" height="276" rx="24" fill="#edfaf5" stroke="#75c4ac" stroke-width="2" filter="url(#shadow)"/>
+  <text x="889" y="193" text-anchor="middle" font-size="20" font-weight="700" fill="#155846">AgentSphere</text>
+  <line x1="830" y1="211" x2="948" y2="211" stroke="#9bd3c2"/>
+  <text x="889" y="246" text-anchor="middle" font-size="16" fill="#356b5d">数字员工装载</text>
+  <text x="889" y="280" text-anchor="middle" font-size="16" fill="#356b5d">技能点管理</text>
+  <text x="889" y="314" text-anchor="middle" font-size="16" fill="#356b5d">考试与试岗</text>
+  <text x="889" y="348" text-anchor="middle" font-size="16" fill="#356b5d">任务编排调度</text>
+  <rect x="830" y="372" width="118" height="34" rx="17" fill="#cfeee4"/>
+  <text x="889" y="395" text-anchor="middle" font-size="14" font-weight="700" fill="#155846">合格后才能接单</text>
+
+  <polyline points="978,290 1018,290" fill="none" stroke="#555b57" stroke-width="4"/>
+  <polygon points="1018,282 1036,290 1018,298" fill="#555b57"/>
+
+  <rect x="1036" y="160" width="180" height="260" rx="24" fill="#ffffff" stroke="#9da39e" stroke-width="2" filter="url(#shadow)"/>
+  <text x="1126" y="200" text-anchor="middle" font-size="20" font-weight="700" fill="#252825">数字员工运行</text>
+  <circle cx="1080" cy="246" r="22" fill="#2878d0"/>
+  <text x="1080" y="253" text-anchor="middle" font-size="17" font-weight="700" fill="#ffffff">普</text>
+  <text x="1112" y="252" font-size="15" fill="#313531">员工任务分身</text>
+  <circle cx="1080" cy="304" r="22" fill="#0b9271"/>
+  <text x="1080" y="311" text-anchor="middle" font-size="17" font-weight="700" fill="#ffffff">专</text>
+  <text x="1112" y="310" font-size="15" fill="#313531">领域专家员工</text>
+  <rect x="1062" y="348" width="128" height="42" rx="18" fill="#eceeeb"/>
+  <text x="1126" y="375" text-anchor="middle" font-size="14" font-weight="700" fill="#4d514d">执行 · 升级 · 留痕</text>
+
+  <rect x="270" y="506" width="946" height="118" rx="24" fill="#222522" filter="url(#shadow)"/>
+  <text x="316" y="548" font-size="20" font-weight="700" fill="#ffffff">治理控制面</text>
+  <rect x="466" y="526" width="128" height="48" rx="16" fill="#3b403c"/>
+  <text x="530" y="556" text-anchor="middle" font-size="15" fill="#ffffff">范围授权</text>
+  <rect x="612" y="526" width="128" height="48" rx="16" fill="#3b403c"/>
+  <text x="676" y="556" text-anchor="middle" font-size="15" fill="#ffffff">证据追溯</text>
+  <rect x="758" y="526" width="128" height="48" rx="16" fill="#3b403c"/>
+  <text x="822" y="556" text-anchor="middle" font-size="15" fill="#ffffff">版本回退</text>
+  <rect x="904" y="526" width="128" height="48" rx="16" fill="#3b403c"/>
+  <text x="968" y="556" text-anchor="middle" font-size="15" fill="#ffffff">人工审批</text>
+  <rect x="1050" y="526" width="128" height="48" rx="16" fill="#3b403c"/>
+  <text x="1114" y="556" text-anchor="middle" font-size="15" fill="#ffffff">急停与审计</text>
+  <text x="742" y="603" text-anchor="middle" font-size="14" fill="#cfd3cf">贯穿采集、提炼、装载与执行全过程</text>
+
+  <polyline points="1126,420 1126,664 619,664 619,448" fill="none" stroke="#e58a24" stroke-width="4" stroke-dasharray="10 8"/>
+  <polygon points="609,464 619,446 629,464" fill="#e58a24"/>
+  <text x="870" y="694" text-anchor="middle" font-size="16" font-weight="700" fill="#9a5a12">任务结果与人工反馈回流，驱动下一版能力快照</text>
+</svg>

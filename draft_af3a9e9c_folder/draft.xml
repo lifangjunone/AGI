@@ -1,0 +1,317 @@
+<doc>
+  <title>数字分身双模式优化方案：效果最佳默认，极速可选</title>
+
+  <callout emoji="💡" background-color="light-orange" border-color="orange">
+    <p><b>决策建议：</b>不另建一套数字分身。基于现有 Persona、WeClone、KL-Graph、工作 Wiki、能力快照与安全闸，增加统一的“执行配置路由器”。默认使用“效果最佳”，通过多路证据、重排、三候选、独立裁判和最终修订换取最高质量；页面可切换“极速”，复用现有直连单次生成链路。</p>
+  </callout>
+
+  <h1 seq="auto">范围与结论</h1>
+  <p>本文评审对象是 <b>e-ctx / MyContext</b> 当前数字分身回复链路。代码基线以仓库当前工作树为准，重点参考 <code>apps/desktop/src/main/services/persona-*.ts</code>、<code>weclone*.ts</code>、<code>search.service.ts</code>、<code>work-wiki-compiler.service.ts</code>、<code>packages/retrieval</code>、<code>packages/persona</code> 与 <code>kl-graph</code>。</p>
+  <p><b>核心判断：</b>当前系统已经具备数据采集、本地存储、会话召回、图谱记忆、画像事实、能力规则、Agent 编排、草稿协议和发送安全闸。真正影响效果的不是再引入一个“第二大脑”，而是把已有材料组织成更强的证据包，并增加候选竞争和独立验证。</p>
+  <p><b>非目标：</b>本方案不扩大数据读取范围，不自动绕过人工审核，不改变发送权限，不把模型判断当作授权，不要求把本地资料上传到新的托管记忆服务。</p>
+
+  <h1 seq="auto">当前实现证据与关键缺口</h1>
+  <table>
+    <colgroup>
+      <col width="170"/>
+      <col width="325"/>
+      <col width="325"/>
+    </colgroup>
+    <thead>
+      <tr>
+        <th background-color="light-gray"><p>能力</p></th>
+        <th background-color="light-gray"><p>当前实现</p></th>
+        <th background-color="light-gray"><p>影响效果的缺口</p></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><p>回复生成</p></td>
+        <td><p><code>PersonaComposer</code> 优先走 ACP Agent，失败后回落到 <code>LlmClient.completeWithTools</code>；两条路径都输出统一 <code>ReplyProposal</code>。</p></td>
+        <td><p>当前基本是单次生成，没有候选竞争、独立裁判和基于裁判意见的最终修订。</p></td>
+      </tr>
+      <tr>
+        <td><p>会话召回</p></td>
+        <td><p>直连路径通过 FTS 在当前会话召回，单次上限 12 条；会话 ID 由闭包锁定，模型无法跨会话改写范围。</p></td>
+        <td><p>质量模式需要查询分解、并行多源召回、重排、冲突与时效处理；极速模式可继续使用当前轻量召回。</p></td>
+      </tr>
+      <tr>
+        <td><p>知识与图谱</p></td>
+        <td><p>已有 KL-Graph、工作 Wiki、本人的工作原话和会话级图谱记忆；搜索 Agent 能使用多图查询。</p></td>
+        <td><p>数字分身生成前仍缺统一“证据融合器”，不同来源的可信度、时效、冲突与披露边界没有形成一个可评分的证据包。</p></td>
+      </tr>
+      <tr>
+        <td><p>背景画像</p></td>
+        <td><p>WeClone 从当前授权范围的真人单聊中抽取画像事实，逐条审核后进入回复上下文；资料变化会使画像失效。</p></td>
+        <td background-color="light-orange"><p><b>真实断点：</b>“clone”模式会生成语言风格产物，界面也显示 <code>styleAvailable</code>，但 <code>WeCloneService.context()</code> 当前只返回已审核事实，没有把风格产物送入 <code>PersonaComposer</code>。</p></td>
+      </tr>
+      <tr>
+        <td><p>学习闭环</p></td>
+        <td><p>已发送且被用户修改的能力草稿可提炼候选纠错规则；规则进入不可变快照并重新试运行。</p></td>
+        <td><p>规则目前主要服务能力执行；普通数字分身回复还需要统一偏好版本、适用范围、置信度、过期和撤回语义。</p></td>
+      </tr>
+      <tr>
+        <td><p>安全与降级</p></td>
+        <td><p>准入、发送、急停、审批和范围隔离为确定性宿主逻辑；降级原因进入 provenance，不静默伪装。</p></td>
+        <td><p>双模式必须复用同一安全底座，模式不得改变权限、自动发送条件和审计要求。</p></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h1 seq="auto">产品决策：一个数字分身，两种执行配置</h1>
+  <table>
+    <colgroup>
+      <col width="165"/>
+      <col width="330"/>
+      <col width="325"/>
+    </colgroup>
+    <thead>
+      <tr>
+        <th background-color="light-gray"><p>维度</p></th>
+        <th background-color="light-orange"><p>效果最佳（默认）</p></th>
+        <th background-color="light-green"><p>极速</p></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><p>目标</p></td>
+        <td><p>优先事实完整、关系理解、表达相似度和最终可用性，不以成本为优化目标。</p></td>
+        <td><p>优先快速得到可审阅草稿，保持基础事实与安全要求。</p></td>
+      </tr>
+      <tr>
+        <td><p>召回</p></td>
+        <td><p>查询分解；FTS、语义、图谱、工作 Wiki、画像、能力与纠错并行召回；再做重排、去重、冲突和时效处理。</p></td>
+        <td><p>当前会话 FTS + 预计算画像摘要 + 已命中的高置信图谱记忆；按触发词决定是否补一次图谱查询。</p></td>
+      </tr>
+      <tr>
+        <td><p>生成</p></td>
+        <td><p>生成 3 个有明确侧重的候选：事实严格、关系得体、语言风格；独立裁判评分后对胜出候选做一次修订。</p></td>
+        <td><p>一次直连生成；不生成多候选，不调用独立裁判。</p></td>
+      </tr>
+      <tr>
+        <td><p>模型</p></td>
+        <td><p>分别配置推理、写作、裁判、重排角色，默认选择当前已配置能力最强模型；不把具体厂商模型 ID 写死在业务代码。</p></td>
+        <td><p>独立的低时延写作模型；若未配置，回退到 <code>modelMain</code>，并记录实际模型与回退原因。</p></td>
+      </tr>
+      <tr>
+        <td><p>耗时与成本</p></td>
+        <td><p>允许更长耗时和更多调用；显示阶段进度，支持用户取消，不使用猜测式总墙钟超时截断有效执行。</p></td>
+        <td><p>固定小证据包、固定一次模型调用、严格限制工具轮次和输出预算。</p></td>
+      </tr>
+      <tr>
+        <td><p>共同不变量</p></td>
+        <td colspan="2"><p>同一授权范围、同一身份隔离、同一 <code>ReplyProposal</code>、同一 Policy 与 SendGuard、同一人工审核与审计。任何模式都不能因为“更快”或“更聪明”扩大权限。</p></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h1 seq="auto">优化架构图</h1>
+  <whiteboard type="svg" path="@./draft_af3a9e9c_folder/digital-twin-dual-mode.svg"></whiteboard>
+  <p><b>文字等价说明：</b>所有授权上下文先经过身份、范围与来源过滤，再由执行配置路由器选择“效果最佳”或“极速”。效果最佳路径依次完成任务理解、并行召回、证据融合、三候选、独立裁判和最终修订；极速路径只构建轻量证据包并执行一次模型生成。两条路径最终都进入统一 <code>ReplyProposal</code>、确定性策略、发送闸、审计与反馈学习。</p>
+
+  <h1 seq="auto">效果最佳模式设计</h1>
+  <h2 seq="auto">任务理解与查询计划</h2>
+  <ol>
+    <li><p>从最近消息、触发消息和当前会话状态生成结构化 <code>TaskPlan</code>：任务类型、待回答问题、关系对象、时间范围、需要的证据类别、风险等级。</p></li>
+    <li><p>将复杂问题拆成最多 4 个检索子问题；禁止模型改变授权渠道、会话范围和身份边界。</p></li>
+    <li><p>简单寒暄或确认类消息可直接跳过深检索，但仍保留风格与安全检查。</p></li>
+  </ol>
+
+  <h2 seq="auto">多路证据召回与融合</h2>
+  <ol>
+    <li><p><b>当前会话：</b>沿用结构性会话隔离，使用 FTS 与语义检索召回原话。</p></li>
+    <li><p><b>个人事实：</b>读取已确认身份、本人工作原话和经审核的 WeClone 画像事实。</p></li>
+    <li><p><b>关系与实体：</b>查询 KL-Graph 的实体、事实、时间线及关系邻域；低于既有置信门槛的事实不得进入可外显证据。</p></li>
+    <li><p><b>工作知识：</b>检索工作 Wiki 的专题页、事件页和来源引用，优先选择能回到原始材料的片段。</p></li>
+    <li><p><b>能力与偏好：</b>读取当前有效能力快照、适用范围匹配的纠错规则、最近人工修改与丢弃反馈。</p></li>
+  </ol>
+  <p>融合器输出统一 <code>EvidenceItem</code>：<code>sourceId</code>、来源类型、发生时间、主体、原文片段、置信度、可披露范围、冲突组和时效状态。排序同时考虑相关性、来源权威、时间、关系距离和来源多样性，不只按向量相似度。</p>
+
+  <h2 seq="auto">风格画像接线</h2>
+  <p>第一优先级是修复当前真实断点：WeClone 的语言风格产物必须通过新的 <code>StyleProfile</code> 契约进入生成，而不是只显示“已提取”。建议只保存并使用统计特征和审核后的示例，不把整段私聊作为风格提示长期复制。</p>
+  <pre lang="typescript" caption="建议契约"><code>interface StyleProfile {
+  version: 1
+  fingerprint: string
+  traits: {
+    medianLength: number
+    directness: number
+    formality: number
+    emojiRate: number
+    openingPatterns: string[]
+    closingPatterns: string[]
+    avoidPatterns: string[]
+  }
+  examples: Array&lt;{
+    text: string
+    sourceId: string
+    approved: boolean
+  }&gt;
+}</code></pre>
+  <p>使用规则：仅使用当前资料指纹对应的画像；示例必须审核；风格只能控制表达，不能改变事实、权限、身份或发送决定。</p>
+
+  <h2 seq="auto">三候选、独立裁判与最终修订</h2>
+  <ol>
+    <li><p><b>候选 A：事实严格。</b>最大化证据覆盖，缺少依据就明确保留，不补常识。</p></li>
+    <li><p><b>候选 B：关系得体。</b>结合对象关系和会话历史，优化沟通策略，但不能扩大披露。</p></li>
+    <li><p><b>候选 C：语言相似。</b>在事实不变的前提下最大化 StyleProfile 匹配。</p></li>
+    <li><p><b>独立裁判：</b>裁判模型不读取候选生成过程，只读取任务、证据、风格契约和三个候选；分别评价事实支持、问题覆盖、关系适配、风格相似、信息泄露、越权承诺和可直接使用程度。</p></li>
+    <li><p><b>最终修订：</b>使用胜出候选和裁判的逐项缺口做一次有限修订；禁止引入证据包之外的新事实。</p></li>
+  </ol>
+
+  <h1 seq="auto">极速模式设计</h1>
+  <p>极速模式不是低质量旁路，而是确定范围的“单次生成配置”。它直接复用当前已经存在且经过测试的直连路径：</p>
+  <ol>
+    <li><p>读取最近会话、当前会话 FTS top-k、已审核画像摘要、匹配的纠错规则和已命中的高置信图谱记忆。</p></li>
+    <li><p>不做查询分解，不跑跨来源多轮 Agent，不生成三候选，不调用裁判。</p></li>
+    <li><p>单次调用低时延模型生成统一草稿信封；随后执行格式、引用、敏感披露和越权承诺检查。</p></li>
+    <li><p>信息不足时必须明确提示“材料不足，需要审核”，不能为了速度编造。</p></li>
+  </ol>
+  <p>建议在固定测试网络和指定极速模型上，将端到端 P95 草稿完成时间设为不高于 5 秒；模型首 token、宿主取数、召回和渲染分别计时，避免只看总时间而无法定位瓶颈。</p>
+
+  <h1 seq="auto">页面交互</h1>
+  <p>在“数字分身”页头、渠道选择器之后增加紧凑的分段控制：</p>
+  <grid>
+    <column width-ratio="0.5">
+      <p><b>效果最佳</b></p>
+      <p>默认。完整查证、多候选、独立裁判。适合重要回复、陌生问题和需要跨来源核对的任务。</p>
+    </column>
+    <column width-ratio="0.5">
+      <p><b>极速</b></p>
+      <p>一次生成。适合简单确认、低风险日常回复和用户明确追求速度的场景。</p>
+    </column>
+  </grid>
+  <ul>
+    <li><p>全局默认值为 <b>效果最佳</b>，持久化到用户级设置。</p></li>
+    <li><p>允许当前会话临时覆盖；切换只影响下一轮，不重写已生成草稿。</p></li>
+    <li><p>草稿处理过程必须显示实际模式、实际模型角色、证据数量、是否发生降级和总耗时。</p></li>
+    <li><p>效果最佳执行中显示阶段：理解任务 → 查找依据 → 核对冲突 → 比较候选 → 完成草稿，并提供取消。</p></li>
+    <li><p>禁止使用“自动”第三档。默认必须确定，行为必须可解释。</p></li>
+  </ul>
+
+  <h1 seq="auto">接口与数据改动</h1>
+  <pre lang="typescript" caption="执行配置与模型角色"><code>type PersonaExecutionProfile = "quality" | "fast"
+
+interface PersonaExecutionConfig {
+  defaultProfile: PersonaExecutionProfile // 默认 quality
+  conversationOverrides: Record&lt;string, PersonaExecutionProfile&gt;
+  modelRoles: {
+    "persona.quality.reasoner": string
+    "persona.quality.writer": string
+    "persona.quality.judge": string
+    "persona.quality.reranker": string
+    "persona.fast.writer": string
+  }
+}</code></pre>
+  <p>现有 <code>modelMain</code> 保留为兼容回退值。新角色接入现有 Advanced AI 的 <code>modelRoles</code>，由配置层解析到模型 ID；业务逻辑不直接判断厂商。<code>ReplyProposal.provenance</code> 增加 <code>profile</code>、<code>modelRoles</code>、<code>candidateCount</code>、<code>evidenceCount</code>、<code>judgeScore</code> 与阶段耗时。</p>
+  <p>建议新增 <code>PersonaEvidenceAssembler</code>、<code>PersonaCandidateGenerator</code>、<code>PersonaJudge</code> 三个服务；<code>PersonaComposer</code> 继续作为统一编排入口。不要把多候选、裁判和安全逻辑塞回已经较重的 <code>PersonaService</code>。</p>
+
+  <h1 seq="auto">与开源项目的复用边界</h1>
+  <table>
+    <colgroup>
+      <col width="190"/>
+      <col width="310"/>
+      <col width="310"/>
+    </colgroup>
+    <thead>
+      <tr>
+        <th background-color="light-gray"><p>参考项目</p></th>
+        <th background-color="light-gray"><p>可借鉴</p></th>
+        <th background-color="light-gray"><p>不采用</p></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><p>Open Second Brain</p></td>
+        <td><p>偏好置信度、适用范围、纠错传播、退役和审计；与现有纠错快照机制合并设计。</p></td>
+        <td><p>不引入第二套文件真源，不与 SQLite、能力快照形成双写。</p></td>
+      </tr>
+      <tr>
+        <td><p>GBrain</p></td>
+        <td><p>来源可追溯、修正与撤回、图谱关系和共享记忆的产品原则。</p></td>
+        <td><p>当前不整体替换 KL-Graph、工作 Wiki 和本地 Store，避免重型迁移与双事实源。</p></td>
+      </tr>
+      <tr>
+        <td><p>COG Second Brain</p></td>
+        <td><p>执行者与验证者分离；质量模式用独立裁判，不让生成器给自己打分。</p></td>
+        <td><p>不复制整套通用技能和目录结构。</p></td>
+      </tr>
+      <tr>
+        <td><p>WeClone</p></td>
+        <td><p>继续使用画像与语言风格抽取，补齐 StyleProfile 消费链路。</p></td>
+        <td><p>不允许未经审核的事实或原始聊天直接成为对外回复依据。</p></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h1 seq="auto">实施顺序</h1>
+  <ol>
+    <li><p><b>P0：补齐风格断点。</b>定义 StyleProfile，读取 WeClone 风格产物，加入资料指纹和审核门禁，接入 PersonaComposer；这是投入最小、直接改善“像不像”的步骤。</p></li>
+    <li><p><b>P0：增加执行配置。</b>扩展 IPC、设置存储和数字分身页头控件；默认 quality；将现有直连路径明确命名为 fast。</p></li>
+    <li><p><b>P1：证据融合器。</b>统一当前会话、本人原话、KL-Graph、工作 Wiki、画像、能力与纠错；建立 EvidenceItem、冲突组和可披露范围。</p></li>
+    <li><p><b>P1：多候选与独立裁判。</b>新增角色模型配置、三候选并行生成、裁判评分和有限修订；全部输出仍走 ReplyProposal。</p></li>
+    <li><p><b>P1：评测与灰度。</b>用相同真实任务对比当前基线、极速和效果最佳；达到门槛后把 quality 设为正式默认。</p></li>
+  </ol>
+
+  <h1 seq="auto">验收标准</h1>
+  <p>以下是拟定验收门槛，不是当前实测结果。评测集应来自用户明确授权、完成脱敏和人工标注的真实任务；合成测试只验证机制，不替代产品效果验收。</p>
+  <table>
+    <colgroup>
+      <col width="230"/>
+      <col width="290"/>
+      <col width="290"/>
+    </colgroup>
+    <thead>
+      <tr>
+        <th background-color="light-gray"><p>指标</p></th>
+        <th background-color="light-orange"><p>效果最佳门槛</p></th>
+        <th background-color="light-green"><p>极速门槛</p></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><p>人工盲测胜率</p></td>
+        <td><p>相对当前基线 ≥ 70%</p></td>
+        <td><p>不低于当前基线</p></td>
+      </tr>
+      <tr>
+        <td><p>无依据事实率</p></td>
+        <td><p>≤ 1%</p></td>
+        <td><p>≤ 2%</p></td>
+      </tr>
+      <tr>
+        <td><p>关键事实证据覆盖</p></td>
+        <td><p>≥ 95%</p></td>
+        <td><p>≥ 90%</p></td>
+      </tr>
+      <tr>
+        <td><p>用户直接采用或轻改</p></td>
+        <td><p>相对当前基线提升 ≥ 30%</p></td>
+        <td><p>不低于当前基线</p></td>
+      </tr>
+      <tr>
+        <td><p>延迟</p></td>
+        <td><p>不设硬性总上限；阶段可见、可取消，P95 单独记录</p></td>
+        <td><p>固定环境端到端 P95 ≤ 5 秒</p></td>
+      </tr>
+      <tr>
+        <td><p>安全回归</p></td>
+        <td colspan="2"><p>跨会话越权、撤权后读取、低置信事实外显、未经批准发送、静默降级均为 0 容忍。</p></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h1 seq="auto">风险、回退与停止条件</h1>
+  <ul>
+    <li><p><b>成本与延迟：</b>质量模式调用次数明显上升。通过并行候选、阶段进度、取消和调用账本控制；不以成本为阻断条件，但必须可观测。</p></li>
+    <li><p><b>裁判偏置：</b>同模型自评可能放大同类错误。生成与裁判使用独立角色和提示契约，评测集由人工裁决。</p></li>
+    <li><p><b>上下文污染：</b>所有检索材料进入 user/data 区，不能拼成系统指令；保留现有提示注入边界。</p></li>
+    <li><p><b>风格过拟合：</b>只使用审核示例和统计特征；风格不得覆盖事实、安全和关系边界。</p></li>
+    <li><p><b>回退：</b>执行配置是新增层。关闭 quality feature flag 后，系统回到当前单次生成路径；数据库新增字段保持向后兼容，不删除现有画像、草稿和审计记录。</p></li>
+    <li><p><b>停止条件：</b>出现任何范围扩大、撤权后仍可召回、模式改变发送权限、来源无法追溯或质量模式静默回落极速时，停止灰度并恢复现有路径。</p></li>
+  </ul>
+
+  <h1 seq="auto">最终建议</h1>
+  <callout emoji="✅" background-color="light-green" border-color="green">
+    <p><b>批准方向：</b>先补齐 WeClone 风格消费，再增加 quality / fast 执行配置；随后实现证据融合、三候选和独立裁判。默认 quality，fast 由用户显式选择。保持一个数据真源、一个输出协议和一套安全闸。</p>
+  </callout>
+</doc>

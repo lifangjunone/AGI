@@ -1,0 +1,132 @@
+<title>Just-in-Time Ontology：围绕决策即时生成语义</title>
+<callout emoji="💡" background-color="light-green" border-color="green">
+  <p><b>一句话结论：</b>Southbridge 提出的 Just-in-Time Ontology（即时本体）不是先建设覆盖全公司的万能语义模型，而是先明确当前决策，再为这次决策生成、验证并沉淀恰到好处的语义结构。</p>
+</callout>
+<p>适合读者：正在建设动态本体、Agent 工作流、数据迁移、实体匹配或可靠 AI 数据处理管线的产品与技术负责人。</p>
+<img href="https://img.youtube.com/vi/akEqiXFo3GM/maxresdefault.jpg" width="760" caption="AI Engineer NYC 2026 会议录像：Just-in-Time Ontologies"/>
+
+<h1 seq="auto">为什么不存在唯一正确的本体</h1>
+<p>传统本体建设通常假设：只要组织投入足够多的时间，就能设计出一套统一、稳定、覆盖所有业务的数据模型。演讲认为这个目标本身存在问题，因为信息的意义依赖于即将做出的决策。</p>
+<p>“客户”就是典型例子：</p>
+<table>
+  <colgroup><col width="180"/><col width="280"/><col width="270"/></colgroup>
+  <thead><tr><th background-color="light-gray"><p>业务场景</p></th><th background-color="light-gray"><p>“客户”的实际含义</p></th><th background-color="light-gray"><p>需要的证据</p></th></tr></thead>
+  <tbody>
+    <tr><td><p>财务结算</p></td><td><p>支付账单的主体</p></td><td><p>付款账户、发票与合同关系</p></td></tr>
+    <tr><td><p>客户支持</p></td><td><p>发起问题或接受服务的人</p></td><td><p>工单、联系人和服务记录</p></td></tr>
+    <tr><td><p>合规审查</p></td><td><p>形成法律义务的主体</p></td><td><p>合同身份、控制关系和责任边界</p></td></tr>
+    <tr><td><p>退款决策</p></td><td><p>实际购买且符合退款条件的人</p></td><td><p>订单、支付、使用与退款政策</p></td></tr>
+  </tbody>
+</table>
+<p>因此，可靠本体不能只记录“客户是什么”，还要记录这个定义面向什么决策、在什么条件下成立，以及通过了哪些验证。</p>
+
+<h1 seq="auto">即时本体的工作机制</h1>
+<whiteboard type="mermaid">
+flowchart LR
+    A[原始数据<br/>保留采集上下文] --> B[具体决策<br/>定义问题与成功标准]
+    B --> C[Builder 设计管线<br/>拆分类型化问题]
+    C --> D[Worker 执行窄任务<br/>匹配 · 分类 · 转换]
+    D --> E[验证层<br/>标注样本 · 行为测试 · 模型复核]
+    E -->|通过| F[决策专属本体<br/>定义 · 条件 · 证据]
+    E -->|失败| C
+    F --> G[沉淀可复用方法<br/>用于下一次相似决策]
+    G --> C
+</whiteboard>
+<p>这里的本体是数据转换的中间产物和验证契约。它首先服务当前决策；当另一项决策需要相同转换时，再连同适用条件和验证证据一起复用。</p>
+
+<h1 seq="auto">三个不同的 Agent 角色</h1>
+<table>
+  <colgroup><col width="150"/><col width="290"/><col width="290"/></colgroup>
+  <thead><tr><th background-color="light-gray"><p>角色</p></th><th background-color="light-gray"><p>核心职责</p></th><th background-color="light-gray"><p>优化目标</p></th></tr></thead>
+  <tbody>
+    <tr><td><p><b>Builder</b></p></td><td><p>理解业务问题、设计管线、定义类型化问题和成功标准</p></td><td><p>正确拆解问题并合理分配资源</p></td></tr>
+    <tr><td><p><b>Worker</b></p></td><td><p>执行实体匹配、分类、格式转换等窄任务</p></td><td><p>速度、成本和可预测的缺陷率</p></td></tr>
+    <tr><td><p><b>Optimizer</b></p></td><td><p>比较不同模型和架构，并替换管线局部</p></td><td><p>在质量、成本和时延之间寻找更优组合</p></td></tr>
+  </tbody>
+</table>
+<p>把这三项工作塞入同一个 Agent 上下文，会使问题设计、批量执行和自我优化相互干扰。演讲主张将它们分离，并让每一段都有独立输入、输出和失败标准。</p>
+
+<h1 seq="auto">每个转换都必须能失败</h1>
+<p>Agent 管线无法针对一个从未定义的标准进行优化。可靠转换至少需要一种明确的失败信号：</p>
+<ul>
+  <li><b>人工标注样本：</b>建立一小组可核验的参考答案。</li>
+  <li><b>Schema 检查：</b>验证字段类型、约束、完整性和结构变化。</li>
+  <li><b>行为测试：</b>验证关键输入是否产生预期输出。</li>
+  <li><b>中间结果检查：</b>在管线分段之间保存并比较已知输出。</li>
+  <li><b>独立模型复核：</b>使用不同模型家族缩小需要人工审核的分歧集合。</li>
+  <li><b>预算约束：</b>在规模化之前，用小型试验比较质量、成本和速度。</li>
+</ul>
+<callout emoji="⚠️" background-color="light-orange" border-color="orange">
+  <p><b>模型一致不等于真实：</b>不同模型可能共享同一种错误先验。多模型一致只能作为当前样本上的证据，不能替代真实世界验证。</p>
+</callout>
+
+<h1 seq="auto">第四种 Schema：模型先验</h1>
+<p>演讲把系统中的 Schema 分成四层：</p>
+<ol>
+  <li>真实世界本身的结构。</li>
+  <li>数据采集时保存下来的结构。</li>
+  <li>当前决策所需要的结构。</li>
+  <li><b>模型先验认为世界应该具有的结构。</b></li>
+</ol>
+<p>第四层最危险。模型可能自动假设字段命名、日期格式、正负号或类别含义，即使行数和总金额检查通过，语义仍然已经被破坏。</p>
+<table>
+  <colgroup><col width="220"/><col width="250"/><col width="260"/></colgroup>
+  <thead><tr><th background-color="light-gray"><p>案例</p></th><th background-color="light-gray"><p>模型假设</p></th><th background-color="light-gray"><p>结果</p></th></tr></thead>
+  <tbody>
+    <tr><td><p>实物捐赠标签</p></td><td><p>搜索下划线命名，但源数据使用大写字母和连字符</p></td><td><p>15,658 条实物捐赠被误判为普通资金</p></td></tr>
+    <tr><td><p>日期解析</p></td><td><p>尝试四种格式，但数据使用第五种</p></td><td><p>99.4% 日期变成空值，粗粒度检查仍然通过</p></td></tr>
+    <tr><td><p>贷款金额</p></td><td><p>认为负号是冗余信息</p></td><td><p>业务方向被反转，金额汇总仍可能看似合理</p></td></tr>
+  </tbody>
+</table>
+
+<h1 seq="auto">俄亥俄州竞选财务案例</h1>
+<p>Southbridge 原本预计一项实体匹配任务需要约 10,000 美元。团队经过十天、十多种架构的有界试验后，完成了全州规模运行：</p>
+<grid>
+  <column width-ratio="0.33">
+    <callout emoji="📦" background-color="light-blue" border-color="blue"><p><b>203,317</b><br/>处理案例</p></callout>
+  </column>
+  <column width-ratio="0.33">
+    <callout emoji="💰" background-color="light-green" border-color="green"><p><b>约 795 美元</b><br/>最终成本</p></callout>
+  </column>
+  <column width-ratio="0.34">
+    <callout emoji="🎯" background-color="light-purple" border-color="purple"><p><b>800 美元</b><br/>预算上限</p></callout>
+  </column>
+</grid>
+<p>真正昂贵的部分不是首次判断，而是审计、分歧解决和第二意见。合理架构因此往往是：便宜模型负责批量生产，较贵模型集中检查疑难样本，而不是所有任务都调用最强模型。</p>
+<p>在一个包含 200 个家庭的保留样本中，两种模型对 194 个案例给出一致判断，这部分没有观测到错误；错误集中在 6 个分歧案例。该结果只说明“分歧可以帮助缩小人工复核范围”，并不证明模型一致即可代表真相。</p>
+
+<h1 seq="auto">与 NVIDIA Auto Ontology 的差异</h1>
+<table>
+  <colgroup><col width="170"/><col width="280"/><col width="280"/></colgroup>
+  <thead><tr><th background-color="light-gray"><p>维度</p></th><th background-color="light-gray"><p>NVIDIA Auto Ontology</p></th><th background-color="light-gray"><p>Southbridge 即时本体</p></th></tr></thead>
+  <tbody>
+    <tr><td><p>本体形态</p></td><td><p>相对稳定的企业语义层</p></td><td><p>围绕具体决策动态生成</p></td></tr>
+    <tr><td><p>主要数据</p></td><td><p>数据库表、列、关系和 SQL</p></td><td><p>任意一次性或批量数据转换</p></td></tr>
+    <tr><td><p>生成时机</p></td><td><p>数据接入后预编译</p></td><td><p>业务问题出现后即时构建</p></td></tr>
+    <tr><td><p>可信机制</p></td><td><p>业务专家修订与认证</p></td><td><p>样本、测试、预算与多模型复核</p></td></tr>
+    <tr><td><p>核心目标</p></td><td><p>可靠的 Text-to-SQL 与指标治理</p></td><td><p>可靠、可优化的数据转换</p></td></tr>
+    <tr><td><p>复用方式</p></td><td><p>共享业务术语、指标和连接路径</p></td><td><p>沉淀带适用条件的验证管线片段</p></td></tr>
+  </tbody>
+</table>
+<p>两者并不冲突。稳定、反复使用的核心语义可以进入企业语义层；新问题、一次性迁移和高不确定性判断可以先采用即时本体，在反复验证后再提升为稳定资产。</p>
+
+<h1 seq="auto">对“另一个我”与视频 Ontology 的启发</h1>
+<ul>
+  <li>不要一开始追求覆盖所有知识的完美大本体，先围绕真实任务形成最小语义闭环。</li>
+  <li>每项能力记录适用任务、输入条件、验证样本、失败边界和人工反馈。</li>
+  <li>把“生成”“执行”“评测”拆成不同角色，防止一个 Agent 自己出题、自己作答、自己宣布通过。</li>
+  <li>只有经过任务验证的工作记忆，才能沉淀为 AgentSphere 能力快照。</li>
+  <li>对相似任务复用已经验证的转换片段，同时保留产生它的上下文和适用条件。</li>
+  <li>把成本、时延与质量作为共同评价指标，而不是只追求模型能力上限。</li>
+</ul>
+<callout emoji="🎯" background-color="light-blue" border-color="blue">
+  <p><b>落地判断：</b>NVIDIA Auto Ontology 更像“统一企业语义底座”；Southbridge 更像“面向具体任务、经过验证后逐步沉淀的动态语义管线”。对于数字员工的能力成长，后者更接近“学习 → 试岗 → 验证 → 获得资格”的产品逻辑。</p>
+</callout>
+
+<h1 seq="auto">参考资料</h1>
+<ul>
+  <li><a type="url-preview" href="https://ai.engineer/nyc/2026/talks/southbridge">Just-in-Time Ontologies 演讲图文与逐字稿</a></li>
+  <li><a type="url-preview" href="https://www.youtube.com/watch?v=akEqiXFo3GM&amp;t=14548s">AI Engineer NYC 2026 会议录像</a></li>
+  <li><a type="url-preview" href="https://github.com/SouthBridgeAI/hankweave-runtime">Hankweave Runtime</a></li>
+</ul>
+<p><em>核验时间：2026-11-05。案例数字来自演讲页面，代表特定数据集与实验条件，不应直接外推为一般性能保证。</em></p>

@@ -1,0 +1,1620 @@
+{
+  "document": "Qp0pdj6oIoxl5qxw6Joc6wDZnfg",
+  "base_revision": 31,
+  "semicolons": 77,
+  "replacements": 6,
+  "edits": [
+    {
+      "block_id": "doxcnlg7PTO7fnns3nhdJLkTYCg",
+      "before": "AS 1.x 后续停止迭代，HiAgent 可以作为受控业务流程的承接选项；当前证据支持先迁意图路由与确定性 SOP，尚不足以批准完整总控替换。本轮已在 HiAgent 新建并运行 IT 服务样例，五条真实模型与整链路测试通过，内部配置版本 v0.1.0 已发布并确认刷新后持久化。",
+      "after": "AS 1.x 后续停止迭代，HiAgent 可以作为受控业务流程的承接选项。当前证据支持先迁意图路由与确定性 SOP，尚不足以批准完整总控替换。本轮已在 HiAgent 新建并运行 IT 服务样例，五条真实模型与整链路测试通过，内部配置版本 v0.1.0 已发布并确认刷新后持久化。",
+      "content": "<p><b>AS 1.x 后续停止迭代，HiAgent 可以作为受控业务流程的承接选项。当前证据支持先迁意图路由与确定性 SOP，尚不足以批准完整总控替换。</b>本轮已在 HiAgent 新建并运行 IT 服务样例，五条真实模型与整链路测试通过，内部配置版本 v0.1.0 已发布并确认刷新后持久化。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 32,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnBGuMWurI4qnUIeP5HqyzEf",
+      "before": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环；真实业务执行、跨智能体协同、权限与记忆隔离、安全覆盖、统一门户及性能门槛需要后续验收。AS 停止迭代是本方案的假设，不是已确认的产品决策。",
+      "after": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环。真实业务执行与跨智能体协同需要后续验收。权限与记忆隔离、安全覆盖仍需验证，统一门户及性能门槛也需验收。AS 停止迭代是本方案的假设，不是已确认的产品决策。",
+      "content": "<p>“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环。真实业务执行与跨智能体协同需要后续验收。权限与记忆隔离、安全覆盖仍需验证，统一门户及性能门槛也需验收。AS 停止迭代是本方案的假设，不是已确认的产品决策。</p>",
+      "rules": [
+        "规则F／1处分号改句号",
+        "规则5／正文并列L7"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 33,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcndpXXAnvxTcBF2SEAxnw26g",
+      "before": "目标是保住业务效果与可运维性，不要求复刻 AS 的页面对象。首批不迁历史会话、长期记忆和高风险写操作；原 AS 资产和路由保留，供回退及同口径比较。",
+      "after": "目标是保住业务效果与可运维性，不要求复刻 AS 的页面对象。首批不迁历史会话、长期记忆和高风险写操作。原 AS 资产和路由保留，供回退及同口径比较。",
+      "content": "<p>目标是保住业务效果与可运维性，不要求复刻 AS 的页面对象。首批不迁历史会话、长期记忆和高风险写操作。原 AS 资产和路由保留，供回退及同口径比较。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 34,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnQFfjZ1kxmMr17vobFYV1of",
+      "before": "AS 财富助手实际有 13 个意图；ETF基金分析的命中策略显示“调用扩展能力执行”，单元为 datayes-financial-v3，类型为技能。这证明需要迁移业务技能契约，不能用一段分类或固定答复代替金融分析执行。该技能本轮未实际运行。",
+      "after": "AS 财富助手实际有 13 个意图。ETF基金分析的命中策略显示“调用扩展能力执行”，单元为 datayes-financial-v3，类型为技能。这证明需要迁移业务技能契约，不能用一段分类或固定答复代替金融分析执行。该技能本轮未实际运行。",
+      "content": "<p>AS 财富助手实际有 13 个意图。ETF基金分析的命中策略显示“调用扩展能力执行”，单元为 datayes-financial-v3，类型为技能。这证明需要迁移业务技能契约，不能用一段分类或固定答复代替金融分析执行。该技能本轮未实际运行。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 35,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnVNxkmhdbXQPSVrQpejCyTf",
+      "before": "每个业务场景一个总控 Chatflow；意图节点配置名称、描述和分支。",
+      "after": "每个业务场景一个总控 Chatflow。意图节点配置名称、描述和分支。",
+      "content": "<p>每个业务场景一个总控 Chatflow。意图节点配置名称、描述和分支。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 36,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnxWkGOR1zkklaDbszKR01Ob",
+      "before": "本轮四类＋其他兜底已验证。AS 场景对象、注册、优先级和发布策略需重建；分类准确率未做大样本评估。",
+      "after": "本轮四类＋其他兜底已验证。AS 场景对象、注册、优先级和发布策略需重建。分类准确率未做大样本评估。",
+      "content": "<p>本轮四类＋其他兜底已验证。AS 场景对象、注册、优先级和发布策略需重建。分类准确率未做大样本评估。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 37,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnKcqPdTboNt73PTJvWI1vLg",
+      "before": "固定诊断回复已验证；真实业务 API 和审批未接入。",
+      "after": "固定诊断回复已验证。真实业务 API 和审批未接入。",
+      "content": "<p>固定诊断回复已验证。真实业务 API 和审批未接入。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 38,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnWZW89UEgqATGHIaSmUz1lf",
+      "before": "菜单可见；须核对鉴权、入参、流式返回、错误及版本。代码节点不是独立 SubAgent。",
+      "after": "菜单可见。须核对鉴权、入参、流式返回、错误及版本。代码节点不是独立 SubAgent。",
+      "content": "<p>菜单可见。须核对鉴权、入参、流式返回、错误及版本。代码节点不是独立 SubAgent。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 39,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcn95lO05PvzFYsTjpM0SogVh",
+      "before": "评估自主型智能体、工具与子智能体；核心业务优先显式工作流。",
+      "after": "评估自主型智能体、工具与子智能体。核心业务优先显式工作流。",
+      "content": "<p>评估自主型智能体、工具与子智能体。核心业务优先显式工作流。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 40,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnMCHqp1k2x0kXEzllfnGHZt",
+      "before": "相关创建入口可见。规划、并行、观察、重规划、验收和终止未验证；不能判为缺失，也不能宣称等价。",
+      "after": "相关创建入口可见。规划、并行、观察、重规划、验收和终止未验证。不能判为缺失，也不能宣称等价。",
+      "content": "<p>相关创建入口可见。规划、并行、观察、重规划、验收和终止未验证。不能判为缺失，也不能宣称等价。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 41,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcndKG2PxaxMGtNMllzn0rY8f",
+      "before": "显式拓扑与变量绑定；逐节点处理失败。",
+      "after": "显式拓扑与变量绑定。逐节点处理失败。",
+      "content": "<p>显式拓扑与变量绑定。逐节点处理失败。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 42,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnVx0UC9jV7xncZICecWJ01c",
+      "before": "4 节点／7 连线已验证；多独立数字员工链路仍需单独运行。",
+      "after": "4 节点／7 连线已验证。多独立数字员工链路仍需单独运行。",
+      "content": "<p>4 节点／7 连线已验证。多独立数字员工链路仍需单独运行。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 43,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnAdrtoAfuw9MR2bh9yLYhfg",
+      "before": "术语库入口＋改写步骤；保留原 query 与改写 query。",
+      "after": "术语库入口＋改写步骤。保留原 query 与改写 query。",
+      "content": "<p>术语库入口＋改写步骤。保留原 query 与改写 query。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 44,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcneIsinPAAAeYY6ByJHSyRWd",
+      "before": "术语库节点可见；词典迁移、改写顺序及语义保持未验证。",
+      "after": "术语库节点可见。词典迁移、改写顺序及语义保持未验证。",
+      "content": "<p>术语库节点可见。词典迁移、改写顺序及语义保持未验证。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 45,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnOnwfpDHmJEazhCtl3aw2Uc",
+      "before": "问答库命中直接返回；未命中进入路由或明确兜底。",
+      "after": "问答库命中直接返回。未命中进入路由或明确兜底。",
+      "content": "<p>问答库命中直接返回。未命中进入路由或明确兜底。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 46,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnzPuSppentjDMH1YiApkXmg",
+      "before": "问答库节点可见；阈值、空召回、冲突及响应时延待验收。本轮“其他意图”不是 FAQ 验证。",
+      "after": "问答库节点可见。阈值、空召回、冲突及响应时延待验收。本轮“其他意图”不是 FAQ 验证。",
+      "content": "<p>问答库节点可见。阈值、空召回、冲突及响应时延待验收。本轮“其他意图”不是 FAQ 验证。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 47,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcniRjH3UnfLOjcEZbL13wwOf",
+      "before": "单意图走流程；多意图先澄清，后续增加受控计划和结果合并。",
+      "after": "单意图走流程。多意图先澄清，后续增加受控计划和结果合并。",
+      "content": "<p>单意图走流程。多意图先澄清，后续增加受控计划和结果合并。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 48,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnT2g5a5YH6K43rKLPxNpsDh",
+      "before": "单意图与多诉求澄清已验证；没有自动拆分并执行两个任务，也没有 ReAct 实测。",
+      "after": "单意图与多诉求澄清已验证。没有自动拆分并执行两个任务，也没有 ReAct 实测。",
+      "content": "<p>单意图与多诉求澄清已验证。没有自动拆分并执行两个任务，也没有 ReAct 实测。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 49,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnhNdBTUWSDfNPjvetKSBVzd",
+      "before": "对话历史保留3轮、长期记忆入口可见；提取规则、跨会话读取、删除和租户隔离待验证。",
+      "after": "对话历史保留3轮、长期记忆入口可见。提取规则、跨会话读取、删除和租户隔离待验证。",
+      "content": "<p>对话历史保留3轮、长期记忆入口可见。提取规则、跨会话读取、删除和租户隔离待验证。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 50,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnz8r7BkzKjipqtrWFo8eNWh",
+      "before": "节点可见；AS 资料、切分、索引及权限不因换平台自动迁移。",
+      "after": "节点可见。AS 资料、切分、索引及权限不因换平台自动迁移。",
+      "content": "<p>节点可见。AS 资料、切分、索引及权限不因换平台自动迁移。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 51,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnLk55F4Zj8wobv3u4Ohv6F9",
+      "before": "需实现统一契约、发现、版本、认证和审计；没有跨平台互操作实测。",
+      "after": "需实现统一契约、发现、版本、认证和审计。没有跨平台互操作实测。",
+      "content": "<p>需实现统一契约、发现、版本、认证和审计。没有跨平台互操作实测。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 52,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnbU6AFYNKTSMEbN5Abu8nFh",
+      "before": "安全配置入口可见；本轮 SOP 文案约束不是安全拦截证明。",
+      "after": "安全配置入口可见。本轮 SOP 文案约束不是安全拦截证明。",
+      "content": "<p>安全配置入口可见。本轮 SOP 文案约束不是安全拦截证明。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 53,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnHVjTGtQiacaiewppD5H0ad",
+      "before": "五次整链路 UI 耗时1.47–2.18秒，非 P99，且测量范围未必与原指标一致；不承诺继承该指标。",
+      "after": "五次整链路 UI 耗时1.47–2.18秒，非 P99，且测量范围未必与原指标一致。不承诺继承该指标。",
+      "content": "<p>五次整链路 UI 耗时1.47–2.18秒，非 P99，且测量范围未必与原指标一致。不承诺继承该指标。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 54,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnXBVJCxfsErojJQ7IGcJaAd",
+      "before": "截至2026-11-12，本方案交付的是意图路由与固定诊断 SOP 的最小闭环，不是 AgentSphere 完整替代系统。以下事项明确列入交付边界；只有补建并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent 不支持”：本轮没有证据把这些平台能力判为永久缺失。",
+      "after": "截至2026-11-12，本方案交付的是意图路由与固定诊断 SOP 的最小闭环，不是 AgentSphere 完整替代系统。以下事项明确列入交付边界。只有补建并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent 不支持”。本轮没有证据把这些平台能力判为永久缺失。",
+      "content": "<p><b>截至2026-11-12，本方案交付的是意图路由与固定诊断 SOP 的最小闭环，不是 AgentSphere 完整替代系统。</b>以下事项明确列入交付边界。只有补建并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent 不支持”。本轮没有证据把这些平台能力判为永久缺失。</p>",
+      "rules": [
+        "规则F／1处分号改句号",
+        "规则12／结论冒号L55"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 55,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnsVG57ZyHn2DSiNRKACrrc3",
+      "before": "尚未验证：存在候选节点；当前运行的是代码节点。",
+      "after": "尚未验证：存在候选节点。当前运行的是代码节点。",
+      "content": "<p>尚未验证：存在候选节点。当前运行的是代码节点。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 56,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnIlBRrx6CuKH4J8Kiqr1uTg",
+      "before": "不能提供已验证的独立 SubAgent 调用、Skill＋Agent 混编或多数字员工执行链；不能承诺直接复用 datayes-financial-v3。",
+      "after": "不能提供已验证的独立 SubAgent 调用、Skill＋Agent 混编或多数字员工执行链。不能承诺直接复用 datayes-financial-v3。",
+      "content": "<p>不能提供已验证的独立 SubAgent 调用、Skill＋Agent 混编或多数字员工执行链。不能承诺直接复用 datayes-financial-v3。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 57,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcn2G9WBPh2QE1WL2uUTX9LGh",
+      "before": "完成多Agent依赖、失败恢复、最大步骤、取消和终止验收；核心 SOP 可先采用显式工作流。",
+      "after": "完成多Agent依赖、失败恢复、最大步骤、取消和终止验收。核心 SOP 可先采用显式工作流。",
+      "content": "<p>完成多Agent依赖、失败恢复、最大步骤、取消和终止验收。核心 SOP 可先采用显式工作流。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 58,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnHAbLmH0yEUfw9xp6PYgZHg",
+      "before": "当前样例做不到：双诉求只触发澄清；ReAct未验证。",
+      "after": "当前样例做不到：双诉求只触发澄清。ReAct未验证。",
+      "content": "<p>当前样例做不到：双诉求只触发澄清。ReAct未验证。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 59,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcn218P6Tw5wIBGuLtUvFkT8g",
+      "before": "不能保证 AS、HiAgent、第三方资产自动发现、认证互通、版本兼容；不能直接导入并无损继承 AS 场景和策略。",
+      "after": "不能保证 AS、HiAgent、第三方资产自动发现、认证互通、版本兼容。不能直接导入并无损继承 AS 场景和策略。",
+      "content": "<p>不能保证 AS、HiAgent、第三方资产自动发现、认证互通、版本兼容。不能直接导入并无损继承 AS 场景和策略。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 60,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnPaJsy25Yd7yjOBkmgcgfJc",
+      "before": "不能承诺 FAQ 快路径、术语改写正确性、原知识效果或撤权后不召回；未知意图兜底不是 FAQ 验证。",
+      "after": "不能承诺 FAQ 快路径、术语改写正确性、原知识效果或撤权后不召回。未知意图兜底不是 FAQ 验证。",
+      "content": "<p>不能承诺 FAQ 快路径、术语改写正确性、原知识效果或撤权后不召回。未知意图兜底不是 FAQ 验证。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 61,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnRK2LiXMcwKRnpPlaNW74cd",
+      "before": "尚未验证；历史迁移未实施。只观察到3轮对话历史配置及长期记忆入口。",
+      "after": "尚未验证。历史迁移未实施。只观察到3轮对话历史配置及长期记忆入口。",
+      "content": "<p>尚未验证。历史迁移未实施。只观察到3轮对话历史配置及长期记忆入口。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 62,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnRzPXGqwCWO0eaUMdw7H1pf",
+      "before": "没有达标证据：仅有5次UI耗时1.47–2.18秒；未压测。",
+      "after": "没有达标证据：仅有5次UI耗时1.47–2.18秒。未压测。",
+      "content": "<p>没有达标证据：仅有5次UI耗时1.47–2.18秒。未压测。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 63,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnYrOrpIDJsnsOEz1D6s1fOc",
+      "before": "替代决策约束：不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应保留 AS 或采用明确的人工处理路径；生产全量切流与原系统下线均不属于本轮已完成交付。",
+      "after": "替代决策约束：不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应保留 AS 或采用明确的人工处理路径。生产全量切流与原系统下线均不属于本轮已完成交付。",
+      "content": "<p><b>替代决策约束：</b>不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应保留 AS 或采用明确的人工处理路径。生产全量切流与原系统下线均不属于本轮已完成交付。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 64,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcno3WnFQqFxjvxyiNFeSSChe",
+      "before": "图中文字等价说明：用户的原始请求进入总控；目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安全和人工兜底。可信身份、知识权限、记忆隔离、版本及审计贯穿全链路。本轮只运行 Start→意图识别→确定性 SOP→End，图中虚线部分均需另行实现或验证。",
+      "after": "图中文字等价说明：用户的原始请求进入总控。目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安全和人工兜底。可信身份、知识权限、记忆隔离、版本及审计贯穿全链路。本轮只运行 Start→意图识别→确定性 SOP→End，图中虚线部分均需另行实现或验证。",
+      "content": "<p>图中文字等价说明：用户的原始请求进入总控。目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安全和人工兜底。可信身份、知识权限、记忆隔离、版本及审计贯穿全链路。本轮只运行 Start→意图识别→确定性 SOP→End，图中虚线部分均需另行实现或验证。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 65,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnTL5wxTrqGwtwdUHGmDK4ab",
+      "before": "迁移投入低，已有治理与技能不变；若后续停更，会累积兼容与维护风险。",
+      "after": "迁移投入低，已有治理与技能不变。若后续停更，会累积兼容与维护风险。",
+      "content": "<p>迁移投入低，已有治理与技能不变。若后续停更，会累积兼容与维护风险。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 66,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnDyKDQfx3yupRdyLvF58fFd",
+      "before": "作为过渡与回退基础；需明确支持边界。",
+      "after": "作为过渡与回退基础。需明确支持边界。",
+      "content": "<p>作为过渡与回退基础。需明确支持边界。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 67,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnm3gXEzPD2DRfBjWogDFele",
+      "before": "探索灵活；核心 SOP 的步骤、终止、重试与审批更难稳定验收。",
+      "after": "探索灵活。核心 SOP 的步骤、终止、重试与审批更难稳定验收。",
+      "content": "<p>探索灵活。核心 SOP 的步骤、终止、重试与审批更难稳定验收。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 68,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnoXwkGMK3HTm5VpRYyqFLMx",
+      "before": "意图、步骤和失败定位清晰；资产与统一治理仍有重建成本。",
+      "after": "意图、步骤和失败定位清晰。资产与统一治理仍有重建成本。",
+      "content": "<p>意图、步骤和失败定位清晰。资产与统一治理仍有重建成本。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 69,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcn6JyQ4TzpQF672dozZKAwEc",
+      "before": "接口设计建议（未实现）：入口携带可信 tenant_id／user_id／session_id／request_id，客户端不能自行决定租户；路由结果包含 intent、strategy_version、confidence（仅接口实际提供时使用）和澄清状态；执行结果统一为 status、data、evidence、error、trace_id。写操作使用幂等键和审批凭据，认证秘密保存在平台密钥配置中。",
+      "after": "接口设计建议（未实现）：入口携带可信 tenant_id／user_id／session_id／request_id，客户端不能自行决定租户。路由结果包含 intent、strategy_version、confidence（仅接口实际提供时使用）和澄清状态。执行结果统一为 status、data、evidence、error、trace_id。写操作使用幂等键和审批凭据，认证秘密保存在平台密钥配置中。",
+      "content": "<p>接口设计建议（未实现）：入口携带可信 tenant_id／user_id／session_id／request_id，客户端不能自行决定租户。路由结果包含 intent、strategy_version、confidence（仅接口实际提供时使用）和澄清状态。执行结果统一为 status、data、evidence、error、trace_id。写操作使用幂等键和审批凭据，认证秘密保存在平台密钥配置中。</p>",
+      "rules": [
+        "规则F／2处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 70,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnprJzRg7oIvF7eB9li1WUpd",
+      "before": "目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工；异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹配不能误入有副作用的分支。重试只对可重放或已实现幂等的操作启用。",
+      "after": "目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工。异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹配不能误入有副作用的分支。重试只对可重放或已实现幂等的操作启用。",
+      "content": "<p>目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工。异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹配不能误入有副作用的分支。重试只对可重放或已实现幂等的操作启用。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 71,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnelLG0luwJ5eTdZecUxl7Ke",
+      "before": "已建样例：AS迁移验证-IT服务总控-20261112。位于验证账号个人空间；其他人员需被授权访问，或在自己的授权空间按下列步骤重建。",
+      "after": "已建样例：AS迁移验证-IT服务总控-20261112。位于验证账号个人空间。其他人员需被授权访问，或在自己的授权空间按下列步骤重建。",
+      "content": "<p><a href=\"https://hia.volcenginepaas.com/product/llm/personal/personal-d9bmuon7l14h8csmbipg/application/dbqmlp6i7bcaolvh67pg/arrange?tabKey=arrange\">已建样例：AS迁移验证-IT服务总控-20261112</a>。位于验证账号个人空间。其他人员需被授权访问，或在自己的授权空间按下列步骤重建。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 72,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnlIChNYuBJsxCiSzf3oRODX",
+      "before": "前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使用企业密码、不访问业务数据库、不创建工单、不改账号。验证码由本人完成。已有资产不要覆盖；重建时使用不同名称。若发布校验失败、结果错路由或出现写操作，停止发布并修正后再验证。",
+      "after": "前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使用企业密码，也不访问业务数据库。它不创建工单或修改账号。验证码由本人完成。已有资产不要覆盖。重建时使用不同名称。若发布校验失败、结果错路由或出现写操作，停止发布并修正后再验证。",
+      "content": "<p>前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使用企业密码，也不访问业务数据库。它不创建工单或修改账号。验证码由本人完成。已有资产不要覆盖。重建时使用不同名称。若发布校验失败、结果错路由或出现写操作，停止发布并修正后再验证。</p>",
+      "rules": [
+        "规则F／1处分号改句号",
+        "规则5／正文并列L91"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 73,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnCpoxEwOQ9ysSMFVVSLJYag",
+      "before": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”；描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实工单。”",
+      "after": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”。描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实工单。”",
+      "content": "<p>步骤2：名称填写“AS迁移验证-IT服务总控-日期”。描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实工单。”</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 74,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcn6x6J84X7CfiWg88lCVtiHc",
+      "before": "步骤3：进入编排页，保留 Start、End。确认 Start 有顶层 query（String）；files 和对话历史保留默认即可。本轮对话轮数保留3，未使用长期记忆。",
+      "after": "步骤3：进入编排页，保留 Start、End。确认 Start 有顶层 query（String）。files 和对话历史保留默认即可。本轮对话轮数保留3，未使用长期记忆。",
+      "content": "<p>步骤3：进入编排页，保留 Start、End。确认 Start 有顶层 query（String）。files 和对话历史保留默认即可。本轮对话轮数保留3，未使用长期记忆。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 75,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcn2VRVxZBXsvDQ3Q7uVb1hUd",
+      "before": "步骤6：添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无；生产值需要结合 SLA 调整。",
+      "after": "步骤6：添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无。生产值需要结合 SLA 调整。",
+      "content": "<p>步骤6：添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无。生产值需要结合 SLA 调整。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 76,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnaMN2m2152ItiXbTw3vg3QE",
+      "before": "首次测试“我忘记密码，账号登录不了”曾错误返回多诉求澄清，原因是误选 Start/chat_histories/query；改为顶层 Start/query 后同输入通过。先核对变量来源，再调整意图描述，避免把输入绑定错误当成模型能力问题。",
+      "after": "首次测试“我忘记密码，账号登录不了”曾错误返回多诉求澄清，原因是误选 Start/chat_histories/query。改为顶层 Start/query 后同输入通过。先核对变量来源，再调整意图描述，避免把输入绑定错误当成模型能力问题。",
+      "content": "<p>首次测试“我忘记密码，账号登录不了”曾错误返回多诉求澄清，原因是误选 Start/chat_histories/query。改为顶层 Start/query 后同输入通过。先核对变量来源，再调整意图描述，避免把输入绑定错误当成模型能力问题。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 77,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnA6Hs9pdNqOAw4Tr5RYqHNd",
+      "before": "步骤8：将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）、key3（Obj）、key4（Arr<Obj>）。本轮沿用默认输出模板，仅 End 使用 key0；没有消费的模板字段不代表业务输出。",
+      "after": "步骤8：将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）、key3（Obj）、key4（Arr<Obj>）。本轮沿用默认输出模板，仅 End 使用 key0。没有消费的模板字段不代表业务输出。",
+      "content": "<p>步骤8：将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr&lt;Str&gt;）、key3（Obj）、key4（Arr&lt;Obj&gt;）。本轮沿用默认输出模板，仅 End 使用 key0。没有消费的模板字段不代表业务输出。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 78,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnReW15Ql7qTkPzRU58zCtvg",
+      "before": "步骤11：将代码01出口连接 End。最终是4个节点、7条连接；本例所有出口汇入同一代码按名称分派。",
+      "after": "步骤11：将代码01出口连接 End。最终是4个节点、7条连接。本例所有出口汇入同一代码按名称分派。",
+      "content": "<p>步骤11：将代码01出口连接 End。最终是4个节点、7条连接。本例所有出口汇入同一代码按名称分派。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 79,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnL0tumrdCIawpNsy8XbGTfh",
+      "before": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对；聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收。",
+      "after": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对。聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收。",
+      "content": "<p>步骤14：按输出语义、未执行副作用声明及本轮耗时核对。聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 80,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnoo4iJKGuosY8iCRPyhYScb",
+      "before": "以上耗时是各一次整链路运行的界面显示值，样本数5，不是准确率基准、并发压测或 P99。模型具有随机性，重建后应重新执行同输入；多轮续接、歧义输入、注入、节点异常和跨租户访问未在本轮通过。",
+      "after": "以上耗时是各一次整链路运行的界面显示值，样本数5，不是准确率基准、并发压测或 P99。模型具有随机性，重建后应重新执行同输入。多轮续接和歧义输入未在本轮通过。注入、节点异常和跨租户访问也未在本轮通过。",
+      "content": "<p>以上耗时是各一次整链路运行的界面显示值，样本数5，不是准确率基准、并发压测或 P99。模型具有随机性，重建后应重新执行同输入。多轮续接和歧义输入未在本轮通过。注入、节点异常和跨租户访问也未在本轮通过。</p>",
+      "rules": [
+        "规则F／1处分号改句号",
+        "规则5／正文并列L186"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 81,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnQy3oIbKFewWtb20BK6AQyh",
+      "before": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条；不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记录；不要删除原 AS 场景。HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力。",
+      "after": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条。不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记录。不要删除原 AS 场景。HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力。",
+      "content": "<p>恢复方法：失败时保留测试记录，修正变量和节点后重跑五条。不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记录。不要删除原 AS 场景。HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力。</p>",
+      "rules": [
+        "规则F／2处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 82,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnsYotIxESfXzM9cUTTlpVdf",
+      "before": "导出场景、意图、命中策略、技能与知识依赖；建立旧ID→新ID→版本映射。先选低风险场景和脱敏真实测试集。",
+      "after": "导出场景、意图、命中策略、技能与知识依赖。建立旧ID→新ID→版本映射。先选低风险场景和脱敏真实测试集。",
+      "content": "<p>导出场景、意图、命中策略、技能与知识依赖。建立旧ID→新ID→版本映射。先选低风险场景和脱敏真实测试集。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 83,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnkIJxf5z2KhfkCqrFyg6o5e",
+      "before": "1名实施＋业务负责人，8–16工时；取决于资产数量。",
+      "after": "1名实施＋业务负责人，8–16工时。取决于资产数量。",
+      "content": "<p>1名实施＋业务负责人，8–16工时。取决于资产数量。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 84,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnIAChJp16TSp8Szuy0JNcAh",
+      "before": "将一个独立 Agent／只读业务 API 接入工作流，验证鉴权、结果、异常与 Trace；不以固定答复替代工具回执。",
+      "after": "将一个独立 Agent／只读业务 API 接入工作流，验证鉴权、结果、异常与 Trace。不以固定答复替代工具回执。",
+      "content": "<p>将一个独立 Agent／只读业务 API 接入工作流，验证鉴权、结果、异常与 Trace。不以固定答复替代工具回执。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 85,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcn513YLE3BeKsMWRfuZWz3Wc",
+      "before": "1名实施＋接口负责人，16–32工时；接口现成时。",
+      "after": "1名实施＋接口负责人，16–32工时。接口现成时。",
+      "content": "<p>1名实施＋接口负责人，16–32工时。接口现成时。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 86,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnrFRRd0axDvVcIUlSmOynLb",
+      "before": "FAQ、术语、知识ACL、记忆隔离、安全、门户与运营逐项验收；多Agent作为独立实验。",
+      "after": "FAQ、术语、知识ACL、记忆隔离、安全、门户与运营逐项验收。多Agent作为独立实验。",
+      "content": "<p>FAQ、术语、知识ACL、记忆隔离、安全、门户与运营逐项验收。多Agent作为独立实验。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 87,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnnkqfRVce6Co8LmlYBAAICf",
+      "before": "同输入对比 AS／HiAgent；审批通过后切单场景；错误、越权或 SLA 超限则将该场景路由恢复 AS。",
+      "after": "同输入对比 AS／HiAgent。审批通过后切单场景。错误、越权或 SLA 超限则将该场景路由恢复 AS。",
+      "content": "<p>同输入对比 AS／HiAgent。审批通过后切单场景。错误、越权或 SLA 超限则将该场景路由恢复 AS。</p>",
+      "rules": [
+        "规则F／2处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 88,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnVU1gRjrDcku79gbdtzYUAe",
+      "before": "每个首批场景8–16工时验证；观察窗口由业务SLA确定。",
+      "after": "每个首批场景8–16工时验证。观察窗口由业务SLA确定。",
+      "content": "<p>每个首批场景8–16工时验证。观察窗口由业务SLA确定。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 89,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnjA4WHaarBjV3Z7qdHtAnae",
+      "before": "兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议、文件权限、超时与取消。既有 session 和长期记忆先留原系统；迁移需要来源、主体、有效期、删除及授权审计。",
+      "after": "兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议、文件权限、超时与取消。既有 session 和长期记忆先留原系统。迁移需要来源、主体及有效期，还需要删除和授权审计。",
+      "content": "<p>兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议、文件权限、超时与取消。既有 session 和长期记忆先留原系统。迁移需要来源、主体及有效期，还需要删除和授权审计。</p>",
+      "rules": [
+        "规则F／1处分号改句号",
+        "规则5／正文并列L215"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 90,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnaSVLOHcWPMcSnMS5mL91dO",
+      "before": "故障与安全：区分模型失败、工具失败、授权失败、知识空召回及业务拒绝；高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工具结果，日志脱敏并按企业政策定期限。平台侧安全和监控的实际覆盖范围仍需确认。",
+      "after": "故障与安全：模型失败和工具失败应分别识别，授权失败也要单独区分。知识空召回与业务拒绝同样需要区分。高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工具结果，日志脱敏并按企业政策定期限。平台侧安全和监控的实际覆盖范围仍需确认。",
+      "content": "<p>故障与安全：模型失败和工具失败应分别识别，授权失败也要单独区分。知识空召回与业务拒绝同样需要区分。高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工具结果，日志脱敏并按企业政策定期限。平台侧安全和监控的实际覆盖范围仍需确认。</p>",
+      "rules": [
+        "规则F／1处分号改句号",
+        "规则5／正文并列L217"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 91,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnbtiAFrc8kRKfQ9aNWT7qCd",
+      "before": "五条样例已过；扩展脱敏真实请求，按意图分别报告混淆矩阵、漏识别、误入写分支率；多轮指代和歧义单列。",
+      "after": "五条样例已过。扩展脱敏真实请求，按意图分别报告混淆矩阵、漏识别、误入写分支率。多轮指代和歧义单列。",
+      "content": "<p>五条样例已过。扩展脱敏真实请求，按意图分别报告混淆矩阵、漏识别、误入写分支率。多轮指代和歧义单列。</p>",
+      "rules": [
+        "规则F／2处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 92,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnkdOWOwczdGvnhpMqDwBorc",
+      "before": "最小样例通过；大样本待验收。",
+      "after": "最小样例通过。大样本待验收。",
+      "content": "<p>最小样例通过。大样本待验收。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 93,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnFNSKPo3UucuQBoI2ZlYLug",
+      "before": "单Agent、串行两Agent、Skill＋Agent；核对入参、真实回执、失败传播与结果合并，记录每次子调用 Trace。",
+      "after": "单Agent、串行两Agent、Skill＋Agent。核对入参、真实回执、失败传播与结果合并，记录每次子调用 Trace。",
+      "content": "<p>单Agent、串行两Agent、Skill＋Agent。核对入参、真实回执、失败传播与结果合并，记录每次子调用 Trace。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 94,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnC0DFLQVk7S9cayvgPCxRWe",
+      "before": "双诉求拆解、并行、依赖失败、重规划、最大步骤与取消；结果不得漏项，不得循环无终点。",
+      "after": "双诉求拆解、并行、依赖失败、重规划、最大步骤与取消。结果不得漏项，不得循环无终点。",
+      "content": "<p>双诉求拆解、并行、依赖失败、重规划、最大步骤与取消。结果不得漏项，不得循环无终点。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 95,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcncuFkmNh0e1m3G8hR6jLDub",
+      "before": "仅澄清通过；自动协同待验收。",
+      "after": "仅澄清通过。自动协同待验收。",
+      "content": "<p>仅澄清通过。自动协同待验收。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 96,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcn69TWCk6MI4MQMbgwze2KQd",
+      "before": "命中、未命中、冲突、同词异义、撤权；空召回正确转流程，无权资料不可读，改写保留原意。",
+      "after": "命中、未命中、冲突、同词异义、撤权。空召回正确转流程，无权资料不可读，改写保留原意。",
+      "content": "<p>命中、未命中、冲突、同词异义、撤权。空召回正确转流程，无权资料不可读，改写保留原意。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 97,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcncQe1eU51GcNx5YHwzPb2Lg",
+      "before": "同人跨会话、不同用户、不同租户、删除及过期；错误主体不得召回，删除后不可继续引用。",
+      "after": "同人跨会话、不同用户、不同租户、删除及过期。错误主体不得召回，删除后不可继续引用。",
+      "content": "<p>同人跨会话、不同用户、不同租户、删除及过期。错误主体不得召回，删除后不可继续引用。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 98,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnbovVNSkOw7glre4UVsgUxf",
+      "before": "注入、越权、敏感输出、绕审批、重复提交；未获授权不执行，幂等写只落一次，失败输出不谎报成功。",
+      "after": "注入、越权、敏感输出、绕审批、重复提交。未获授权不执行，幂等写只落一次，失败输出不谎报成功。",
+      "content": "<p>注入、越权、敏感输出、绕审批、重复提交。未获授权不执行，幂等写只落一次，失败输出不谎报成功。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 99,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnqwAfRE8slLsn0aTqznmLUc",
+      "before": "模型／工具超时、权限过期、流程中断；可定位节点及版本，正确终止／转人工，路由回退后旧链路可运行。",
+      "after": "模型／工具超时、权限过期、流程中断。可定位节点及版本，正确终止／转人工，路由回退后旧链路可运行。",
+      "content": "<p>模型／工具超时、权限过期、流程中断。可定位节点及版本，正确终止／转人工，路由回退后旧链路可运行。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 100,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnNaeAyhyvFX9dMKwGieMtRd",
+      "before": "待验收；错误绑定修复已有证据。",
+      "after": "待验收。错误绑定修复已有证据。",
+      "content": "<p>待验收。错误绑定修复已有证据。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 101,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnB0c3PpMlRkm0g1zEmki1Nd",
+      "before": "SSO主体、身份映射、发布审批、灰度、日志、审计、Trace；跨平台调用均能关联同一请求与权限。",
+      "after": "SSO主体、身份映射、发布审批、灰度、日志、审计、Trace。跨平台调用均能关联同一请求与权限。",
+      "content": "<p>SSO主体、身份映射、发布审批、灰度、日志、审计、Trace。跨平台调用均能关联同一请求与权限。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 102,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcns0D3JEUmwkWPsgFEgsAjOd",
+      "before": "分别测FAQ、意图节点、首token、整链路；固定并发与样本量，报告P50/P95/P99、超时率、Tokens与费用。",
+      "after": "分别测FAQ、意图节点、首token、整链路。固定并发与样本量，报告P50/P95/P99、超时率、Tokens与费用。",
+      "content": "<p>分别测FAQ、意图节点、首token、整链路。固定并发与样本量，报告P50/P95/P99、超时率、Tokens与费用。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 103,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    },
+    {
+      "block_id": "doxcnjS1DeYM2CRnt24FyGoDTqh",
+      "before": "五次UI值已记录；性能门槛未验收。",
+      "after": "五次UI值已记录。性能门槛未验收。",
+      "content": "<p>五次UI值已记录。性能门槛未验收。</p>",
+      "rules": [
+        "规则F／1处分号改句号"
+      ],
+      "status": "done",
+      "result": {
+        "ok": true,
+        "identity": "user",
+        "data": {
+          "document": {
+            "revision_id": 104,
+            "url": "https://bytedance.larkoffice.com/docx/Qp0pdj6oIoxl5qxw6Joc6wDZnfg"
+          },
+          "result": "success",
+          "warnings": []
+        }
+      }
+    }
+  ]
+}

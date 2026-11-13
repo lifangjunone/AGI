@@ -1,0 +1,1 @@
+{"audience":"关注企业语义层、知识图谱与Agent数据分析的产品和技术负责人","reader_task":"理解NVIDIA Auto Ontology的业务定位、系统架构、工作闭环与适用边界，并判断是否值得借鉴","genre_contract":"router.knowledge:explanation","adapter":null,"presentation_mode":"rich","visual_plan":{"reason":"需要用架构图呈现数据源、语义编译、人工认证与Agent问答之间的关系，并用表格辅助比较","blocks":[{"type":"whiteboard","min_count":1,"purpose":"展示Auto Ontology从数据库到可信问答的业务架构"}]}}

@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000">
+  <defs>
+    <linearGradient id="trust" x1="0" x2="1">
+      <stop offset="0" stop-color="#fff7ed"/>
+      <stop offset="1" stop-color="#ffedd5"/>
+    </linearGradient>
+    <linearGradient id="quality" x1="0" x2="1">
+      <stop offset="0" stop-color="#fff1f2"/>
+      <stop offset="0.5" stop-color="#fff7ed"/>
+      <stop offset="1" stop-color="#fefce8"/>
+    </linearGradient>
+    <linearGradient id="fast" x1="0" x2="1">
+      <stop offset="0" stop-color="#ecfdf5"/>
+      <stop offset="1" stop-color="#d1fae5"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#18181b" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#52525b"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1600" height="1000" rx="32" fill="#faf9f6"/>
+  <text x="70" y="62" font-size="31" font-weight="700" fill="#18181b">开源增强后的 MyContext 数字分身架构</text>
+  <text x="70" y="99" font-size="17" fill="#52525b">e-ctx 是唯一事实与权限真源；开源组件分别增强画像、偏好、检索和验证</text>
+
+  <g filter="url(#shadow)">
+    <rect x="60" y="140" width="1480" height="112" rx="26" fill="url(#trust)" stroke="#f97316" stroke-width="2"/>
+  </g>
+  <text x="92" y="178" font-size="20" font-weight="700" fill="#9a3412">e-ctx 信任与数据平面 · 唯一真源</text>
+  <text x="92" y="211" font-size="15" fill="#7c2d12">Channels → Ingest → SQLite Store → 授权范围 / 身份 / 来源 / 审计 → Policy / SendGuard</text>
+  <rect x="1040" y="167" width="208" height="52" rx="26" fill="#ffffff" stroke="#f97316" stroke-width="2"/>
+  <text x="1090" y="199" font-size="15" font-weight="700" fill="#9a3412">事实只在这里写入</text>
+  <rect x="1270" y="167" width="220" height="52" rx="26" fill="#ffffff" stroke="#f97316" stroke-width="2"/>
+  <text x="1315" y="199" font-size="15" font-weight="700" fill="#9a3412">撤权立即停止读取</text>
+
+  <path d="M800 252 V286" stroke="#52525b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <text x="70" y="303" font-size="19" font-weight="700" fill="#27272a">开源增强层</text>
+  <g filter="url(#shadow)">
+    <rect x="60" y="326" width="330" height="176" rx="24" fill="#ffffff" stroke="#10b981" stroke-width="2"/>
+  </g>
+  <circle cx="105" cy="373" r="22" fill="#10b981"/>
+  <text x="142" y="379" font-size="18" font-weight="700" fill="#065f46">WeClone · 运行组件</text>
+  <text x="92" y="421" font-size="15" fill="#3f3f46">已审核画像事实</text>
+  <text x="92" y="449" font-size="15" fill="#3f3f46">StyleProfile 语言风格</text>
+  <text x="92" y="477" font-size="14" fill="#71717a">外部加密进程 · 当前已接入</text>
+
+  <g filter="url(#shadow)">
+    <rect x="420" y="326" width="330" height="176" rx="24" fill="#ffffff" stroke="#3b82f6" stroke-width="2"/>
+  </g>
+  <circle cx="465" cy="373" r="22" fill="#3b82f6"/>
+  <text x="502" y="379" font-size="18" font-weight="700" fill="#1d4ed8">Open Second Brain · 移植</text>
+  <text x="452" y="421" font-size="15" fill="#3f3f46">偏好信号 → 置信规则</text>
+  <text x="452" y="449" font-size="15" fill="#3f3f46">纠正 · 过期 · 撤回 · 审计</text>
+  <text x="452" y="477" font-size="14" fill="#71717a">代码并入 Store，不新增真源</text>
+
+  <g filter="url(#shadow)">
+    <rect x="780" y="326" width="330" height="176" rx="24" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/>
+  </g>
+  <circle cx="825" cy="373" r="22" fill="#8b5cf6"/>
+  <text x="862" y="379" font-size="18" font-weight="700" fill="#6d28d9">GBrain · 本地 Sidecar</text>
+  <text x="812" y="421" font-size="15" fill="#3f3f46">来源可追溯混合检索</text>
+  <text x="812" y="449" font-size="15" fill="#3f3f46">修正 / 撤回感知索引</text>
+  <text x="812" y="477" font-size="14" fill="#71717a">只读可重建索引，不接受业务写入</text>
+
+  <g filter="url(#shadow)">
+    <rect x="1140" y="326" width="400" height="176" rx="24" fill="#ffffff" stroke="#eab308" stroke-width="2"/>
+  </g>
+  <circle cx="1185" cy="373" r="22" fill="#eab308"/>
+  <text x="1222" y="379" font-size="18" font-weight="700" fill="#a16207">COG 模式 · 独立验证</text>
+  <text x="1172" y="421" font-size="15" fill="#3f3f46">Writer 生成三候选</text>
+  <text x="1172" y="449" font-size="15" fill="#3f3f46">Verifier 独立评分与缺口</text>
+  <text x="1172" y="477" font-size="14" fill="#71717a">生成器不能给自己打分</text>
+
+  <path d="M225 502 V548 H620" fill="none" stroke="#52525b" stroke-width="3"/>
+  <path d="M585 502 V548" fill="none" stroke="#52525b" stroke-width="3"/>
+  <path d="M945 502 V548 H980" fill="none" stroke="#52525b" stroke-width="3"/>
+  <path d="M1340 502 V548 H980" fill="none" stroke="#52525b" stroke-width="3"/>
+
+  <g filter="url(#shadow)">
+    <rect x="500" y="528" width="600" height="82" rx="41" fill="#27272a"/>
+  </g>
+  <text x="650" y="561" font-size="18" font-weight="700" fill="#ffffff">PersonaExecutionRouter</text>
+  <text x="618" y="589" font-size="14" fill="#d4d4d8">默认效果最佳 · 页面可切极速 · 失败明示不静默</text>
+
+  <path d="M700 610 V644 H480 V666" fill="none" stroke="#f97316" stroke-width="4" marker-end="url(#arrow)"/>
+  <path d="M900 610 V644 H1190 V666" fill="none" stroke="#10b981" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <rect x="60" y="666" width="970" height="205" rx="28" fill="url(#quality)" stroke="#f97316" stroke-width="2"/>
+  <text x="92" y="708" font-size="21" font-weight="700" fill="#9a3412">效果最佳 · 默认</text>
+  <text x="92" y="737" font-size="14" fill="#7c2d12">不计成本，最大化事实、关系、语言风格和可直接采用率</text>
+
+  <circle cx="196" cy="799" r="50" fill="#ffffff" stroke="#3b82f6" stroke-width="3"/>
+  <text x="162" y="794" font-size="14" font-weight="700" fill="#1d4ed8">任务理解</text>
+  <text x="164" y="818" font-size="12" fill="#52525b">查询分解</text>
+  <path d="M246 799 H314" stroke="#52525b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <polygon points="380,745 440,772 440,826 380,853 320,826 320,772" fill="#ffffff" stroke="#8b5cf6" stroke-width="3"/>
+  <text x="350" y="789" font-size="14" font-weight="700" fill="#6d28d9">多路检索</text>
+  <text x="342" y="813" font-size="12" fill="#52525b">KL + Wiki</text>
+  <text x="342" y="833" font-size="12" fill="#52525b">GBrain + FTS</text>
+  <path d="M440 799 H508" stroke="#52525b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <circle cx="568" cy="799" r="52" fill="#ffffff" stroke="#f43f5e" stroke-width="3"/>
+  <text x="536" y="789" font-size="14" font-weight="700" fill="#be123c">证据融合</text>
+  <text x="528" y="813" font-size="12" fill="#52525b">冲突 · 时效</text>
+  <text x="536" y="833" font-size="12" fill="#52525b">来源多样</text>
+  <path d="M620 799 H688" stroke="#52525b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <polygon points="754,745 814,772 814,826 754,853 694,826 694,772" fill="#ffffff" stroke="#eab308" stroke-width="3"/>
+  <text x="725" y="789" font-size="14" font-weight="700" fill="#a16207">三候选</text>
+  <text x="718" y="813" font-size="12" fill="#52525b">事实 · 关系</text>
+  <text x="726" y="833" font-size="12" fill="#52525b">语言风格</text>
+  <path d="M814 799 H882" stroke="#52525b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <circle cx="944" cy="799" r="55" fill="#ffffff" stroke="#18181b" stroke-width="3"/>
+  <text x="912" y="786" font-size="14" font-weight="700" fill="#18181b">独立裁判</text>
+  <text x="904" y="810" font-size="12" fill="#52525b">安全 · 事实</text>
+  <text x="904" y="830" font-size="12" fill="#52525b">选择并修订</text>
+
+  <rect x="1060" y="666" width="480" height="205" rx="28" fill="url(#fast)" stroke="#10b981" stroke-width="2"/>
+  <text x="1092" y="708" font-size="21" font-weight="700" fill="#047857">极速 · 用户可选</text>
+  <text x="1092" y="737" font-size="14" fill="#065f46">复用现有直连路径，固定小证据包与一次生成</text>
+  <rect x="1100" y="774" width="120" height="46" rx="23" fill="#ffffff" stroke="#10b981" stroke-width="2"/>
+  <text x="1127" y="803" font-size="14" font-weight="700" fill="#047857">轻量召回</text>
+  <path d="M1220 797 H1270" stroke="#52525b" stroke-width="3" marker-end="url(#arrow)"/>
+  <rect x="1276" y="774" width="120" height="46" rx="23" fill="#ffffff" stroke="#10b981" stroke-width="2"/>
+  <text x="1302" y="803" font-size="14" font-weight="700" fill="#047857">一次生成</text>
+  <path d="M1396 797 H1436" stroke="#52525b" stroke-width="3" marker-end="url(#arrow)"/>
+  <circle cx="1470" cy="797" r="32" fill="#ffffff" stroke="#10b981" stroke-width="2"/>
+  <text x="1448" y="802" font-size="13" font-weight="700" fill="#047857">事实闸</text>
+
+  <path d="M550 871 V900 H800" fill="none" stroke="#52525b" stroke-width="3"/>
+  <path d="M1300 871 V900 H800" fill="none" stroke="#52525b" stroke-width="3"/>
+  <path d="M800 900 V920" stroke="#52525b" stroke-width="3" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="255" y="920" width="1090" height="58" rx="28" fill="#ffffff" stroke="#27272a" stroke-width="2"/>
+  </g>
+  <text x="300" y="955" font-size="16" font-weight="700" fill="#27272a">统一 ReplyProposal → 来源与降级标记 → Policy → SendGuard → 待审 / 授权发送 → 反馈学习</text>
+</svg>

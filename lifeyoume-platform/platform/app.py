@@ -903,6 +903,7 @@ def admin_dashboard(
     <div id="main-content" tabindex="-1"><span>产品运营中心</span><h1 data-admin-title>平台总览</h1></div>
     <div class="admin-console-links">
       <a href="https://meyou.lifeyoume.icu/admin" target="_blank" rel="noopener">遇见 MeYou · 模型控制台 ↗</a>
+      <a href="https://lifeyoume.icu/astro-fate/admin.html" target="_blank" rel="noopener">星命矩阵统计 · 测算记录 ↗</a>
       <a href="https://lifeyoume.icu/" target="_blank" rel="noopener">打开产品门户 ↗</a>
     </div>
   </header>

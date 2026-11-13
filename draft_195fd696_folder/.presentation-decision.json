@@ -1,0 +1,1 @@
+{"audience":"不了解产品的企业客户决策者、业务负责人和AgentSphere方案负责人","reader_task":"在3分钟内看懂产品解决什么实际问题、两条业务价值线及其实现方式，并判断是否值得试点","genre_contract":"marketing","adapter":null,"presentation_mode":"rich","visual_plan":{"reason":"必须用两张架构图把业务价值分流和技术闭环一眼讲清，并用真实界面证明产品载体","blocks":[{"type":"whiteboard","min_count":2,"purpose":"分别展示业务架构和技术架构"},{"type":"img","min_count":2,"purpose":"展示学习结果和真实任务执行现场"}]}}

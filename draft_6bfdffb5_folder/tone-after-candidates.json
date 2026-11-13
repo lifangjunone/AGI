@@ -1,0 +1,701 @@
+{
+ "meta": {
+  "n_candidates": 98,
+  "n_rename": 32,
+  "n_cohesion": 36,
+  "n_colon": 30,
+  "n_iso3": 0,
+  "truncated": false
+ },
+ "rename": [
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 5,
+   "para": "AS 1.x 后续停止迭代，HiAgent 可以作为受控业务流程的承接选项。当前证据支持先迁意图路由与确定性 SOP，尚不足以批准完整总控替换。本轮已在 HiAgent 新建并运行 IT 服务样例，五条真实模型与整链路测试通过，内部配置版本 v0.1.0 已发布并确认刷新后持久化。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 7,
+   "para": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环。真实业务执行与跨智能体协同需要后续验收。权限与记忆隔离、安全覆盖仍需验证，统一门户及性能门槛也需验收。AS 停止迭代是本方案的假设，不是已确认的产品决策。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 15,
+   "para": "目标是保住业务效果与可运维性，不要求复刻 AS 的页面对象。首批不迁历史会话、长期记忆和高风险写操作。原 AS 资产和路由保留，供回退及同口径比较。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 23,
+   "para": "AS 财富助手实际有 13 个意图。ETF基金分析的命中策略显示“调用扩展能力执行”，单元为 datayes-financial-v3，类型为技能。这证明需要迁移业务技能契约，不能用一段分类或固定答复代替金融分析执行。该技能本轮未实际运行。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 31,
+   "para": "证据等级：已验证＝实际运行并核对结果；配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现；待验收＝没有完成对应实验。前序 IT 意图分类验证作为参考，本轮新资产的结果独立记录。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 55,
+   "para": "截至2026-11-12，本方案交付的是意图路由与固定诊断 SOP 的最小闭环，不是 AgentSphere 完整替代系统。以下事项明确列入交付边界。只有补建并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent 不支持”。本轮没有证据把这些平台能力判为永久缺失。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 69,
+   "para": "替代决策约束：不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应保留 AS 或采用明确的人工处理路径。生产全量切流与原系统下线均不属于本轮已完成交付。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 75,
+   "para": "图中文字等价说明：用户的原始请求进入总控。目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安全和人工兜底。可信身份、知识权限、记忆隔离、版本及审计贯穿全链路。本轮只运行 Start→意图识别→确定性 SOP→End，图中虚线部分均需另行实现或验证。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 83,
+   "para": "接口设计建议（未实现）：入口携带可信 tenantid／userid／sessionid／requestid，客户端不能自行决定租户。路由结果包含 intent、strategyversion、confidence（仅接口实际提供时使用）和澄清状态。执行结果统一为 status、data、evidence、error、traceid。写操作使用幂等键和审批凭据，认证秘密保存在平台密钥配置中。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 85,
+   "para": "目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工。异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹配不能误入有副作用的分支。重试只对可重放或已实现幂等的操作启用。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 91,
+   "para": "前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使用企业密码，也不访问业务数据库。它不创建工单或修改账号。验证码由本人完成。已有资产不要覆盖。重建时使用不同名称。若发布校验失败、结果错路由或出现写操作，停止发布并修正后再验证。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 97,
+   "para": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”。描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实工单。”"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 99,
+   "para": "步骤3：进入编排页，保留 Start、End。确认 Start 有顶层 query（String）。files 和对话历史保留默认即可。本轮对话轮数保留3，未使用长期记忆。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 113,
+   "para": "步骤6：添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无。生产值需要结合 SLA 调整。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 124,
+   "para": "首次测试“我忘记密码，账号登录不了”曾错误返回多诉求澄清，原因是误选 Start/chathistories/query。改为顶层 Start/query 后同输入通过。先核对变量来源，再调整意图描述，避免把输入绑定错误当成模型能力问题。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 130,
+   "para": "步骤8：将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr<Str）、key3（Obj）、key4（Arr<Obj）。本轮沿用默认输出模板，仅 End 使用 key0。没有消费的模板字段不代表业务输出。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 148,
+   "para": "这里的固定文案是明确的诊断 SOP，不是伪造模型推理、工单编号或业务执行结果。模型只负责意图识别。将来承接实际执行时，应替换为独立业务工具并验证回执，不能把“建议联系 IT”算作“账号已解锁”。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 154,
+   "para": "步骤10：将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 156,
+   "para": "步骤11：将代码01出口连接 End。最终是4个节点、7条连接。本例所有出口汇入同一代码按名称分派。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 158,
+   "para": "步骤12：打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/key0。确认输入、代码和 End 没有未定义变量。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 166,
+   "para": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 168,
+   "para": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对。聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 186,
+   "para": "以上耗时是各一次整链路运行的界面显示值，样本数5，不是准确率基准、并发压测或 P99。模型具有随机性，重建后应重新执行同输入。多轮续接和歧义输入未在本轮通过。注入、节点异常和跨租户访问也未在本轮通过。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 190,
+   "para": "步骤15：点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单、不修改账号”，确认内部配置发布。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 192,
+   "para": "步骤16：看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连接和 Start/query。进入发布历史核对 v0.1.0 为运行中。本轮保存时间16:03:01、发布时间16:03:02。对外渠道部署需要另行验证。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 200,
+   "para": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条。不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记录。不要删除原 AS 场景。HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 211,
+   "para": "估算是工程判断，不是已批准排期，也不包括接口采购、全量知识重建或历史记忆迁移。当前可以承诺的是已交付的验证样例和方案，不能承诺全部财富助手13意图在固定周期无损迁移。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 213,
+   "para": "迁移不变量：源 AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入 prompt／日志；每次执行关联 requestid 与版本；切流有明确回退入口和负责人。若 AS 能否继续作为回退底座尚不确定，应先明确运行支持及保留期限。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 215,
+   "para": "兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议、文件权限、超时与取消。既有 session 和长期记忆先留原系统。迁移需要来源、主体及有效期，还需要删除和授权审计。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 217,
+   "para": "故障与安全：模型失败和工具失败应分别识别，授权失败也要单独区分。知识空召回与业务拒绝同样需要区分。高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工具结果，日志脱敏并按企业政策定期限。平台侧安全和监控的实际覆盖范围仍需确认。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 221,
+   "para": "以下是后续验收要求，不是本轮已通过结果。阈值应由业务负责人采用，按相同模型、数据、权限和测量范围比较 AS 与 HiAgent，不能直接复制宣传数值。"
+  },
+  {
+   "type": "rename",
+   "file": "tone-after.md",
+   "line": 235,
+   "para": "下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将 P21 方式1 从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不覆盖该实验，也不覆盖生产全量切流。"
+  }
+ ],
+ "cohesion": [
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 7,
+   "prev_tail": "本轮已在 HiAgent 新建并运行 IT 服务样例，五条真实模型与整链路测试通过，内部配置版本 v0.1.0 已发布并确认刷新后持久化",
+   "next_head": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 15,
+   "prev_tail": "AS 停止迭代是本方案的假设，不是已确认的产品决策",
+   "next_head": "目标是保住业务效果与可运维性，不要求复刻 AS 的页面对象"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 23,
+   "prev_tail": "原 AS 资产和路由保留，供回退及同口径比较",
+   "next_head": "AS 财富助手实际有 13 个意图"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 31,
+   "prev_tail": "该技能本轮未实际运行",
+   "next_head": "证据等级：已验证＝实际运行并核对结果"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 55,
+   "prev_tail": "前序 IT 意图分类验证作为参考，本轮新资产的结果独立记录",
+   "next_head": "截至2026-11-12，本方案交付的是意图路由与固定诊断 SOP 的最小闭环，不是 AgentSphere 完整替代系统"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 69,
+   "prev_tail": "本轮没有证据把这些平台能力判为永久缺失",
+   "next_head": "替代决策约束：不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 75,
+   "prev_tail": "生产全量切流与原系统下线均不属于本轮已完成交付",
+   "next_head": "图中文字等价说明：用户的原始请求进入总控"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 83,
+   "prev_tail": "本轮只运行 Start→意图识别→确定性 SOP→End，图中虚线部分均需另行实现或验证",
+   "next_head": "接口设计建议（未实现）：入口携带可信 tenantid／userid／sessionid／requestid，客户端不能自行决定租户"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 85,
+   "prev_tail": "写操作使用幂等键和审批凭据，认证秘密保存在平台密钥配置中",
+   "next_head": "目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 91,
+   "prev_tail": "重试只对可重放或已实现幂等的操作启用",
+   "next_head": "前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 95,
+   "prev_tail": "若发布校验失败、结果错路由或出现写操作，停止发布并修正后再验证",
+   "next_head": "步骤1：进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 97,
+   "prev_tail": "步骤1：进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”",
+   "next_head": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 99,
+   "prev_tail": "测试环境，不创建真实工单",
+   "next_head": "步骤3：进入编排页，保留 Start、End"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 109,
+   "prev_tail": "本轮对话轮数保留3，未使用长期记忆",
+   "next_head": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-flash"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 111,
+   "prev_tail": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-flash",
+   "next_head": "步骤5：输入 query 选择“引用→Start→顶层 query”"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 113,
+   "prev_tail": "必须最终显示 Start/query，不能选择对话历史下面的 query",
+   "next_head": "步骤6：添加下表四项意图，保留系统“其他意图”"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 124,
+   "prev_tail": "生产值需要结合 SLA 调整",
+   "next_head": "首次测试“我忘记密码，账号登录不了”曾错误返回多诉求澄清，原因是误选 Start/chathistories/query"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 128,
+   "prev_tail": "先核对变量来源，再调整意图描述，避免把输入绑定错误当成模型能力问题",
+   "next_head": "步骤7：添加“代码”节点，命名“代码01”，语言 Javascript"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 130,
+   "prev_tail": "输入变量名 input，值引用“意图识别01/classificationName”",
+   "next_head": "步骤8：将下面已实际运行的代码复制到编辑器"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 148,
+   "prev_tail": "没有消费的模板字段不代表业务输出",
+   "next_head": "这里的固定文案是明确的诊断 SOP，不是伪造模型推理、工单编号或业务执行结果"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 152,
+   "prev_tail": "将来承接实际执行时，应替换为独立业务工具并验证回执，不能把“建议联系 IT”算作“账号已解锁”",
+   "next_head": "步骤9：关闭编辑面板、适配画布，把 Start 的出口连接意图识别01的入口"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 154,
+   "prev_tail": "步骤9：关闭编辑面板、适配画布，把 Start 的出口连接意图识别01的入口",
+   "next_head": "步骤10：将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 156,
+   "prev_tail": "步骤10：将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口",
+   "next_head": "步骤11：将代码01出口连接 End"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 158,
+   "prev_tail": "本例所有出口汇入同一代码按名称分派",
+   "next_head": "步骤12：打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/key0"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 166,
+   "prev_tail": "确认输入、代码和 End 没有未定义变量",
+   "next_head": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 168,
+   "prev_tail": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条",
+   "next_head": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 186,
+   "prev_tail": "聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收",
+   "next_head": "以上耗时是各一次整链路运行的界面显示值，样本数5，不是准确率基准、并发压测或 P99"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 190,
+   "prev_tail": "注入、节点异常和跨租户访问也未在本轮通过",
+   "next_head": "步骤15：点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 192,
+   "prev_tail": "不创建工单、不修改账号”，确认内部配置发布",
+   "next_head": "步骤16：看到“智能体配置已发布成功"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 200,
+   "prev_tail": "对外渠道部署需要另行验证",
+   "next_head": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 211,
+   "prev_tail": "HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力",
+   "next_head": "估算是工程判断，不是已批准排期，也不包括接口采购、全量知识重建或历史记忆迁移"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 213,
+   "prev_tail": "当前可以承诺的是已交付的验证样例和方案，不能承诺全部财富助手13意图在固定周期无损迁移",
+   "next_head": "迁移不变量：源 AS 资产保留"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 215,
+   "prev_tail": "若 AS 能否继续作为回退底座尚不确定，应先明确运行支持及保留期限",
+   "next_head": "兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 217,
+   "prev_tail": "迁移需要来源、主体及有效期，还需要删除和授权审计",
+   "next_head": "故障与安全：模型失败和工具失败应分别识别，授权失败也要单独区分"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 221,
+   "prev_tail": "平台侧安全和监控的实际覆盖范围仍需确认",
+   "next_head": "以下是后续验收要求，不是本轮已通过结果"
+  },
+  {
+   "type": "cohesion",
+   "file": "tone-after.md",
+   "line": 235,
+   "prev_tail": "阈值应由业务负责人采用，按相同模型、数据、权限和测量范围比较 AS 与 HiAgent，不能直接复制宣传数值",
+   "next_head": "下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底"
+  }
+ ],
+ "colon": [
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 1,
+   "colon_before": ">HiAgent 承接 AgentSphere 1.x 方案",
+   "colon_after": "能力边界、实测证据与逐步搭建</title>",
+   "sentence": "<title>HiAgent 承接 AgentSphere 1.x 方案：能力边界、实测证据与逐步搭建</title>"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 7,
+   "colon_before": "“能替代”分两层",
+   "colon_after": "组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环。真实业务执行与跨智能体协同需要后续验收。权",
+   "sentence": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环。真实业务执行与跨智能体协同需要后续验收。权限与记忆隔离、安全覆盖仍需验证，统一门户及性能门槛也需验收。AS 停止迭代是本方案的假设，不是已确认的"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 31,
+   "colon_before": "证据等级",
+   "colon_after": "已验证＝实际运行并核对结果；配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现；待验收＝没有完成对应实验。前序 I",
+   "sentence": "证据等级：已验证＝实际运行并核对结果；配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现；待验收＝没有完成对应实验。前序 IT 意图分类验证作为参考，本轮新资产的结果独立记录。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 69,
+   "colon_before": "**替代决策约束",
+   "colon_after": "**不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应",
+   "sentence": "**替代决策约束：**不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应保留 AS 或采用明确的人工处理路径。生产全量切流与原系统下线均不属于本轮已完成交付。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 75,
+   "colon_before": "图中文字等价说明",
+   "colon_after": "用户的原始请求进入总控。目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安",
+   "sentence": "图中文字等价说明：用户的原始请求进入总控。目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安全和人工兜底。可信身份、知识权限、记忆隔离、版本及审计贯穿全链路。本轮只运行 Start→意图识别→确"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 83,
+   "colon_before": "接口设计建议（未实现）",
+   "colon_after": "入口携带可信 tenant_id／user_id／session_id／request_id，客户端不能自行决定租户。路",
+   "sentence": "接口设计建议（未实现）：入口携带可信 tenant_id／user_id／session_id／request_id，客户端不能自行决定租户。路由结果包含 intent、strategy_version、confidence（仅接口实际提供"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 85,
+   "colon_before": "目标状态机",
+   "colon_after": "接收→识别→需要澄清／待审批／执行中→成功／失败／转人工。异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹",
+   "sentence": "目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工。异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹配不能误入有副作用的分支。重试只对可重放或已实现幂等的操作启用。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 91,
+   "colon_before": "前置条件",
+   "colon_after": "HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使",
+   "sentence": "前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使用企业密码，也不访问业务数据库。它不创建工单或修改账号。验证码由本人完成。已有资产不要覆盖。重建时使用不同名称"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 95,
+   "colon_before": "步骤1",
+   "colon_after": "进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”。",
+   "sentence": "步骤1：进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 97,
+   "colon_before": "步骤2",
+   "colon_after": "名称填写“AS迁移验证-IT服务总控-日期”。描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实",
+   "sentence": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”。描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实工单。”"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 99,
+   "colon_before": "步骤3",
+   "colon_after": "进入编排页，保留 Start、End。确认 Start 有顶层 query（String）。files 和对话历史保留默",
+   "sentence": "步骤3：进入编排页，保留 Start、End。确认 Start 有顶层 query（String）。files 和对话历史保留默认即可。本轮对话轮数保留3，未使用长期记忆。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 109,
+   "colon_before": "步骤4",
+   "colon_after": "点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-flash。",
+   "sentence": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-flash。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 111,
+   "colon_before": "步骤5",
+   "colon_after": "输入 query 选择“引用→Start→顶层 query”。必须最终显示 Start/query，不能选择对话历史下面",
+   "sentence": "步骤5：输入 query 选择“引用→Start→顶层 query”。必须最终显示 Start/query，不能选择对话历史下面的 query。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 113,
+   "colon_before": "步骤6",
+   "colon_after": "添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无。生产值需要结合 SLA ",
+   "sentence": "步骤6：添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无。生产值需要结合 SLA 调整。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 128,
+   "colon_before": "步骤7",
+   "colon_after": "添加“代码”节点，命名“代码01”，语言 Javascript。输入变量名 input，值引用“意图识别01/class",
+   "sentence": "步骤7：添加“代码”节点，命名“代码01”，语言 Javascript。输入变量名 input，值引用“意图识别01/classificationName”。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 130,
+   "colon_before": "步骤8",
+   "colon_after": "将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）、",
+   "sentence": "步骤8：将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）、key3（Obj）、key4（Arr<Obj>）。本轮沿用默认输出模板，仅 End 使用 key0。没有消费的模"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 152,
+   "colon_before": "步骤9",
+   "colon_after": "关闭编辑面板、适配画布，把 Start 的出口连接意图识别01的入口。",
+   "sentence": "步骤9：关闭编辑面板、适配画布，把 Start 的出口连接意图识别01的入口。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 154,
+   "colon_before": "步骤10",
+   "colon_after": "将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口。",
+   "sentence": "步骤10：将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 156,
+   "colon_before": "步骤11",
+   "colon_after": "将代码01出口连接 End。最终是4个节点、7条连接。本例所有出口汇入同一代码按名称分派。",
+   "sentence": "步骤11：将代码01出口连接 End。最终是4个节点、7条连接。本例所有出口汇入同一代码按名称分派。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 158,
+   "colon_before": "步骤12",
+   "colon_after": "打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/key0。确认输入、代码和 End 没",
+   "sentence": "步骤12：打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/key0。确认输入、代码和 End 没有未定义变量。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 166,
+   "colon_before": "步骤13",
+   "colon_after": "打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条。",
+   "sentence": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 168,
+   "colon_before": "步骤14",
+   "colon_after": "按输出语义、未执行副作用声明及本轮耗时核对。聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用",
+   "sentence": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对。聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 190,
+   "colon_before": "步骤15",
+   "colon_after": "点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单、不修改账",
+   "sentence": "步骤15：点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单、不修改账号”，确认内部配置发布。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 192,
+   "colon_before": "步骤16",
+   "colon_after": "看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连接和 Start/query。进入发布历史核对 v0.1.",
+   "sentence": "步骤16：看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连接和 Start/query。进入发布历史核对 v0.1.0 为运行中。本轮保存时间16:03:01、发布时间16:03:02。对外渠道部署需要另行验证。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 192,
+   "colon_before": "本轮保存时间16",
+   "colon_after": "03:01、发布时间16:03:02。对外渠道部署需要另行验证。",
+   "sentence": "步骤16：看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连接和 Start/query。进入发布历史核对 v0.1.0 为运行中。本轮保存时间16:03:01、发布时间16:03:02。对外渠道部署需要另行验证。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 200,
+   "colon_before": "恢复方法",
+   "colon_after": "失败时保留测试记录，修正变量和节点后重跑五条。不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记",
+   "sentence": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条。不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记录。不要删除原 AS 场景。HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 213,
+   "colon_before": "迁移不变量",
+   "colon_after": "源 AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入 prompt／日志；每次",
+   "sentence": "迁移不变量：源 AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入 prompt／日志；每次执行关联 request_id 与版本；切流有明确回退入口和负责人。若 AS 能否继续作为回退底座尚不确定，"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 215,
+   "colon_before": "兼容策略",
+   "colon_after": "不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议",
+   "sentence": "兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议、文件权限、超时与取消。既有 session 和长期记忆先留原系统。迁移需要来源、主体及有效期，还需要删除和授"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 217,
+   "colon_before": "故障与安全",
+   "colon_after": "模型失败和工具失败应分别识别，授权失败也要单独区分。知识空召回与业务拒绝同样需要区分。高风险动作不自动重试。输入／输出拦",
+   "sentence": "故障与安全：模型失败和工具失败应分别识别，授权失败也要单独区分。知识空召回与业务拒绝同样需要区分。高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工具结果，日志脱敏并按企业政策定期限。平台侧安全和监控的实际覆盖范围仍需确认。"
+  },
+  {
+   "type": "colon",
+   "file": "tone-after.md",
+   "line": 235,
+   "colon_before": "下一项最小验证",
+   "colon_after": "选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将 P2",
+   "sentence": "下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将 P21 方式1 从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不覆盖该实验，也不覆盖生产全量切流"
+  }
+ ],
+ "iso3": []
+}

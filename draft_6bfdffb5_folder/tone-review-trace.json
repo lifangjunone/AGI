@@ -1,0 +1,3413 @@
+{
+  "source_revision": 31,
+  "input_hanzi": 6046,
+  "original_script_report": {
+    "meta": {
+      "篇数": 1,
+      "万汉字": 0.6,
+      "段数": 59,
+      "小标题数": 14
+    },
+    "density": {
+      "翻案腔": 0.0,
+      "提示语冒号": 0.0,
+      "起手式": 0.0,
+      "当…时从句": 0.0,
+      "前置话题壳": 0.0,
+      "句首连接词": 0.0,
+      "顿号并列≥3": 11.413,
+      "过长前置定语": 0.0,
+      "拟人化喻体": 0.0,
+      "概括替代(已否决)": 0.0,
+      "序数词小标题(已否决)": 0.0,
+      "「这意味着」复述(已否决)": 0.0,
+      "空转句引列表(已否决)": 0.0
+    },
+    "char_density": {
+      "破折号": 0.0,
+      "分号": 17.036,
+      "引号": 5.458
+    },
+    "hits": {
+      "翻案腔": [],
+      "提示语冒号": [],
+      "起手式": [],
+      "当…时从句": [],
+      "前置话题壳": [],
+      "句首连接词": [],
+      "顿号并列≥3": [
+        {
+          "file": "tone-before.md",
+          "line": 7,
+          "excerpt": "真实业务执行、跨智能体协同、权限与记忆隔离"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 11,
+          "excerpt": "明确意图、显式拓扑、确定性输出"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 12,
+          "excerpt": "Agent／Skill 调用、FAQ、知识"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 12,
+          "excerpt": "记忆、安全、业务 API"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 13,
+          "excerpt": " | 自然语言多数字员工编排、多意图自动计划、跨平台 Hub"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 37,
+          "excerpt": "AS 场景对象、注册、优先级和发布策略需重建"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 38,
+          "excerpt": "命中后 SOP | 显式节点、代码、工作流和业务工具表达步骤"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 39,
+          "excerpt": "nt 混编 | 候选为智能体、工作流、插件"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 39,
+          "excerpt": "须核对鉴权、入参、流式返回"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 41,
+          "excerpt": "规划、并行、观察"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 44,
+          "excerpt": "阈值、空召回、冲突及响应时延待验收"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 46,
+          "excerpt": "提取规则、跨会话读取、删除和租户隔离待验证"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 47,
+          "excerpt": "AS 资料、切分、索引及权限不因换平台自动迁移"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 48,
+          "excerpt": " | 需实现统一契约、发现、版本"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 50,
+          "excerpt": "ent 运行底座＋必要的门户、资产目录、审计与灰度适配"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 50,
+          "excerpt": "SSO、身份映射、审批"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 51,
+          "excerpt": "99<1s | 区分 FAQ、意图识别、首 token 和全链路结束"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 59,
+          "excerpt": " | 账号解锁、权限授予、工单创建"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 59,
+          "excerpt": "验证审批、幂等、真实回执与失败兜底"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 61,
+          "excerpt": " | 不能承诺自动规划、并行委派、观察"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 61,
+          "excerpt": " | 完成多Agent依赖、失败恢复、最大步骤"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 62,
+          "excerpt": " | 补建任务计划、依赖、执行状态与结果合并"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 63,
+          "excerpt": " | 不能保证 AS、HiAgent、第三方资产自动发现"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 63,
+          "excerpt": " | 完成资产清单、ID及版本映射、接口适配与跨平台调用验收"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 64,
+          "excerpt": "| 不能承诺 FAQ 快路径、术语改写正确性、原知识效果或撤权后不召回"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 64,
+          "excerpt": "核对阈值、冲突、空召回"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 65,
+          "excerpt": " | 不能保证跨会话记忆、用户／租户隔离、过期删除和 AS 历史记忆无"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 65,
+          "excerpt": "验证读取、删除、撤权和跨租户隔离"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 66,
+          "excerpt": " 不能承诺提示注入及越权防护、SSO身份映射、发布审批"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 66,
+          "excerpt": "统一门户、跨平台Trace、灰度及版本回滚达到 AS 同"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 66,
+          "excerpt": "完成安全、审计、渠道发布及实际恢复演练"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 67,
+          "excerpt": "不能据此保证并发、可用性、成本或整链路 SLA"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 75,
+          "excerpt": "目标顺序为输入安全、术语与改写、FAQ 快路径"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 75,
+          "excerpt": "意图识别、受控执行或多意图规划、结果合并"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 75,
+          "excerpt": "可信身份、知识权限、记忆隔离"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 80,
+          "excerpt": "核心 SOP 的步骤、终止、重试与审批更难稳定验收"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 83,
+          "excerpt": "执行结果统一为 status、data、evidence"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 91,
+          "excerpt": "本例不使用企业密码、不访问业务数据库、不创建工单"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 113,
+          "excerpt": "本轮默认意图节点超时360秒、重试0、异常忽略为无"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 117,
+          "excerpt": "| 账号访问 | 登录失败、账号锁定、密码忘记"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 118,
+          "excerpt": "PN网络 | VPN连接失败、网络无法接通、网络诊断 |"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 119,
+          "excerpt": " 权限申请 | 软件安装许可、系统新增访问权限、审批申请 |"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 120,
+          "excerpt": "求澄清 | 一次同时要求账号、VPN、权限等两个或以上独立事项"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 130,
+          "excerpt": "至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 154,
+          "excerpt": "将账号访问、VPN网络、权限申请"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 172,
+          "excerpt": "官方重置入口、身份核验、未执行账号变更"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 173,
+          "excerpt": "普通网页、版本报错、配置"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 174,
+          "excerpt": "请财务系统访问权限 | 用途、最小权限期限、审批"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 186,
+          "excerpt": "多轮续接、歧义输入、注入"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 206,
+          "excerpt": "资产盘点与契约 | 导出场景、意图、命中策略"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 207,
+          "excerpt": "验证鉴权、结果、异常与 Trace"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 208,
+          "excerpt": " 总控与治理补齐 | FAQ、术语、知识ACL"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 208,
+          "excerpt": "记忆隔离、安全、门户与运营逐项验收"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 215,
+          "excerpt": "逐项验证 JSON 契约、错误码、流式协议"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 215,
+          "excerpt": "迁移需要来源、主体、有效期"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 217,
+          "excerpt": "区分模型失败、工具失败、授权失败"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 221,
+          "excerpt": "按相同模型、数据、权限和测量范围比较 AS 与"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 225,
+          "excerpt": "按意图分别报告混淆矩阵、漏识别、误入写分支率"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 226,
+          "excerpt": "Skill | 单Agent、串行两Agent、Skill＋Agent"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 226,
+          "excerpt": "核对入参、真实回执、失败传播与结果合并"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 227,
+          "excerpt": "自主与多意图 | 双诉求拆解、并行、依赖失败"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 228,
+          "excerpt": "FAQ／知识／术语 | 命中、未命中、冲突"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 229,
+          "excerpt": "| 记忆隔离 | 同人跨会话、不同用户、不同租户"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 230,
+          "excerpt": "| 安全与写操作 | 注入、越权、敏感输出"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 231,
+          "excerpt": "常与恢复 | 模型／工具超时、权限过期、流程中断"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 232,
+          "excerpt": " 门户与治理 | SSO主体、身份映射、发布审批"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 232,
+          "excerpt": "灰度、日志、审计"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 233,
+          "excerpt": "性能与成本 | 分别测FAQ、意图节点、首token"
+        },
+        {
+          "file": "tone-before.md",
+          "line": 233,
+          "excerpt": "报告P50/P95/P99、超时率、Tokens与费用"
+        }
+      ],
+      "过长前置定语": [],
+      "拟人化喻体": [],
+      "概括替代(已否决)": [],
+      "序数词小标题(已否决)": [],
+      "「这意味着」复述(已否决)": [],
+      "空转句引列表(已否决)": []
+    },
+    "syn_hits": [],
+    "structure": {
+      "句长CV": 0.544,
+      "节长CV": 0.411,
+      "小标题/千字": 2.316,
+      "两句同构/百段": 1.69,
+      "三句同构/百段": 0.0,
+      "mtld粗估": 832
+    }
+  },
+  "semantic": {
+    "meta": {
+      "n_candidates": 99,
+      "n_rename": 32,
+      "n_cohesion": 36,
+      "n_colon": 31,
+      "n_iso3": 0,
+      "truncated": false
+    },
+    "rename": [
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 5,
+        "para": "AS 1.x 后续停止迭代，HiAgent 可以作为受控业务流程的承接选项；当前证据支持先迁意图路由与确定性 SOP，尚不足以批准完整总控替换。本轮已在 HiAgent 新建并运行 IT 服务样例，五条真实模型与整链路测试通过，内部配置版本 v0.1.0 已发布并确认刷新后持久化。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "受控流程与完整总控范围不同，不是同一概念换名。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 7,
+        "para": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环；真实业务执行、跨智能体协同、权限与记忆隔离、安全覆盖、统一门户及性能门槛需要后续验收。AS 停止迭代是本方案的假设，不是已确认的产品决策。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "组件表达与生产等价是两个判断层级；AS指称稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 15,
+        "para": "目标是保住业务效果与可运维性，不要求复刻 AS 的页面对象。首批不迁历史会话、长期记忆和高风险写操作；原 AS 资产和路由保留，供回退及同口径比较。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "会话、记忆和写操作是不同迁移对象；资产指称稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 23,
+        "para": "AS 财富助手实际有 13 个意图；ETF基金分析的命中策略显示“调用扩展能力执行”，单元为 datayes-financial-v3，类型为技能。这证明需要迁移业务技能契约，不能用一段分类或固定答复代替金融分析执行。该技能本轮未实际运行。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "技能单元名与类型是正式介绍，不构成轮换指称。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 31,
+        "para": "证据等级：已验证＝实际运行并核对结果；配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现；待验收＝没有完成对应实验。前序 IT 意图分类验证作为参考，本轮新资产的结果独立记录。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "四个证据等级分别定义，概念没有换名。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 55,
+        "para": "截至2026-11-12，本方案交付的是意图路由与固定诊断 SOP 的最小闭环，不是 AgentSphere 完整替代系统。以下事项明确列入交付边界；只有补建并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent 不支持”：本轮没有证据把这些平台能力判为永久缺失。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "最小闭环与完整系统明确区分范围，平台指称稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 69,
+        "para": "替代决策约束：不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应保留 AS 或采用明确的人工处理路径；生产全量切流与原系统下线均不属于本轮已完成交付。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "配置、测试与发布分别是证据类型，不是同义换名。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 75,
+        "para": "图中文字等价说明：用户的原始请求进入总控；目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安全和人工兜底。可信身份、知识权限、记忆隔离、版本及审计贯穿全链路。本轮只运行 Start→意图识别→确定性 SOP→End，图中虚线部分均需另行实现或验证。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "目标链路与已运行链路不同；节点名称稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 83,
+        "para": "接口设计建议（未实现）：入口携带可信 tenantid／userid／sessionid／requestid，客户端不能自行决定租户；路由结果包含 intent、strategyversion、confidence（仅接口实际提供时使用）和澄清状态；执行结果统一为 status、data、evidence、error、traceid。写操作使用幂等键和审批凭据，认证秘密保存在平台密钥配置中。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "入口、路由结果和执行结果是不同对象；密钥配置是存储位置。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 85,
+        "para": "目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工；异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹配不能误入有副作用的分支。重试只对可重放或已实现幂等的操作启用。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "任务状态及重试条件分别说明，没有同一概念改称。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 91,
+        "para": "前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使用企业密码、不访问业务数据库、不创建工单、不改账号。验证码由本人完成。已有资产不要覆盖；重建时使用不同名称。若发布校验失败、结果错路由或出现写操作，停止发布并修正后再验证。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "登录、配额及空间是不同前置要求，样例指称稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 97,
+        "para": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”；描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实工单。”",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "名称和描述是两个表单字段，引用文本不是轮换指称。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 99,
+        "para": "步骤3：进入编排页，保留 Start、End。确认 Start 有顶层 query（String）；files 和对话历史保留默认即可。本轮对话轮数保留3，未使用长期记忆。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "顶层输入与历史记录不同，对话历史同词重复。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 113,
+        "para": "步骤6：添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无；生产值需要结合 SLA 调整。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "默认值与生产值不同，节点名称未轮换。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 124,
+        "para": "首次测试“我忘记密码，账号登录不了”曾错误返回多诉求澄清，原因是误选 Start/chathistories/query；改为顶层 Start/query 后同输入通过。先核对变量来源，再调整意图描述，避免把输入绑定错误当成模型能力问题。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "历史query与顶层query是不同变量，不是同义替换。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 130,
+        "para": "步骤8：将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr<Str）、key3（Obj）、key4（Arr<Obj）。本轮沿用默认输出模板，仅 End 使用 key0；没有消费的模板字段不代表业务输出。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "key0至key4是不同字段，模板与业务输出明确区分。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 148,
+        "para": "这里的固定文案是明确的诊断 SOP，不是伪造模型推理、工单编号或业务执行结果。模型只负责意图识别。将来承接实际执行时，应替换为独立业务工具并验证回执，不能把“建议联系 IT”算作“账号已解锁”。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "固定文案作为诊断SOP的说明属于功能定义，不构成同义轮换。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 154,
+        "para": "步骤10：将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "五个意图是不同分支，代码01指称稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 156,
+        "para": "步骤11：将代码01出口连接 End。最终是4个节点、7条连接；本例所有出口汇入同一代码按名称分派。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "出口和节点分别是拓扑对象，代码指称稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 158,
+        "para": "步骤12：打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/key0。确认输入、代码和 End 没有未定义变量。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "End、output及引用字段分别是节点和变量。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 166,
+        "para": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "调试窗口、输入框和结果是不同界面对象。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 168,
+        "para": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对；聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "JSON返回与门户体验明确区分，接口没有换名。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 186,
+        "para": "以上耗时是各一次整链路运行的界面显示值，样本数5，不是准确率基准、并发压测或 P99。模型具有随机性，重建后应重新执行同输入；多轮续接、歧义输入、注入、节点异常和跨租户访问未在本轮通过。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "耗时、准确率及P99是不同指标，测试对象稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 190,
+        "para": "步骤15：点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单、不修改账号”，确认内部配置发布。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "版本和发布说明是不同字段，引用文本按原样保留。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 192,
+        "para": "步骤16：看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连接和 Start/query。进入发布历史核对 v0.1.0 为运行中。本轮保存时间16:03:01、发布时间16:03:02。对外渠道部署需要另行验证。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "保存、发布时间与渠道部署是不同事件。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 200,
+        "para": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条；不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记录；不要删除原 AS 场景。HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "测试记录、验证资产和AS场景是不同恢复对象。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 211,
+        "para": "估算是工程判断，不是已批准排期，也不包括接口采购、全量知识重建或历史记忆迁移。当前可以承诺的是已交付的验证样例和方案，不能承诺全部财富助手13意图在固定周期无损迁移。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "估算、排期和迁移承诺分别限定，不构成换名。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 213,
+        "para": "迁移不变量：源 AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入 prompt／日志；每次执行关联 requestid 与版本；切流有明确回退入口和负责人。若 AS 能否继续作为回退底座尚不确定，应先明确运行支持及保留期限。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "资产、身份、ACL、密钥及路由是不同约束对象。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 215,
+        "para": "兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议、文件权限、超时与取消。既有 session 和长期记忆先留原系统；迁移需要来源、主体、有效期、删除及授权审计。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "AS技能、MCP与插件是不同资产类型；session不是长期记忆。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 217,
+        "para": "故障与安全：区分模型失败、工具失败、授权失败、知识空召回及业务拒绝；高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工具结果，日志脱敏并按企业政策定期限。平台侧安全和监控的实际覆盖范围仍需确认。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "不同失败类型分别列出，安全策略与监控不是同一概念。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 221,
+        "para": "以下是后续验收要求，不是本轮已通过结果。阈值应由业务负责人采用，按相同模型、数据、权限和测量范围比较 AS 与 HiAgent，不能直接复制宣传数值。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "验收要求与已通过结果明确区分，阈值指称稳定。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      },
+      {
+        "type": "rename",
+        "file": "tone-before.md",
+        "line": 235,
+        "para": "下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将 P21 方式1 从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不覆盖该实验，也不覆盖生产全量切流。",
+        "label": "0组",
+        "confidence": "高",
+        "reason": "技能与数字员工是并列候选，调用与回执是不同阶段。",
+        "disposition": "保留",
+        "disposition_reason": "没有同义重命名命中。"
+      }
+    ],
+    "cohesion": [
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 7,
+        "prev_tail": "本轮已在 HiAgent 新建并运行 IT 服务样例，五条真实模型与整链路测试通过，内部配置版本 v0.1.0 已发布并确认刷新后持久化",
+        "next_head": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "实测结果后解释替代判断的层级，论述对象一致。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 15,
+        "prev_tail": "AS 停止迭代是本方案的假设，不是已确认的产品决策",
+        "next_head": "目标是保住业务效果与可运维性，不要求复刻 AS 的页面对象",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "停更假设后说明迁移目标，同一决策继续展开。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 23,
+        "prev_tail": "原 AS 资产和路由保留，供回退及同口径比较",
+        "next_head": "AS 财富助手实际有 13 个意图",
+        "label": "有关但转换突然",
+        "confidence": "中",
+        "reason": "保留资产后直接转到财富助手实例，省略实例引入。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 31,
+        "prev_tail": "该技能本轮未实际运行",
+        "next_head": "证据等级：已验证＝实际运行并核对结果",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "技能未运行后定义证据等级，继续说明证据边界。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 55,
+        "prev_tail": "前序 IT 意图分类验证作为参考，本轮新资产的结果独立记录",
+        "next_head": "截至2026-11-12，本方案交付的是意图路由与固定诊断 SOP 的最小闭环，不是 AgentSphere 完整替代系统",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "新资产证据后限定交付范围，关系成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 69,
+        "prev_tail": "“尚未验证”不等于“HiAgent 不支持”：本轮没有证据把这些平台能力判为永久缺失",
+        "next_head": "替代决策约束：不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "不能判永久缺失后列替代验收约束，关系成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 75,
+        "prev_tail": "生产全量切流与原系统下线均不属于本轮已完成交付",
+        "next_head": "图中文字等价说明：用户的原始请求进入总控",
+        "label": "有关但转换突然",
+        "confidence": "中",
+        "reason": "切流边界后直接转架构流程，候选中缺少章节过渡。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 83,
+        "prev_tail": "本轮只运行 Start→意图识别→确定性 SOP→End，图中虚线部分均需另行实现或验证",
+        "next_head": "接口设计建议（未实现）：入口携带可信 tenantid／userid／sessionid／requestid，客户端不能自行决定租户",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "已运行链路后说明目标接口，继续设计同一系统。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 85,
+        "prev_tail": "写操作使用幂等键和审批凭据，认证秘密保存在平台密钥配置中",
+        "next_head": "目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "工具授权与幂等后说明任务状态，属于执行设计。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 91,
+        "prev_tail": "重试只对可重放或已实现幂等的操作启用",
+        "next_head": "前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间",
+        "label": "有关但转换突然",
+        "confidence": "中",
+        "reason": "重试规则后直接进入登录和配额前置，候选跳过章节。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 95,
+        "prev_tail": "若发布校验失败、结果错路由或出现写操作，停止发布并修正后再验证",
+        "next_head": "步骤1：进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "停止发布条件后进入创建步骤，属于教程执行路径。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 97,
+        "prev_tail": "步骤1：进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”",
+        "next_head": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "创建类型后填写名称和描述，操作顺序成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 99,
+        "prev_tail": "测试环境，不创建真实工单",
+        "next_head": "步骤3：进入编排页，保留 Start、End",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "描述填完后进入画布，操作顺序成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 109,
+        "prev_tail": "本轮对话轮数保留3，未使用长期记忆",
+        "next_head": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-flash",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "默认输入确认后添加模型节点，操作顺序成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 111,
+        "prev_tail": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-flash",
+        "next_head": "步骤5：输入 query 选择“引用→Start→顶层 query”",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "模型节点配置后绑定输入，操作顺序成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 113,
+        "prev_tail": "必须最终显示 Start/query，不能选择对话历史下面的 query",
+        "next_head": "步骤6：添加下表四项意图，保留系统“其他意图”",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "绑定输入后添加意图，操作顺序成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 124,
+        "prev_tail": "生产值需要结合 SLA 调整",
+        "next_head": "首次测试“我忘记密码，账号登录不了”曾错误返回多诉求澄清，原因是误选 Start/chathistories/query",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "意图配置后给出错绑实例，继续解释配置验证。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 128,
+        "prev_tail": "先核对变量来源，再调整意图描述，避免把输入绑定错误当成模型能力问题",
+        "next_head": "步骤7：添加“代码”节点，命名“代码01”，语言 Javascript",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "输入错绑说明后配置下游代码，继续搭建同一流程。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 130,
+        "prev_tail": "输入变量名 input，值引用“意图识别01/classificationName”",
+        "next_head": "步骤8：将下面已实际运行的代码复制到编辑器",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "代码输入后说明输出和代码，操作顺序成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 148,
+        "prev_tail": "没有消费的模板字段不代表业务输出",
+        "next_head": "这里的固定文案是明确的诊断 SOP，不是伪造模型推理、工单编号或业务执行结果",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "输出模板边界后解释固定SOP，功能说明一致。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 152,
+        "prev_tail": "将来承接实际执行时，应替换为独立业务工具并验证回执，不能把“建议联系 IT”算作“账号已解锁”",
+        "next_head": "步骤9：关闭编辑面板、适配画布，把 Start 的出口连接意图识别01的入口",
+        "label": "有关但转换突然",
+        "confidence": "中",
+        "reason": "真实执行边界后直接转回画布连线，候选缺少小节标题。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 154,
+        "prev_tail": "步骤9：关闭编辑面板、适配画布，把 Start 的出口连接意图识别01的入口",
+        "next_head": "步骤10：将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "Start连线后连接意图出口，拓扑步骤相继。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 156,
+        "prev_tail": "步骤10：将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口",
+        "next_head": "步骤11：将代码01出口连接 End",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "意图出口后连接代码出口，拓扑步骤相继。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 158,
+        "prev_tail": "本例所有出口汇入同一代码按名称分派",
+        "next_head": "步骤12：打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/key0",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "代码分派后配置End返回，输出步骤相继。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 166,
+        "prev_tail": "确认输入、代码和 End 没有未定义变量",
+        "next_head": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "输出检查后打开预览测试，配置与验证相继。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 168,
+        "prev_tail": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条",
+        "next_head": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "发送测试后核对本轮返回，操作顺序成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 186,
+        "prev_tail": "聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收",
+        "next_head": "以上耗时是各一次整链路运行的界面显示值，样本数5，不是准确率基准、并发压测或 P99",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "门户体验边界后限定耗时口径，继续说明测试边界。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 190,
+        "prev_tail": "多轮续接、歧义输入、注入、节点异常和跨租户访问未在本轮通过",
+        "next_head": "步骤15：点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证",
+        "label": "有关但转换突然",
+        "confidence": "中",
+        "reason": "测试未覆盖项后直接进入发布，候选跳过小节标题。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 192,
+        "prev_tail": "不创建工单、不修改账号”，确认内部配置发布",
+        "next_head": "步骤16：看到“智能体配置已发布成功",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "发布操作后确认发布结果和持久化，操作顺序成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 200,
+        "prev_tail": "对外渠道部署需要另行验证",
+        "next_head": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "渠道部署未验后说明失败恢复，继续说明发布边界。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 211,
+        "prev_tail": "HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力",
+        "next_head": "估算是工程判断，不是已批准排期，也不包括接口采购、全量知识重建或历史记忆迁移",
+        "label": "有关但转换突然",
+        "confidence": "中",
+        "reason": "恢复边界后直接转工程投入，候选跳过迁移章节。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 213,
+        "prev_tail": "当前可以承诺的是已交付的验证样例和方案，不能承诺全部财富助手13意图在固定周期无损迁移",
+        "next_head": "迁移不变量：源 AS 资产保留",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "迁移承诺限定后列迁移约束，继续说明迁移决策。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 215,
+        "prev_tail": "若 AS 能否继续作为回退底座尚不确定，应先明确运行支持及保留期限",
+        "next_head": "兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "回退支持后说明接口兼容，继续迁移依赖。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 217,
+        "prev_tail": "迁移需要来源、主体、有效期、删除及授权审计",
+        "next_head": "故障与安全：区分模型失败、工具失败、授权失败、知识空召回及业务拒绝",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "迁移授权后说明授权失败与安全处理，关系成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 221,
+        "prev_tail": "平台侧安全和监控的实际覆盖范围仍需确认",
+        "next_head": "以下是后续验收要求，不是本轮已通过结果",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "覆盖未确认后转验收要求，验证关系成立。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      },
+      {
+        "type": "cohesion",
+        "file": "tone-before.md",
+        "line": 235,
+        "prev_tail": "阈值应由业务负责人采用，按相同模型、数据、权限和测量范围比较 AS 与 HiAgent，不能直接复制宣传数值",
+        "next_head": "下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底",
+        "label": "明确承接",
+        "confidence": "高",
+        "reason": "同口径验收要求后选首个实验，继续执行验收。",
+        "disposition": "保留",
+        "disposition_reason": "教程操作依赖需要连续；候选抽取跳过标题、图片和表格，不能据此人为断开正文。"
+      }
+    ],
+    "colon": [
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 1,
+        "colon_before": ">HiAgent 承接 AgentSphere 1.x 方案",
+        "colon_after": "能力边界、实测证据与逐步搭建</title>",
+        "sentence": "<title>HiAgent 承接 AgentSphere 1.x 方案：能力边界、实测证据与逐步搭建</title>",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 7,
+        "colon_before": "“能替代”分两层",
+        "colon_after": "组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环；真实业务执行、跨智能体协同、权限与记忆隔离",
+        "sentence": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环；真实业务执行、跨智能体协同、权限与记忆隔离、安全覆盖、统一门户及性能门槛需要后续验收。AS 停止迭代是本方案的假设，不是已确认的产品决策。",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 31,
+        "colon_before": "证据等级",
+        "colon_after": "已验证＝实际运行并核对结果；配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现；待验收＝没有完成对应实验。前序 I",
+        "sentence": "证据等级：已验证＝实际运行并核对结果；配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现；待验收＝没有完成对应实验。前序 IT 意图分类验证作为参考，本轮新资产的结果独立记录。",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 55,
+        "colon_before": "“尚未验证”不等于“HiAgent 不支持”",
+        "colon_after": "本轮没有证据把这些平台能力判为永久缺失。",
+        "sentence": "**截至2026-11-12，本方案交付的是意图路由与固定诊断 SOP 的最小闭环，不是 AgentSphere 完整替代系统。**以下事项明确列入交付边界；只有补建并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent ",
+        "label": "结论提示",
+        "confidence": "高",
+        "reason": "冒号前为不等于的独立判断，冒号后补充证据不足的理由。",
+        "disposition": "拟改",
+        "disposition_reason": "保留判断和理由，只将冒号改为句号；规则12。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 69,
+        "colon_before": "**替代决策约束",
+        "colon_after": "**不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应",
+        "sentence": "**替代决策约束：**不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些缺口的场景，应保留 AS 或采用明确的人工处理路径；生产全量切流与原系统下线均不属于本轮已完成交付。",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 75,
+        "colon_before": "图中文字等价说明",
+        "colon_after": "用户的原始请求进入总控；目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安",
+        "sentence": "图中文字等价说明：用户的原始请求进入总控；目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别、受控执行或多意图规划、结果合并、输出安全和人工兜底。可信身份、知识权限、记忆隔离、版本及审计贯穿全链路。本轮只运行 Start→意图识别→确",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 83,
+        "colon_before": "接口设计建议（未实现）",
+        "colon_after": "入口携带可信 tenant_id／user_id／session_id／request_id，客户端不能自行决定租户；路",
+        "sentence": "接口设计建议（未实现）：入口携带可信 tenant_id／user_id／session_id／request_id，客户端不能自行决定租户；路由结果包含 intent、strategy_version、confidence（仅接口实际提供",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 85,
+        "colon_before": "目标状态机",
+        "colon_after": "接收→识别→需要澄清／待审批／执行中→成功／失败／转人工；异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹",
+        "sentence": "目标状态机：接收→识别→需要澄清／待审批／执行中→成功／失败／转人工；异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹配不能误入有副作用的分支。重试只对可重放或已实现幂等的操作启用。",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 91,
+        "colon_before": "前置条件",
+        "colon_after": "HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使",
+        "sentence": "前置条件：HiAgent 登录及创建权限、可用的 DeepSeek-V4-flash 模型配额、允许测试的个人／项目空间。本例不使用企业密码、不访问业务数据库、不创建工单、不改账号。验证码由本人完成。已有资产不要覆盖；重建时使用不同名称。若",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 95,
+        "colon_before": "步骤1",
+        "colon_after": "进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”。",
+        "sentence": "步骤1：进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 97,
+        "colon_before": "步骤2",
+        "colon_after": "名称填写“AS迁移验证-IT服务总控-日期”；描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实",
+        "sentence": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”；描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不创建真实工单。”",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 99,
+        "colon_before": "步骤3",
+        "colon_after": "进入编排页，保留 Start、End。确认 Start 有顶层 query（String）；files 和对话历史保留默",
+        "sentence": "步骤3：进入编排页，保留 Start、End。确认 Start 有顶层 query（String）；files 和对话历史保留默认即可。本轮对话轮数保留3，未使用长期记忆。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 109,
+        "colon_before": "步骤4",
+        "colon_after": "点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-flash。",
+        "sentence": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-flash。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 111,
+        "colon_before": "步骤5",
+        "colon_after": "输入 query 选择“引用→Start→顶层 query”。必须最终显示 Start/query，不能选择对话历史下面",
+        "sentence": "步骤5：输入 query 选择“引用→Start→顶层 query”。必须最终显示 Start/query，不能选择对话历史下面的 query。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 113,
+        "colon_before": "步骤6",
+        "colon_after": "添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无；生产值需要结合 SLA ",
+        "sentence": "步骤6：添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异常忽略为无；生产值需要结合 SLA 调整。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 128,
+        "colon_before": "步骤7",
+        "colon_after": "添加“代码”节点，命名“代码01”，语言 Javascript。输入变量名 input，值引用“意图识别01/class",
+        "sentence": "步骤7：添加“代码”节点，命名“代码01”，语言 Javascript。输入变量名 input，值引用“意图识别01/classificationName”。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 130,
+        "colon_before": "步骤8",
+        "colon_after": "将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）、",
+        "sentence": "步骤8：将下面已实际运行的代码复制到编辑器。输出至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）、key3（Obj）、key4（Arr<Obj>）。本轮沿用默认输出模板，仅 End 使用 key0；没有消费的模",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 152,
+        "colon_before": "步骤9",
+        "colon_after": "关闭编辑面板、适配画布，把 Start 的出口连接意图识别01的入口。",
+        "sentence": "步骤9：关闭编辑面板、适配画布，把 Start 的出口连接意图识别01的入口。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 154,
+        "colon_before": "步骤10",
+        "colon_after": "将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口。",
+        "sentence": "步骤10：将账号访问、VPN网络、权限申请、多诉求澄清和其他意图五个出口，分别连接代码01入口。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 156,
+        "colon_before": "步骤11",
+        "colon_after": "将代码01出口连接 End。最终是4个节点、7条连接；本例所有出口汇入同一代码按名称分派。",
+        "sentence": "步骤11：将代码01出口连接 End。最终是4个节点、7条连接；本例所有出口汇入同一代码按名称分派。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 158,
+        "colon_before": "步骤12",
+        "colon_after": "打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/key0。确认输入、代码和 End 没",
+        "sentence": "步骤12：打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/key0。确认输入、代码和 End 没有未定义变量。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 166,
+        "colon_before": "步骤13",
+        "colon_after": "打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条。",
+        "sentence": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果结束再发下一条。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 168,
+        "colon_before": "步骤14",
+        "colon_after": "按输出语义、未执行副作用声明及本轮耗时核对；聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用",
+        "sentence": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对；聊天界面本例返回 JSON 对象 {\"output\":\"…\"}，这不是最终用户门户的文本体验验收。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 190,
+        "colon_before": "步骤15",
+        "colon_after": "点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单、不修改账",
+        "sentence": "步骤15：点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单、不修改账号”，确认内部配置发布。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 192,
+        "colon_before": "步骤16",
+        "colon_after": "看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连接和 Start/query。进入发布历史核对 v0.1.",
+        "sentence": "步骤16：看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连接和 Start/query。进入发布历史核对 v0.1.0 为运行中。本轮保存时间16:03:01、发布时间16:03:02。对外渠道部署需要另行验证。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 192,
+        "colon_before": "本轮保存时间16",
+        "colon_after": "03:01、发布时间16:03:02。对外渠道部署需要另行验证。",
+        "sentence": "步骤16：看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连接和 Start/query。进入发布历史核对 v0.1.0 为运行中。本轮保存时间16:03:01、发布时间16:03:02。对外渠道部署需要另行验证。",
+        "label": "标题时间比例元数据或版式用途",
+        "confidence": "高",
+        "reason": "文档标题、步骤编号或保存时间的版式用法，不是结论提示。",
+        "disposition": "保留",
+        "disposition_reason": "保留编号、标题和时间原样。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 200,
+        "colon_before": "恢复方法",
+        "colon_after": "失败时保留测试记录，修正变量和节点后重跑五条；不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记",
+        "sentence": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条；不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止接入该样例并保留记录；不要删除原 AS 场景。HiAgent 历史版本回滚行为本轮未实际验证，不将按钮存在写成已验证恢复能力。",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 213,
+        "colon_before": "迁移不变量",
+        "colon_after": "源 AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入 prompt／日志；每次",
+        "sentence": "迁移不变量：源 AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入 prompt／日志；每次执行关联 request_id 与版本；切流有明确回退入口和负责人。若 AS 能否继续作为回退底座尚不确定，",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 215,
+        "colon_before": "兼容策略",
+        "colon_after": "不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议",
+        "sentence": "兼容策略：不要假设 AS 技能、MCP 和 HiAgent 插件具有相同参数与生命周期。逐项验证 JSON 契约、错误码、流式协议、文件权限、超时与取消。既有 session 和长期记忆先留原系统；迁移需要来源、主体、有效期、删除及授权审计",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 217,
+        "colon_before": "故障与安全",
+        "colon_after": "区分模型失败、工具失败、授权失败、知识空召回及业务拒绝；高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工具结果，",
+        "sentence": "故障与安全：区分模型失败、工具失败、授权失败、知识空召回及业务拒绝；高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工具结果，日志脱敏并按企业政策定期限。平台侧安全和监控的实际覆盖范围仍需确认。",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      },
+      {
+        "type": "colon",
+        "file": "tone-before.md",
+        "line": 235,
+        "colon_before": "下一项最小验证",
+        "colon_after": "选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将 P2",
+        "sentence": "下一项最小验证：选择 AS 一个无副作用的真实技能或数字员工，完成 HiAgent 下游调用、真实返回和异常兜底。它通过后，才能将 P21 方式1 从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不覆盖该实验，也不覆盖生产全量切流",
+        "label": "定义或解释",
+        "confidence": "高",
+        "reason": "冒号前是概念、功能或规则类别，冒号后说明具体内容。",
+        "disposition": "保留",
+        "disposition_reason": "技术定义和配置说明需要保留。"
+      }
+    ],
+    "iso3": []
+  },
+  "summary": {
+    "rename_candidates": 32,
+    "rename_effective": 0,
+    "cohesion_candidates": 36,
+    "cohesion_clear": 30,
+    "cohesion_abrupt": 6,
+    "max_chain": 10,
+    "cohesion_proposed_edits": 0,
+    "colon_candidates": 31,
+    "colon_effective": 1,
+    "colon_proposed_edits": 1,
+    "iso3_candidates": 0
+  },
+  "regex_review": {
+    "翻案腔": [],
+    "提示语冒号": [],
+    "起手式": [],
+    "当…时从句": [],
+    "前置话题壳": [],
+    "句首连接词": [],
+    "顿号并列≥3": [
+      {
+        "file": "tone-before.md",
+        "line": 7,
+        "excerpt": "真实业务执行、跨智能体协同、权限与记忆隔离",
+        "valid_hit": true,
+        "disposition": "拟改",
+        "reason": "正文并列可改成有谓语的分句，保留各项信息；规则5。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 11,
+        "excerpt": "明确意图、显式拓扑、确定性输出",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 12,
+        "excerpt": "Agent／Skill 调用、FAQ、知识",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 12,
+        "excerpt": "记忆、安全、业务 API",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 13,
+        "excerpt": " | 自然语言多数字员工编排、多意图自动计划、跨平台 Hub",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 37,
+        "excerpt": "AS 场景对象、注册、优先级和发布策略需重建",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 38,
+        "excerpt": "命中后 SOP | 显式节点、代码、工作流和业务工具表达步骤",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 39,
+        "excerpt": "nt 混编 | 候选为智能体、工作流、插件",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 39,
+        "excerpt": "须核对鉴权、入参、流式返回",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 41,
+        "excerpt": "规划、并行、观察",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 44,
+        "excerpt": "阈值、空召回、冲突及响应时延待验收",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 46,
+        "excerpt": "提取规则、跨会话读取、删除和租户隔离待验证",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 47,
+        "excerpt": "AS 资料、切分、索引及权限不因换平台自动迁移",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 48,
+        "excerpt": " | 需实现统一契约、发现、版本",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 50,
+        "excerpt": "ent 运行底座＋必要的门户、资产目录、审计与灰度适配",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 50,
+        "excerpt": "SSO、身份映射、审批",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 51,
+        "excerpt": "99<1s | 区分 FAQ、意图识别、首 token 和全链路结束",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 59,
+        "excerpt": " | 账号解锁、权限授予、工单创建",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 59,
+        "excerpt": "验证审批、幂等、真实回执与失败兜底",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 61,
+        "excerpt": " | 不能承诺自动规划、并行委派、观察",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 61,
+        "excerpt": " | 完成多Agent依赖、失败恢复、最大步骤",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 62,
+        "excerpt": " | 补建任务计划、依赖、执行状态与结果合并",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 63,
+        "excerpt": " | 不能保证 AS、HiAgent、第三方资产自动发现",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 63,
+        "excerpt": " | 完成资产清单、ID及版本映射、接口适配与跨平台调用验收",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 64,
+        "excerpt": "| 不能承诺 FAQ 快路径、术语改写正确性、原知识效果或撤权后不召回",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 64,
+        "excerpt": "核对阈值、冲突、空召回",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 65,
+        "excerpt": " | 不能保证跨会话记忆、用户／租户隔离、过期删除和 AS 历史记忆无",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 65,
+        "excerpt": "验证读取、删除、撤权和跨租户隔离",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 66,
+        "excerpt": " 不能承诺提示注入及越权防护、SSO身份映射、发布审批",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 66,
+        "excerpt": "统一门户、跨平台Trace、灰度及版本回滚达到 AS 同",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 66,
+        "excerpt": "完成安全、审计、渠道发布及实际恢复演练",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 67,
+        "excerpt": "不能据此保证并发、可用性、成本或整链路 SLA",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 75,
+        "excerpt": "目标顺序为输入安全、术语与改写、FAQ 快路径",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 75,
+        "excerpt": "意图识别、受控执行或多意图规划、结果合并",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 75,
+        "excerpt": "可信身份、知识权限、记忆隔离",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 80,
+        "excerpt": "核心 SOP 的步骤、终止、重试与审批更难稳定验收",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 83,
+        "excerpt": "执行结果统一为 status、data、evidence",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 91,
+        "excerpt": "本例不使用企业密码、不访问业务数据库、不创建工单",
+        "valid_hit": true,
+        "disposition": "拟改",
+        "reason": "正文并列可改成有谓语的分句，保留各项信息；规则5。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 113,
+        "excerpt": "本轮默认意图节点超时360秒、重试0、异常忽略为无",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 117,
+        "excerpt": "| 账号访问 | 登录失败、账号锁定、密码忘记",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 118,
+        "excerpt": "PN网络 | VPN连接失败、网络无法接通、网络诊断 |",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 119,
+        "excerpt": " 权限申请 | 软件安装许可、系统新增访问权限、审批申请 |",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 120,
+        "excerpt": "求澄清 | 一次同时要求账号、VPN、权限等两个或以上独立事项",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 130,
+        "excerpt": "至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 154,
+        "excerpt": "将账号访问、VPN网络、权限申请",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 172,
+        "excerpt": "官方重置入口、身份核验、未执行账号变更",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 173,
+        "excerpt": "普通网页、版本报错、配置",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 174,
+        "excerpt": "请财务系统访问权限 | 用途、最小权限期限、审批",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 186,
+        "excerpt": "多轮续接、歧义输入、注入",
+        "valid_hit": true,
+        "disposition": "拟改",
+        "reason": "正文并列可改成有谓语的分句，保留各项信息；规则5。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 206,
+        "excerpt": "资产盘点与契约 | 导出场景、意图、命中策略",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 207,
+        "excerpt": "验证鉴权、结果、异常与 Trace",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 208,
+        "excerpt": " 总控与治理补齐 | FAQ、术语、知识ACL",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 208,
+        "excerpt": "记忆隔离、安全、门户与运营逐项验收",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 215,
+        "excerpt": "逐项验证 JSON 契约、错误码、流式协议",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 215,
+        "excerpt": "迁移需要来源、主体、有效期",
+        "valid_hit": true,
+        "disposition": "拟改",
+        "reason": "正文并列可改成有谓语的分句，保留各项信息；规则5。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 217,
+        "excerpt": "区分模型失败、工具失败、授权失败",
+        "valid_hit": true,
+        "disposition": "拟改",
+        "reason": "正文并列可改成有谓语的分句，保留各项信息；规则5。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 221,
+        "excerpt": "按相同模型、数据、权限和测量范围比较 AS 与",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 225,
+        "excerpt": "按意图分别报告混淆矩阵、漏识别、误入写分支率",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 226,
+        "excerpt": "Skill | 单Agent、串行两Agent、Skill＋Agent",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 226,
+        "excerpt": "核对入参、真实回执、失败传播与结果合并",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 227,
+        "excerpt": "自主与多意图 | 双诉求拆解、并行、依赖失败",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 228,
+        "excerpt": "FAQ／知识／术语 | 命中、未命中、冲突",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 229,
+        "excerpt": "| 记忆隔离 | 同人跨会话、不同用户、不同租户",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 230,
+        "excerpt": "| 安全与写操作 | 注入、越权、敏感输出",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 231,
+        "excerpt": "常与恢复 | 模型／工具超时、权限过期、流程中断",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 232,
+        "excerpt": " 门户与治理 | SSO主体、身份映射、发布审批",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 232,
+        "excerpt": "灰度、日志、审计",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 233,
+        "excerpt": "性能与成本 | 分别测FAQ、意图节点、首token",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      },
+      {
+        "file": "tone-before.md",
+        "line": 233,
+        "excerpt": "报告P50/P95/P99、超时率、Tokens与费用",
+        "valid_hit": false,
+        "disposition": "保留",
+        "reason": "配置、验收、架构或接口字段清单要求完整列出；不根据标点频率删除项目。"
+      }
+    ],
+    "过长前置定语": [],
+    "拟人化喻体": [],
+    "概括替代(已否决)": [],
+    "序数词小标题(已否决)": [],
+    "「这意味着」复述(已否决)": [],
+    "空转句引列表(已否决)": []
+  },
+  "character_review": [
+    {
+      "character": "；",
+      "line": 5,
+      "column": 40,
+      "excerpt": "停止迭代，HiAgent 可以作为受控业务流程的承接选项；当前证据支持先迁意图路由与确定性 SOP，尚不足以批准完",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 7,
+      "column": 1,
+      "excerpt": "“能替代”分两层：组件能够表达某种流程，与生产语义和治理能",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 7,
+      "column": 48,
+      "excerpt": "，与生产语义和治理能够等价承接。本轮证明前者中的最小闭环；真实业务执行、跨智能体协同、权限与记忆隔离、安全覆盖、统",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 15,
+      "column": 51,
+      "excerpt": "S 的页面对象。首批不迁历史会话、长期记忆和高风险写操作；原 AS 资产和路由保留，供回退及同口径比较。",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 21,
+      "column": 72,
+      "excerpt": "aas.com/product/admin/scene)；[AS 用户门户](https://superapp.v",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "三个系统链接的并列分隔，保留导航结构。"
+    },
+    {
+      "character": "；",
+      "line": 21,
+      "column": 137,
+      "excerpt": "epaas.com/product/chat/list)；[HiAgent 入口](https://hia.vol",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "三个系统链接的并列分隔，保留导航结构。"
+    },
+    {
+      "character": "；",
+      "line": 23,
+      "column": 18,
+      "excerpt": "AS 财富助手实际有 13 个意图；ETF基金分析的命中策略显示“调用扩展能力执行”，单元为",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 23,
+      "column": 33,
+      "excerpt": "富助手实际有 13 个意图；ETF基金分析的命中策略显示“调用扩展能力执行”，单元为 datayes-financ",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 29,
+      "column": 40,
+      "excerpt": "分析指向 datayes-financial-v3 技能；仅配置证据](https://feishu.cn/fil",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "图片图注原样保留。"
+    },
+    {
+      "character": "；",
+      "line": 31,
+      "column": 19,
+      "excerpt": "证据等级：已验证＝实际运行并核对结果；配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "四个证据等级的定义对应关系，需要同层分隔。"
+    },
+    {
+      "character": "；",
+      "line": 31,
+      "column": 38,
+      "excerpt": "实际运行并核对结果；配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现；待验收＝没有完成对应实验。前序 IT",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "四个证据等级的定义对应关系，需要同层分隔。"
+    },
+    {
+      "character": "；",
+      "line": 31,
+      "column": 48,
+      "excerpt": "配置可见＝真实 UI 存在或绑定可见；目标设计＝建议实现；待验收＝没有完成对应实验。前序 IT 意图分类验证作为参",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "四个证据等级的定义对应关系，需要同层分隔。"
+    },
+    {
+      "character": "；",
+      "line": 37,
+      "column": 36,
+      "excerpt": "景与细分意图 | 每个业务场景一个总控 Chatflow；意图节点配置名称、描述和分支。 | 本轮四类＋其他兜底已",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 37,
+      "column": 90,
+      "excerpt": "兜底已验证。AS 场景对象、注册、优先级和发布策略需重建；分类准确率未做大样本评估。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 38,
+      "column": 50,
+      "excerpt": "代码、工作流和业务工具表达步骤。 | 固定诊断回复已验证；真实业务 API 和审批未接入。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 39,
+      "column": 59,
+      "excerpt": "为智能体、工作流、插件、HTTP 等节点。 | 菜单可见；须核对鉴权、入参、流式返回、错误及版本。代码节点不是独立",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 41,
+      "column": 41,
+      "excerpt": "语言多数字员工编排 | 评估自主型智能体、工具与子智能体；核心业务优先显式工作流。 | 相关创建入口可见。规划、并",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 41,
+      "column": 87,
+      "excerpt": "创建入口可见。规划、并行、观察、重规划、验收和终止未验证；不能判为缺失，也不能宣称等价。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 42,
+      "column": 35,
+      "excerpt": "方式3：Workflow 执行链 | 显式拓扑与变量绑定；逐节点处理失败。 | 4 节点／7 连线已验证；多独立数",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 42,
+      "column": 59,
+      "excerpt": "变量绑定；逐节点处理失败。 | 4 节点／7 连线已验证；多独立数字员工链路仍需单独运行。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 43,
+      "column": 33,
+      "excerpt": "3 术语库与 Query 改写 | 术语库入口＋改写步骤；保留原 query 与改写 query。 | 术语库节点",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 43,
+      "column": 64,
+      "excerpt": "原 query 与改写 query。 | 术语库节点可见；词典迁移、改写顺序及语义保持未验证。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 44,
+      "column": 29,
+      "excerpt": "| P23 FAQ 快路径与兜底 | 问答库命中直接返回；未命中进入路由或明确兜底。 | 问答库节点可见；阈值、空",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 44,
+      "column": 53,
+      "excerpt": "直接返回；未命中进入路由或明确兜底。 | 问答库节点可见；阈值、空召回、冲突及响应时延待验收。本轮“其他意图”不是",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 44,
+      "column": 74,
+      "excerpt": "问答库节点可见；阈值、空召回、冲突及响应时延待验收。本轮“其他意图”不是 FAQ 验证。 |",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 45,
+      "column": 28,
+      "excerpt": "| P23 单／多意图与 ReAct | 单意图走流程；多意图先澄清，后续增加受控计划和结果合并。 | 单意图与",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 45,
+      "column": 65,
+      "excerpt": "续增加受控计划和结果合并。 | 单意图与多诉求澄清已验证；没有自动拆分并执行两个任务，也没有 ReAct 实测。 ",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 46,
+      "column": 54,
+      "excerpt": "节点或外部存储。 | 对话历史保留3轮、长期记忆入口可见；提取规则、跨会话读取、删除和租户隔离待验证。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 47,
+      "column": 43,
+      "excerpt": "识检索节点并传递可信身份、来源和 ACL。 | 节点可见；AS 资料、切分、索引及权限不因换平台自动迁移。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 48,
+      "column": 76,
+      "excerpt": "第三方资产。 | 需实现统一契约、发现、版本、认证和审计；没有跨平台互操作实测。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 49,
+      "column": 53,
+      "excerpt": "输出布置安全策略，并覆盖工具调用。 | 安全配置入口可见；本轮 SOP 文案约束不是安全拦截证明。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 51,
+      "column": 89,
+      "excerpt": "47–2.18秒，非 P99，且测量范围未必与原指标一致；不承诺继承该指标。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 55,
+      "column": 79,
+      "excerpt": "Sphere 完整替代系统。**以下事项明确列入交付边界；只有补建并完成对应验收，才能升级为“已承接”。“尚未验证",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 55,
+      "column": 97,
+      "excerpt": "事项明确列入交付边界；只有补建并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent 不支持”：",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 55,
+      "column": 103,
+      "excerpt": "交付边界；只有补建并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent 不支持”：本轮没有证据",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 55,
+      "column": 112,
+      "excerpt": "并完成对应验收，才能升级为“已承接”。“尚未验证”不等于“HiAgent 不支持”：本轮没有证据把这些平台能力判为",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 60,
+      "column": 48,
+      "excerpt": "编／P20、P21方式1及3 | 尚未验证：存在候选节点；当前运行的是代码节点。 | 不能提供已验证的独立 Sub",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 60,
+      "column": 109,
+      "excerpt": "t 调用、Skill＋Agent 混编或多数字员工执行链；不能承诺直接复用 datayes-financial-v",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 61,
+      "column": 121,
+      "excerpt": "完成多Agent依赖、失败恢复、最大步骤、取消和终止验收；核心 SOP 可先采用显式工作流。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 62,
+      "column": 40,
+      "excerpt": "ReAct／P23 | 当前样例做不到：双诉求只触发澄清；ReAct未验证。 | 不能同时完成“账号锁定＋VPN失",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 62,
+      "column": 59,
+      "excerpt": "：双诉求只触发澄清；ReAct未验证。 | 不能同时完成“账号锁定＋VPN失败”，不能自动拆解并交付各子任务结果。",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 63,
+      "column": 104,
+      "excerpt": "、HiAgent、第三方资产自动发现、认证互通、版本兼容；不能直接导入并无损继承 AS 场景和策略。 | 完成资产",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 64,
+      "column": 77,
+      "excerpt": "FAQ 快路径、术语改写正确性、原知识效果或撤权后不召回；未知意图兜底不是 FAQ 验证。 | 导入真实脱敏资料，",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 65,
+      "column": 25,
+      "excerpt": "| 短期／长期记忆等价承接／P23 | 尚未验证；历史迁移未实施。只观察到3轮对话历史配置及长期记忆入口。",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 67,
+      "column": 47,
+      "excerpt": " | 没有达标证据：仅有5次UI耗时1.47–2.18秒；未压测。 | 不能承诺继承 AS 宣传指标，不能据此保证",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 69,
+      "column": 15,
+      "excerpt": "**替代决策约束：**不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 69,
+      "column": 23,
+      "excerpt": "**替代决策约束：**不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 69,
+      "column": 34,
+      "excerpt": "策约束：**不能用“编辑器有节点”“五条意图测试通过”或“内部版本发布成功”，替代上述业务执行与治理验收。存在这些",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 69,
+      "column": 88,
+      "excerpt": "在这些缺口的场景，应保留 AS 或采用明确的人工处理路径；生产全量切流与原系统下线均不属于本轮已完成交付。",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 75,
+      "column": 21,
+      "excerpt": "图中文字等价说明：用户的原始请求进入总控；目标顺序为输入安全、术语与改写、FAQ 快路径、意图识别",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 79,
+      "column": 32,
+      "excerpt": "续保留 AS 1.x | 迁移投入低，已有治理与技能不变；若后续停更，会累积兼容与维护风险。 | 作为过渡与回退基",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 79,
+      "column": 62,
+      "excerpt": "后续停更，会累积兼容与维护风险。 | 作为过渡与回退基础；需明确支持边界。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 80,
+      "column": 23,
+      "excerpt": "| 全部改成自主型 Agent | 探索灵活；核心 SOP 的步骤、终止、重试与审批更难稳定验收。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 81,
+      "column": 36,
+      "excerpt": "nt 显式工作流＋必要适配 | 意图、步骤和失败定位清晰；资产与统一治理仍有重建成本。 | 优先路线：按场景切片迁",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 83,
+      "column": 71,
+      "excerpt": "on_id／request_id，客户端不能自行决定租户；路由结果包含 intent、strategy_versi",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 83,
+      "column": 130,
+      "excerpt": "、confidence（仅接口实际提供时使用）和澄清状态；执行结果统一为 status、data、evidence",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 85,
+      "column": 35,
+      "excerpt": "接收→识别→需要澄清／待审批／执行中→成功／失败／转人工；异步执行另设取消和超时终态。工具失败不能改写成“已办成”",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 85,
+      "column": 59,
+      "excerpt": "／转人工；异步执行另设取消和超时终态。工具失败不能改写成“已办成”，无匹配不能误入有副作用的分支。重试只对可重放或",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 89,
+      "column": 180,
+      "excerpt": "e?tabKey=arrange)。位于验证账号个人空间；其他人员需被授权访问，或在自己的授权空间按下列步骤重建。",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 91,
+      "column": 109,
+      "excerpt": "不创建工单、不改账号。验证码由本人完成。已有资产不要覆盖；重建时使用不同名称。若发布校验失败、结果错路由或出现写操",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 95,
+      "column": 32,
+      "excerpt": "：进入 HiAgent 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”。",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 95,
+      "column": 42,
+      "excerpt": "t 智能体列表，点击创建智能体，选择“工作流型”，再选择“对话流型”。",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 97,
+      "column": 9,
+      "excerpt": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”；描述填写“验证IT意",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 97,
+      "column": 27,
+      "excerpt": "步骤2：名称填写“AS迁移验证-IT服务总控-日期”；描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 97,
+      "column": 32,
+      "excerpt": "：名称填写“AS迁移验证-IT服务总控-日期”；描述填写“验证IT意图路由、受控诊断SOP及人工兜底。测试环境，不",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 99,
+      "column": 50,
+      "excerpt": "d。确认 Start 有顶层 query（String）；files 和对话历史保留默认即可。本轮对话轮数保留3，",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 109,
+      "column": 9,
+      "excerpt": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 109,
+      "column": 16,
+      "excerpt": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 Deep",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 109,
+      "column": 27,
+      "excerpt": "步骤4：点击画布“添加”，选择“意图识别”，节点名为“意图识别01”，选择模型 DeepSeek-V4-fla",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 111,
+      "column": 16,
+      "excerpt": "步骤5：输入 query 选择“引用→Start→顶层 query”。必须最终显示 St",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 113,
+      "column": 18,
+      "excerpt": "步骤6：添加下表四项意图，保留系统“其他意图”。保持本轮默认意图节点超时360秒、重试0、异",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 113,
+      "column": 52,
+      "excerpt": "。保持本轮默认意图节点超时360秒、重试0、异常忽略为无；生产值需要结合 SLA 调整。",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 117,
+      "column": 31,
+      "excerpt": "账号访问 | 登录失败、账号锁定、密码忘记、访问账号问题；不包含VPN或新增软件权限 |",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "实际意图描述原文，是复现配置的一部分。"
+    },
+    {
+      "character": "“",
+      "line": 124,
+      "column": 5,
+      "excerpt": "首次测试“我忘记密码，账号登录不了”曾错误返回多诉求澄清，原因是误",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 124,
+      "column": 62,
+      "excerpt": "选 Start/chat_histories/query；改为顶层 Start/query 后同输入通过。先核对变",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 128,
+      "column": 7,
+      "excerpt": "步骤7：添加“代码”节点，命名“代码01”，语言 Javascript",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 128,
+      "column": 16,
+      "excerpt": "步骤7：添加“代码”节点，命名“代码01”，语言 Javascript。输入变量名 in",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 128,
+      "column": 52,
+      "excerpt": "言 Javascript。输入变量名 input，值引用“意图识别01/classificationName”。",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 130,
+      "column": 114,
+      "excerpt": "j>）。本轮沿用默认输出模板，仅 End 使用 key0；没有消费的模板字段不代表业务输出。",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 135,
+      "column": 34,
+      "excerpt": "账号访问': '账号访问诊断：1.记录登录错误和发生时间；2.通过企业官方自助入口申请密码重置；3.如提示锁定，联",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "已运行代码及其中的返回文案原样保留。"
+    },
+    {
+      "character": "；",
+      "line": 135,
+      "column": 53,
+      "excerpt": "登录错误和发生时间；2.通过企业官方自助入口申请密码重置；3.如提示锁定，联系IT核验身份后解锁。不要发送密码或验",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "已运行代码及其中的返回文案原样保留。"
+    },
+    {
+      "character": "；",
+      "line": 136,
+      "column": 33,
+      "excerpt": "'VPN网络': 'VPN诊断：1.确认普通网页可以访问；2.记录VPN客户端版本和报错；3.检查企业官方VPN配",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "已运行代码及其中的返回文案原样保留。"
+    },
+    {
+      "character": "；",
+      "line": 136,
+      "column": 49,
+      "excerpt": "1.确认普通网页可以访问；2.记录VPN客户端版本和报错；3.检查企业官方VPN配置；4.仍失败则向IT提供脱敏日",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "已运行代码及其中的返回文案原样保留。"
+    },
+    {
+      "character": "；",
+      "line": 136,
+      "column": 63,
+      "excerpt": ".记录VPN客户端版本和报错；3.检查企业官方VPN配置；4.仍失败则向IT提供脱敏日志。不要关闭安全软件或提供密",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "已运行代码及其中的返回文案原样保留。"
+    },
+    {
+      "character": "；",
+      "line": 137,
+      "column": 32,
+      "excerpt": " '权限申请': '权限申请：1.说明目标系统和业务用途；2.确认需要的最小权限及期限；3.由负责人审批并由IT实",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "已运行代码及其中的返回文案原样保留。"
+    },
+    {
+      "character": "；",
+      "line": 137,
+      "column": 47,
+      "excerpt": "1.说明目标系统和业务用途；2.确认需要的最小权限及期限；3.由负责人审批并由IT实施。当前未创建工单或授予权限。",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "已运行代码及其中的返回文案原样保留。"
+    },
+    {
+      "character": "“",
+      "line": 148,
+      "column": 79,
+      "excerpt": "来承接实际执行时，应替换为独立业务工具并验证回执，不能把“建议联系 IT”算作“账号已解锁”。",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 148,
+      "column": 90,
+      "excerpt": "换为独立业务工具并验证回执，不能把“建议联系 IT”算作“账号已解锁”。",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 156,
+      "column": 32,
+      "excerpt": "1：将代码01出口连接 End。最终是4个节点、7条连接；本例所有出口汇入同一代码按名称分派。",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 158,
+      "column": 19,
+      "excerpt": "步骤12：打开 End，回复模式选择“直接返回变量值”，变量名 output，引用代码01/k",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 166,
+      "column": 13,
+      "excerpt": "步骤13：打开画布右上角“调试与预览”，在聊天输入框逐条发送下表输入，等待本轮结果",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 168,
+      "column": 27,
+      "excerpt": "步骤14：按输出语义、未执行副作用声明及本轮耗时核对；聊天界面本例返回 JSON 对象 {\"output\":\"",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 172,
+      "column": 24,
+      "excerpt": "| 我忘记密码，账号登录不了 | 账号访问诊断；官方重置入口、身份核验、未执行账号变更。通过。 | 1.",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "测试结果表内诊断标签与检查要点分层，保留证据表。"
+    },
+    {
+      "character": "；",
+      "line": 173,
+      "column": 25,
+      "excerpt": "| VPN连接不上，提示网络超时 | VPN诊断；普通网页、版本报错、配置、脱敏日志。通过。 | 1.91",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "测试结果表内诊断标签与检查要点分层，保留证据表。"
+    },
+    {
+      "character": "；",
+      "line": 174,
+      "column": 30,
+      "excerpt": " 我要申请财务系统访问权限 | 用途、最小权限期限、审批；未创建工单或授予权限。通过。 | 1.6719241秒／",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "测试结果表内操作要点与未执行声明分层，保留证据表。"
+    },
+    {
+      "character": "；",
+      "line": 175,
+      "column": 40,
+      "excerpt": "也连不上，请一起处理 | 多诉求澄清，请用户先选一个事项；没有自动执行两个任务。通过。 | 1.811333秒／4",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "测试结果表内澄清动作与未自动执行声明分层，保留证据表。"
+    },
+    {
+      "character": "；",
+      "line": 186,
+      "column": 63,
+      "excerpt": "发压测或 P99。模型具有随机性，重建后应重新执行同输入；多轮续接、歧义输入、注入、节点异常和跨租户访问未在本轮通",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 190,
+      "column": 8,
+      "excerpt": "步骤15：点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 190,
+      "column": 32,
+      "excerpt": "5：点击“发布配置”，版本号填写 v0.1.0，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 190,
+      "column": 48,
+      "excerpt": " v0.1.0，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单、不修改账号”，确认内部配置发布",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用的实际发布说明原文，保留可复现输入。"
+    },
+    {
+      "character": "；",
+      "line": 190,
+      "column": 55,
+      "excerpt": "，说明填写“IT意图路由及确定性SOP验证；5条测试通过；不创建工单、不修改账号”，确认内部配置发布。",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用的实际发布说明原文，保留可复现输入。"
+    },
+    {
+      "character": "“",
+      "line": 192,
+      "column": 8,
+      "excerpt": "步骤16：看到“智能体配置已发布成功！”后刷新页面，重新检查4节点／7连",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "；",
+      "line": 200,
+      "column": 28,
+      "excerpt": "恢复方法：失败时保留测试记录，修正变量和节点后重跑五条；不改 AS 路由。本例仅新增验证资产，如需撤销使用，停止",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 200,
+      "column": 67,
+      "excerpt": "例仅新增验证资产，如需撤销使用，停止接入该样例并保留记录；不要删除原 AS 场景。HiAgent 历史版本回滚行为",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 206,
+      "column": 33,
+      "excerpt": "盘点与契约 | 导出场景、意图、命中策略、技能与知识依赖；建立旧ID→新ID→版本映射。先选低风险场景和脱敏真实测",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 206,
+      "column": 85,
+      "excerpt": "脱敏真实测试集。 | 1名实施＋业务负责人，8–16工时；取决于资产数量。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 207,
+      "column": 58,
+      "excerpt": " API 接入工作流，验证鉴权、结果、异常与 Trace；不以固定答复替代工具回执。 | 1名实施＋接口负责人，1",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 207,
+      "column": 93,
+      "excerpt": "替代工具回执。 | 1名实施＋接口负责人，16–32工时；接口现成时。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 208,
+      "column": 43,
+      "excerpt": "Q、术语、知识ACL、记忆隔离、安全、门户与运营逐项验收；多Agent作为独立实验。 | 需8–16工时做差距细化",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 209,
+      "column": 32,
+      "excerpt": "子比对与逐场景切流 | 同输入对比 AS／HiAgent；审批通过后切单场景；错误、越权或 SLA 超限则将该场景",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 209,
+      "column": 42,
+      "excerpt": "| 同输入对比 AS／HiAgent；审批通过后切单场景；错误、越权或 SLA 超限则将该场景路由恢复 AS。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 209,
+      "column": 86,
+      "excerpt": "该场景路由恢复 AS。 | 每个首批场景8–16工时验证；观察窗口由业务SLA确定。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 213,
+      "column": 16,
+      "excerpt": "迁移不变量：源 AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "七项迁移不变量同层并列，分号有明确层级作用。"
+    },
+    {
+      "character": "；",
+      "line": 213,
+      "column": 25,
+      "excerpt": "迁移不变量：源 AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "七项迁移不变量同层并列，分号有明确层级作用。"
+    },
+    {
+      "character": "；",
+      "line": 213,
+      "column": 36,
+      "excerpt": " AS 资产保留；身份来自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入 prompt／日志；",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "七项迁移不变量同层并列，分号有明确层级作用。"
+    },
+    {
+      "character": "；",
+      "line": 213,
+      "column": 48,
+      "excerpt": "自可信网关；知识 ACL 不放宽；生产写操作先审批再执行；密钥不进入 prompt／日志；每次执行关联 reque",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "七项迁移不变量同层并列，分号有明确层级作用。"
+    },
+    {
+      "character": "；",
+      "line": 213,
+      "column": 64,
+      "excerpt": "；生产写操作先审批再执行；密钥不进入 prompt／日志；每次执行关联 request_id 与版本；切流有明确回",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "七项迁移不变量同层并列，分号有明确层级作用。"
+    },
+    {
+      "character": "；",
+      "line": 213,
+      "column": 86,
+      "excerpt": "mpt／日志；每次执行关联 request_id 与版本；切流有明确回退入口和负责人。若 AS 能否继续作为回退底",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "七项迁移不变量同层并列，分号有明确层级作用。"
+    },
+    {
+      "character": "；",
+      "line": 215,
+      "column": 99,
+      "excerpt": "、超时与取消。既有 session 和长期记忆先留原系统；迁移需要来源、主体、有效期、删除及授权审计。",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 217,
+      "column": 34,
+      "excerpt": "：区分模型失败、工具失败、授权失败、知识空召回及业务拒绝；高风险动作不自动重试。输入／输出拦截必须覆盖所有入口和工",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 225,
+      "column": 17,
+      "excerpt": "| 路由与兜底 | 五条样例已过；扩展脱敏真实请求，按意图分别报告混淆矩阵、漏识别、误入写",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 225,
+      "column": 49,
+      "excerpt": "敏真实请求，按意图分别报告混淆矩阵、漏识别、误入写分支率；多轮指代和歧义单列。 | 最小样例通过；大样本待验收。 ",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 225,
+      "column": 69,
+      "excerpt": "别、误入写分支率；多轮指代和歧义单列。 | 最小样例通过；大样本待验收。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 226,
+      "column": 47,
+      "excerpt": " 单Agent、串行两Agent、Skill＋Agent；核对入参、真实回执、失败传播与结果合并，记录每次子调用 ",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 227,
+      "column": 37,
+      "excerpt": " | 双诉求拆解、并行、依赖失败、重规划、最大步骤与取消；结果不得漏项，不得循环无终点。 | 仅澄清通过；自动协同",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 227,
+      "column": 61,
+      "excerpt": "骤与取消；结果不得漏项，不得循环无终点。 | 仅澄清通过；自动协同待验收。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 228,
+      "column": 32,
+      "excerpt": "AQ／知识／术语 | 命中、未命中、冲突、同词异义、撤权；空召回正确转流程，无权资料不可读，改写保留原意。 | 待",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 229,
+      "column": 31,
+      "excerpt": "记忆隔离 | 同人跨会话、不同用户、不同租户、删除及过期；错误主体不得召回，删除后不可继续引用。 | 待验收。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 230,
+      "column": 31,
+      "excerpt": "安全与写操作 | 注入、越权、敏感输出、绕审批、重复提交；未获授权不执行，幂等写只落一次，失败输出不谎报成功。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 231,
+      "column": 28,
+      "excerpt": "| 异常与恢复 | 模型／工具超时、权限过期、流程中断；可定位节点及版本，正确终止／转人工，路由回退后旧链路可运",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 231,
+      "column": 65,
+      "excerpt": "，正确终止／转人工，路由回退后旧链路可运行。 | 待验收；错误绑定修复已有证据。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 232,
+      "column": 41,
+      "excerpt": "O主体、身份映射、发布审批、灰度、日志、审计、Trace；跨平台调用均能关联同一请求与权限。 | 仅内部配置发布及",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 233,
+      "column": 33,
+      "excerpt": "与成本 | 分别测FAQ、意图节点、首token、整链路；固定并发与样本量，报告P50/P95/P99、超时率、T",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "；",
+      "line": 233,
+      "column": 82,
+      "excerpt": "99、超时率、Tokens与费用。 | 五次UI值已记录；性能门槛未验收。 |",
+      "valid_hit": true,
+      "disposition": "拟改",
+      "reason": "可拆为句号，原有转折、条件、状态和结论都保留；规则F。"
+    },
+    {
+      "character": "“",
+      "line": 235,
+      "column": 76,
+      "excerpt": "真实返回和异常兜底。它通过后，才能将 P21 方式1 从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    },
+    {
+      "character": "“",
+      "line": 235,
+      "column": 86,
+      "excerpt": "它通过后，才能将 P21 方式1 从“设计可表达”升级为“独立数字员工路由已验证”。本轮结论不覆盖该实验，也不覆盖",
+      "valid_hit": false,
+      "disposition": "保留",
+      "reason": "引用、界面名称、状态或讨论中的原措辞，不能根据引号密度增删。"
+    }
+  ]
+}

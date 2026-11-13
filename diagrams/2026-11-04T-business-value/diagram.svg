@@ -1,0 +1,226 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+  <defs>
+    <linearGradient id="companionFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF4E8"/>
+      <stop offset="100%" stop-color="#FFE2BE"/>
+    </linearGradient>
+    <linearGradient id="assetFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EAF8EF"/>
+      <stop offset="100%" stop-color="#CDEED8"/>
+    </linearGradient>
+    <linearGradient id="cloudFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EEF4FF"/>
+      <stop offset="100%" stop-color="#DCE8FF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#182230" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrowDark" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#344054"/>
+    </marker>
+    <marker id="arrowOrange" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#E97917"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3972D5"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1400" height="900" fill="#FCFBF8"/>
+
+  <text x="64" y="58" font-family="Noto Sans SC, sans-serif" font-size="30" font-weight="700" fill="#111827">
+    “另一个我”的双出口业务架构
+  </text>
+  <text x="64" y="92" font-family="Noto Sans SC, sans-serif" font-size="16" fill="#667085">
+    桌面端持续学习真人；个人侧形成数字分身，企业侧形成可治理、可投产的数字专家
+  </text>
+
+  <!-- Layer labels -->
+  <rect x="64" y="122" width="138" height="34" rx="17" fill="#F6E5D1"/>
+  <text x="133" y="145" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="16" font-weight="600" fill="#8A4610">
+    用户端 / 员工端
+  </text>
+  <line x1="218" y1="139" x2="1336" y2="139" stroke="#E7D7C4" stroke-width="2"/>
+
+  <!-- Human -->
+  <circle cx="150" cy="244" r="58" fill="#FFFFFF" stroke="#D6D9DF" stroke-width="2" filter="url(#shadow)"/>
+  <circle cx="150" cy="225" r="18" fill="#FFD7AD"/>
+  <path d="M116 276 C119 248 181 248 184 276" fill="#F0A35A"/>
+  <text x="150" y="326" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="20" font-weight="700" fill="#1F2937">
+    真人员工 / 专家
+  </text>
+  <text x="150" y="351" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">
+    正常工作，无需额外写教程
+  </text>
+
+  <!-- Real work signals -->
+  <g>
+    <rect x="258" y="181" width="112" height="38" rx="19" fill="#FFFFFF" stroke="#D6D9DF"/>
+    <text x="314" y="206" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="15" fill="#344054">消息沟通</text>
+    <rect x="258" y="229" width="112" height="38" rx="19" fill="#FFFFFF" stroke="#D6D9DF"/>
+    <text x="314" y="254" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="15" fill="#344054">任务执行</text>
+    <rect x="258" y="277" width="112" height="38" rx="19" fill="#FFFFFF" stroke="#D6D9DF"/>
+    <text x="314" y="302" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="15" fill="#344054">判断反馈</text>
+  </g>
+  <path d="M208 244 H240" fill="none" stroke="#344054" stroke-width="3" marker-end="url(#arrowDark)"/>
+  <path d="M382 248 H454" fill="none" stroke="#E97917" stroke-width="4" marker-end="url(#arrowOrange)"/>
+  <text x="418" y="231" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" font-weight="600" fill="#A84F0A">
+    持续学习
+  </text>
+
+  <!-- Another Me companion -->
+  <rect x="468" y="166" width="390" height="176" rx="38" fill="url(#companionFill)" stroke="#E97917" stroke-width="3" filter="url(#shadow)"/>
+  <rect x="502" y="199" width="94" height="72" rx="10" fill="#FFFFFF" stroke="#E9A463" stroke-width="2"/>
+  <rect x="513" y="210" width="72" height="46" rx="5" fill="#FFF1DF"/>
+  <line x1="530" y1="283" x2="568" y2="283" stroke="#E97917" stroke-width="4"/>
+  <text x="625" y="208" font-family="Noto Sans SC, sans-serif" font-size="17" font-weight="600" fill="#A84F0A">
+    桌面端工作伴侣
+  </text>
+  <text x="625" y="244" font-family="Noto Sans SC, sans-serif" font-size="28" font-weight="700" fill="#1F2937">
+    另一个我
+  </text>
+  <text x="625" y="275" font-family="Noto Sans SC, sans-serif" font-size="15" fill="#5F4630">
+    在真实工作中学习，不打断真人
+  </text>
+  <g>
+    <rect x="507" y="299" width="72" height="28" rx="14" fill="#FFFFFF"/>
+    <text x="543" y="319" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#7C3F0D">知识</text>
+    <rect x="587" y="299" width="72" height="28" rx="14" fill="#FFFFFF"/>
+    <text x="623" y="319" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#7C3F0D">技能</text>
+    <rect x="667" y="299" width="72" height="28" rx="14" fill="#FFFFFF"/>
+    <text x="703" y="319" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#7C3F0D">判断</text>
+    <rect x="747" y="299" width="78" height="28" rx="14" fill="#FFFFFF"/>
+    <text x="786" y="319" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#7C3F0D">边界</text>
+  </g>
+
+  <!-- Capability asset hub -->
+  <path d="M663 342 V382" fill="none" stroke="#E97917" stroke-width="4" marker-end="url(#arrowOrange)"/>
+  <polygon points="536,402 570,372 756,372 790,402 756,432 570,432"
+    fill="url(#assetFill)" stroke="#23824A" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="663" y="398" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="18" font-weight="700" fill="#14532D">
+    已验证能力资产
+  </text>
+  <text x="663" y="421" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#39714E">
+    能力快照 · 证据 · 适用条件 · 任务结果
+  </text>
+
+  <!-- Split paths -->
+  <path d="M536 402 H402 V478" fill="none" stroke="#23824A" stroke-width="4" marker-end="url(#arrowDark)"/>
+  <path d="M790 402 H998 V478" fill="none" stroke="#3972D5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+  <rect x="250" y="382" width="150" height="32" rx="16" fill="#EAF8EF"/>
+  <text x="325" y="404" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="15" font-weight="700" fill="#176238">
+    出口一｜为个人
+  </text>
+  <rect x="1000" y="382" width="150" height="32" rx="16" fill="#EEF4FF"/>
+  <text x="1075" y="404" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="15" font-weight="700" fill="#2858A5">
+    出口二｜为企业
+  </text>
+
+  <!-- Personal digital twin -->
+  <path d="M103 522 C103 481 137 448 179 448 H445 C487 448 521 481 521 522 V557 C521 599 487 632 445 632 H179 C137 632 103 599 103 557 Z"
+    fill="#FFFFFF" stroke="#23824A" stroke-width="3" filter="url(#shadow)"/>
+  <circle cx="174" cy="520" r="34" fill="#DDF3E5" stroke="#23824A" stroke-width="2"/>
+  <circle cx="174" cy="511" r="10" fill="#23824A"/>
+  <path d="M153 542 C155 524 193 524 195 542" fill="#23824A"/>
+  <circle cx="202" cy="492" r="12" fill="#FFFFFF" stroke="#23824A" stroke-width="2"/>
+  <text x="234" y="503" font-family="Noto Sans SC, sans-serif" font-size="16" font-weight="600" fill="#176238">
+    个人数字分身
+  </text>
+  <text x="234" y="537" font-family="Noto Sans SC, sans-serif" font-size="24" font-weight="700" fill="#1F2937">
+    接管一部分真人工作
+  </text>
+  <text x="234" y="568" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">
+    Oncall · 客户答疑 · 信息整理 · 固定流程
+  </text>
+  <rect x="151" y="589" width="321" height="27" rx="13.5" fill="#F0F8F3"/>
+  <text x="312" y="608" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#39714E">
+    执行结果持续反馈，个人数字分身越用越懂你
+  </text>
+
+  <!-- AgentSphere governance -->
+  <path d="M879 522 C879 481 913 448 955 448 H1282 C1324 448 1358 481 1358 522 V557 C1358 599 1324 632 1282 632 H955 C913 632 879 599 879 557 Z"
+    fill="url(#cloudFill)" stroke="#3972D5" stroke-width="3" filter="url(#shadow)"/>
+  <path d="M938 516 C938 493 956 475 979 475 C989 455 1014 449 1031 463 C1041 454 1056 451 1069 456 C1087 462 1098 480 1094 498 C1113 503 1127 520 1127 540 H938 Z"
+    fill="#FFFFFF" stroke="#3972D5" stroke-width="2"/>
+  <text x="1142" y="494" font-family="Noto Sans SC, sans-serif" font-size="16" font-weight="600" fill="#2858A5">
+    数字员工管控端
+  </text>
+  <text x="1142" y="528" font-family="Noto Sans SC, sans-serif" font-size="25" font-weight="700" fill="#1F2937">
+    AgentSphere
+  </text>
+  <text x="1142" y="557" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#52647E">
+    管理、应用和持续治理数字员工
+  </text>
+  <g>
+    <rect x="934" y="581" width="82" height="28" rx="14" fill="#FFFFFF"/>
+    <text x="975" y="600" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#2858A5">身份权限</text>
+    <rect x="1026" y="581" width="82" height="28" rx="14" fill="#FFFFFF"/>
+    <text x="1067" y="600" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#2858A5">技能认证</text>
+    <rect x="1118" y="581" width="82" height="28" rx="14" fill="#FFFFFF"/>
+    <text x="1159" y="600" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#2858A5">绩效评估</text>
+    <rect x="1210" y="581" width="96" height="28" rx="14" fill="#FFFFFF"/>
+    <text x="1258" y="600" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#2858A5">调度与审计</text>
+  </g>
+
+  <!-- Production layer -->
+  <rect x="64" y="666" width="138" height="34" rx="17" fill="#EAEFF8"/>
+  <text x="133" y="689" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="16" font-weight="600" fill="#344B73">
+    任务投产层
+  </text>
+  <line x1="218" y1="683" x2="1336" y2="683" stroke="#D5DCE8" stroke-width="2"/>
+
+  <path d="M1118 632 V710 H1074" fill="none" stroke="#3972D5" stroke-width="4" marker-end="url(#arrowBlue)"/>
+  <rect x="188" y="714" width="1120" height="120" rx="36" fill="#FFFFFF" stroke="#98A2B3" stroke-width="2.5" filter="url(#shadow)"/>
+  <text x="238" y="747" font-family="Noto Sans SC, sans-serif" font-size="18" font-weight="700" fill="#1F2937">
+    任务发布台 / AI Team
+  </text>
+  <text x="238" y="775" font-family="Noto Sans SC, sans-serif" font-size="14" fill="#667085">
+    管理员发布目标，系统按任务需要组织数字员工完成交付
+  </text>
+
+  <g>
+    <circle cx="558" cy="773" r="35" fill="#FFF1DF" stroke="#E97917" stroke-width="2"/>
+    <text x="558" y="769" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" font-weight="700" fill="#8A4610">发布</text>
+    <text x="558" y="789" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#8A4610">任务</text>
+
+    <path d="M597 773 H661" fill="none" stroke="#344054" stroke-width="3" marker-end="url(#arrowDark)"/>
+    <circle cx="704" cy="773" r="35" fill="#EEF4FF" stroke="#3972D5" stroke-width="2"/>
+    <text x="704" y="769" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" font-weight="700" fill="#2858A5">按才能</text>
+    <text x="704" y="789" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#2858A5">匹配</text>
+
+    <path d="M743 773 H807" fill="none" stroke="#344054" stroke-width="3" marker-end="url(#arrowDark)"/>
+    <circle cx="850" cy="773" r="35" fill="#EAF8EF" stroke="#23824A" stroke-width="2"/>
+    <circle cx="838" cy="765" r="7" fill="#23824A"/>
+    <circle cx="850" cy="755" r="7" fill="#23824A"/>
+    <circle cx="862" cy="765" r="7" fill="#23824A"/>
+    <text x="850" y="796" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" font-weight="700" fill="#176238">自由组队</text>
+
+    <path d="M889 773 H953" fill="none" stroke="#344054" stroke-width="3" marker-end="url(#arrowDark)"/>
+    <circle cx="996" cy="773" r="35" fill="#F3F0FF" stroke="#7955C8" stroke-width="2"/>
+    <text x="996" y="769" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" font-weight="700" fill="#5A3B9E">协同</text>
+    <text x="996" y="789" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#5A3B9E">交付</text>
+
+    <path d="M1035 773 H1099" fill="none" stroke="#344054" stroke-width="3" marker-end="url(#arrowDark)"/>
+    <circle cx="1142" cy="773" r="35" fill="#F5F6F7" stroke="#667085" stroke-width="2"/>
+    <text x="1142" y="769" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="14" font-weight="700" fill="#344054">结果</text>
+    <text x="1142" y="789" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#344054">验收</text>
+  </g>
+
+  <!-- Feedback loops -->
+  <path d="M1142 738 V690 H1268 V632" fill="none" stroke="#3972D5" stroke-width="2.5" stroke-dasharray="8 7" marker-end="url(#arrowBlue)"/>
+  <text x="1246" y="708" text-anchor="end" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#3972D5">
+    绩效与任务证据回流
+  </text>
+  <path d="M312 632 V650 H150 V365" fill="none" stroke="#23824A" stroke-width="2.5" stroke-dasharray="8 7" marker-end="url(#arrowDark)"/>
+  <text x="222" y="650" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="13" fill="#23824A">
+    工作结果反馈
+  </text>
+
+  <rect x="340" y="853" width="720" height="34" rx="17" fill="#1F2937"/>
+  <text x="700" y="876" text-anchor="middle" font-family="Noto Sans SC, sans-serif" font-size="16" font-weight="600" fill="#FFFFFF">
+    数字员工负责可验证的执行工作，真人负责目标、判断、例外与领导
+  </text>
+</svg>

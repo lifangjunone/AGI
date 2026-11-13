@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="880" viewBox="0 0 1440 880">
+<rect width="1440" height="880" fill="#faf7f0"/>
+<g font-family="Noto Sans SC, sans-serif" fill="#242424">
+<text x="60" y="65" font-size="32" font-weight="bold">HiAgent 承接 AS：先迁受控执行，再验收完整总控</text>
+<text x="60" y="106" font-size="18">实线：本轮最小闭环已验证　／　虚线：目标设计，需补建或单独验收</text>
+<path d="M150 230H360M650 230H870M1110 230H1240" stroke="#2864dc" stroke-width="4" fill="none"/>
+<circle cx="125" cy="230" r="65" fill="#242424"/>
+<text x="125" y="224" text-anchor="middle" font-size="21" fill="#ffffff">用户输入</text>
+<text x="125" y="254" text-anchor="middle" font-size="16" fill="#ffffff">Start/query</text>
+<rect x="360" y="165" width="290" height="130" rx="24" fill="#e9effc" stroke="#2864dc" stroke-width="2"/>
+<text x="505" y="210" text-anchor="middle" font-size="24" font-weight="bold">意图识别</text>
+<text x="505" y="250" text-anchor="middle" font-size="18">4 类业务意图＋其他兜底</text>
+<rect x="870" y="165" width="240" height="130" rx="24" fill="#e9effc" stroke="#2864dc" stroke-width="2"/>
+<text x="990" y="211" text-anchor="middle" font-size="24" font-weight="bold">确定性 SOP</text>
+<text x="990" y="251" text-anchor="middle" font-size="18">代码返回诊断说明</text>
+<circle cx="1300" cy="230" r="65" fill="#2864dc"/>
+<text x="1300" y="224" text-anchor="middle" font-size="22" fill="#ffffff">End</text>
+<text x="1300" y="254" text-anchor="middle" font-size="16" fill="#ffffff">回复用户</text>
+<path d="M505 295V390H220V470M505 390H680V470M990 295V470M1300 295V470" stroke="#a66d20" stroke-width="3" stroke-dasharray="9 7" fill="none"/>
+<rect x="60" y="470" width="330" height="170" rx="20" fill="#fff2db" stroke="#a66d20" stroke-dasharray="9 7"/>
+<text x="90" y="514" font-size="23" font-weight="bold">输入与知识快路径</text>
+<text x="90" y="553" font-size="18">输入安全 → 术语与改写</text>
+<text x="90" y="588" font-size="18">FAQ 命中 → 直接答复</text>
+<text x="90" y="623" font-size="16">需验证顺序、阈值和知识权限</text>
+<rect x="430" y="470" width="330" height="170" rx="20" fill="#fff2db" stroke="#a66d20" stroke-dasharray="9 7"/>
+<text x="460" y="514" font-size="23" font-weight="bold">多意图与自主规划</text>
+<text x="460" y="553" font-size="18">计划 → SubAgent／Skill</text>
+<text x="460" y="588" font-size="18">执行观察 → 验收合并 → 终止</text>
+<text x="460" y="623" font-size="16">本轮仅澄清；未验证自动协同</text>
+<rect x="800" y="470" width="280" height="170" rx="20" fill="#fff2db" stroke="#a66d20" stroke-dasharray="9 7"/>
+<text x="830" y="514" font-size="23" font-weight="bold">真实业务执行</text>
+<text x="830" y="553" font-size="18">Agent／工作流／HTTP</text>
+<text x="830" y="588" font-size="18">授权、审批、幂等与回执</text>
+<text x="830" y="623" font-size="16">本轮未创建工单或改账号</text>
+<rect x="1120" y="470" width="260" height="170" rx="20" fill="#fff2db" stroke="#a66d20" stroke-dasharray="9 7"/>
+<text x="1150" y="514" font-size="23" font-weight="bold">输出与运营</text>
+<text x="1150" y="553" font-size="18">输出安全、人工兜底</text>
+<text x="1150" y="588" font-size="18">统一门户、Trace、灰度</text>
+<text x="1150" y="623" font-size="16">需验证与 AS 的治理差异</text>
+<rect x="60" y="725" width="1320" height="100" rx="20" fill="#eeebe4"/>
+<text x="90" y="766" font-size="22" font-weight="bold">跨链路不变量</text>
+<text x="90" y="804" font-size="19">可信身份与知识 ACL　／　会话与长期记忆隔离　／　资产版本映射　／　审计与可回滚路由</text>
+</g>
+</svg>

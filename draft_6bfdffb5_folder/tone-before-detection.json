@@ -1,0 +1,398 @@
+{
+ "meta": {
+  "篇数": 1,
+  "万汉字": 0.6,
+  "段数": 59,
+  "小标题数": 14
+ },
+ "density": {
+  "翻案腔": 0.0,
+  "提示语冒号": 0.0,
+  "起手式": 0.0,
+  "当…时从句": 0.0,
+  "前置话题壳": 0.0,
+  "句首连接词": 0.0,
+  "顿号并列≥3": 11.413,
+  "过长前置定语": 0.0,
+  "拟人化喻体": 0.0,
+  "概括替代(已否决)": 0.0,
+  "序数词小标题(已否决)": 0.0,
+  "「这意味着」复述(已否决)": 0.0,
+  "空转句引列表(已否决)": 0.0
+ },
+ "char_density": {
+  "破折号": 0.0,
+  "分号": 17.036,
+  "引号": 5.458
+ },
+ "hits": {
+  "翻案腔": [],
+  "提示语冒号": [],
+  "起手式": [],
+  "当…时从句": [],
+  "前置话题壳": [],
+  "句首连接词": [],
+  "顿号并列≥3": [
+   {
+    "file": "tone-before.md",
+    "line": 7,
+    "excerpt": "真实业务执行、跨智能体协同、权限与记忆隔离"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 11,
+    "excerpt": "明确意图、显式拓扑、确定性输出"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 12,
+    "excerpt": "Agent／Skill 调用、FAQ、知识"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 12,
+    "excerpt": "记忆、安全、业务 API"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 13,
+    "excerpt": " | 自然语言多数字员工编排、多意图自动计划、跨平台 Hub"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 37,
+    "excerpt": "AS 场景对象、注册、优先级和发布策略需重建"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 38,
+    "excerpt": "命中后 SOP | 显式节点、代码、工作流和业务工具表达步骤"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 39,
+    "excerpt": "nt 混编 | 候选为智能体、工作流、插件"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 39,
+    "excerpt": "须核对鉴权、入参、流式返回"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 41,
+    "excerpt": "规划、并行、观察"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 44,
+    "excerpt": "阈值、空召回、冲突及响应时延待验收"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 46,
+    "excerpt": "提取规则、跨会话读取、删除和租户隔离待验证"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 47,
+    "excerpt": "AS 资料、切分、索引及权限不因换平台自动迁移"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 48,
+    "excerpt": " | 需实现统一契约、发现、版本"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 50,
+    "excerpt": "ent 运行底座＋必要的门户、资产目录、审计与灰度适配"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 50,
+    "excerpt": "SSO、身份映射、审批"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 51,
+    "excerpt": "99<1s | 区分 FAQ、意图识别、首 token 和全链路结束"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 59,
+    "excerpt": " | 账号解锁、权限授予、工单创建"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 59,
+    "excerpt": "验证审批、幂等、真实回执与失败兜底"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 61,
+    "excerpt": " | 不能承诺自动规划、并行委派、观察"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 61,
+    "excerpt": " | 完成多Agent依赖、失败恢复、最大步骤"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 62,
+    "excerpt": " | 补建任务计划、依赖、执行状态与结果合并"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 63,
+    "excerpt": " | 不能保证 AS、HiAgent、第三方资产自动发现"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 63,
+    "excerpt": " | 完成资产清单、ID及版本映射、接口适配与跨平台调用验收"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 64,
+    "excerpt": "| 不能承诺 FAQ 快路径、术语改写正确性、原知识效果或撤权后不召回"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 64,
+    "excerpt": "核对阈值、冲突、空召回"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 65,
+    "excerpt": " | 不能保证跨会话记忆、用户／租户隔离、过期删除和 AS 历史记忆无"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 65,
+    "excerpt": "验证读取、删除、撤权和跨租户隔离"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 66,
+    "excerpt": " 不能承诺提示注入及越权防护、SSO身份映射、发布审批"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 66,
+    "excerpt": "统一门户、跨平台Trace、灰度及版本回滚达到 AS 同"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 66,
+    "excerpt": "完成安全、审计、渠道发布及实际恢复演练"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 67,
+    "excerpt": "不能据此保证并发、可用性、成本或整链路 SLA"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 75,
+    "excerpt": "目标顺序为输入安全、术语与改写、FAQ 快路径"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 75,
+    "excerpt": "意图识别、受控执行或多意图规划、结果合并"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 75,
+    "excerpt": "可信身份、知识权限、记忆隔离"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 80,
+    "excerpt": "核心 SOP 的步骤、终止、重试与审批更难稳定验收"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 83,
+    "excerpt": "执行结果统一为 status、data、evidence"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 91,
+    "excerpt": "本例不使用企业密码、不访问业务数据库、不创建工单"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 113,
+    "excerpt": "本轮默认意图节点超时360秒、重试0、异常忽略为无"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 117,
+    "excerpt": "| 账号访问 | 登录失败、账号锁定、密码忘记"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 118,
+    "excerpt": "PN网络 | VPN连接失败、网络无法接通、网络诊断 |"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 119,
+    "excerpt": " 权限申请 | 软件安装许可、系统新增访问权限、审批申请 |"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 120,
+    "excerpt": "求澄清 | 一次同时要求账号、VPN、权限等两个或以上独立事项"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 130,
+    "excerpt": "至少配置 key0（Str）、key1（Str）、key2（Arr<Str>）"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 154,
+    "excerpt": "将账号访问、VPN网络、权限申请"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 172,
+    "excerpt": "官方重置入口、身份核验、未执行账号变更"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 173,
+    "excerpt": "普通网页、版本报错、配置"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 174,
+    "excerpt": "请财务系统访问权限 | 用途、最小权限期限、审批"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 186,
+    "excerpt": "多轮续接、歧义输入、注入"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 206,
+    "excerpt": "资产盘点与契约 | 导出场景、意图、命中策略"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 207,
+    "excerpt": "验证鉴权、结果、异常与 Trace"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 208,
+    "excerpt": " 总控与治理补齐 | FAQ、术语、知识ACL"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 208,
+    "excerpt": "记忆隔离、安全、门户与运营逐项验收"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 215,
+    "excerpt": "逐项验证 JSON 契约、错误码、流式协议"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 215,
+    "excerpt": "迁移需要来源、主体、有效期"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 217,
+    "excerpt": "区分模型失败、工具失败、授权失败"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 221,
+    "excerpt": "按相同模型、数据、权限和测量范围比较 AS 与"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 225,
+    "excerpt": "按意图分别报告混淆矩阵、漏识别、误入写分支率"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 226,
+    "excerpt": "Skill | 单Agent、串行两Agent、Skill＋Agent"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 226,
+    "excerpt": "核对入参、真实回执、失败传播与结果合并"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 227,
+    "excerpt": "自主与多意图 | 双诉求拆解、并行、依赖失败"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 228,
+    "excerpt": "FAQ／知识／术语 | 命中、未命中、冲突"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 229,
+    "excerpt": "| 记忆隔离 | 同人跨会话、不同用户、不同租户"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 230,
+    "excerpt": "| 安全与写操作 | 注入、越权、敏感输出"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 231,
+    "excerpt": "常与恢复 | 模型／工具超时、权限过期、流程中断"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 232,
+    "excerpt": " 门户与治理 | SSO主体、身份映射、发布审批"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 232,
+    "excerpt": "灰度、日志、审计"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 233,
+    "excerpt": "性能与成本 | 分别测FAQ、意图节点、首token"
+   },
+   {
+    "file": "tone-before.md",
+    "line": 233,
+    "excerpt": "报告P50/P95/P99、超时率、Tokens与费用"
+   }
+  ],
+  "过长前置定语": [],
+  "拟人化喻体": [],
+  "概括替代(已否决)": [],
+  "序数词小标题(已否决)": [],
+  "「这意味着」复述(已否决)": [],
+  "空转句引列表(已否决)": []
+ },
+ "syn_hits": [],
+ "structure": {
+  "句长CV": 0.544,
+  "节长CV": 0.411,
+  "小标题/千字": 2.316,
+  "两句同构/百段": 1.69,
+  "三句同构/百段": 0.0,
+  "mtld粗估": 832
+ }
+}
