@@ -46,8 +46,13 @@
 | [`runbooks/CROSS_CLOUD_MIGRATION.md`](runbooks/CROSS_CLOUD_MIGRATION.md) | 跨云迁移标准步骤和回滚判断 |
 | [`runbooks/REVERSE_SSH_TUNNELS.md`](runbooks/REVERSE_SSH_TUNNELS.md) | 隧道检查、重启和故障诊断 |
 | [`runbooks/SHARED_NGINX.md`](runbooks/SHARED_NGINX.md) | 共享 Nginx 的强制安全规则 |
+| [`runbooks/PLATFORM_TLS.md`](runbooks/PLATFORM_TLS.md) | 平台共享证书来源、自动续签与过期恢复 |
 
 ## 已迁移
+
+状态照已于 2026-11-18 部署到腾讯云，公网入口
+`https://lifeyoume.icu/status-capsule/`。见
+[`状态照部署文档`](services/status-capsule-photo.md)；当前未配置真实图像模型。
 
 | 产品 | 公网入口 | 实际运行位置 | 状态 |
 | --- | --- | --- | --- |
@@ -55,6 +60,7 @@
 | MeYou | `https://meyou.lifeyoume.icu/` | 腾讯云 | 已迁移并验证 |
 | LifeYouMe MaaS | `https://maas.lifeyoume.icu/` | 腾讯云 | 已部署；DeepSeek Chat、CPU TTS 与应用模型授权在线 |
 | MapProof | `https://lifeyoume.icu/mapproof/` | 腾讯云 | 已部署并验证；浏览器本地验图，不保存输入 |
+| 命运分身今日时运 | `https://lifeyoume.icu/destiny-persona/` | 腾讯云 | 六十甲子今日卡与六面解签；0.5.1 支付回跳自动确认与到账恢复，正式收款待生产商户配置；不保存原始输入 |
 
 ## 仍保留在阿里云
 

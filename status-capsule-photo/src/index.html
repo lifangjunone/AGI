@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>状态照｜把自己，收藏起来。</title>
+  <link rel="stylesheet" href="/status-capsule/styles.css?v=3">
+</head>
+<body>
+  <a class="skip-link" href="#creator">跳到制作区</a>
+  <main class="shell">
+    <header class="product-nav">
+      <a href="/status-capsule/" class="brand">状态照<span>把自己，收藏起来。</span></a>
+      <span class="nav-note">你的照片，你的专属角色</span>
+    </header>
+    <div class="workspace">
+      <section class="gallery" aria-label="风格参考预览">
+        <div class="gallery-heading"><p>你的另一种样子</p><h1>今天，想成为<br>哪一个自己？</h1></div>
+        <div class="picture-stage">
+          <figure class="picture rear"><img src="/status-capsule/assets/galaxy-display-v1.webp" alt="紫色银河收藏卡风格参考" width="480" height="720" decoding="async"></figure>
+          <figure class="picture main-picture"><img src="/status-capsule/assets/run-display-v1.webp" alt="蓝绿色流光收藏卡风格参考" width="480" height="720" decoding="async" fetchpriority="high"></figure>
+          <figure class="picture oil"><img src="/status-capsule/assets/oil-display-v1.webp" alt="星夜厚涂油画风格参考" width="480" height="480" decoding="async"></figure>
+        </div>
+        <footer class="gallery-footer"><span>风格参考图，非用户生成结果</span><span>收藏卡 / 状态盲盒 / 油画</span></footer>
+      </section>
+      <section class="creator" id="creator" aria-labelledby="creator-title">
+        <div class="creator-heading"><p>开始制作</p><h2 id="creator-title">一张照片，<br>一个新版本的你。</h2><span>上传自己的照片，挑一个喜欢的风格。</span></div>
+        <div class="upload-area">
+          <label class="upload" for="photo-input" data-dropzone>
+            <input type="file" accept="image/png,image/jpeg,image/webp" id="photo-input" aria-describedby="photo-help photo-error" data-photo-input>
+            <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="10" width="26" height="23" rx="4"/><path d="m14 10 3-4h6l3 4"/><circle cx="20" cy="21" r="6"/></svg>
+            <strong>上传你的照片</strong><small id="photo-help">清晰正脸或半身照 · 最大 5MB</small>
+          </label>
+          <div class="uploaded-photo" data-preview hidden><img alt="你上传的照片" data-preview-image><div><strong>照片已就位</strong><span>保留你的五官、发型与气质</span><button class="text-button" type="button" data-clear-photo>换一张照片</button></div></div>
+        </div>
+        <p class="field-error" id="photo-error" role="alert" data-photo-error hidden></p>
+        <div class="style-heading"><h3>选择风格</h3><span data-selected-count>可以多选</span></div>
+        <div class="styles" data-template-grid aria-label="选择生成风格"></div>
+        <details class="preferences"><summary>人物与穿搭偏好<span>可选</span></summary><div class="fields">
+          <label>想保留的气质<input data-vibe maxlength="80" value="自然、自信、轻松，保留我的发型"></label>
+          <label>性别表达<input data-gender maxlength="60" value="保持参考照片的性别表达"></label>
+          <label>服装偏好<input data-outfit maxlength="80" value="黑色上衣、白色阔腿裤、白色鞋"></label>
+        </div></details>
+        <button class="primary-button" type="button" data-generate disabled>生成我的状态照</button>
+        <p class="status" role="status" aria-live="polite" data-status>正在加载风格…</p>
+        <p class="privacy-note">原图不在服务端保存；返回修改会使用本机临时草稿。</p>
+      </section>
+    </div>
+    <footer class="page-footer"><span>每一种状态，都值得被收藏。</span><button class="text-button" data-clear-session>清除本机照片与草稿</button></footer>
+  </main>
+  <div class="toast" role="status" data-toast></div>
+  <script type="module" src="/status-capsule/app.mjs?v=4"></script>
+</body>
+</html>

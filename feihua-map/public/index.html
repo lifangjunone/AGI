@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>肥话地图 Lite｜播客地点索引</title>
+    <meta name="description" content="把播客里一闪而过的餐厅、咖啡店和城市地点，整理成下一次能去的地图。" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">PODCAST MAP LITE</p>
+        <h1>把播客里一闪而过的店，变成下次能去的地图。</h1>
+        <p class="lede">
+          这里不是完整地图服务，而是一个轻量的“节目地点索引”。搜索示例地点，或粘贴节目笔记，让 MaaS 抽出城市、店名和提及理由。
+        </p>
+      </section>
+
+      <section class="layout" aria-label="肥话地图工作台">
+        <aside class="sidebar">
+          <label for="q">搜索地点</label>
+          <input id="q" placeholder="城市、菜系、关键词" />
+
+          <div class="list-head">
+            <strong>地点卡片</strong>
+            <span id="count">0 个地点</span>
+          </div>
+          <div id="list" class="place-list"></div>
+
+          <label for="notes">节目笔记抽取</label>
+          <textarea id="notes" placeholder="例如：这期聊到上海武康路附近的咖啡店、成都玉林的火锅、广州老城区早茶……"></textarea>
+          <button id="extract" type="button">让 MaaS 抽取地点</button>
+          <p id="tip" class="tip" aria-live="polite">抽取结果会追加到地图上。</p>
+        </aside>
+
+        <div class="map-card">
+          <div class="map-toolbar">
+            <span>虚拟播客地图</span>
+            <strong id="active-city">全部城市</strong>
+          </div>
+          <div class="map" id="map" aria-label="地点分布图"></div>
+        </div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Typewriter Room｜云端打字机</title>
+    <meta
+      name="description"
+      content="一个复古网页打字机小房间：敲字、换行、听叮声，把短短一句话留在纸上。"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="room">
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro__copy">
+          <p class="eyebrow">TYPEWRITER ROOM</p>
+          <h1 id="page-title">把一句话敲成一张有声音的纸。</h1>
+          <p class="lede">
+            不是文档编辑器，也不是效率工具。这里只保留纸张、按键、换行叮声和一点点复古的慢。
+          </p>
+        </div>
+        <aside class="note" aria-label="玩法说明">
+          <span class="note__pin" aria-hidden="true"></span>
+          <p>点纸张开始输入。按 Enter 会叮一下；也可以让它随机给你一句开场白。</p>
+        </aside>
+      </section>
+
+      <section class="desk" aria-label="网页打字机">
+        <div class="paper-wrap">
+          <div class="paper-shadow" aria-hidden="true"></div>
+          <div
+            class="paper"
+            id="paper"
+            contenteditable="true"
+            role="textbox"
+            aria-label="打字纸张"
+            spellcheck="false"
+          >把今天的一个念头敲在这里。</div>
+        </div>
+
+        <div class="typewriter" aria-hidden="true">
+          <div class="carriage">
+            <span></span>
+          </div>
+          <div class="nameplate">LYM PORTABLE</div>
+          <div class="keys" id="keys"></div>
+          <div class="spacebar"></div>
+        </div>
+
+        <div class="toolbar" aria-label="打字机操作">
+          <button id="ding" type="button">换行叮一下</button>
+          <button id="sample" type="button">给我一句开场</button>
+          <button id="clear" type="button" class="button-ghost">换一张纸</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

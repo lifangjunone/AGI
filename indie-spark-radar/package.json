@@ -1,0 +1,15 @@
+{
+  "name": "indie-spark-radar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "个人小项目灵感雷达：发现、筛选并用 LifeYouMe MaaS 生成可复刻方向。",
+  "scripts": {
+    "dev": "PORT=45520 node --watch server.mjs",
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,18 @@
+[Unit]
+Description=AI Visibility Clinic
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/data/app/ai-visibility-clinic/current
+EnvironmentFile=/etc/ai-visibility-clinic/app.env
+ExecStart=/usr/bin/python3 app/server.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

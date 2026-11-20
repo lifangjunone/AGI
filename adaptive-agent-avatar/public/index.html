@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Adaptive Agent Avatar｜会换装的助手头像</title>
+    <meta name="description" content="输入任务主题，Agent 头像会根据场景自动换成工程师、厨师、旅行向导、老师或创意导演。" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">ADAPTIVE AGENT AVATAR</p>
+        <h1>任务一变，Agent 的气质也跟着变。</h1>
+        <p class="lede">
+          这不是普通头像，而是一个会读场景的助手面具。输入你要它做的事，MaaS 会判断最合适的角色，并给出换装理由。
+        </p>
+      </section>
+
+      <section class="lab" aria-label="Agent 头像实验室">
+        <div class="stage">
+          <div class="role-chip" id="role-chip">等待换装</div>
+          <div class="avatar creative" id="avatar" aria-hidden="true">
+            <div class="halo"></div>
+            <div class="hat"></div>
+            <div class="head">
+              <span class="eye left"></span>
+              <span class="eye right"></span>
+              <span class="mouth"></span>
+            </div>
+            <div class="body"></div>
+            <div class="tool tool-a"></div>
+            <div class="tool tool-b"></div>
+          </div>
+        </div>
+
+        <div class="console">
+          <label for="prompt">今天让 Agent 帮你做什么？</label>
+          <textarea id="prompt">帮我分析一个网站的 AI 可见性，并给出修复建议</textarea>
+          <div class="quick" aria-label="示例任务">
+            <button type="button" data-sample="帮我 debug 一个接口 500，并整理部署排查步骤">工程师</button>
+            <button type="button" data-sample="帮我安排三天成都旅行路线，想吃火锅和逛街">旅行</button>
+            <button type="button" data-sample="帮我把这段学习笔记讲给新人听，要有例子">老师</button>
+            <button type="button" data-sample="帮我给晚餐设计三道简单但有记忆点的菜">厨师</button>
+          </div>
+          <button id="dress" type="button" class="primary">识别主题并换装</button>
+          <div id="result" class="result" aria-live="polite">
+            <strong>等待识别…</strong>
+            <span>输入任务后，我会切换角色并解释原因。</span>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>

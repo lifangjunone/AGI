@@ -1,0 +1,10 @@
+{
+  "name": "ai-visibility-clinic",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI 可见性体检：检测 robots、AI bot、llms.txt、noindex 和可读文本，并用 LifeYouMe MaaS 生成建议。",
+  "scripts": {
+    "test": "python3 -m unittest discover -s tests",
+    "dev": "HOST=127.0.0.1 PORT=45530 BASE_PATH=/ai-visibility python3 app/server.py"
+  }
+}

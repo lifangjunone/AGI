@@ -4,6 +4,12 @@
 
 ## 入口与运行位置
 
+2026-11-16：修复平台共享证书过期，证书续签至 2027-02-14，
+启用每日两次 `lifeyoume-platform-cert-renew.timer`。原每日任务维护的是
+另一个双域名证书，未覆盖实际 platform lineage。详见
+[`平台共享 TLS`](../runbooks/PLATFORM_TLS.md)。共享 Nginx 配置未变化，
+只 reload，公网 TLS 严格校验和代表性产品回归通过。
+
 | 角色 | 公网入口 | 阿里云本地端口 | systemd 服务 |
 | --- | --- | ---: | --- |
 | Portal | `https://lifeyoume.icu/` | 8800 | `lifeyoume-platform@portal.service` |

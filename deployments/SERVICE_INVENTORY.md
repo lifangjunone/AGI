@@ -1,6 +1,6 @@
 # 生产服务部署清单
 
-最后核验：2026-11-11（Asia/Shanghai）
+最后核验：2026-11-16（Asia/Shanghai）
 
 状态说明：
 
@@ -10,6 +10,11 @@
 - `待确认`：运行中但未确认是否仍有真实公网流量。
 
 ## 已迁移到腾讯云
+
+状态照新增于 2026-11-18：[`服务文档`](services/status-capsule-photo.md)。
+入口 `/status-capsule/`，端口 `45620`，Tencent systemd + Docker，
+镜像 `status-capsule-photo:20261118-webp`。已修复 PNG 权限和不完整传输导致的 502；首屏图片压缩至 232KB（约减少99%）、分离缩略图与展柜/详情预览；收藏卡展柜与独立结果页在线；
+未配置图像模型，目前仅返回生成提示词。首页/结果页/健康检查及八个既有入口回归 200。
 
 | 服务 | 公网地址 | 入口端口 | 腾讯云运行方式 | 权威数据 | 状态 |
 | --- | --- | ---: | --- | --- | --- |
@@ -24,6 +29,9 @@
 | MapProof | `/mapproof/` | 45210 | systemd + Docker | 无服务端业务数据 | 腾讯云；Mermaid 本地渲染、规则验图、关键路径、反馈环复核、工具化审稿台 UI 和 Markdown 报告，release `20261102T173358`，UI/UX 工作台重构已上线（2026-11-02） |
 | Astro Fate Matrix | `/astro-fate/` | 45330 | systemd + Docker | LifeYouMe MaaS、JSON 测算记录、Numerologist 术数引擎 | 腾讯云；多维度星座/八字/姻缘/桃花方位 Web 产品，MaaS 应用 `astro-fate` 授权 `lym-chat-quality`，已上线星点网省份热度、后台测算记录统计、游客 3 次免费额度与 LifeYouMe 注册/Billing 引导；已融合自有 `Numerologist_skills` 紫微斗数/奇门遁甲专业引擎；首页已升级缘分方向引导、四维合参星盘融合、真实中国国界 SVG 点亮版星点网、营销热度指数和折叠排行；公网 `/astro-fate/api/analyze` 已确认 `source=maas` 且 `professional.label=四维合参`（2026-11-11） |
 | 牛马嘴替 | `/niuma/` | 45410 | systemd + Docker | LifeYouMe MaaS、匿名使用统计 JSON | 腾讯云；中文打工人发疯解压 H5，已接入 MaaS 应用 `niuma-mouthpiece` 授权 `lym-chat-quality`；当前为五种不同输入方式的办公室解压关卡（18:00 下班冲刺、碎需求、戳会议、退黑锅、长按驱幽灵），包含非血腥卡通攻击手感、连击与“怒气蓄力—全场清退”大招。第 1 关是 18 秒三跑道电梯逃生：躲开临时会议、老板@你等随机障碍，赶在电梯关门前逃离。MaaS 嘴替是每关可选战利品，领取才计入匿名访客前 20 次免费额度，第 21 次返回 402；统计不保存原文。Billing 当前未启用真实 checkout，额度耗尽页准确标注“付费开通正在准备”。release `20261112T134606Z` 公网完整通关、响应式和代表性既有入口回归通过（2026-11-12） |
+| AI 可见性体检 | `/ai-visibility/` | 45530 | systemd + Python | LifeYouMe MaaS、无持久业务数据 | 腾讯云；中文 AI 搜索/Agent 可见性检测工具，检查公开 URL 的页面状态、robots.txt 中 GPTBot/ClaudeBot/PerplexityBot/Google-Extended/Bytespider 等规则、meta robots、canonical、llms.txt 和可读正文长度；通过 MaaS `lym-chat-quality` 生成中文诊断、优先修复建议和 llms.txt 草稿，模型失败时本地降级。Aliyun 共享 Nginx 仅追加 `/ai-visibility/` scoped location；公网检测 `https://lifeyoume.icu/` 返回 `diagnosis.source=maas`、评分 96；代表性既有入口回归 200（2026-11-13） |
+| Indie Five | `/typewriter/`、`/mind-blobs/`、`/emoji-motion/`、`/agent-avatar/`、`/feihua-map/` | 45540 | systemd + Python | LifeYouMe MaaS、无持久业务数据 | 腾讯云；五个从个人小项目方向复刻出的独立子项目：复古打字机互动玩具、非战斗 Blob 花园小游戏、Emoji 微动效实验室、会随主题换装的 Agent 头像、播客地点地图 Lite。`/emoji-motion/`、`/agent-avatar/`、`/feihua-map/` 的建议/识别/抽取接口已接入 MaaS `lym-chat-quality`；公网五路径 200，三个 API `source=maas`，代表性既有入口回归 200（2026-11-13） |
+| 命运分身今日时运 | `/destiny-persona/` | 45560 | systemd + Python venv | 匿名免费/付费额度、订单、脱敏记录 JSON | 腾讯云；0.5.1 六十甲子今日卡与支付宝次数包版。每访客免费 3 次，灵感包 ¥6.90/10 次、常用包 ¥19.90/50 次；订单 15 分钟有效，支付宝回跳自动查单、短时轮询并在到账后恢复生成。支付代码和沙箱链路已完成，生产商户配置未开通时按钮禁用。无 MaaS 调用，不保存完整原始输入。共享 Nginx 未改动（2026-11-17） |
 
 ## 仍在阿里云运行
 

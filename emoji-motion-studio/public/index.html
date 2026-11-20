@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Emoji Motion Studio｜微动效生成器</title>
+    <meta name="description" content="输入一句文案，选择微动效，一键生成可以复制的 Emoji HTML 片段。" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">EMOJI MOTION STUDIO</p>
+          <h1>把一句普通文案，变成会动的小片段。</h1>
+          <p class="lede">
+            给公告、按钮、欢迎语加一点轻微动效。你负责写字，Studio 负责把 Emoji 包成可复制的 HTML。
+          </p>
+        </div>
+        <div class="mini-preview" aria-hidden="true">
+          <span class="orb wave">👋</span>
+          <span class="orb pop">✨</span>
+          <span class="orb shake">🔔</span>
+        </div>
+      </section>
+
+      <section class="studio" aria-label="Emoji 动效工作台">
+        <div class="composer">
+          <label for="text">文案</label>
+          <textarea id="text">欢迎来到我的小站 👋 点击铃铛 🔔 收到灵感 ✨</textarea>
+
+          <fieldset>
+            <legend>动效</legend>
+            <div class="motion-grid">
+              <button data-motion="wave" type="button" class="active">挥手 Wave</button>
+              <button data-motion="shake" type="button">提醒 Shake</button>
+              <button data-motion="pop" type="button">弹出 Pop</button>
+              <button data-motion="spark" type="button">闪光 Spark</button>
+            </div>
+          </fieldset>
+
+          <div class="actions">
+            <button id="ask" type="button">让 MaaS 推荐动效</button>
+            <button id="copy" type="button" class="secondary">复制片段</button>
+          </div>
+          <p id="advice" class="advice" aria-live="polite">选择一个动效，右侧会实时预览。</p>
+        </div>
+
+        <div class="output">
+          <div class="preview-card">
+            <span>实时预览</span>
+            <div id="preview" class="preview" aria-live="polite"></div>
+          </div>
+          <div class="code-card">
+            <span>可复制 HTML</span>
+            <pre id="code"></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>

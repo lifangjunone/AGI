@@ -1,0 +1,18 @@
+[Unit]
+Description=Destiny Persona
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/data/app/destiny-persona/current
+EnvironmentFile=-/etc/destiny-persona/app.env
+ExecStart=/data/app/destiny-persona/current/.venv/bin/python app/server.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#17362f">
+  <title>命运分身 · 今日时运</title>
+  <meta name="description" content="按北京时间生成当天六十甲子时运卡，从不同角度观察今天。娱乐与自我观察体验。">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+<div class="site" id="entry-view">
+  <header>
+    <a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="13"/><path d="M16 5v22M5 16h22M8 8l16 16M8 24 24 8"/></svg>命运分身</a>
+    <a href="#about">生成说明</a>
+  </header>
+  <main id="main">
+    <section class="intro">
+      <h1>看看今天的时运</h1>
+      <p>当天干支固定，每次翻卡从另一个角度解读今天。</p>
+      <button class="primary" id="start" aria-expanded="false" aria-controls="fortune-form">起一张今日签</button>
+    </section>
+    <section class="shelf" aria-label="六十甲子卡片预览">
+      <article><svg viewBox="0 0 120 90" aria-hidden="true"><circle cx="60" cy="45" r="32"/><path d="M60 8v74M23 45h74M34 19l52 52M34 71l52-52"/></svg><strong>六十甲子</strong><span>十天干与十二地支相配，循环成六十种日签底盘。</span></article>
+      <article><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M20 20h80v50H20zM30 30h60v30H30zM60 12v66"/><circle cx="60" cy="45" r="10"/></svg><strong>一日一柱</strong><span>以北京时间换日，同一天的核心干支不会因翻卡改变。</span></article>
+      <article><svg viewBox="0 0 120 90" aria-hidden="true"><path d="M28 25h64v42H28zM36 17h64v42M20 33h64v42"/><path d="M40 43h24M40 52h16"/></svg><strong>六面解签</strong><span>整体、事业、关系、财运、行动与心绪，本轮不重复。</span></article>
+    </section>
+    <section class="workspace">
+      <form id="fortune-form" class="form" hidden>
+        <h2>生成今日时运卡</h2>
+        <div class="fields">
+          <label for="nickname">怎么称呼你<input id="nickname" name="name" autocomplete="nickname" placeholder="昵称即可" maxlength="40" required></label>
+          <div class="row">
+            <label for="birthday">出生日期<input id="birthday" name="birth" type="date" autocomplete="bday" required></label>
+            <label for="topic">此刻最关心什么<select id="topic" name="focus"><option value="整体">今日整体时运</option><option value="事业">工作与事业</option><option value="关系">关系与相处</option><option value="财运">财富与选择</option></select></label>
+          </div>
+          <fieldset><legend>凭直觉选一个意象</legend><div class="choices">
+            <label><input type="radio" name="instinct" value="风" checked><span>山间的风</span></label>
+            <label><input type="radio" name="instinct" value="水"><span>平静的湖</span></label>
+            <label><input type="radio" name="instinct" value="火"><span>窗前的灯</span></label>
+            <label><input type="radio" name="instinct" value="木"><span>林间小路</span></label>
+          </div></fieldset>
+          <button class="primary" id="generate" type="submit">生成今日时运卡</button>
+          <p id="form-status" role="status" aria-live="polite" class="hint"></p>
+          <p class="hint">每位访客可免费生成 3 次；同次结果内换卡不计次数。</p>
+        </div>
+      </form>
+      <article id="blocked" class="blocked" hidden>
+        <h2 tabindex="-1" id="blocked-title">这次免费体验已用完</h2>
+        <p>已有今日卡仍可阅读和保存。购买次数包后，到账即刻继续生成。</p>
+        <ol class="pay-steps" aria-label="购买流程"><li><span>1</span>选次数包</li><li><span>2</span>支付宝付款</li><li><span>3</span>自动到账</li></ol>
+        <div class="plans" id="plans" aria-label="购买次数包"></div>
+        <p class="pay-note" id="pay-note">正在读取开通状态…</p>
+        <section class="order-state" id="order-state" hidden aria-labelledby="order-state-title">
+          <div><span class="state-dot" aria-hidden="true"></span><strong id="order-state-title">正在确认订单</strong></div>
+          <p id="order-copy"></p>
+        </section>
+        <div class="blocked-actions"><button class="secondary" id="back-card" hidden>返回今日卡</button><button class="secondary" id="refresh-payment" hidden>重新确认到账</button><button class="primary" id="continue-reading" hidden>次数已到账，继续生成</button></div>
+        <p id="payment-status" class="hint" role="status" aria-live="polite"></p>
+        <details class="purchase-help"><summary>购买与到账说明</summary><p>次数包绑定当前浏览器的匿名访客标识。付款后请返回本页等待自动确认，不要在到账前清理浏览器数据。订单确认以支付宝交易结果为准。</p></details>
+      </article>
+    </section>
+    <section class="about" id="about">
+      <p>六十甲子按北京时间日期换日；随机变化的是解签角度，不会改变当天干支。</p>
+      <details><summary>了解生成方式与隐私</summary><p>卡片由本地日历与娱乐规则生成，不是专业命理排盘，也不使用 AI 模型。完整昵称、生日、主题和意象不保存；服务只保留匿名额度和脱敏记录。</p></details>
+    </section>
+  </main>
+  <footer>命运分身 · 娱乐与自我观察体验，不用于健康、投资或其他现实决策。</footer>
+</div>
+
+<main class="fortune-view" id="card-view" hidden>
+  <nav class="view-nav" aria-label="今日卡导航"><button id="return-entry">‹ 返回填写</button><span>今日时运</span><span id="card-progress">第 1/6 张</span></nav>
+  <div class="folio">
+    <article class="oracle" id="oracle" aria-labelledby="card-title">
+      <div class="card-date"><span id="date-label"></span><span id="pillar-id"></span></div>
+      <p class="recipient" id="recipient"></p>
+      <svg class="dial" viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="outer" cx="100" cy="100" r="92"/><circle class="outer" cx="100" cy="100" r="84"/><circle cx="100" cy="100" r="66"/><circle cx="100" cy="100" r="51"/>
+        <path d="M100 8v21M100 171v21M8 100h21M171 100h21M35 35l15 15M150 150l15 15M35 165l15-15M150 50l15-15"/>
+        <path d="m100 34 57 33v66l-57 33-57-33V67Z"/><path d="m100 166 57-99H43Z" opacity=".3"/>
+        <text id="stem-mark" x="96" y="25"></text><text id="branch-mark" x="175" y="104"></text>
+        <text id="zodiac-mark" x="92" y="185"></text><text id="element-mark" x="15" y="104"></text>
+        <g class="sigil"><path d="M80 72h40M80 83h40M80 94h14m12 0h14M80 105h40M80 116h14m12 0h14M80 127h40"/></g>
+      </svg>
+      <p class="omen" id="omen"></p>
+      <h1 id="card-title" tabindex="-1"></h1>
+      <p class="verse" id="verse"></p>
+      <span class="seal" id="seal"></span>
+      <div class="card-foot">命运分身 · 六十甲子今日卡</div>
+    </article>
+    <aside class="reading">
+      <p class="reading-kicker" id="reading-kicker"></p>
+      <h2 id="reading-title"></h2>
+      <p id="reading-lead"></p>
+      <section class="yi-ji"><div><b>宜</b><span id="advice"></span></div><div><b>忌</b><span id="avoid"></span></div></section>
+      <section><h3>今日底盘</h3><p id="pillar-copy"></p></section>
+      <dl><div><dt>天干五行</dt><dd id="element-value"></dd></div><div><dt>幸运色</dt><dd id="color-value"></dd></div><div><dt>启发方位</dt><dd id="direction-value"></dd></div></dl>
+    </aside>
+  </div>
+  <div class="actions">
+    <button class="primary-card" id="save-card">保存今日主卡</button>
+    <button id="next-card">换个角度解签</button>
+    <button id="copy-card">复制签文</button>
+  </div>
+  <p class="status" id="card-status" role="status" aria-live="polite"></p>
+  <p class="disclaimer" id="disclaimer"></p>
+</main>
+<script src="./app.js" defer></script>
+</body>
+</html>

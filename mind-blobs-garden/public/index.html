@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Mind Blobs Garden｜交朋友获胜的小游戏</title>
+    <meta name="description" content="一款非战斗 Blob 花园小游戏：靠近、安抚、点亮朋友，避开坏心情乌云。" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-labelledby="title">
+        <div>
+          <p class="eyebrow">MIND BLOBS GARDEN</p>
+          <h1 id="title">这里没有敌人，只有还没被哄开心的 Blob。</h1>
+          <p class="lede">
+            移动你的光点靠近 Blob，慢慢把它们点亮成朋友；灰色乌云会带走心情。目标很简单：让整座花园都高兴起来。
+          </p>
+        </div>
+        <div class="score-card" aria-live="polite">
+          <span>当前进度</span>
+          <strong id="friend-count">0 / 8</strong>
+          <small id="status">准备开始</small>
+        </div>
+      </section>
+
+      <section class="game-card">
+        <div class="game-head">
+          <div>
+            <strong>玩法</strong>
+            <p>鼠标 / 触摸移动光点，也可以用 WASD 或方向键。</p>
+          </div>
+          <button id="start" type="button">重新种一座花园</button>
+        </div>
+        <canvas id="game" width="960" height="560" tabindex="0" aria-label="Mind Blobs 游戏区域"></canvas>
+        <div class="legend" aria-label="图例">
+          <span><i class="dot dot-player"></i>你的小光点</span>
+          <span><i class="dot dot-blob"></i>等待变朋友的 Blob</span>
+          <span><i class="dot dot-cloud"></i>坏心情乌云</span>
+        </div>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>

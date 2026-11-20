@@ -1,0 +1,11 @@
+[project]
+name = "destiny-persona"
+version = "0.5.1"
+description = "LifeYouMe 六十甲子今日时运卡"
+requires-python = ">=3.11"
+dependencies = [
+  "alipay-sdk-python==3.7.1411",
+]
+
+[tool.setuptools]
+packages = []

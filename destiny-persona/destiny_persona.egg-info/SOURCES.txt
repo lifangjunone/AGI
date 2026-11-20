@@ -1,0 +1,8 @@
+README.md
+pyproject.toml
+destiny_persona.egg-info/PKG-INFO
+destiny_persona.egg-info/SOURCES.txt
+destiny_persona.egg-info/dependency_links.txt
+destiny_persona.egg-info/requires.txt
+destiny_persona.egg-info/top_level.txt
+tests/test_smoke.py

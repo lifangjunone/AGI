@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>今日时运 · 卡片页预览</title>
+<link rel="stylesheet" href="../public/style.css">
+<style>
+.review-bar{background:#20333c;color:#e5eeec;padding:10px 20px;font-size:13px;display:flex;gap:16px;justify-content:space-between;align-items:center}.review-bar nav{display:flex;gap:8px;flex-wrap:wrap}.review-bar button{background:none;color:inherit;border:1px solid #8fa49e;border-radius:5px;min-height:44px;padding:8px 12px}.review-bar button[aria-pressed=true]{background:#eaf1ed;color:#20333c}.entry{max-width:960px;margin:auto;padding:0 24px}.entry .form{margin-top:32px}.entry h1{margin:30px 0 8px}.entry>p{color:var(--muted)}.entry .note{font-size:13px;margin:18px 0 32px}
+.fortune-view{--night:#152238;--card:#1c3047;--gold:#dbc697;--soft:#c1d1dc;--rule:#586771;background:var(--night);color:#f0eadb;min-height:calc(100vh - 64px);padding:0 24px 40px}.view-nav{max-width:980px;margin:auto;height:74px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff20}.view-nav button{color:inherit;border:0;background:none;min-height:44px;padding:10px 0}.view-nav span{font-size:14px;color:var(--soft)}.folio{max-width:940px;margin:32px auto 24px;display:grid;grid-template-columns:380px minmax(0,1fr);gap:40px;align-items:center}.oracle{position:relative;overflow:hidden;min-height:556px;border:1px solid #bba678;border-radius:20px;padding:28px 28px 24px;background:var(--card);box-shadow:0 16px 50px #00000035;text-align:center}.oracle:before{content:"";position:absolute;inset:9px;border:1px solid #dbc69740;border-radius:14px;pointer-events:none}.card-date{font-size:13px;color:var(--gold);display:flex;justify-content:space-between;gap:10px}.recipient{font-size:13px;color:var(--soft);margin:20px 0 0}.dial{height:220px;width:100%;margin:12px 0;overflow:visible;stroke:var(--gold);fill:none;stroke-width:.7}.dial text{fill:var(--gold);stroke:none;font:10px "Songti SC",serif;letter-spacing:1px}.dial .hex{stroke-width:4;stroke-linecap:round}.oracle h1{font:500 28px/1.5 var(--title);color:#f7edce;margin:0 0 10px}.omen{font-size:13px;color:var(--gold);margin:0 0 14px}.verse{font:18px/1.9 var(--title);letter-spacing:1px;margin:0 0 24px}.card-foot{border-top:1px solid #dbc69735;padding-top:14px;color:var(--soft);font-size:11px;letter-spacing:1px}.reading h2{font:500 24px/1.5 var(--title);margin:0 0 14px}.reading>p{font-size:16px;color:var(--soft);line-height:1.85;margin:0 0 26px}.reading section{border-top:1px solid #ffffff22;padding:18px 0}.reading h3{font-size:14px;color:var(--gold);font-weight:500;margin:0 0 10px}.reading section p{font-size:15px;color:var(--soft);line-height:1.8;margin:0}.yi-ji{display:grid;grid-template-columns:1fr 1fr;gap:18px}.yi-ji div{display:flex;align-items:flex-start;gap:12px}.yi-ji b{font:22px var(--title);color:var(--gold);font-weight:500}.yi-ji span{color:var(--soft);font-size:15px}.reading dl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0}.reading dt{font-size:12px;color:var(--soft)}.reading dd{margin:4px 0 0;color:var(--gold);font-size:15px}.actions{max-width:940px;margin:auto;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}.actions button{min-height:48px;padding:11px 22px;border:1px solid #8093a1;border-radius:7px;background:none;color:#e4edf2}.actions button:first-child{background:var(--gold);color:#19283b;border-color:var(--gold)}.disclaimer{max-width:940px;margin:18px auto 0;text-align:center;font-size:12px;color:var(--soft)}.status{min-height:24px;text-align:center;color:var(--gold);font-size:13px;margin:12px 0}.seal{display:none}.error-sheet{max-width:480px;margin:44px auto;padding:28px;border:1px solid #82958f;border-radius:12px}.error-sheet h2{font-size:22px}.error-sheet p{color:var(--soft)}
+body[data-style=seal] .fortune-view{--night:#17362f;--card:#1c4137;--gold:#e5cb99;--soft:#c5d7cd}
+body[data-style=seal] .folio{grid-template-columns:360px 1fr;gap:52px}body[data-style=seal] .oracle{border-radius:8px;min-height:556px}body[data-style=seal] .oracle:before{border-radius:2px}body[data-style=seal] .dial{height:218px;transform:rotate(45deg)}body[data-style=seal] .dial .outer{stroke-dasharray:3 5}body[data-style=seal] .dial text,body[data-style=seal] .dial .hex{transform:rotate(-45deg);transform-origin:100px 100px}body[data-style=seal] .seal{display:block;position:absolute;right:29px;bottom:86px;border:1px solid #e5cb9970;font:16px/1.2 var(--title);color:var(--gold);padding:8px 4px;writing-mode:vertical-rl}
+body[data-style=slip] .fortune-view{--night:#eeeae1;--card:#fbf6e9;--gold:#7c492e;--soft:#62594e;color:#39382f}body[data-style=slip] .view-nav{border-color:#c3bba9}body[data-style=slip] .folio{grid-template-columns:320px 1fr;gap:64px;max-width:880px}body[data-style=slip] .oracle{border-radius:3px;box-shadow:8px 12px 0 #c6c0b13d;min-height:586px;border-color:#bca37b}body[data-style=slip] .oracle:before{border-radius:0;border-color:#baa48370}body[data-style=slip] .dial{height:196px;stroke:#97754a}body[data-style=slip] .dial .outer{display:none}body[data-style=slip] .oracle h1{color:#534334}body[data-style=slip] .verse{writing-mode:vertical-rl;margin:4px auto 22px;height:168px;white-space:nowrap;font-size:19px;line-height:1.75}body[data-style=slip] .reading section{border-color:#c7bda9}body[data-style=slip] .actions button{color:#594736;border-color:#aa9c82}body[data-style=slip] .actions button:first-child{color:#fff4e4}body[data-style=slip] .card-foot{border-color:#bbaa8b}
+@media(max-width:720px){.review-bar{align-items:flex-start;flex-direction:column;gap:8px}.entry{padding:0 20px}.entry .form{margin-top:22px}.fortune-view{padding:0 16px 30px}.view-nav{height:60px}.folio,body[data-style=seal] .folio,body[data-style=slip] .folio{grid-template-columns:1fr;gap:28px;margin:22px auto;max-width:420px}.oracle,body[data-style=seal] .oracle,body[data-style=slip] .oracle{min-height:530px;padding:25px 24px 20px}.reading{padding:0 8px}.reading h2{font-size:22px}.reading>p{font-size:16px;margin-bottom:20px}.reading section p{font-size:16px}.actions{max-width:420px}.actions button{flex:1;padding:11px 12px;font-size:14px}.oracle h1{font-size:27px}.disclaimer{max-width:420px}}
+@media(prefers-reduced-motion:no-preference){.oracle.reveal{animation:unveil .55s ease-out}@keyframes unveil{from{opacity:.1;transform:translateY(16px) rotate(-2deg)}to{opacity:1;transform:none}}}
+@media print{.review-bar,.view-nav,.reading,.actions,.disclaimer,.status{display:none}.folio{display:block;margin:0}.oracle{width:360px}.fortune-view{padding:0}}
+</style>
+</head>
+<body data-style="astral">
+<div class="review-bar"><span>今日时运卡片 · 视觉示例，未接测算、未上线</span><nav aria-label="卡片设计"><button data-style="astral" aria-pressed="true">星盘卡</button><button data-style="seal" aria-pressed="false">玄符卡</button><button data-style="slip" aria-pressed="false">签笺卡</button></nav></div>
+<main class="entry" id="entry">
+  <header><a class="brand" href="#">命运分身</a><span>今日时运</span></header>
+  <h1>看看今天的时运</h1><p>填写后进入独立卡片页，不在这里追加报告。</p>
+  <form class="form" id="preview-form"><h2>起一张今日签</h2><div class="fields">
+  <label for="name">怎么称呼你<input id="name" autocomplete="nickname" placeholder="昵称即可" required></label>
+  <div class="row"><label for="birth">出生日期<input id="birth" type="date" required></label><label>所问之事<select><option>今日整体时运</option><option>工作与事业</option><option>关系与相处</option></select></label></div>
+  <button class="primary" type="submit">生成今日时运卡</button>
+  <p class="hint">本预览只演示跳转与卡片效果，不发送填写信息。</p></div></form>
+  <p class="note">三种卡片使用同一组示例内容，方便比较。</p>
+</main>
+<main class="fortune-view" id="fortune-view" hidden>
+  <nav class="view-nav" aria-label="卡片页导航"><button id="return">‹ 返回填写</button><span>今日时运</span><button id="show-error">查看失败状态</button></nav>
+  <div id="normal">
+  <div class="folio">
+    <article class="oracle" aria-label="今日时运签卡">
+      <div class="card-date"><span>二〇二六年十一月十六日</span><span>今日签</span></div>
+      <p class="recipient" id="recipient">小林的今日时运 · 示例</p>
+      <svg class="dial" viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="outer" cx="100" cy="100" r="92"/><circle class="outer" cx="100" cy="100" r="84"/><circle cx="100" cy="100" r="66"/><circle cx="100" cy="100" r="51"/>
+        <path d="M100 8v21M100 171v21M8 100h21M171 100h21M35 35l15 15M150 150l15 15M35 165l15-15M150 50l15-15"/>
+        <path d="m100 34 57 33v66l-57 33-57-33V67Z"/><path d="m100 166 57-99H43Z" opacity=".35"/>
+        <g class="hex"><path d="M80 72h40M80 83h40M80 94h40M80 105h40M80 116h14m12 0h14M80 127h14m12 0h14"/></g>
+        <text x="96" y="25">乾</text><text x="175" y="104">震</text><text x="96" y="185">坤</text><text x="15" y="104">兑</text>
+        <circle cx="35" cy="35" r="2"/><circle cx="165" cy="165" r="2"/>
+      </svg>
+      <p class="omen">今日卦象 · 风山渐</p>
+      <h1 id="card-title" tabindex="-1">渐入佳境</h1>
+      <p class="verse">风起不必急，<br>循序自有时。</p>
+      <span class="seal">今日顺时</span>
+      <div class="card-foot">命运分身 · 仅供娱乐与自我观察</div>
+    </article>
+    <aside class="reading">
+      <h2>今日解签</h2>
+      <p>渐，进也。今天的关键词是「循序」。适合把已经开始的事往前推进一小步，不必为了求快，临时改变自己的节奏。</p>
+      <section class="yi-ji"><div><b>宜</b><span>梳理计划<br>主动沟通<br>完成一件小事</span></div><div><b>忌</b><span>临时加码<br>反复试探<br>急着要答案</span></div></section>
+      <section><h3>给今天的一句话</h3><p>已有的积累，比突然的冲刺更值得相信。</p></section>
+      <dl><div><dt>五行意象</dt><dd>木</dd></div><div><dt>幸运色</dt><dd>松石青</dd></div><div><dt>启发方位</dt><dd>东南</dd></div></dl>
+    </aside>
+  </div>
+  <div class="actions"><button id="save">保存卡片图片</button><button id="share">复制签文</button><button id="retry">返回重填</button></div>
+  <p class="status" id="status" role="status"></p>
+  <p class="disclaimer">卦象与签文是视觉示例，尚未进行真实排盘或每日起卦，不用于现实决策。</p>
+  </div>
+  <section class="error-sheet" id="error" hidden><h2>今日签暂未生成</h2><p>连接未完成，填写内容仍然保留。可以返回检查后重试。</p><button class="primary" id="error-back">返回填写</button></section>
+</main>
+<script>
+const entry=document.querySelector('#entry'),view=document.querySelector('#fortune-view');
+function route(){const isCard=location.hash==='#card';entry.hidden=isCard;view.hidden=!isCard;document.title=isCard?'今日时运 · 卡片预览':'今日时运 · 填写预览';scrollTo(0,0);if(isCard){document.querySelector('#card-title').focus({preventScroll:true});document.querySelector('.oracle').classList.add('reveal')}}
+function back(){if(location.hash==='#card')history.back();else location.hash='';}
+document.querySelector('#preview-form').onsubmit=e=>{e.preventDefault();document.querySelector('#recipient').textContent=document.querySelector('#name').value+'的今日时运 · 示例';document.querySelector('#normal').hidden=false;document.querySelector('#error').hidden=true;history.pushState({page:'card'},'','#card');route()};
+addEventListener('popstate',route);addEventListener('hashchange',route);
+document.querySelectorAll('button[data-style]').forEach(b=>b.onclick=()=>{document.body.dataset.style=b.dataset.style;document.querySelectorAll('button[data-style]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));document.querySelector('#status').textContent='';});
+['return','retry','error-back'].forEach(id=>document.querySelector('#'+id).onclick=back);
+document.querySelector('#show-error').onclick=()=>{document.querySelector('#normal').hidden=true;document.querySelector('#error').hidden=false};
+document.querySelector('#save').onclick=()=>document.querySelector('#status').textContent='预览未接图片导出；正式版将保存当前签卡，不包含解签侧栏。';
+document.querySelector('#share').onclick=async()=>{try{await navigator.clipboard.writeText('今日签示例：风山渐 · 渐入佳境。风起不必急，循序自有时。');document.querySelector('#status').textContent='示例签文已复制。'}catch{document.querySelector('#status').textContent='当前环境无法复制，可手动选择签文。'}};
+route();
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fb">
+  <title>我的作品｜状态照</title>
+  <link rel="stylesheet" href="/status-capsule/styles.css?v=3">
+</head>
+<body>
+  <main class="shell">
+    <header class="product-nav"><a class="brand" href="/status-capsule/">状态照<span>我的收藏</span></a><a class="secondary-button" href="/status-capsule/">返回修改</a></header>
+    <section class="result-state" data-state role="status" aria-live="polite">
+      <span class="loading-mark" aria-hidden="true"></span>
+      <h1 data-state-title>正在读取你的作品…</h1>
+      <p data-state-copy>请稍候。</p>
+      <button class="primary-button" data-retry hidden>重新尝试</button>
+      <a class="secondary-button" href="/status-capsule/">返回制作</a>
+    </section>
+    <section class="collection" data-results hidden aria-label="生成结果">
+      <div class="collection-toolbar"><h1>你的状态收藏</h1><span data-summary></span></div>
+      <div class="collection-layout">
+        <nav class="collection-list" data-result-list aria-label="选择作品"></nav>
+        <article class="collection-detail" data-result-detail></article>
+      </div>
+    </section>
+    <footer class="page-footer"><span>每一种状态，都值得被收藏。</span><span>原图不在服务端保存</span></footer>
+  </main>
+  <template id="detail-template">
+    <div class="result-art"><img alt=""><span class="art-label"></span></div>
+    <div class="result-copy">
+      <p class="result-type"></p><h2></h2><p class="result-note"></p>
+      <a class="primary-button" data-download hidden>下载这张作品</a>
+      <button class="primary-button" data-copy>复制生成提示词</button>
+      <details class="prompt-details"><summary>查看与微调提示词</summary><label>生成提示词<textarea readonly></textarea></label></details>
+      <a class="secondary-button" href="/status-capsule/">返回修改照片或风格</a>
+    </div>
+  </template>
+  <div class="toast" role="status" aria-live="polite" data-toast></div>
+  <script type="module" src="/status-capsule/result.mjs?v=4"></script>
+</body>
+</html>

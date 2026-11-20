@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>命运分身 · 设计方向预览</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:16px/1.65 "PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg)}
+body{--bg:#f4f7fa;--ink:#243342;--muted:#5b6b78;--line:#d7e0e7;--accent:#276482;--surface:#fff;--tint:#eaf3f7}
+button,input,select{font:inherit}button,a{touch-action:manipulation}button{cursor:pointer}a{color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #297698;outline-offset:3px}
+.review{background:#20313e;color:white;padding:12px 24px;display:flex;gap:20px;align-items:center;justify-content:space-between}.review span{font-size:13px;color:#d2e0e9}.review nav{display:flex;gap:6px;flex-wrap:wrap}.review button{border:1px solid #79909f;color:white;background:none;padding:9px 12px;border-radius:6px;min-height:44px}.review button[aria-pressed=true]{background:#fff;color:#20313e}
+.site{max-width:1100px;margin:auto;padding:0 32px}header{height:88px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}.brand{font-size:18px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:10px}.brand svg{width:28px;height:28px}header>a:last-child{font-size:14px;color:var(--muted);padding:10px}.intro{margin:48px 0 30px;max-width:580px}h1{font-size:30px;line-height:1.5;font-weight:600;margin:0 0 12px;letter-spacing:0}h2{font-size:22px;line-height:1.5;font-weight:600;margin:0 0 12px}h3{font-size:17px;font-weight:600;margin:0 0 8px}p{margin:0 0 16px}small,.muted{color:var(--muted)}.intro p{color:var(--muted);font-size:16px}.workspace{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:start}.form{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px}.form h2{font-size:18px}.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}label{display:block;font-size:14px;margin-bottom:18px}input,select{width:100%;min-height:46px;border:1px solid #adbcc7;border-radius:6px;background:var(--surface);color:var(--ink);padding:10px 12px;margin-top:7px}fieldset{border:0;margin:0 0 20px;padding:0}legend{font-size:14px;margin-bottom:8px}.choices{display:grid;grid-template-columns:1fr 1fr;gap:8px}.choices button{min-height:44px;border:1px solid var(--line);border-radius:6px;padding:9px;background:var(--surface);color:var(--ink)}.choices button[aria-pressed=true]{border-color:var(--accent);background:var(--tint);color:var(--accent)}.primary{min-height:48px;border:0;border-radius:6px;background:var(--accent);color:white;padding:12px 20px;font-weight:500}.form>.primary{width:100%}.hint{display:block;font-size:13px;margin:12px 0 0}.result{padding:26px 0}.result-label{font-size:13px;color:var(--muted);margin-bottom:18px}.result h2{font-size:24px}.result-lead{color:var(--muted)}.seal{width:100%;height:150px;display:flex;justify-content:center;align-items:center;margin-bottom:26px}.seal svg{width:120px;height:120px;stroke:var(--accent);fill:none;stroke-width:1.3}.tags{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.tags span{padding:5px 10px;background:var(--tint);border-radius:4px;font-size:13px;color:var(--accent)}.detail{border-top:1px solid var(--line);padding:18px 0}.detail p{color:var(--muted);font-size:15px;margin:0}.secondary{min-height:44px;padding:9px 16px;color:var(--accent);background:none;border:1px solid var(--line);border-radius:6px}.result-actions{display:flex;gap:10px;flex-wrap:wrap}.notice{border-top:1px solid var(--line);padding-top:16px;margin-top:22px;font-size:13px;color:var(--muted)}.notice a{display:inline-block;min-height:44px;padding:8px 0}.about{margin-top:48px;padding:28px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:44px}.about p{font-size:14px;color:var(--muted)}.about h3{font-size:15px}footer{padding:20px 0 36px;font-size:12px;color:var(--muted)}.blocked{background:var(--surface);border:1px solid var(--line);padding:24px;border-radius:8px}.blocked p{color:var(--muted)}.state-picker{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}.state-picker button{border:1px solid var(--line);border-radius:4px;background:none;color:var(--muted);font-size:13px;min-height:44px;padding:8px 12px}.state-picker button[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}[hidden]{display:none!important}
+.shelf{display:none}.shelf button{background:var(--surface);color:var(--ink);border:1px solid var(--line);text-align:left;min-height:160px;padding:24px;cursor:pointer}.shelf b{font-size:20px;display:block;font-weight:500}.shelf span{display:block;font-size:14px;color:var(--muted);margin-top:8px}.shelf svg{width:32px;height:32px;fill:none;stroke:var(--accent);margin-bottom:14px}
+body[data-concept=b]{--bg:#f6f2f6;--ink:#3c3043;--muted:#706078;--line:#ded3e1;--accent:#775185;--surface:#fffdff;--tint:#efe6f3}.b .intro{max-width:none;text-align:center;margin:42px auto 24px}.b .shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0 32px}.b .shelf button{border-radius:10px}.b .shelf button:hover{border-color:var(--accent)}.b .workspace{grid-template-columns:.85fr 1.15fr;gap:32px}.b .result{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:28px}.b .seal{height:90px}.b .seal svg{width:90px;height:90px}.b .about{margin-top:32px}
+body[data-concept=c]{--bg:#eff3ed;--ink:#2c3d33;--muted:#586c60;--line:#ccd8ce;--accent:#426e55;--surface:#f9fbf7;--tint:#e2ece1}.c .brand,.c h1,.c h2,.c .shelf b{font-family:"Songti SC","STSong","SimSun",serif}.c .intro{margin:48px 0 36px;padding-left:24px;border-left:3px solid #7b977d}.c .workspace{grid-template-columns:320px 1fr;gap:54px}.c .form{padding:24px;border-radius:2px}.c .row{grid-template-columns:1fr;gap:0}.c .result{border-top:1px solid var(--line);padding:26px 16px}.c .seal{float:right;width:140px;height:120px;margin:0 0 8px 12px}.c .tags span{border-radius:0}.c .about{grid-template-columns:320px 1fr;gap:54px}
+@media(max-width:720px){.review{padding:12px 16px;display:block}.review>div{margin-bottom:8px}.review nav{gap:5px}.review button{font-size:13px;padding:8px}.site{padding:0 20px}header{height:74px}.brand{font-size:16px}header>a:last-child{font-size:13px}.intro,.b .intro,.c .intro{margin:26px 0 24px}h1{font-size:25px}.workspace,.b .workspace,.c .workspace{grid-template-columns:1fr;gap:20px}.form{padding:22px}.result{padding:20px 0}.about,.c .about{grid-template-columns:1fr;gap:12px;margin-top:28px}.b .shelf{grid-template-columns:1fr;gap:8px}.b .shelf button{min-height:90px;padding:16px;display:grid;grid-template-columns:38px 1fr;column-gap:12px;align-items:center}.b .shelf svg{grid-row:span 2;margin:0}.b .shelf b{font-size:17px}.b .shelf span{margin:0}.c .row{grid-template-columns:1fr 1fr;gap:12px}.c .intro{padding-left:16px}.seal{height:110px}.seal svg{height:90px}.row{gap:12px}.review span{font-size:12px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body[data-concept=d]{--bg:#f0f4f0;--ink:#293f35;--muted:#596f63;--line:#cad8cf;--accent:#406c55;--surface:#fcfdfb;--tint:#e3ece4}
+.d{max-width:1040px}.d header{height:78px}.d .brand,.d h1,.d h2,.d .shelf b{font-family:"Songti SC","STSong","SimSun",serif}
+.d .intro{max-width:none;margin:36px 0 28px;display:grid;grid-template-columns:1fr auto;gap:8px 28px;align-items:center}.d .intro h1{font-size:28px;font-weight:500;margin:0}.d .intro p{grid-column:1;margin:0;font-size:15px}.d .start{grid-column:2;grid-row:1 / span 2}
+.start{display:none}.d .start{display:block}.d .shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:0 0 28px}.d .shelf button{min-height:280px;border-radius:8px;padding:28px 24px;position:relative;overflow:hidden;background:var(--surface)}.d .shelf button[aria-pressed=true]{border-color:#61836d;box-shadow:0 0 0 1px #61836d}.d .shelf svg{width:100%;height:112px;display:block;margin:0 0 24px;stroke-width:.8}.d .shelf b{font-size:21px;font-weight:500}.d .shelf span{font-size:14px}.d .shelf button:after{content:"查看这张卡";display:block;color:var(--accent);font-size:13px;margin-top:18px}
+.d .workspace{display:block;width:100%;margin:0}.d .form{display:none;padding:28px 30px;grid-template-columns:minmax(180px,.7fr) minmax(0,1.7fr);column-gap:40px;align-items:start}.d.is-testing .form{display:grid}.d .form>h2{grid-column:1;grid-row:1 / span 6;margin:0}.d .form>label,.d .form>.row,.d .form>fieldset,.d .form>.primary,.d .form>.hint{grid-column:2}.d .workspace>div{display:none}.d.is-reading .workspace>div,.d.is-testing .workspace>div{display:block}.d.is-testing:not(.is-reading) .workspace>div{display:none}
+.d .state-picker{display:none}.d .result{padding:26px 30px;border:1px solid var(--line);background:var(--surface);border-radius:8px}.d .seal{display:none}.d .result-label{margin-bottom:12px}.d .result h2{font-size:24px;font-weight:500}.d .result-lead{font-size:15px}.d .detail{padding:14px 0}.d .detail h3{font-size:15px}.d .tags{margin:14px 0}.d .notice{display:none}.d .about{display:block;margin-top:24px;padding:20px 0}.d .about>div{display:none}.d .about>div:first-child{display:block}.d .about h3{display:none}.d .about p{font-size:13px;margin:0;max-width:740px}.d footer{padding-top:0}
+@media(max-width:720px){.d .intro{margin:26px 0 22px;grid-template-columns:1fr;gap:10px}.d .intro h1{font-size:24px}.d .intro p{grid-column:1}.d .start{grid-column:1;grid-row:auto;justify-self:start;margin-top:4px}.d .shelf{grid-template-columns:1fr;gap:12px}.d .shelf button{min-height:150px;padding:20px;display:grid;grid-template-columns:80px 1fr;column-gap:20px;align-content:center}.d .shelf svg{grid-row:span 3;width:80px;height:80px;margin:0;align-self:center}.d .shelf b{font-size:20px}.d .shelf button:after{margin-top:6px}.d .form,.d .result{padding:22px}.d.is-testing .form{display:block}.d .form>h2{margin-bottom:16px}.d .intro .primary{min-height:44px}}
+</style>
+</head>
+<body data-concept="a">
+<div class="review">
+  <div>设计方向预览 <span>独立原型，未替换线上版</span></div>
+  <nav aria-label="设计方向">
+    <button data-theme="a" aria-pressed="true">A · 直接测试</button>
+    <button data-theme="b" aria-pressed="false">B · 人格卡册</button>
+    <button data-theme="c" aria-pressed="false">C · 东方档案</button>
+    <button data-theme="d" aria-pressed="false">B+C · 卡册精修</button>
+  </nav>
+</div>
+<div class="site a" id="site">
+<header><a class="brand" href="#"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3C7 3 3 11 3 16s4 13 13 13 13-8 13-13S25 3 16 3Z" fill="none" stroke="currentColor"/><path d="M16 5v22M5 16h22M8 8l16 16M8 24 24 8" fill="none" stroke="currentColor"/></svg>命运分身</a><a href="#about">关于这次体验</a></header>
+<section class="intro"><h1 id="intro-title">看看你的性格画像</h1><p id="intro-copy">从生日和直觉选择开始，得到一张人格卡。看看哪些描述像你，哪些不一样。</p><button class="primary start" type="button" id="start">看看我的人格</button></section>
+<div class="shelf" aria-label="人格示例">
+<button data-persona="mirror"><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="13"/><path d="M8 24c6-6 14-6 20 0M8 18c6-6 14-6 20 0"/></svg><b>镜湖观者</b><span>观察细节，保留自己的节奏</span></button>
+<button data-persona="wind"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M6 12h17c9 0 9-10 0-8M6 20h23M6 28h17c9 0 9 9 0 6"/></svg><b>风铃译者</b><span>听见差异，也擅长连接</span></button>
+<button data-persona="wood"><svg viewBox="0 0 36 36" aria-hidden="true"><path d="M18 32V7M18 21C2 21 3 4 3 4s15 0 15 17ZM18 16C32 16 33 3 33 3s-15 0-15 13Z"/></svg><b>竹影生长者</b><span>灵活调整，慢慢向前生长</span></button>
+</div>
+<section class="workspace">
+<form class="form" id="form">
+<h2>生成我的人格卡</h2>
+<label>怎么称呼你<input name="nickname" placeholder="昵称即可" maxlength="24" required></label>
+<div class="row"><label>出生日期<input type="date" name="birthday" required></label><label>想了解的主题<select><option>性格与状态</option><option>工作与创造</option><option>关系与相处</option></select></label></div>
+<fieldset><legend>哪个意象更吸引你？</legend><div class="choices"><button type="button" aria-pressed="true">山间的风</button><button type="button" aria-pressed="false">平静的湖</button><button type="button" aria-pressed="false">晨光</button><button type="button" aria-pressed="false">林间小路</button></div></fieldset>
+<button class="primary" type="submit">生成我的人格卡</button>
+<small class="hint">娱乐性格探索，不是科学心理测评。生日不公开。</small>
+</form>
+<div>
+<div class="state-picker" aria-label="预览界面状态"><button data-state="example" aria-pressed="true">示例</button><button data-state="result" aria-pressed="false">结果</button><button data-state="blocked" aria-pressed="false">额度用完</button></div>
+<article class="result" id="result">
+<div class="result-label" id="result-label">人格卡示例 · 不代表你的测算结果</div>
+<div class="seal"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="46"/><circle cx="60" cy="60" r="36"/><path d="M24 65c18-18 54-18 72 0M24 76c18-18 54-18 72 0M36 50c12-12 36-12 48 0"/></svg></div>
+<h2 id="persona">镜湖观者</h2><p class="result-lead" id="description">你习惯先观察，再表达。在自己的节奏里，细节会慢慢变得清楚。</p>
+<div class="tags"><span>观察</span><span>专注</span><span>水意象</span></div>
+<section class="detail"><h3>可能像你的地方</h3><p>你能察觉气氛里的细微变化，愿意把问题想清楚再给出回应。</p></section>
+<section class="detail"><h3>可以留意的地方</h3><p>不必等到想得十分完整才表达。说出一点当下感受，也是一种沟通。</p></section>
+<section class="detail"><h3>给今天的一个小建议</h3><p>挑一件正在犹豫的小事，写下你已经知道的三条事实，再决定下一步。</p></section>
+<div class="result-actions"><button type="button" class="secondary" id="share">复制卡片文字</button><button type="button" class="secondary" id="again">重新填写</button></div>
+<p role="status" class="hint" id="feedback"></p>
+<div class="notice">深度解读尚未开放。当前没有付费解锁功能；这张基础卡可直接阅读和分享。</div>
+</article>
+<article class="blocked" id="blocked" hidden><h2>这次免费体验已用完</h2><p>本次体验提供 3 次生成人格卡的机会。已有结果仍可阅读和复制。</p><p>付费解读尚未开放，注册暂不会增加额度。</p><button class="secondary" type="button" id="back">返回已有结果</button></article>
+</div>
+</section>
+<section class="about" id="about"><div><h3>这张卡能告诉你什么？</h3><p>用一组性格描述帮助你观察自己。觉得贴近的地方可以记下来，不贴近的也无需勉强认同。</p></div><div><h3>你的信息如何使用？</h3><p>这是设计预览，填写内容仅用于演示交互，不发送到服务器。页面没有虚构访客数量、实时排名或用户评价。</p></div></section>
+<footer>命运分身 · 娱乐与自我观察体验，不用于健康、投资或其他现实决策。</footer>
+</div>
+<script>
+const themes={a:['看看你的性格画像','从生日和直觉选择开始，得到一张人格卡。看看哪些描述像你，哪些不一样。'],b:['先翻一张，再看看自己','每一种人格都有自己的节奏。你可以先读一张示例，也可以直接生成自己的卡片。'],c:['留一页，认识此刻的自己','生日是一条线索，直觉是另一条。用一页简短的性格档案，记录你当下的状态。'],d:['每个人，都有自己的节奏','先打开一张人格卡，或用生日和直觉探索自己的画像。']};
+const profiles={mirror:['镜湖观者','你习惯先观察，再表达。在自己的节奏里，细节会慢慢变得清楚。'],wind:['风铃译者','你会认真倾听不同的声音，也喜欢找到彼此能理解的表达。'],wood:['竹影生长者','你愿意调整做事的方法，不急着证明自己，而是持续向前。']};
+function state(name){document.querySelectorAll('[data-state]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.state===name)));document.querySelector('#blocked').hidden=name!=='blocked';document.querySelector('#result').hidden=name==='blocked';document.querySelector('#result-label').textContent=name==='result'?'你的性格画像 · 设计演示':'人格卡示例 · 不代表你的测算结果'}
+document.querySelectorAll('[data-theme]').forEach(b=>b.onclick=()=>{let t=b.dataset.theme;document.body.dataset.concept=t;document.querySelector('#site').className='site '+t;document.querySelectorAll('[data-theme]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));document.querySelector('#intro-title').textContent=themes[t][0];document.querySelector('#intro-copy').textContent=themes[t][1];history.replaceState(null,'','?concept='+t)});
+document.querySelectorAll('[data-state]').forEach(b=>b.onclick=()=>state(b.dataset.state));
+document.querySelectorAll('.choices button').forEach(b=>b.onclick=()=>document.querySelectorAll('.choices button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))));
+const details={
+mirror:['观察','专注','水意象','你能察觉气氛里的细微变化，愿意把问题想清楚再给出回应。','不必等到想得十分完整才表达。说出一点当下感受，也是一种沟通。','挑一件正在犹豫的小事，写下你已经知道的三条事实，再决定下一步。'],
+wind:['倾听','连接','风意象','你愿意听见不同立场，也能找到让双方更容易理解的说法。','照顾别人的感受时，也可以明确说出自己的需要。','找一个想联系的人，分享一件最近的小事，不必准备一个完美话题。'],
+wood:['灵活','积累','木意象','遇到变化时，你会调整路径，而不是急着否定已经做过的事。','适应不等于一直退让。给自己留下一件不必妥协的小事。','把一件长远计划缩成今天能完成的一步，做完后记录下来。']};
+document.querySelectorAll('[data-persona]').forEach(b=>b.onclick=()=>{const p=profiles[b.dataset.persona],v=details[b.dataset.persona];document.querySelector('#persona').textContent=p[0];document.querySelector('#description').textContent=p[1];document.querySelectorAll('.tags span').forEach((x,i)=>x.textContent=v[i]);document.querySelectorAll('.detail p').forEach((x,i)=>x.textContent=v[i+3]);document.querySelectorAll('[data-persona]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));document.querySelector('#site').classList.add('is-reading');document.querySelector('#feedback').textContent='';state('example');if(document.body.dataset.concept==='d')document.querySelector('#result').scrollIntoView({block:'nearest'})});
+document.querySelector('#form').onsubmit=e=>{e.preventDefault();document.querySelector('#site').classList.add('is-reading');state('result');document.querySelector('#feedback').textContent='已生成演示结果。正式版的生成规则待确认。';document.querySelector('#result').scrollIntoView({block:'nearest'})};
+document.querySelector('#share').onclick=async()=>{try{await navigator.clipboard.writeText(document.querySelector('#persona').textContent+'：'+document.querySelector('#description').textContent);document.querySelector('#feedback').textContent='卡片文字已复制。'}catch{document.querySelector('#feedback').textContent='当前环境无法复制，请手动选择卡片文字。'}};
+function start(){document.querySelector('#site').classList.add('is-testing');document.querySelector('#form').scrollIntoView({block:'start'});document.querySelector('[name=nickname]').focus()}
+document.querySelector('#start').onclick=start;
+document.querySelector('#again').onclick=start;
+document.querySelector('#back').onclick=()=>state('result');
+const t=new URLSearchParams(location.search).get('concept');if(themes[t])document.querySelector('[data-theme='+t+']').click();
+</script>
+</body>
+</html>

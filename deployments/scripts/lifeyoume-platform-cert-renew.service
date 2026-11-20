@@ -1,0 +1,11 @@
+[Unit]
+Description=Renew and install shared LifeYouMe platform TLS certificate
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/renew-lifeyoume-platform-cert
+TimeoutStartSec=600
+NoNewPrivileges=true

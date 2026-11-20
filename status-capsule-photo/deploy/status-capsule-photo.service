@@ -1,0 +1,18 @@
+[Unit]
+Description=Status Capsule photo studio
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/docker run --name status-capsule-photo --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --security-opt no-new-privileges:true --cap-drop ALL --network host --memory 256m --cpus 0.5 status-capsule-photo:current
+ExecStop=/usr/bin/docker stop -t 10 status-capsule-photo
+ExecStopPost=-/usr/bin/docker rm status-capsule-photo
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

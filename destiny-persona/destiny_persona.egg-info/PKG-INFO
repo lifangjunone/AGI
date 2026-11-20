@@ -1,0 +1,6 @@
+Metadata-Version: 2.4
+Name: destiny-persona
+Version: 0.5.0
+Summary: LifeYouMe 六十甲子今日时运卡
+Requires-Python: >=3.11
+Requires-Dist: alipay-sdk-python==3.7.1411

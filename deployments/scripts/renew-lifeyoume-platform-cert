@@ -1,0 +1,44 @@
+#!/bin/bash
+set -euo pipefail
+
+exec 9>/run/lock/lifeyoume-platform-cert.lock
+flock -n 9 || exit 0
+
+source_dir=/data/app/opportunity-factory/letsencrypt/live/platform.lifeyoume.icu
+target_dir=/data/app/english-learning/certs
+conf=/data/app/lifeyoume-platform/deploy/nginx-platform.conf
+backup_dir=$(mktemp -d /data/app/backups/platform-tls-XXXXXXXX)
+chmod 700 "$backup_dir"
+cp -a "$target_dir/platform.lifeyoume.icu.pem" "$target_dir/platform.lifeyoume.icu.key" "$backup_dir/"
+sha256sum "$conf" > "$backup_dir/nginx.sha256"
+
+docker run --rm \
+  -v /data/app/opportunity-factory/letsencrypt:/etc/letsencrypt \
+  -v /data/app/opportunity-factory/certbot/www:/var/www/certbot \
+  certbot/certbot renew --cert-name platform.lifeyoume.icu \
+  --webroot -w /var/www/certbot --non-interactive
+
+openssl x509 -in "$source_dir/fullchain.pem" -noout -checkend 604800
+for domain in lifeyoume.icu www.lifeyoume.icu ops.lifeyoume.icu auth.lifeyoume.icu billing.lifeyoume.icu audit.lifeyoume.icu easysay.lifeyoume.icu; do
+  openssl x509 -in "$source_dir/fullchain.pem" -noout -checkhost "$domain" | grep -q 'does match'
+done
+cert_public=$(openssl x509 -in "$source_dir/fullchain.pem" -pubkey -noout | openssl pkey -pubin -outform DER | sha256sum)
+key_public=$(openssl pkey -in "$source_dir/privkey.pem" -pubout -outform DER | sha256sum)
+test "$cert_public" = "$key_public"
+
+if cmp -s "$source_dir/fullchain.pem" "$target_dir/platform.lifeyoume.icu.pem" &&
+   cmp -s "$source_dir/privkey.pem" "$target_dir/platform.lifeyoume.icu.key"; then
+  echo "Platform certificate already installed."
+  exit 0
+fi
+
+install -o root -g root -m 644 "$source_dir/fullchain.pem" "$target_dir/platform.lifeyoume.icu.pem"
+install -o root -g root -m 600 "$source_dir/privkey.pem" "$target_dir/platform.lifeyoume.icu.key"
+if ! docker exec opportunity_factory_proxy nginx -t; then
+  install -o root -g root -m 644 "$backup_dir/platform.lifeyoume.icu.pem" "$target_dir/platform.lifeyoume.icu.pem"
+  install -o root -g root -m 600 "$backup_dir/platform.lifeyoume.icu.key" "$target_dir/platform.lifeyoume.icu.key"
+  exit 1
+fi
+docker exec opportunity_factory_proxy nginx -s reload
+sha256sum -c "$backup_dir/nginx.sha256"
+echo "Platform certificate installed; backup: $backup_dir"

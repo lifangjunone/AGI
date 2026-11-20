@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Visibility Clinic｜AI 可见性体检</title>
+    <meta name="description" content="检测网站是否适合被 AI 搜索、Agent 和大模型爬虫读取，并生成中文修复建议。">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#clinic-form">跳到检测表单</a>
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">AI VISIBILITY CLINIC</p>
+          <h1>看看你的网站，对 AI 来说是不是“看得见”。</h1>
+          <p class="lede">
+            输入一个公开网址，我会检查 robots.txt、AI 爬虫规则、noindex、llms.txt、页面可读文本和基础摘要信号，再用 LifeYouMe MaaS 生成中文修复建议。
+          </p>
+        </div>
+        <aside class="hero-card" aria-label="检测能力">
+          <div class="score-orbit" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <p>检测范围</p>
+          <strong>6</strong>
+          <span>类 AI 可见性信号</span>
+        </aside>
+      </section>
+
+      <section class="clinic-panel" aria-labelledby="form-title">
+        <div>
+          <p class="eyebrow">RUN A CHECK</p>
+          <h2 id="form-title">输入要体检的 URL</h2>
+        </div>
+        <form id="clinic-form" novalidate>
+          <div id="error-summary" class="error-summary" role="alert" tabindex="-1" hidden>
+            <h3>请先修正这个问题</h3>
+            <a href="#target-url" id="error-link"></a>
+          </div>
+          <label for="target-url">公开网页地址</label>
+          <div class="input-row">
+            <input id="target-url" name="url" type="url" inputmode="url" autocomplete="url" placeholder="https://example.com/article" aria-describedby="url-help url-error">
+            <button id="submit-button" type="submit">开始体检</button>
+          </div>
+          <p id="url-help" class="help">只检测公开 http/https 页面；会拒绝 localhost、内网和保留地址。</p>
+          <p id="url-error" class="field-error" role="alert"></p>
+        </form>
+      </section>
+
+      <section id="loading" class="loading-card" hidden aria-live="polite">
+        <div class="loader" aria-hidden="true"></div>
+        <div>
+          <h2>正在检测页面可见性</h2>
+          <p>通常需要 5–15 秒：抓取目标页、robots.txt、llms.txt，然后生成诊断建议。</p>
+        </div>
+      </section>
+
+      <section id="result" class="result-shell" hidden aria-live="polite">
+        <section class="score-card">
+          <p class="eyebrow">CLINIC RESULT</p>
+          <div class="score-line">
+            <strong id="score">--</strong>
+            <div>
+              <h2 id="grade">等待检测</h2>
+              <p id="score-label"></p>
+            </div>
+          </div>
+          <p id="summary" class="summary"></p>
+          <div id="penalties" class="pill-row"></div>
+        </section>
+
+        <section class="grid two">
+          <article class="report-card">
+            <h3>页面信号</h3>
+            <dl id="page-signals"></dl>
+          </article>
+          <article class="report-card">
+            <h3>llms.txt</h3>
+            <div id="llms-status"></div>
+          </article>
+        </section>
+
+        <section class="report-card">
+          <h3>AI Bot / robots.txt 状态</h3>
+          <div id="bot-grid" class="bot-grid"></div>
+        </section>
+
+        <section class="grid two">
+          <article class="report-card">
+            <h3>优先修复建议</h3>
+            <ol id="priorities"></ol>
+          </article>
+          <article class="report-card">
+            <h3>下一次实验</h3>
+            <p id="next-experiment"></p>
+          </article>
+        </section>
+
+        <section class="report-card">
+          <div class="section-heading">
+            <h3>llms.txt 草稿</h3>
+            <button id="copy-llms" type="button">复制草稿</button>
+          </div>
+          <pre id="llms-draft"></pre>
+          <p id="copy-feedback" class="help" aria-live="polite"></p>
+        </section>
+      </section>
+    </main>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

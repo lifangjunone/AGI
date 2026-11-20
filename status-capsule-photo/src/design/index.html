@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>状态照 · 三个设计方向</title>
+  <link rel="stylesheet" href="review.css">
+</head>
+<body data-concept="cabinet">
+  <nav class="review-nav" aria-label="切换设计方案">
+    <span>设计方向预览</span>
+    <button data-mode="cabinet" aria-pressed="true">A 收藏卡展柜</button>
+    <button data-mode="photo" aria-pressed="false">B 拍立得相馆</button>
+    <button data-mode="desk" aria-pressed="false">C 短流程工作台</button>
+  </nav>
+  <main>
+    <header class="product-nav">
+      <a href="./" class="brand">状态照<span>把自己，收藏起来。</span></a>
+      <span class="nav-note">你的照片，你的专属角色</span>
+    </header>
+    <div class="workspace">
+      <section class="gallery" aria-label="风格参考预览">
+        <div class="gallery-heading"><span class="gallery-label">你的另一种样子</span><h1>今天，想成为<br>哪一个自己？</h1></div>
+        <div class="picture-stage">
+          <figure class="picture rear"><img src="assets/galaxy.png" alt="紫色银河收藏卡风格参考"><figcaption>银河收藏卡</figcaption></figure>
+          <figure class="picture main-picture"><img src="assets/run.png" alt="蓝绿色流光收藏卡风格参考"><figcaption>风速上班卡</figcaption></figure>
+          <figure class="picture oil"><img src="assets/oil.png" alt="星夜厚涂油画风格参考"><figcaption>星夜油画</figcaption></figure>
+        </div>
+        <footer class="gallery-footer"><span>风格参考图 · 非用户生成结果</span><span>收藏卡 / 状态盲盒 / 油画</span></footer>
+      </section>
+      <section class="creator" aria-labelledby="creator-title">
+        <div class="creator-heading"><p>开始制作</p><h2 id="creator-title">一张照片，<br>一个新版本的你。</h2><span>上传自己的照片，挑一个喜欢的风格。</span></div>
+        <label class="upload" tabindex="0">
+          <input type="file" accept="image/*" id="reference">
+          <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="7" y="10" width="26" height="23" rx="4"/><path d="m14 10 3-4h6l3 4"/><circle cx="20" cy="21" r="6"/></svg>
+          <strong data-upload-label>上传你的照片</strong><small>清晰正脸或半身照 · JPG / PNG / WebP</small>
+        </label>
+        <div class="style-heading"><h3>选择风格</h3><span>可以多选</span></div>
+        <div class="styles">
+          <button class="style selected" aria-pressed="true"><img src="assets/run.png" alt=""><span>流光卡片</span></button>
+          <button class="style" aria-pressed="false"><img src="assets/galaxy.png" alt=""><span>银河卡片</span></button>
+          <button class="style" aria-pressed="false"><img src="assets/oil.png" alt=""><span>星夜油画</span></button>
+        </div>
+        <details class="preferences"><summary>人物与穿搭偏好<span>可选</span></summary><label>想保留的气质<input value="自然、轻松，保留我的发型"></label></details>
+        <button class="generate" data-generate>生成我的状态照</button>
+        <p class="status" role="status" data-status>原图不在服务端保存</p>
+      </section>
+    </div>
+    <footer class="rationale" data-rationale></footer>
+  </main>
+  <dialog><button class="close" aria-label="关闭结果预览">×</button><p>独立结果页 · 布局预览</p><h2>你的流光卡片</h2><img src="assets/run.png" alt="示例收藏卡"><p>这是风格参考，不是根据上传照片生成的作品。</p><button class="generate close-result">返回制作</button></dialog>
+  <script src="review.js"></script>
+</body>
+</html>
